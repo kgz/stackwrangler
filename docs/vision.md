@@ -6,7 +6,9 @@ Living product intent. Not a ticket; update when the destination shifts.
 
 **One local AWS account** that speaks the real AWS API. Console, CLI, and **IaC** (Terraform / CDK / SAM) talk to that same account.
 
-Learning target: `terraform apply` / `aws …` against something that *feels* like AWS — bucket + Lambda that actually talk to each other — without a real AWS bill.
+Learning target: `terraform apply` / `cdk deploy` / `ansible-playbook` / `aws …` against something that *feels* like AWS — without a real AWS bill.
+
+**Org staging gap this solves:** a large team tells a dev “implement X” (e.g. VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS via Serverless/CDK) but has no safe staging account and no way to run the stack locally. awsbox is that local account.
 
 End state: a **docker stack you run once** that auto-configures endpoints and API keys (profile `local`).
 
@@ -46,8 +48,16 @@ S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, e
 | [Messaging](https://github.com/kgz/awsl/milestone/10) | SQS, SNS, EventBridge, Step Functions, Kinesis, MSK/MQ, SES/AppSync |
 | [Security](https://github.com/kgz/awsl/milestone/11) | KMS, Secrets, Cognito, ACM, detection stubs |
 | [Observability](https://github.com/kgz/awsl/milestone/12) | CW Metrics/Alarms, SSM, CloudTrail/Config, Orgs, X-Ray |
-| [Containers+](https://github.com/kgz/awsl/milestone/13) | ECR, EKS, Batch/Beanstalk/App Runner/ASG |
+| [Containers+](https://github.com/kgz/awsl/milestone/13) | ECR, EKS, Batch/Beanstalk/App Runner/ASG; ECS/EC2 console |
 | [Analytics](https://github.com/kgz/awsl/milestone/14) | OpenSearch, Athena/Glue, QuickSight/EMR stubs |
+| [Org staging](https://github.com/kgz/awsl/milestone/19) | Multi-service learning path (SFTP→…→RDS); console nav gaps |
+| [CFN write UI](https://github.com/kgz/awsl/milestone/20) | Create/Update/change sets/StackSets in console |
+| [Code*](https://github.com/kgz/awsl/milestone/15) | CodePipeline / Build / Deploy / Artifact |
+| [Data movement](https://github.com/kgz/awsl/milestone/16) | **Transfer Family (SFTP)**, Backup, DMS, DataSync |
+| [Enterprise net](https://github.com/kgz/awsl/milestone/18) | TGW, VPN, PrivateLink, Lattice, Global Accelerator, Network Firewall |
+| [FinOps/catalogs](https://github.com/kgz/awsl/milestone/21) | Identity Center, STS, Cost/Budgets, RAM, Service Catalog, AppConfig |
+| [AI/ML stubs](https://github.com/kgz/awsl/milestone/17) | Bedrock, SageMaker, common AI APIs |
+| [Niche IaC](https://github.com/kgz/awsl/milestone/22) | MWAA, Amplify, Lightsail, IoT, Media, WorkSpaces, Pinpoint, **Pulumi**, **Ansible** |
 
 Same dual-S3 rule: IaC stacks use LocalEmu `:4566`, not SeaweedFS.
 

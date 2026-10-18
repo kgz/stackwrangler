@@ -396,10 +396,276 @@ button.linkish:hover {
   color: var(--aws-link);
 }
 
+.crumbs-sep {
+  margin: 0 6px;
+  color: var(--aws-text-muted);
+}
+
 .page-title {
   margin: 0 0 12px;
   font-size: 28px;
   font-weight: 400;
+}
+
+.cfn-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.cfn-page-head .page-title {
+  margin: 0;
+}
+
+.cfn-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cfn-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cfn-filters {
+  align-items: center;
+}
+
+.cfn-filter-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--aws-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.cfn-filter-status select {
+  background: var(--aws-bg);
+  border: 1px solid var(--aws-border);
+  color: var(--aws-text);
+  padding: 6px 10px;
+  border-radius: 2px;
+}
+
+.btn-icon {
+  min-width: 32px;
+  padding: 6px 8px;
+  line-height: 1;
+}
+
+.cfn-stack-link {
+  font-weight: 700;
+}
+
+.cfn-muted {
+  color: var(--aws-text-muted);
+}
+
+.cfn-loading {
+  padding: 24px 16px;
+  color: var(--aws-text-muted);
+}
+
+.empty-hint {
+  margin-top: 16px;
+}
+
+.cfn-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.cfn-status-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--aws-text-muted);
+}
+
+.cfn-status-success .cfn-status-mark {
+  background: #1d8102;
+  position: relative;
+}
+
+.cfn-status-success .cfn-status-mark::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  width: 5px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.cfn-status-error .cfn-status-mark {
+  background: var(--aws-danger);
+}
+
+.cfn-status-error .cfn-status-mark::after {
+  content: "×";
+  display: block;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.cfn-status-progress .cfn-status-mark {
+  background: transparent;
+  border: 2px solid var(--aws-active);
+  border-top-color: transparent;
+  animation: cfn-spin 0.8s linear infinite;
+}
+
+@keyframes cfn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cfn-split {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .cfn-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cfn-rail {
+  position: sticky;
+  top: 8px;
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+}
+
+.cfn-rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--aws-border);
+  font-size: 13px;
+}
+
+.cfn-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cfn-rail-list a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  color: var(--aws-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--aws-border);
+}
+
+.cfn-rail-list a:hover {
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+}
+
+.cfn-rail-list a.active {
+  background: rgba(9, 114, 211, 0.18);
+  box-shadow: inset 3px 0 0 var(--aws-active);
+}
+
+.cfn-rail-name {
+  font-weight: 700;
+  color: var(--aws-link);
+  word-break: break-all;
+}
+
+.cfn-tabs {
+  margin-bottom: 0;
+}
+
+.cfn-detail-panel {
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.cfn-overview {
+  padding: 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.cfn-section-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cfn-kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 32px;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .cfn-kv {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cfn-kv > div {
+  min-width: 0;
+}
+
+.cfn-kv dt {
+  color: var(--aws-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.cfn-kv dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.cfn-arn {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.cfn-template {
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  max-height: 70vh;
+  font-size: 12px;
+  line-height: 1.45;
+  background: var(--aws-bg);
+  border: 0;
+  color: var(--aws-text);
 }
 
 .tabs {
