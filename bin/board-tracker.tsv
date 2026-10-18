@@ -136,3 +136,4 @@
 145	backlog	Debt: RDS create UI + Aurora fidelity
 146	backlog	Debt: ECS/EC2 console depth
 147	backlog	Debt: CFN write-path audit vs #93–95
+150	backlog	Debt: smoke matrix sad paths

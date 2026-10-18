@@ -19,7 +19,18 @@ cat <<'EOF'
 [ ] No silent sidecar/bridge without Debt ticket + docs link?
 [ ] README/docs status row links a Debt issue for Partial/Sidecar?
 [ ] Tracker + board backlog updated for any new Debt tickets?
+[ ] docs/smoke-matrix.md updated (happy + sad columns)?
 EOF
+echo
+
+echo "=== Smoke matrix (sad-path gaps) ==="
+if [[ -f docs/smoke-matrix.md ]]; then
+	# lines that mark sad as no without being header
+	rg -n '\| \*\*no\*\*|^\| [^|]+ \| yes \| \*\*no\*\*' docs/smoke-matrix.md 2>/dev/null | head -30 || \
+		rg -n '\| no \|' docs/smoke-matrix.md 2>/dev/null | head -30 || true
+else
+	echo "MISSING docs/smoke-matrix.md"
+fi
 echo
 
 echo "=== Heuristic hits (console / docs) ==="
