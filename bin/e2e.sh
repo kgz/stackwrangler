@@ -36,6 +36,12 @@ echo "==> ECS smoke"
 echo "==> ECS authz (sad: empty taskRole PutObject)"
 ./bin/ecs-authz-smoke.sh
 
+echo "==> Transfer authz (sad: empty role PutObject)"
+./bin/transfer-authz-smoke.sh
+
+echo "==> RDS authz (sad: wrong password)"
+./bin/rds-authz-smoke.sh
+
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
 

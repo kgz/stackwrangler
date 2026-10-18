@@ -16,9 +16,9 @@ Honest coverage grid. Update when adding or closing a smoke.
 | CFN / CDK / SAM | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | — | list/detail | `cfn\|cdk\|sam-smoke.sh` |
 | ECS | yes | **yes** (`ecs-authz-smoke.sh`) | task unreachable | list | `ecs-smoke.sh`, `ecs-authz-smoke.sh` |
 | EC2 | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | user-data | list | `ec2-smoke.sh` |
-| Transfer API | yes | no | — | list/create | `transfer-smoke.sh` |
+| Transfer API | yes | **yes** (`transfer-authz-smoke.sh`) | — | list/create | `transfer-smoke.sh`, `transfer-authz-smoke.sh` |
 | Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |
-| RDS SQL | yes | no → [#145](https://github.com/kgz/awsl/issues/145) / [#150](https://github.com/kgz/awsl/issues/150) | missing psql | list/detail | `rds-smoke.sh` |
+| RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail | `rds-smoke.sh`, `rds-authz-smoke.sh` |
 
 ## Rule
 

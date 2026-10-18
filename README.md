@@ -50,7 +50,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | Transfer Family | API + SFTP sidecar → S3 bridge | Servers list/detail | **Partial** + **Sidecar** (`docs/transfer.md`) · native keys: [#141](https://github.com/kgz/awsl/issues/141) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
-Smokes: `./bin/s3-parity.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`
+Smokes: `./bin/s3-parity.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`
 
 ---
 
@@ -85,7 +85,7 @@ Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke
 | RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** · create/Aurora debt [#145](https://github.com/kgz/awsl/issues/145) |
 | DynamoDB / ElastiCache / other DBs | — | — | **Backlog** |
 
-Smoke: `./bin/rds-smoke.sh` (needs host `psql`)
+Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`)
 
 ---
 

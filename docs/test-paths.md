@@ -44,9 +44,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Transfer create-server / create-user API | happy | covered | `./bin/transfer-smoke.sh` |
 | SFTP put via sidecar → LocalEmu S3 | happy | covered | `./bin/transfer-dataplane-smoke.sh` |
 | Transfer user SSH key auth (native) | happy | missing | [#141](https://github.com/kgz/awsl/issues/141) |
-| Transfer under-permissioned role | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) + [#144](https://github.com/kgz/awsl/issues/144) |
+| **Transfer empty role → simulate PutObject deny** | sad/authz | covered | `./bin/transfer-authz-smoke.sh` |
+| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) |
 | RDS Postgres SQL round-trip | happy | covered | `./bin/rds-smoke.sh` |
-| RDS connect denied / IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) / [#150](https://github.com/kgz/awsl/issues/150) |
+| **RDS wrong password → auth denied** | sad/authz | covered | `./bin/rds-authz-smoke.sh` |
+| RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
 | Logs create/put/get | happy | covered | `./bin/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./bin/apigw-smoke.sh` |
 | Wrong S3 endpoint (Seaweed vs LocalEmu) | sad/other | missing | [#143](https://github.com/kgz/awsl/issues/143) |
