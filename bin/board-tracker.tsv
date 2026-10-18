@@ -1,2 +1,9 @@
 # issue	expected_board	notes
 # expected_board: backlog | ready | in-progress | in-review | done
+1	backlog	epic awsbox v1
+2	ready	CLI + LocalStack profile local
+3	backlog	serverless.yml → LocalStack deploy
+4	backlog	console shell frame
+5	backlog	console S3 browser
+6	backlog	console Lambda + logs
+7	backlog	fixture upload-demo app
