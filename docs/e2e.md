@@ -9,9 +9,11 @@ We use two complementary layers against the **real** local stack (not mocked S3)
 
 ## Why Playwright
 
-Standard for browser e2e on React apps: real Chromium, file upload, traces on failure, CI-friendly. Cypress is fine too; Playwright is the default here.
+Standard for browser e2e on React apps: real Chromium, file upload, traces on failure. Cypress is fine too; Playwright is the default here.
 
-## Local
+## Local only
+
+No GitHub Actions — run smokes locally (free-tier friendly).
 
 ```bash
 ./bin/awsbox up
@@ -23,7 +25,3 @@ cd console && yarn playwright test --ui   # interactive
 ```
 
 Needs: Docker, AWS CLI v2, Node 20+, yarn.
-
-## CI
-
-`.github/workflows/e2e.yml` — compose up → CLI parity → Playwright.
