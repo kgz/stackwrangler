@@ -203,3 +203,4 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ```
 
 Wire new paths here **in the same PR** as the smoke. If deferred → Debt ticket + link in the Status column.
+| Real AWS batch10 messaging/data/crypto | happy+sad | covered | `./bin/aws-parity-batch10.sh` |
