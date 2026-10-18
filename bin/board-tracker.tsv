@@ -45,7 +45,7 @@
 58	backlog	CloudFront stub
 # v1 Data
 59	backlog	DynamoDB + Streams
-60	backlog	RDS / Aurora
+60	done	RDS / Aurora
 61	backlog	ElastiCache / MemoryDB / DAX
 62	backlog	EFS / FSx / EBS
 63	backlog	other DB stubs
@@ -92,6 +92,7 @@
 99	backlog	CodeArtifact (+ CodeCommit)
 # Data movement
 100	done	Transfer Family (SFTP)
+135	done	Transfer SFTP data plane (bytes → S3)
 101	backlog	AWS Backup
 102	backlog	DMS
 103	backlog	DataSync stub
@@ -126,4 +127,4 @@
 127	backlog	Pinpoint stub
 128	backlog	Pulumi sample
 129	backlog	Ansible playbook example
-133	in-progress	Vision fully-working / LocalStack lesson
+133	done	Vision fully-working / LocalStack lesson

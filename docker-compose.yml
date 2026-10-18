@@ -23,9 +23,11 @@ services:
     image: localemu/localemu:latest
     user: root
     environment:
-      SERVICES: iam,sts,s3,lambda,logs,apigateway,apigatewayv2,ecs,ec2,cloudformation,transfer
+      SERVICES: iam,sts,s3,lambda,logs,apigateway,apigatewayv2,ecs,ec2,cloudformation,transfer,rds
       IAM_ENFORCEMENT: "1"
       EC2_VM_MANAGER: docker
+      # Real Postgres/MySQL containers via Docker (not moto-only)
+      RDS_DOCKER_BACKEND: "1"
       DEBUG: "0"
       PERSISTENCE: "0"
       GATEWAY_LISTEN: 0.0.0.0:4566
@@ -47,6 +49,14 @@ services:
       timeout: 5s
       retries: 40
       start_period: 20s
+
+  # Real SFTP listen — LocalEmu Transfer is control-plane only today.
+  # Smoke bridges uploads into LocalEmu S3 (see docs/transfer.md).
+  sftp:
+    image: atmoz/sftp:alpine
+    ports:
+      - "127.0.0.1:2222:22"
+    command: awsbox:awsboxpass:1001:1001:upload
 
 volumes:
   seaweed-data:
