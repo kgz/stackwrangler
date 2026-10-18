@@ -25,5 +25,5 @@
 29	done	row select empty/delete
 31	done	objects delete confirm + toast
 37	done	terraform s3+lambda iac
-38	backlog	ECS Fargate sample
+38	done	ECS Fargate sample
 39	backlog	EC2 sample
