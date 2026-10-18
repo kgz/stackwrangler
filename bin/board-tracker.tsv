@@ -130,3 +130,4 @@
 133	done	Vision fully-working / LocalStack lesson
 137	done	Console Transfer servers UI
 138	done	Console RDS databases UI
+141	backlog	Transfer native SFTP auth — drop sidecar bridge

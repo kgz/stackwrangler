@@ -21,7 +21,9 @@ Credentials (sidecar): user `awsbox` / pass `awsboxpass` (override via `AWSBOX_S
 | Bytes in | `sftp` compose service `:2222` |
 | Bytes → S3 | Smoke/bridge copies inbox → LocalEmu S3 (`:4566`) |
 
-LocalEmu does **not** currently speak SSH/SFTP for Transfer. awsbox bridges so org paths can still move a file into S3 locally. When LocalEmu grows a data plane, drop the bridge.
+LocalEmu does **not** currently speak SSH/SFTP for Transfer. awsbox bridges so org paths can still move a file into S3 locally.
+
+**Tracked debt:** native Transfer auth (SSH keys) + drop sidecar password — [#141](https://github.com/kgz/awsl/issues/141).
 
 ## Limits
 
