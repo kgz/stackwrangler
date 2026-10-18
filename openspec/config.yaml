@@ -1,0 +1,23 @@
+schema: spec-driven
+
+context: |
+  Product: awsbox — one local AWS account speaking real AWS APIs.
+  North star: docs/vision.md
+  Board: GitHub Project #8 (kgz/awsl)
+  Stack (v1 intent): LocalStack (API + Lambda runtime), CLI wrapper `awsbox`,
+  web console (client only) for S3 / Lambda / IAM / Logs / API Gateway,
+  Serverless Framework deploy into LocalStack, AWS CLI profile `local`.
+  Conventions: no TypeScript `any`, no casts; short git messages; PHP N/A.
+  Delivery: ticket on board → OpenSpec change → apply → PR with Closes #n.
+
+rules:
+  proposal:
+    - Keep proposals under 500 words
+    - Always include a "Non-goals" section
+    - Scope to services in docs/vision.md unless explicitly expanding
+  design:
+    - Console is a client of the S3/Lambda/etc API — never reimplement storage
+    - Prefer LocalStack over rewriting AWS service APIs
+  tasks:
+    - Break tasks into chunks of max ~2 hours
+    - Map tasks to GitHub issue numbers when they exist

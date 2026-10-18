@@ -1,0 +1,41 @@
+---
+description: awsbox delivery loop — ticket → board → OpenSpec → apply → PR → done
+alwaysApply: true
+---
+
+# awsbox AI workflow
+
+Same shape as Colony / Funds Manager. Board: [Project #8](https://github.com/users/kgz/projects/8/views/1).
+
+## Ticket first
+
+```bash
+./bin/board-status.sh in-progress <issue-num>
+```
+
+Closing: `./bin/board-status.sh done <n>`. Keep `bin/board-tracker.tsv` in sync, then `./bin/board-audit.sh --apply`.
+
+Lifecycle: **Backlog** → **Ready** → **In progress** → **In review** → **Done**.
+
+## Branch
+
+```bash
+git checkout main && git pull origin main
+git checkout -b feature/<issue>-<short-slug>
+```
+
+## Product north star
+
+`docs/vision.md` — long-term feel (not a ticket).
+OpenSpec changes are for **one delivery**; don’t park the whole product vision there.
+
+## OpenSpec
+
+- On `main`: `/opsx-propose` → `openspec/changes/<change-name>/`
+- Delivery branch: `/opsx-apply` against `tasks.md`
+- Grow `openspec/specs/` as shipped behaviour (archive changes separately)
+
+## Commits / PRs
+
+- No `Co-authored-by` / Cursor attribution
+- PR body: `Closes #<n>`
