@@ -49,3 +49,19 @@ Console mocks live in `design/awsbox-console/` (OD `baseDir`).
 
 - No `Co-authored-by` / Cursor attribution
 - PR body: `Closes #<n>`
+
+## Gap check before `done` (required)
+
+User relies on the agent to not lose half-baked follow-ups (especially UI stubs).
+
+**Before** `./bin/board-status.sh done <n>` / merge:
+
+```bash
+./bin/gap-check.sh <n>
+```
+
+1. Walk the checklist in `docs/gap-check.md`
+2. For every Partial / disabled Create / sidecar / “use CLI smoke” / authz hole **without** an open Debt ticket → create `Debt: … (from #<n>)`, `backlog`, tracker row, link from README or service doc
+3. Mention new Debt issues in the PR body
+
+Do **not** mark the parent done until gaps are ticketed (or explicitly N/A in the PR).
