@@ -29,12 +29,15 @@ aws --profile local s3 ls
 
 `./bin/awsbox status` — container + live check.
 
-S3 CLI parity (profile `local`):
+E2E (CLI + Playwright UI against live SeaweedFS):
 
 ```bash
-./bin/s3-parity.sh
-# latest results: docs/s3-parity.md
+./bin/e2e.sh
+# or: ./bin/s3-parity.sh
+# or: cd console && yarn test:e2e
 ```
+
+See [docs/e2e.md](docs/e2e.md).
 
 
 If profile `local` already exists and isn’t awsbox-managed: `./bin/awsbox up --force`.
