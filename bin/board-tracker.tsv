@@ -33,7 +33,7 @@
 49	done	CDK sample over local CFN
 50	done	SAM sample over local CFN
 88	done	CloudFormation stacks console UI
-130	in-progress	CFN console visual parity
+130	done	CFN console visual parity
 # v1 Networking
 51	backlog	VPC / AZs / SG polish
 52	backlog	ALB
