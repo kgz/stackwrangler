@@ -1,6 +1,10 @@
 # issue	expected_board	notes
 # expected_board: backlog | ready | in-progress | in-review | done
 1	done	epic — v1 + IaC/ECS/EC2 + v2 empty states
+47	backlog	enable CFN on LocalEmu + profile
+48	backlog	CFN S3+Lambda example + cfn-smoke
+49	backlog	CDK sample over local CFN
+50	backlog	SAM sample over local CFN
 10	done	v1 S3 epic
 8	done	SeaweedFS stack
 9	done	s3 CLI parity

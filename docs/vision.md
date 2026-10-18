@@ -34,21 +34,22 @@ S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, e
 
 **v1** (API + console slices) — **shipped**: S3 UI, IAM AccessDenied, Lambda, Logs, API Gateway.
 
-**v1.5 — IaC path** (next):
+**v1.5 — IaC path** (Terraform + compute samples — **shipped**):
 
 | Scope | Intent |
 |-------|--------|
-| Profile / endpoints for Terraform | `local` or `local-emu` → LocalEmu for S3+Lambda+IAM |
-| Example: S3 bucket (named) + Lambda | Apply creates both; put/invoke proves they work together |
-| Smoke + docs | `./bin/iac-smoke.sh` |
+| Terraform S3+Lambda | `examples/terraform/s3-lambda` + `./bin/iac-smoke.sh` |
+| ECS / EC2 | `examples/terraform/ecs-nginx`, `ec2-hello` + smokes |
 
-**v2 — compute samples**:
+**v1.5 — CloudFormation / CDK / SAM** ([milestone](https://github.com/kgz/awsl/milestone/7)):
 
 | Scope | Intent |
 |-------|--------|
-| ECS Fargate-style task | `examples/terraform/ecs-nginx` + `./bin/ecs-smoke.sh` |
-| EC2 sample | `examples/terraform/ec2-hello` + `./bin/ec2-smoke.sh` |
-| Optional: unify console S3 onto LocalEmu | One S3 everywhere |
+| Enable CFN on LocalEmu | `cloudformation` in `SERVICES` + profile endpoint |
+| CFN example: S3 + Lambda | Mirror Terraform demo; `./bin/cfn-smoke.sh` |
+| CDK / SAM samples | Thin wrappers over the same CFN path |
+
+Same dual-S3 rule: stacks use LocalEmu `:4566`, not SeaweedFS.
 
 **v2 S3 advanced**: specialty buckets, Access Points, Storage Lens, Batch Ops ship as empty states (no local API).
 
