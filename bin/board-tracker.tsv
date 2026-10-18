@@ -22,3 +22,5 @@
 7	done	superseded
 23	backlog	obj preview (not v1)
 26	done	e2e playwright+cli
+29	in-review	row select empty/delete
+29	in-review	row select empty/delete

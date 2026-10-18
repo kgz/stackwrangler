@@ -131,4 +131,22 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
     const listed = aws(['s3', 'ls'])
     expect(listed).not.toContain(name)
   })
+
+  test('selects a row on the list and empties via toolbar', async ({ page }) => {
+    const name = `e2e-sel-${Date.now()}`
+    aws(['s3', 'mb', `s3://${name}`])
+    putText(name, 'z.txt', 'z')
+
+    await page.goto('/')
+    await page.getByPlaceholder('Find buckets by name').fill(name)
+    await page.getByRole('checkbox', { name: `Select ${name}` }).check()
+    await expect(page.getByRole('button', { name: 'Empty' })).toBeEnabled()
+    await page.getByRole('button', { name: 'Empty' }).click()
+    await page.getByRole('button', { name: 'Empty', exact: true }).last().click()
+
+    const listed = aws(['s3', 'ls', `s3://${name}/`])
+    expect(listed).toBe('')
+
+    aws(['s3', 'rb', `s3://${name}`, '--force'])
+  })
 })
