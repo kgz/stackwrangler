@@ -18,7 +18,8 @@ For the shipped surface, list anything that is **not** fully Working:
 | **Sidecar / bridge** | real AWS shape deferred to a compose hack |
 | **Dual endpoints** | console vs CLI hit different backends |
 | **Docs/README** | Partial/Sidecar status with **no** issue link |
-| **Smokes** | happy path only; no deliberate failure case |
+| **Smokes** | happy path only; no deliberate failure case — update [smoke-matrix.md](smoke-matrix.md) |
+| **Smoke matrix** | row missing or Sad column empty with no Debt link |
 
 ## Debt ticket shape
 

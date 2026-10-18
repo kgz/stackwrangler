@@ -184,7 +184,8 @@ Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or en
 ./bin/setup-github-board.sh
 ```
 
-Gap rubric: [docs/gap-check.md](docs/gap-check.md). Closing a ticket that leaves a bridge or disabled console action must open a **Debt:** follow-up the same day.
+Gap rubric: [docs/gap-check.md](docs/gap-check.md) · smoke happy/sad: [docs/smoke-matrix.md](docs/smoke-matrix.md).  
+Closing a ticket that leaves a bridge, disabled console action, or happy-only smoke must open a **Debt:** follow-up the same day.
 
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
