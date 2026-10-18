@@ -144,6 +144,19 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
     }
   })
 
+  test('storage insights pages show empty local-stack states', async ({
+    page,
+  }) => {
+    const paths = ['/storage-lens', '/batch-operations']
+    for (const path of paths) {
+      await page.goto(path)
+      await expect(page.getByText('Not available on local stack')).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: /Create (dashboard|job)/ }),
+      ).toBeDisabled()
+    }
+  })
+
   test('empties a bucket from Properties; CLI sees no objects', async ({
     page,
   }) => {
