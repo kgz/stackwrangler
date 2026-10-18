@@ -9,6 +9,7 @@ Real SFTP listen = **awsbox `sftp` sidecar** on `127.0.0.1:2222` (atmoz/sftp).
 ./bin/awsbox up --force
 ./bin/transfer-smoke.sh              # API: server + user + S3 home
 ./bin/transfer-dataplane-smoke.sh    # SFTP put → LocalEmu S3 (bridge)
+./bin/transfer-authz-smoke.sh        # empty Transfer role → PutObject deny (simulate)
 ```
 
 Credentials (sidecar): user `awsbox` / pass `awsboxpass` (override via `AWSBOX_SFTP_*`).
@@ -31,4 +32,4 @@ LocalEmu does **not** currently speak SSH/SFTP for Transfer. awsbox bridges so o
 |------|-----------|
 | `list-servers` / `list-users` | May be empty; use `describe-*` |
 | FTPS/FTP | Not exercised |
-| Authz under Transfer role | API-shaped; deepen with workload IAM smokes later |
+| Authz under Transfer role | `./bin/transfer-authz-smoke.sh` (simulate); SFTP-byte deny → [#141](https://github.com/kgz/awsl/issues/141) |

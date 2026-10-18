@@ -138,4 +138,6 @@
 147	backlog	Debt: CFN write-path audit vs #93–95
 150	done	Debt: smoke matrix sad paths — ECS task-role authz
 154	backlog	Debt: ECS in-container task-role creds DNAT (from #150)
-156	in-review	Real-AWS IAM AccessDenied parity (~$0)
+156	done	Real-AWS IAM AccessDenied parity (~$0)
+158	in-review	Transfer empty role AccessDenied smoke (from #150)
+159	in-review	RDS wrong-password auth deny smoke (from #150)

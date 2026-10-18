@@ -50,7 +50,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | Transfer Family | API + SFTP sidecar → S3 bridge | Servers list/detail | **Partial** + **Sidecar** (`docs/transfer.md`) · native keys: [#141](https://github.com/kgz/awsl/issues/141) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
-Smokes: `./bin/s3-parity.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`
+Smokes: `./bin/s3-parity.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`
 
 ---
 
