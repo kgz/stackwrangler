@@ -22,5 +22,6 @@ Keep instance: `AWSBOX_RDS_KEEP=1 ./bin/rds-smoke.sh`
 | Without `RDS_DOCKER_BACKEND` | Moto-only fake hostname — no SQL |
 | Aurora failover / replicas | Partial in LocalEmu — document if you rely on it |
 | Security groups / VPC | API-shaped; connect on published host port |
+| Console create | Not wired — debt [#145](https://github.com/kgz/awsl/issues/145) |
 
 Needs `psql` on the host for the smoke.
