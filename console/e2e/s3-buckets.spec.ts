@@ -127,6 +127,23 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
     }
   })
 
+  test('access management pages show empty local-stack states', async ({
+    page,
+  }) => {
+    const paths = [
+      '/access-points',
+      '/access-points-fsx',
+      '/access-grants',
+    ]
+    for (const path of paths) {
+      await page.goto(path)
+      await expect(page.getByText('Not available on local stack')).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: /Create (access point|grant)/ }),
+      ).toBeDisabled()
+    }
+  })
+
   test('empties a bucket from Properties; CLI sees no objects', async ({
     page,
   }) => {

@@ -7,6 +7,7 @@ import { IamUsersPage } from './pages/IamUsersPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
+import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 
 export default function App() {
@@ -24,9 +25,9 @@ export default function App() {
           <Route path="table-buckets" element={<SpecialtyBucketsPage />} />
           <Route path="vector-buckets" element={<SpecialtyBucketsPage />} />
           <Route path="file-systems" element={<PlaceholderPage />} />
-          <Route path="access-points" element={<PlaceholderPage />} />
-          <Route path="access-points-fsx" element={<PlaceholderPage />} />
-          <Route path="access-grants" element={<PlaceholderPage />} />
+          <Route path="access-points" element={<AccessManagementPage />} />
+          <Route path="access-points-fsx" element={<AccessManagementPage />} />
+          <Route path="access-grants" element={<AccessManagementPage />} />
           <Route path="access-analyzer" element={<PlaceholderPage />} />
           <Route path="storage-lens" element={<PlaceholderPage />} />
           <Route path="batch-operations" element={<PlaceholderPage />} />
