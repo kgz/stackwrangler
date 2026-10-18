@@ -1,0 +1,56 @@
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  s3-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AWS CLI
+        run: |
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+          unzip -q /tmp/awscliv2.zip -d /tmp
+          sudo /tmp/aws/install --update
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: console/yarn.lock
+
+      - name: Start SeaweedFS + profile local
+        run: |
+          chmod +x bin/awsbox bin/awsbox-profile bin/s3-parity.sh bin/e2e.sh
+          ./bin/awsbox up --force
+
+      - name: CLI parity
+        run: ./bin/s3-parity.sh | tee docs/s3-parity.md
+
+      - name: Install console + Playwright browsers
+        working-directory: console
+        run: |
+          yarn install --frozen-lockfile
+          yarn playwright install --with-deps chromium
+
+      - name: Playwright e2e
+        working-directory: console
+        env:
+          CI: "true"
+        run: yarn playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: console/test-results/
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: ./bin/awsbox down || true
