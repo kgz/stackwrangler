@@ -23,7 +23,7 @@ services:
     image: localemu/localemu:latest
     user: root
     environment:
-      SERVICES: iam,sts,s3,lambda,logs
+      SERVICES: iam,sts,s3,lambda,logs,apigateway,apigatewayv2
       IAM_ENFORCEMENT: "1"
       DEBUG: "0"
       PERSISTENCE: "0"

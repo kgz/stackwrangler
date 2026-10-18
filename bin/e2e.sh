@@ -18,6 +18,15 @@ echo "==> IAM AccessDenied"
 echo "==> Lambda smoke"
 ./bin/lambda-smoke.sh
 
+echo "==> Lambda deploy zip"
+./bin/lambda-deploy-smoke.sh
+
+echo "==> Logs smoke"
+./bin/logs-smoke.sh
+
+echo "==> API Gateway smoke"
+./bin/apigw-smoke.sh
+
 echo "==> console deps"
 if [[ ! -d console/node_modules ]]; then
 	(cd console && yarn install)

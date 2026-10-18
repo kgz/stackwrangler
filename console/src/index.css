@@ -180,6 +180,35 @@ input {
   background: rgba(9, 114, 211, 0.15);
 }
 
+.deploy-panel {
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid var(--aws-border);
+  background: var(--aws-bg-panel);
+}
+
+.field-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--aws-text-muted);
+}
+
+.field-inline input,
+.field-inline select {
+  min-width: 12rem;
+  padding: 6px 8px;
+  background: var(--aws-bg);
+  border: 1px solid var(--aws-border);
+  color: var(--aws-text);
+}
+
+.log-tail {
+  max-height: 320px;
+  overflow: auto;
+}
+
 .body {
   display: grid;
   grid-template-columns: 240px 1fr;
