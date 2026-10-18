@@ -1,19 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 
 const TITLES: Record<string, { title: string; blurb: string }> = {
-  '/directory-buckets': {
-    title: 'Directory buckets',
-    blurb:
-      'Directory buckets (S3 Express One Zone) are not available on the local stack. Use General purpose buckets for v1.',
-  },
-  '/table-buckets': {
-    title: 'Table buckets',
-    blurb: 'S3 Tables are not available on the local stack yet.',
-  },
-  '/vector-buckets': {
-    title: 'Vector buckets',
-    blurb: 'S3 Vectors are not available on the local stack yet.',
-  },
   '/file-systems': {
     title: 'File systems',
     blurb: 'S3 file systems are not available on the local stack yet.',

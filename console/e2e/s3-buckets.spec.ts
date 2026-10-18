@@ -107,12 +107,24 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
     aws(['s3', 'rb', `s3://${name}`, '--force'])
   })
 
-  test('sidebar placeholder for directory buckets', async ({ page }) => {
-    await page.goto('/directory-buckets')
-    await expect(
-      page.getByRole('heading', { name: 'Directory buckets' }),
-    ).toBeVisible()
-    await expect(page.getByText('Not available on local stack')).toBeVisible()
+  test('specialty bucket pages show empty local-stack states', async ({
+    page,
+  }) => {
+    const paths = [
+      '/directory-buckets',
+      '/table-buckets',
+      '/vector-buckets',
+    ]
+    for (const path of paths) {
+      await page.goto(path)
+      await expect(page.getByText('Not available on local stack')).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: /Create .+ bucket/ }),
+      ).toBeDisabled()
+      await expect(
+        page.getByRole('link', { name: 'Go to General purpose buckets' }),
+      ).toBeVisible()
+    }
   })
 
   test('empties a bucket from Properties; CLI sees no objects', async ({
