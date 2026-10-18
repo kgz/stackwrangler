@@ -179,9 +179,13 @@ Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or en
 
 ```bash
 ./bin/board-status.sh in-progress <n>
+./bin/gap-check.sh <n>    # before done — Partial/UI stubs → Debt tickets
 ./bin/board-audit.sh
 ./bin/setup-github-board.sh
 ```
+
+Gap rubric: [docs/gap-check.md](docs/gap-check.md). Closing a ticket that leaves a bridge or disabled console action must open a **Debt:** follow-up the same day.
+
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
 Console mocks: `design/awsbox-console/` · `./bin/od-design-run.sh --issue <n> "…"`
