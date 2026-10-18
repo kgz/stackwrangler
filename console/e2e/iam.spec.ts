@@ -7,6 +7,9 @@ test.describe('IAM console + AccessDenied lab', () => {
     await expect(page.getByRole('link', { name: 'IAM' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Run AccessDenied lab' }).click()
-    await expect(page.getByText(/AccessDenied/)).toBeVisible({ timeout: 45_000 })
+    await expect(
+      page.getByRole('status').filter({ hasText: 'AccessDenied' }),
+    ).toBeVisible({ timeout: 45_000 })
+    await expect(page.getByText('Failed to fetch')).toHaveCount(0)
   })
 })
