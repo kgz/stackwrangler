@@ -51,6 +51,20 @@ echo "==> SQS smoke"
 echo "==> SQS authz (sad: deny SendMessage)"
 ./bin/sqs-authz-smoke.sh
 
+echo "==> SNS / EventBridge / DynamoDB / SFN / Secrets / KMS / Kinesis"
+./bin/sns-smoke.sh && ./bin/sns-authz-smoke.sh
+./bin/events-smoke.sh && ./bin/events-authz-smoke.sh
+./bin/dynamodb-smoke.sh && ./bin/dynamodb-authz-smoke.sh
+./bin/sfn-smoke.sh && ./bin/sfn-authz-smoke.sh
+./bin/secrets-smoke.sh && ./bin/secrets-authz-smoke.sh
+./bin/kms-smoke.sh && ./bin/kms-authz-smoke.sh
+./bin/kinesis-smoke.sh && ./bin/kinesis-authz-smoke.sh
+
+echo "==> Logs / API GW / EC2 authz"
+./bin/logs-authz-smoke.sh
+./bin/apigw-authz-smoke.sh
+./bin/ec2-authz-smoke.sh
+
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
 

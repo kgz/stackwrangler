@@ -12,11 +12,18 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |
 | Real AWS CFN S3+Lambda | **yes** (parity) | **yes** (empty role) | teardown | — | `aws-parity-cfn-s3-lambda.sh`, `aws-parity-cfn-authz.sh` |
 | Lambda invoke/deploy | yes | **yes** (`lambda-authz-smoke.sh`) | state wait | thin | `lambda-smoke.sh`, `lambda-deploy-smoke.sh`, `lambda-authz-smoke.sh` |
-| Logs | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | — | thin | `logs-smoke.sh` |
-| API GW | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | — | thin | `apigw-smoke.sh` |
-| CFN / CDK / SAM | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | — | list/detail | `cfn\|cdk\|sam-smoke.sh` |
+| Logs | yes | **yes** (`logs-authz-smoke.sh`) | — | thin | `logs-smoke.sh`, `logs-authz-smoke.sh` |
+| API GW | yes | **yes** (`apigw-authz-smoke.sh`) | — | thin | `apigw-smoke.sh`, `apigw-authz-smoke.sh` |
+| CFN / CDK / SAM | yes | **yes** (parity authz) | — | list/detail | `cfn\|cdk\|sam-smoke.sh`, `aws-parity-cfn-authz.sh` |
 | ECS | yes | **yes** (`ecs-authz-smoke.sh`) | task unreachable | list | `ecs-smoke.sh`, `ecs-authz-smoke.sh` |
-| EC2 | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | user-data | list | `ec2-smoke.sh` |
+| EC2 | yes | **yes** (`ec2-authz-smoke.sh`) | user-data | list | `ec2-smoke.sh`, `ec2-authz-smoke.sh` |
+| SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |
+| EventBridge | yes | **yes** | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-smoke.sh`, `events-authz-smoke.sh` |
+| DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
+| Step Functions | yes | **yes** | — | no → [#175](https://github.com/kgz/awsl/issues/175) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` |
+| Secrets Manager | yes | **yes** | — | no → [#176](https://github.com/kgz/awsl/issues/176) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` |
+| KMS | yes | **yes** | — | no → [#177](https://github.com/kgz/awsl/issues/177) | `kms-smoke.sh`, `kms-authz-smoke.sh` |
+| Kinesis | yes | **yes** | — | no → [#178](https://github.com/kgz/awsl/issues/178) | `kinesis-smoke.sh`, `kinesis-authz-smoke.sh` |
 | Transfer API | yes | **yes** (`transfer-authz-smoke.sh`) | — | list/create | `transfer-smoke.sh`, `transfer-authz-smoke.sh` |
 | Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |
 | RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail | `rds-smoke.sh`, `rds-authz-smoke.sh` |

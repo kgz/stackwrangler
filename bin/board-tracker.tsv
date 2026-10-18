@@ -44,22 +44,22 @@
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
 # v1 Data
-59	backlog	DynamoDB + Streams
+59	in-review	DynamoDB happy+authz
 60	done	RDS / Aurora
 61	backlog	ElastiCache / MemoryDB / DAX
 62	backlog	EFS / FSx / EBS
 63	backlog	other DB stubs
 # v1 Messaging
-64	in-review	SQS
-65	backlog	SNS
-66	backlog	EventBridge + Scheduler
-67	backlog	Step Functions + Pipes
-68	backlog	Kinesis + Firehose
+64	done	SQS
+65	in-review	SNS happy+authz
+66	in-review	EventBridge happy+authz
+67	in-review	Step Functions happy+authz
+68	in-review	Kinesis happy+authz
 69	backlog	MSK + MQ
 70	backlog	SES + AppSync
 # v1 Security
-71	backlog	KMS
-72	backlog	Secrets Manager
+71	in-review	KMS happy+authz
+72	in-review	Secrets Manager happy+authz
 73	backlog	Cognito
 74	backlog	ACM
 75	backlog	detection stubs
@@ -145,3 +145,13 @@
 163	done	Real-AWS CFN S3+Lambda parity
 165	done	Real-AWS CFN Lambda AccessDenied parity
 167	backlog	Debt: SQS console (from #64)
+172	backlog	Debt: SNS console (from #65)
+173	backlog	Debt: EventBridge console (from #66)
+174	backlog	Debt: DynamoDB console (from #59)
+175	backlog	Debt: StepFunctions console (from #67)
+176	backlog	Debt: Secrets console (from #72)
+177	backlog	Debt: KMS console (from #71)
+178	backlog	Debt: Kinesis console (from #68)
+169	in-review	Logs PutLogEvents AccessDenied
+170	in-review	API GW CreateApi AccessDenied
+171	in-review	EC2 RunInstances AccessDenied
