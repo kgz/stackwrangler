@@ -94,6 +94,11 @@ export function BucketsPage() {
         <Link to="/">Amazon S3</Link> &gt; Buckets
       </div>
       <h1 className="page-title">Buckets</h1>
+      <p className="cfn-muted" style={{ marginTop: 0, maxWidth: '52rem' }}>
+        This list is SeaweedFS (<code>{config.endpoint}</code>). Lambda / CFN /
+        Transfer use LocalEmu S3 on <code>:4566</code> — separate store. See{' '}
+        <code>docs/s3-backends.md</code>.
+      </p>
       <div className="tabs">
         <button type="button" className="active">
           General purpose buckets

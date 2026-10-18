@@ -78,7 +78,7 @@ Orgs often tried **LocalStack** for full local repro and got a false green:
 |------|------------|
 | “Authz must match AWS” is absolute — full IAM/condition/SCP parity is rare | Claim **parity on smokes we ship**; document known gaps; expand smoke corpus |
 | Huge backlog of stub tickets recreates catalogue theatre | Execution order = org path data plane; stubs stay labeled stub |
-| Dual S3 (SeaweedFS vs LocalEmu) | IaC/runtime always LocalEmu S3; unify later or kill the split |
+| Dual S3 (SeaweedFS vs LocalEmu) | **Keep split for now** — [docs/s3-backends.md](s3-backends.md); IaC/runtime LocalEmu; console/`local` SeaweedFS; `./bin/s3-dual-endpoint-smoke.sh` |
 | Emulator ceiling (no real SFTP/RDS/…) | Sidecar or custom bridge; don’t pretend |
 
 ## How this shapes the board

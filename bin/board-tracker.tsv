@@ -131,7 +131,7 @@
 137	done	Console Transfer servers UI
 138	done	Console RDS databases UI
 141	backlog	Transfer native SFTP auth — drop sidecar
-143	backlog	Debt: unify dual S3 backends
+143	in-review	Debt: unify dual S3 backends
 144	done	Debt: workload IAM authz smokes
 145	backlog	Debt: RDS create UI + Aurora fidelity
 146	backlog	Debt: ECS/EC2 console depth
@@ -139,5 +139,5 @@
 150	done	Debt: smoke matrix sad paths — ECS task-role authz
 154	backlog	Debt: ECS in-container task-role creds DNAT (from #150)
 156	done	Real-AWS IAM AccessDenied parity (~$0)
-158	in-review	Transfer empty role AccessDenied smoke (from #150)
-159	in-review	RDS wrong-password auth deny smoke (from #150)
+158	done	Transfer empty role AccessDenied smoke (from #150)
+159	done	RDS wrong-password auth deny smoke (from #150)

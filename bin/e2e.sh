@@ -12,6 +12,9 @@ echo "==> stack"
 echo "==> CLI parity"
 ./bin/s3-parity.sh | tee docs/s3-parity.md
 
+echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
+./bin/s3-dual-endpoint-smoke.sh
+
 echo "==> IAM AccessDenied"
 ./bin/iam-access-denied.sh
 
