@@ -20,12 +20,15 @@ End state: `./bin/awsbox up` once — endpoints + profile `local` — then real 
 |-------|---------|----------------|
 | **Data plane** | Real storage, invoke, containers, queues, DB connections, (eventually) SFTP bytes | **Done** for that service |
 | **Authz plane** | Same deny/allow outcomes as AWS for workload identities + resource policies | **Required** alongside data plane |
+| **Settings / topology fidelity** | Same *defaults and obscure knobs* as AWS — SG rules, awsvpc hairpin/NAT, target-group stickiness, IAM condition keys, retention/TTL, proxy behaviour when two tasks share a host | **Plan now; deepen after org-path data+authz** — not v1 catalogue width |
 | **Control plane only** | `create-*` / `describe-*` succeed; no real traffic | **Stub** — document limits; not “shipped” for org paths |
 | **Console empty** | Nav chrome, honest “not on local stack yet” | UX only |
 
 **Priority rule:** prefer deepening data planes **and** IAM enforcement on the org path over adding more stub APIs. Stubs exist so IaC can *start* applying; they are debt, not the destination.
 
 Smoke pattern for each hop: happy path **and** at least one deliberate authz failure (not a single hard-coded policy demo).
+
+**Fidelity bar (raise continuously):** if a real account fails because of a network path, default, or setting you “wouldn’t think of” (e.g. two ECS tasks on the same host cannot hairpin through a NAT/proxy without the right IP retention / routing), awsbox should be able to reproduce that class of failure — not only happy CRUD. Capture gaps as Debt with a concrete repro; do not wait for a full AWS clone before writing the ticket. See [docs/fidelity.md](fidelity.md).
 
 ### Already real (keep raising the bar)
 

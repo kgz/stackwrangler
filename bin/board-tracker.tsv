@@ -155,3 +155,5 @@
 169	in-review	Logs PutLogEvents AccessDenied
 170	in-review	API GW CreateApi AccessDenied
 171	in-review	EC2 RunInstances AccessDenied
+180	backlog	Epic: settings/topology fidelity (hairpin etc)
+181	backlog	Debt: ECS same-host hairpin fidelity
