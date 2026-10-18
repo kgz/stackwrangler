@@ -15,6 +15,8 @@ Start a run (shows in OD UI):
 
 Stub: `index.html` — replace via OD when building console screens (#4 / #5).
 
+Visual target (current AWS S3 dark console): `refs/aws-s3-console-dark-2026.png`.
+
 Daemon must mount this repo (already in `~/tools/open-design/deploy/docker-compose.wsl.yml`):
 
 ```

@@ -4,8 +4,8 @@ context: |
   Product: awsbox — local AWS feel without a bill.
   North star: docs/vision.md
   Board: GitHub Project #8 (kgz/awsl)
-  M1: S3 only via MinIO in Docker. Auto-write AWS profile `local`.
-  No IAM / permissions in M1. Then AWS-exact S3 console UI (client of MinIO).
+  M1: S3 only via SeaweedFS in Docker. Auto-write AWS profile `local`.
+  No IAM / permissions in M1. Then AWS-exact S3 console UI (client of SeaweedFS).
   Later: Lambda, API Gateway, Serverless, more services.
   Conventions: no TypeScript `any`, no casts; short git messages.
   Delivery: ticket on board → OpenSpec change → apply → PR with Closes #n.
@@ -15,10 +15,10 @@ rules:
   proposal:
     - Keep proposals under 500 words
     - Always include a "Non-goals" section
-    - M1 scope is S3 + MinIO only unless the change says otherwise
+    - M1 scope is S3 + SeaweedFS only unless the change says otherwise
   design:
     - Console is a client of the S3 API — never reimplement object storage
-    - Prefer MinIO in Docker for M1 over rewriting S3
+    - Prefer SeaweedFS in Docker for M1 over rewriting S3
   tasks:
     - Break tasks into chunks of max ~2 hours
     - Map tasks to GitHub issue numbers when they exist

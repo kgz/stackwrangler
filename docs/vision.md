@@ -12,32 +12,32 @@ End state: a **docker stack you run once** that auto-configures endpoints and AP
 
 ## Milestone 1 — fully mimic S3
 
-Nothing else yet. No IAM, no bucket policies, no Lambda.
+Nothing else yet. No IAM UI / policy theatre.
 
 | Layer | What |
 |-------|------|
-| API | **MinIO** in Docker (S3-compatible) |
+| API | **SeaweedFS** in Docker (`weed mini` S3 on `:8333`) — swappable later |
 | Keys | Stack writes AWS profile `local` (endpoint + access key + secret) |
 | CLI | Every `aws s3` / day-to-day `aws s3api` command works against it |
 | UI | Console that **matches AWS S3 look and feel** — client only, same API calls |
 
 ```bash
-docker compose up   # or later: awsbox up
+./bin/awsbox up
 aws --profile local s3 mb s3://demo
 aws --profile local s3 ls
 # open localhost console → S3 → same buckets
 ```
 
-Wrong/missing bucket still returns real S3 error shapes (`NoSuchBucket`, etc.). Permissions come later.
+Wrong key → `InvalidAccessKeyId`. Missing bucket → S3 error shapes. Console clicks are the same API calls.
+
+**Why SeaweedFS:** MinIO community images are gone / project archived. Backend is behind compose — swap to S3Mock / Garage / etc. without rewriting the console.
 
 ## Later (not M1)
 
-- IAM / policies (`AccessDenied` when you wire them)
+- IAM / policies as a learning surface
 - Lambda, API Gateway, CloudWatch Logs
 - `serverless.yml` → deploy into the stack
 - More services, one at a time
-
-Console stays a **client**. MinIO (or later LocalStack) holds the bytes. Point the same UI at any S3-compatible endpoint.
 
 ## What goes where
 
@@ -47,4 +47,4 @@ Console stays a **client**. MinIO (or later LocalStack) holds the bytes. Point t
 | Tickets | GitHub Project #8 |
 | Delivery design | OpenSpec changes |
 | Console mocks | `design/awsbox-console/` (Open Design) |
-| Product entry | docker compose → later `awsbox` CLI |
+| Product entry | `./bin/awsbox` → docker compose |

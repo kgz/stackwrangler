@@ -1,0 +1,22 @@
+# S3 API backend — SeaweedFS (swap later without changing the console client).
+services:
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command: mini -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWSBOX_ACCESS_KEY:-awsbox}
+      AWS_SECRET_ACCESS_KEY: ${AWSBOX_SECRET_KEY:-awsboxawsbox}
+    ports:
+      - "127.0.0.1:8333:8333"
+    volumes:
+      - seaweed-data:/data
+    healthcheck:
+      # any HTTP response (incl. 403) means S3 is listening
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:8333/ 2>&1 | grep -q 'HTTP/'"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 8s
+
+volumes:
+  seaweed-data:

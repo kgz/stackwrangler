@@ -2,7 +2,7 @@
 # expected_board: backlog | ready | in-progress | in-review | done
 1	backlog	epic overall
 10	backlog	M1 epic S3 only
-8	ready	MinIO docker + profile local
+8	in-progress	SeaweedFS docker + profile local
 9	backlog	aws s3 / s3api parity
 4	backlog	console frame AWS look
 5	backlog	S3 console UI
