@@ -101,8 +101,8 @@ cmd_up() {
 	iam="$(iam_endpoint_url)"
 	echo
 	echo "S3 API:   ${ep}"
-	echo "IAM API:  ${iam}"
-	echo "Profile:  local  (aws --profile local s3 ls | iam list-users)"
+	echo "IAM/Lambda: ${iam}"
+	echo "Profile:  local  (aws --profile local s3 ls | lambda list-functions)"
 	echo "Console:  ./bin/awsbox console   → http://127.0.0.1:3000"
 }
 

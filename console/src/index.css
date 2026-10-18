@@ -169,6 +169,17 @@ input {
   color: var(--aws-text-muted);
 }
 
+.invoke-panel {
+  margin-top: 20px;
+  padding: 12px;
+  background: var(--aws-bg-elevated);
+  border: 1px solid var(--aws-border);
+}
+
+.row-selected {
+  background: rgba(9, 114, 211, 0.15);
+}
+
 .body {
   display: grid;
   grid-template-columns: 240px 1fr;

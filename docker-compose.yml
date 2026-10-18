@@ -1,4 +1,4 @@
-# S3 (SeaweedFS) + IAM (LocalEmu with policy enforcement). Console is a client of both.
+# S3 (SeaweedFS) + IAM/Lambda (LocalEmu). Console is a client of both.
 services:
   s3:
     image: chrislusf/seaweedfs:4.48
@@ -18,23 +18,24 @@ services:
       retries: 15
       start_period: 8s
 
-  # Free LocalStack alternative — IAM_ENFORCEMENT returns real AccessDenied
+  # Free LocalStack alternative — IAM_ENFORCEMENT + Docker-backed Lambda
   localstack:
     image: localemu/localemu:latest
+    user: root
     environment:
-      SERVICES: iam,sts,s3
+      SERVICES: iam,sts,s3,lambda,logs
       IAM_ENFORCEMENT: "1"
       DEBUG: "0"
       PERSISTENCE: "0"
       GATEWAY_LISTEN: 0.0.0.0:4566
       AWS_DEFAULT_REGION: ${AWSBOX_REGION:-us-east-1}
-      # treat awsbox keys as root so admin CLI/console bypass enforcement
       ROOT_ACCESS_KEYS: ${AWSBOX_ACCESS_KEY:-awsbox},AKIAIOSFODNN7EXAMPLE
-      # belt-and-suspenders; console still proxies via Vite /aws-iam
       DISABLE_CORS_CHECKS: "1"
       EXTRA_CORS_ALLOWED_ORIGINS: "*"
     ports:
       - "127.0.0.1:4566:4566"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test:
         [
