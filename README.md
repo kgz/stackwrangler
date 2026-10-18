@@ -35,7 +35,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 |------|--------|--------|
 | `./bin/awsbox up` + profile `local` | **Working** | Compose + managed AWS profile |
 | Console shell (AWS-look) | **Working** | Dark console frame |
-| Dual S3 (SeaweedFS + LocalEmu) | **Partial** | UI → `:8333`; Lambda/IaC → `:4566` · debt [#143](https://github.com/kgz/awsl/issues/143) |
+| Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
 | IAM enforcement | **Partial** | deny-user lab only · workload roles debt [#144](https://github.com/kgz/awsl/issues/144) |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
@@ -50,7 +50,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | Transfer Family | API + SFTP sidecar → S3 bridge | Servers list/detail | **Partial** + **Sidecar** (`docs/transfer.md`) · native keys: [#141](https://github.com/kgz/awsl/issues/141) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
-Smokes: `./bin/s3-parity.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`
+Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`
 
 ---
 
