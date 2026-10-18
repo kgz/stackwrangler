@@ -79,4 +79,5 @@ A region switcher and a fake account id make it feel like AWS. Two hundred other
 | This north star | `docs/vision.md` |
 | Tickets | GitHub Project #8 |
 | Delivery design | OpenSpec changes |
+| Console mocks | `design/awsbox-console/` (Open Design) |
 | Product CLI | `awsbox` |

@@ -35,6 +35,16 @@ OpenSpec changes are for **one delivery**; don’t park the whole product vision
 - Delivery branch: `/opsx-apply` against `tasks.md`
 - Grow `openspec/specs/` as shipped behaviour (archive changes separately)
 
+## Open Design
+
+Never raw `curl` for runs. Use:
+
+```bash
+./bin/od-design-run.sh --issue <n> "Design prompt…"
+```
+
+Console mocks live in `design/awsbox-console/` (OD `baseDir`).
+
 ## Commits / PRs
 
 - No `Co-authored-by` / Cursor attribution

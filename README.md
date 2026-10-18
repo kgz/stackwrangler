@@ -25,3 +25,11 @@ See [docs/vision.md](docs/vision.md).
 /opsx-apply     # implement tasks.md
 /opsx-explore   # think first
 ```
+
+## Open Design
+
+Console mocks: `design/awsbox-console/` (OD project `awsbox-console`, folder-imported).
+
+```bash
+./bin/od-design-run.sh --issue <n> "Design …"
+```
