@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: awsbox sad CFN — Lambda role without s3:PutObject (parity with lambda-authz-smoke)
+
+Parameters:
+  BucketName:
+    Type: String
+  FunctionName:
+    Type: String
+  CodeBucket:
+    Type: String
+  CodeKey:
+    Type: String
+    Default: function.zip
+
+Resources:
+  DemoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${FunctionName}-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${FunctionName}-logs-only"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  WriterFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: LambdaRole
+    Properties:
+      FunctionName: !Ref FunctionName
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Timeout: 30
+      Role: !GetAtt LambdaRole.Arn
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref BucketName
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref CodeKey
+
+Outputs:
+  BucketName:
+    Value: !Ref DemoBucket
+  FunctionName:
+    Value: !Ref WriterFunction

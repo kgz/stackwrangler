@@ -142,4 +142,5 @@
 158	done	Transfer empty role AccessDenied smoke (from #150)
 159	done	RDS wrong-password auth deny smoke (from #150)
 162	backlog	Debt: unify single S3 brain (from #143)
-163	in-review	Real-AWS CFN S3+Lambda parity
+163	done	Real-AWS CFN S3+Lambda parity
+165	in-review	Real-AWS CFN Lambda AccessDenied parity
