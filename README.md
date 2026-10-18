@@ -85,7 +85,7 @@ Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke
 | RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** · create/Aurora debt [#145](https://github.com/kgz/awsl/issues/145) |
 | DynamoDB / ElastiCache / other DBs | — | — | **Backlog** |
 
-Smoke: `./bin/rds-smoke.sh` (needs host `psql`)
+Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`)
 
 ---
 
