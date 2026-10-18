@@ -20,7 +20,7 @@
 3	done	superseded
 6	done	superseded
 7	done	superseded
-23	backlog	obj preview (not v1)
+23	done	obj preview (Open / click name)
 26	done	e2e playwright+cli
 29	done	row select empty/delete
 31	done	objects delete confirm + toast

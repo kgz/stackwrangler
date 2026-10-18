@@ -63,23 +63,135 @@ export async function putObject(
   bucket: string,
   key: string,
   body: Blob | ArrayBuffer | string,
+  contentType?: string,
 ): Promise<void> {
+  const type =
+    contentType ||
+    (typeof Blob !== 'undefined' && body instanceof Blob && body.type
+      ? body.type
+      : guessContentType(key))
   await s3.send(
     new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: body,
+      ContentType: type || undefined,
     }),
   )
 }
 
-export async function getObjectBlob(bucket: string, key: string): Promise<Blob> {
+export type ObjectPayload = {
+  blob: Blob
+  contentType: string
+  contentLength: number
+}
+
+export async function getObject(
+  bucket: string,
+  key: string,
+): Promise<ObjectPayload> {
   const out = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
   const body = out.Body
   if (!body) {
     throw new Error('Empty object body')
   }
-  return body.transformToByteArray().then((bytes) => new Blob([bytes]))
+  const bytes = await body.transformToByteArray()
+  const contentType = out.ContentType || guessContentType(key)
+  return {
+    blob: new Blob([bytes], { type: contentType }),
+    contentType,
+    contentLength: out.ContentLength ?? bytes.byteLength,
+  }
+}
+
+export async function getObjectBlob(bucket: string, key: string): Promise<Blob> {
+  const payload = await getObject(bucket, key)
+  return payload.blob
+}
+
+function guessContentType(key: string): string {
+  const ext = key.includes('.') ? key.slice(key.lastIndexOf('.') + 1).toLowerCase() : ''
+  switch (ext) {
+    case 'txt':
+    case 'log':
+    case 'md':
+    case 'csv':
+    case 'tsv':
+      return 'text/plain'
+    case 'json':
+      return 'application/json'
+    case 'xml':
+    case 'svg':
+      return ext === 'svg' ? 'image/svg+xml' : 'application/xml'
+    case 'html':
+    case 'htm':
+      return 'text/html'
+    case 'js':
+    case 'mjs':
+    case 'cjs':
+      return 'text/javascript'
+    case 'css':
+      return 'text/css'
+    case 'yml':
+    case 'yaml':
+      return 'text/yaml'
+    case 'png':
+      return 'image/png'
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg'
+    case 'gif':
+      return 'image/gif'
+    case 'webp':
+      return 'image/webp'
+    default:
+      return 'application/octet-stream'
+  }
+}
+
+export type PreviewKind = 'text' | 'image' | 'binary'
+
+export function previewKind(contentType: string, key: string): PreviewKind {
+  const ct = contentType.toLowerCase()
+  if (ct.startsWith('image/') && !ct.includes('svg')) return 'image'
+  if (ct === 'image/svg+xml') return 'image'
+  if (
+    ct.startsWith('text/') ||
+    ct.includes('json') ||
+    ct.includes('xml') ||
+    ct.includes('javascript') ||
+    ct.includes('yaml')
+  ) {
+    return 'text'
+  }
+  const ext = objectTypeFromKey(key)
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return 'image'
+  if (
+    [
+      'txt',
+      'log',
+      'md',
+      'csv',
+      'tsv',
+      'json',
+      'xml',
+      'html',
+      'htm',
+      'js',
+      'css',
+      'yml',
+      'yaml',
+    ].includes(ext)
+  ) {
+    return 'text'
+  }
+  return 'binary'
+}
+
+function objectTypeFromKey(key: string): string {
+  const i = key.lastIndexOf('.')
+  if (i < 0 || i === key.length - 1) return ''
+  return key.slice(i + 1).toLowerCase()
 }
 
 export async function deleteObject(bucket: string, key: string): Promise<void> {

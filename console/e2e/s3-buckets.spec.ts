@@ -90,6 +90,23 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
     aws(['s3', 'rb', `s3://${name}`, '--force'])
   })
 
+  test('opens text object preview inline', async ({ page }) => {
+    const name = `e2e-preview-${Date.now()}`
+    aws(['s3', 'mb', `s3://${name}`])
+    putText(name, 'note.txt', 'preview me please')
+
+    await page.goto(`/buckets/${encodeURIComponent(name)}`)
+    await page.getByRole('button', { name: 'note.txt' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.getByTestId('object-preview-text')).toContainText(
+      'preview me please',
+    )
+    await page.getByRole('button', { name: 'Close' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    aws(['s3', 'rb', `s3://${name}`, '--force'])
+  })
+
   test('sidebar placeholder for directory buckets', async ({ page }) => {
     await page.goto('/directory-buckets')
     await expect(

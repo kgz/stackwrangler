@@ -25,7 +25,7 @@ Later: same pattern for **ECS** (real Docker tasks) and **EC2** (container-backe
 
 | Surface | Backend today |
 |---------|----------------|
-| Console **General purpose buckets** UI | SeaweedFS `:8333` (AWS-look S3) |
+| Console **General purpose buckets** UI | SeaweedFS `:8333` (AWS-look S3; Open/preview objects) |
 | IAM / Lambda / Logs / API GW / **IaC S3+events** | LocalEmu `:4566` |
 
 S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, etc.) must use **one** S3 backend. That path is **LocalEmu S3**. SeaweedFS stays the polished console buckets page until/unless we unify.
