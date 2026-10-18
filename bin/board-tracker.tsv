@@ -8,7 +8,7 @@
 5	done	S3 buckets UI
 13	done	sidebar chrome
 14	done	bucket polish
-15	backlog	v2 specialty buckets
+15	done	v2 specialty buckets (empty states)
 16	backlog	v2 access points
 17	backlog	v2 storage lens
 18	done	v1 IAM AccessDenied
