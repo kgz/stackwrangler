@@ -98,16 +98,19 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
     await expect(page.getByText('Not available on local stack')).toBeVisible()
   })
 
-  test('empties a bucket in the UI; CLI sees no objects', async ({ page }) => {
+  test('empties a bucket from Properties; CLI sees no objects', async ({
+    page,
+  }) => {
     const name = `e2e-empty-${Date.now()}`
     aws(['s3', 'mb', `s3://${name}`])
     putText(name, 'a.txt', 'a')
     putText(name, 'b.txt', 'b')
 
     await page.goto(`/buckets/${encodeURIComponent(name)}`)
-    await expect(page.getByText('a.txt')).toBeVisible()
-    await page.getByRole('button', { name: 'Empty' }).click()
-    await page.getByRole('button', { name: 'Empty', exact: true }).last().click()
+    await page.getByRole('button', { name: 'Properties' }).click()
+    await page.getByRole('button', { name: 'Empty bucket' }).click()
+    await page.getByRole('button', { name: 'Empty', exact: true }).click()
+    await page.getByRole('button', { name: 'Objects' }).click()
     await expect(page.getByText('No objects')).toBeVisible()
 
     const listed = aws(['s3', 'ls', `s3://${name}/`])
@@ -116,14 +119,35 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
     aws(['s3', 'rb', `s3://${name}`, '--force'])
   })
 
-  test('deletes a bucket in the UI; CLI no longer lists it', async ({ page }) => {
+  test('deletes objects with confirmation + toast', async ({ page }) => {
+    const name = `e2e-objdel-${Date.now()}`
+    aws(['s3', 'mb', `s3://${name}`])
+    putText(name, 'kill-me.txt', 'bye')
+
+    await page.goto(`/buckets/${encodeURIComponent(name)}`)
+    await page.getByRole('checkbox', { name: 'Select kill-me.txt' }).check()
+    await page.getByRole('button', { name: 'Delete', exact: true }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Delete objects (1)?' }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Delete objects' }).click()
+    await expect(page.getByText(/Successfully deleted object/)).toBeVisible()
+    await expect(page.getByText('No objects')).toBeVisible()
+
+    aws(['s3', 'rb', `s3://${name}`, '--force'])
+  })
+
+  test('deletes a bucket from Properties; CLI no longer lists it', async ({
+    page,
+  }) => {
     const name = `e2e-del-${Date.now()}`
     aws(['s3', 'mb', `s3://${name}`])
     putText(name, 'x.txt', 'x')
 
     await page.goto(`/buckets/${encodeURIComponent(name)}`)
-    await page.getByRole('button', { name: 'Delete' }).click()
+    await page.getByRole('button', { name: 'Properties' }).click()
     await page.getByRole('button', { name: 'Delete bucket' }).click()
+    await page.getByRole('button', { name: 'Delete bucket' }).last().click()
     await expect(
       page.getByRole('heading', { name: 'Buckets', exact: true }),
     ).toBeVisible()

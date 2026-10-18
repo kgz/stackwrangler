@@ -423,6 +423,66 @@ table.data th {
   white-space: pre-wrap;
 }
 
+.toast-banner {
+  background: #14331f;
+  border: 1px solid #1d8102;
+  color: #b7f5c8;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 2px;
+}
+
+.btn-danger {
+  background: #df3312;
+  border-color: #df3312;
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c62b0f;
+}
+
+.toolbar-stack {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.toolbar-stack h3 {
+  flex: none;
+}
+
+.toolbar-help {
+  margin: 4px 0 0;
+  max-width: 42rem;
+  color: var(--aws-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.confirm-list {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  max-height: 160px;
+  overflow: auto;
+  background: var(--aws-bg);
+  border: 1px solid var(--aws-border);
+  list-style: none;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.confirm-list li {
+  padding: 2px 0;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
