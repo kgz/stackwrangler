@@ -9,6 +9,7 @@ import { LogsPage } from './pages/LogsPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
+import { StorageInsightsPage } from './pages/StorageInsightsPage'
 
 export default function App() {
   return (
@@ -29,8 +30,8 @@ export default function App() {
           <Route path="access-points-fsx" element={<AccessManagementPage />} />
           <Route path="access-grants" element={<AccessManagementPage />} />
           <Route path="access-analyzer" element={<PlaceholderPage />} />
-          <Route path="storage-lens" element={<PlaceholderPage />} />
-          <Route path="batch-operations" element={<PlaceholderPage />} />
+          <Route path="storage-lens" element={<StorageInsightsPage />} />
+          <Route path="batch-operations" element={<StorageInsightsPage />} />
           <Route path="account-settings" element={<PlaceholderPage />} />
           <Route path="marketplace" element={<PlaceholderPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

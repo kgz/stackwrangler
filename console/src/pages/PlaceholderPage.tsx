@@ -9,14 +9,6 @@ const TITLES: Record<string, { title: string; blurb: string }> = {
     title: 'IAM Access Analyzer',
     blurb: 'Requires IAM (v1 — IAM track). Not available here yet.',
   },
-  '/storage-lens': {
-    title: 'Storage Lens',
-    blurb: 'Storage Lens lands in v2.',
-  },
-  '/batch-operations': {
-    title: 'Batch Operations',
-    blurb: 'Batch Operations land in v2.',
-  },
   '/account-settings': {
     title: 'Account and organization settings',
     blurb: 'Local account chrome only — no org APIs yet.',

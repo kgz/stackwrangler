@@ -50,7 +50,7 @@ S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, e
 | EC2 sample | `examples/terraform/ec2-hello` + `./bin/ec2-smoke.sh` |
 | Optional: unify console S3 onto LocalEmu | One S3 everywhere |
 
-**v2 S3 advanced**: specialty bucket pages ship as empty states (no local API). Access Points / Storage Lens still backlog.
+**v2 S3 advanced**: specialty buckets, Access Points, Storage Lens, Batch Ops ship as empty states (no local API).
 
 ```bash
 ./bin/awsbox up
