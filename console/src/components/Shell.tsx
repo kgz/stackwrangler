@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { config } from '../lib/config'
 
 type SectionId = 'buckets' | 'files' | 'access' | 'storage' | 'marketplace'
-type AppId = 's3' | 'iam' | 'lambda' | 'logs' | 'apigw'
+type AppId = 's3' | 'iam' | 'lambda' | 'logs' | 'apigw' | 'cfn'
 
 function Section({
   id,
@@ -149,6 +149,7 @@ function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/lambda')) return 'lambda'
   if (pathname.startsWith('/logs')) return 'logs'
   if (pathname.startsWith('/apigateway')) return 'apigw'
+  if (pathname.startsWith('/cloudformation')) return 'cfn'
   return 's3'
 }
 
@@ -207,6 +208,12 @@ export function Shell() {
         >
           CloudWatch
         </NavLink>
+        <NavLink
+          to="/cloudformation"
+          className={() => (app === 'cfn' ? 'active' : undefined)}
+        >
+          CloudFormation
+        </NavLink>
       </div>
       <div className="body">
         <aside className="sidebar">
@@ -218,6 +225,12 @@ export function Shell() {
             <SimpleSidebar title="CloudWatch" to="/logs" label="Log groups" />
           ) : app === 'apigw' ? (
             <SimpleSidebar title="API Gateway" to="/apigateway" label="HTTP APIs" />
+          ) : app === 'cfn' ? (
+            <SimpleSidebar
+              title="CloudFormation"
+              to="/cloudformation"
+              label="Stacks"
+            />
           ) : (
             <S3Sidebar open={open} toggle={toggle} />
           )}

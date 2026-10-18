@@ -681,3 +681,32 @@ table.data th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+.status-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: var(--aws-bg-elevated);
+  border: 1px solid var(--aws-border);
+  color: var(--aws-text);
+}
+
+.kv-list {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.kv-list dt {
+  color: var(--aws-text-muted);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.kv-list dd {
+  margin: 0;
+  word-break: break-all;
+}

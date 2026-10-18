@@ -10,6 +10,7 @@ import { PlaceholderPage } from './pages/PlaceholderPage'
 import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
+import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
 
 export default function App() {
   return (
@@ -22,6 +23,11 @@ export default function App() {
           <Route path="lambda" element={<LambdaFunctionsPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
+          <Route path="cloudformation" element={<CloudFormationStacksPage />} />
+          <Route
+            path="cloudformation/stacks/:name"
+            element={<CloudFormationStacksPage />}
+          />
           <Route path="directory-buckets" element={<SpecialtyBucketsPage />} />
           <Route path="table-buckets" element={<SpecialtyBucketsPage />} />
           <Route path="vector-buckets" element={<SpecialtyBucketsPage />} />
