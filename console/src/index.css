@@ -132,8 +132,41 @@ input {
   font-size: 12px;
 }
 
-.fav-bar span {
+.fav-bar span,
+.fav-bar a {
   opacity: 0.7;
+  color: var(--aws-text-muted);
+  text-decoration: none;
+}
+
+.fav-bar a:hover {
+  opacity: 1;
+  color: var(--aws-text);
+  text-decoration: none;
+}
+
+.fav-bar a.active {
+  opacity: 1;
+  color: var(--aws-text);
+  font-weight: 700;
+}
+
+.page-lead {
+  color: var(--aws-text-muted);
+  max-width: 48rem;
+  margin: 0 0 16px;
+}
+
+.lab-detail {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  opacity: 0.9;
+}
+
+.empty-state {
+  color: var(--aws-text-muted);
 }
 
 .body {

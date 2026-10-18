@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Write / remove AWS shared profile `local` for the local S3 stack.
+# Write / remove AWS shared profile `local` for the local stack.
 # Usage:
 #   ./bin/awsbox-profile write [--force]
 #   ./bin/awsbox-profile remove
@@ -7,6 +7,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PROFILE_NAME="local"
+SERVICES_NAME="awsbox"
 MARKER="# awsbox-managed"
 
 if [[ -n "${AWS_SHARED_CREDENTIALS_FILE:-}" ]]; then
@@ -34,6 +35,7 @@ load_env() {
 	SECRET_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
 	REGION="${AWSBOX_REGION:-us-east-1}"
 	ENDPOINT="${AWSBOX_ENDPOINT:-http://127.0.0.1:8333}"
+	IAM_ENDPOINT="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 }
 
 profile_exists() {
@@ -64,8 +66,8 @@ strip_profile_creds() {
 strip_profile_config() {
 	local f="$1"
 	[[ -f "$f" ]] || return 0
-	awk -v p="[profile ${PROFILE_NAME}]" '
-		$0 == p { skip=1; next }
+	awk -v p="[profile ${PROFILE_NAME}]" -v s="[services ${SERVICES_NAME}]" '
+		$0 == p || $0 == s { skip=1; next }
 		skip && /^\[/ { skip=0 }
 		!skip { print }
 	' "$f" > "${f}.awsbox.tmp"
@@ -104,16 +106,24 @@ cmd_write() {
 		echo "$MARKER"
 		echo "region = ${REGION}"
 		echo "output = json"
-		echo "endpoint_url = ${ENDPOINT}"
+		echo "services = ${SERVICES_NAME}"
+		echo ""
+		echo "[services ${SERVICES_NAME}]"
+		echo "$MARKER"
 		echo "s3 ="
+		echo "    endpoint_url = ${ENDPOINT}"
 		echo "    addressing_style = path"
 		echo "    signature_version = s3v4"
+		echo "iam ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "sts ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
 	} >> "$CONFIG_FILE"
 
 	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true
 	sed -i '1{/^$/d}' "$CONFIG_FILE" 2>/dev/null || true
 
-	echo "wrote profile '${PROFILE_NAME}' → ${ENDPOINT} (region ${REGION})"
+	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, iam/sts ${IAM_ENDPOINT} (region ${REGION})"
 }
 
 cmd_remove() {

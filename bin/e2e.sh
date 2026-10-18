@@ -12,6 +12,9 @@ echo "==> stack"
 echo "==> CLI parity"
 ./bin/s3-parity.sh | tee docs/s3-parity.md
 
+echo "==> IAM AccessDenied"
+./bin/iam-access-denied.sh
+
 echo "==> console deps"
 if [[ ! -d console/node_modules ]]; then
 	(cd console && yarn install)

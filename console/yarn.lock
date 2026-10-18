@@ -13,6 +13,20 @@
     "@smithy/types" "^4.19.0"
     tslib "^2.6.2"
 
+"@aws-sdk/client-iam@^3.758.0":
+  version "3.1152.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-iam/-/client-iam-3.1152.0.tgz#12e6f9f164684a370d6c1c60d747f543a6056ae5"
+  integrity sha512-m4tUynPh0GERkjhPXJEpSUH6qq/abA8nqudpdnlmay5MkwaOSyuqeEf3XYux6YPrw5TXcvoNDVeOdK1mZ7PN9Q==
+  dependencies:
+    "@aws-sdk/core" "^3.978.3"
+    "@aws-sdk/credential-provider-node" "^3.972.86"
+    "@aws-sdk/types" "^3.974.6"
+    "@smithy/core" "^3.35.2"
+    "@smithy/fetch-http-handler" "^5.8.0"
+    "@smithy/node-http-handler" "^4.12.1"
+    "@smithy/types" "^4.19.0"
+    tslib "^2.6.2"
+
 "@aws-sdk/client-s3@^3.758.0":
   version "3.1152.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.1152.0.tgz#5c3167d2b029c7622212576bbf1e0f831481ee43"
