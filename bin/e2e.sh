@@ -21,6 +21,9 @@ echo "==> Lambda smoke"
 echo "==> Lambda deploy zip"
 ./bin/lambda-deploy-smoke.sh
 
+echo "==> Lambda authz (sad: missing s3:PutObject)"
+./bin/lambda-authz-smoke.sh
+
 echo "==> Logs smoke"
 ./bin/logs-smoke.sh
 
