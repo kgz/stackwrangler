@@ -9,6 +9,14 @@ Same template as local: `examples/cloudformation/s3-lambda`.
 1. LocalEmu `:4566` — deploy → invoke → object under `writes/` → delete  
 2. Real AWS (default `~/.aws/credentials`, unset local `awsbox` env keys) — same → delete  
 
+**Sad (empty Lambda role → AccessDenied):**
+
+```bash
+./bin/aws-parity-cfn-authz.sh
+```
+
+Template: `examples/cloudformation/s3-lambda-deny` (logs-only role).
+
 **Cost:** short-lived S3 + Lambda + IAM — free-tier / noise if teardown succeeds.  
 **Keep:** `AWSBOX_PARITY_KEEP=1`  
 **One side:** `AWSBOX_PARITY_SKIP_LOCAL=1` or `AWSBOX_PARITY_SKIP_REAL=1`  
