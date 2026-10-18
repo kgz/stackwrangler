@@ -1,10 +1,6 @@
 # issue	expected_board	notes
 # expected_board: backlog | ready | in-progress | in-review | done
 1	done	epic — v1 + IaC/ECS/EC2 + v2 empty states
-47	backlog	enable CFN on LocalEmu + profile
-48	backlog	CFN S3+Lambda example + cfn-smoke
-49	backlog	CDK sample over local CFN
-50	backlog	SAM sample over local CFN
 10	done	v1 S3 epic
 8	done	SeaweedFS stack
 9	done	s3 CLI parity
@@ -31,3 +27,51 @@
 37	done	terraform s3+lambda iac
 38	done	ECS Fargate sample
 39	done	EC2 sample
+# v1.5 CFN
+47	backlog	enable CFN on LocalEmu + profile
+48	backlog	CFN S3+Lambda example + cfn-smoke
+49	backlog	CDK sample over local CFN
+50	backlog	SAM sample over local CFN
+# v1 Networking
+51	backlog	VPC / AZs / SG polish
+52	backlog	ALB
+53	backlog	NLB
+54	backlog	Classic ELB
+55	backlog	WAFv2
+56	backlog	Route 53 zones
+57	backlog	Route 53 Resolver
+58	backlog	CloudFront stub
+# v1 Data
+59	backlog	DynamoDB + Streams
+60	backlog	RDS / Aurora
+61	backlog	ElastiCache / MemoryDB / DAX
+62	backlog	EFS / FSx / EBS
+63	backlog	other DB stubs
+# v1 Messaging
+64	backlog	SQS
+65	backlog	SNS
+66	backlog	EventBridge + Scheduler
+67	backlog	Step Functions + Pipes
+68	backlog	Kinesis + Firehose
+69	backlog	MSK + MQ
+70	backlog	SES + AppSync
+# v1 Security
+71	backlog	KMS
+72	backlog	Secrets Manager
+73	backlog	Cognito
+74	backlog	ACM
+75	backlog	detection stubs
+# v1 Observability
+76	backlog	CW Metrics + Alarms
+77	backlog	SSM
+78	backlog	CloudTrail + Config
+79	backlog	Orgs / Quotas / RG
+80	backlog	X-Ray
+# v1 Containers
+81	backlog	ECR
+82	backlog	EKS
+83	backlog	Batch / Beanstalk / App Runner / ASG
+# v1 Analytics
+84	backlog	OpenSearch
+85	backlog	Athena + Glue + Lake Formation
+86	backlog	QuickSight / EMR / DataBrew

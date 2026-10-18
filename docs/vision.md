@@ -32,26 +32,25 @@ S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, e
 
 ## Milestones (GitHub)
 
-**v1** (API + console slices) — **shipped**: S3 UI, IAM AccessDenied, Lambda, Logs, API Gateway.
+**Shipped**: S3 UI, IAM, Lambda, Logs, API Gateway, Terraform S3+Lambda, ECS, EC2, v2 S3 empty chrome.
 
-**v1.5 — IaC path** (Terraform + compute samples — **shipped**):
+**v1.5 — CloudFormation / CDK / SAM** ([#7](https://github.com/kgz/awsl/milestone/7)): enable CFN → S3+Lambda CFN example → CDK/SAM.
 
-| Scope | Intent |
-|-------|--------|
-| Terraform S3+Lambda | `examples/terraform/s3-lambda` + `./bin/iac-smoke.sh` |
-| ECS / EC2 | `examples/terraform/ecs-nginx`, `ec2-hello` + smokes |
+**v1 expansion** (LocalEmu enable + profile + smoke; console when useful). Stub APIs (ALB/NLB/WAF/CDN) still get tickets — document limits.
 
-**v1.5 — CloudFormation / CDK / SAM** ([milestone](https://github.com/kgz/awsl/milestone/7)):
+| Milestone | Covers |
+|-----------|--------|
+| [Networking](https://github.com/kgz/awsl/milestone/8) | VPC/AZs, ALB, NLB, Classic ELB, WAFv2, Route 53, Resolver, CloudFront |
+| [Data stores](https://github.com/kgz/awsl/milestone/9) | DynamoDB, RDS, ElastiCache, EFS/FSx/EBS, other DB stubs |
+| [Messaging](https://github.com/kgz/awsl/milestone/10) | SQS, SNS, EventBridge, Step Functions, Kinesis, MSK/MQ, SES/AppSync |
+| [Security](https://github.com/kgz/awsl/milestone/11) | KMS, Secrets, Cognito, ACM, detection stubs |
+| [Observability](https://github.com/kgz/awsl/milestone/12) | CW Metrics/Alarms, SSM, CloudTrail/Config, Orgs, X-Ray |
+| [Containers+](https://github.com/kgz/awsl/milestone/13) | ECR, EKS, Batch/Beanstalk/App Runner/ASG |
+| [Analytics](https://github.com/kgz/awsl/milestone/14) | OpenSearch, Athena/Glue, QuickSight/EMR stubs |
 
-| Scope | Intent |
-|-------|--------|
-| Enable CFN on LocalEmu | `cloudformation` in `SERVICES` + profile endpoint |
-| CFN example: S3 + Lambda | Mirror Terraform demo; `./bin/cfn-smoke.sh` |
-| CDK / SAM samples | Thin wrappers over the same CFN path |
+Same dual-S3 rule: IaC stacks use LocalEmu `:4566`, not SeaweedFS.
 
-Same dual-S3 rule: stacks use LocalEmu `:4566`, not SeaweedFS.
-
-**v2 S3 advanced**: specialty buckets, Access Points, Storage Lens, Batch Ops ship as empty states (no local API).
+**v2 S3 advanced**: specialty buckets / Access Points / Storage Lens — empty states shipped.
 
 ```bash
 ./bin/awsbox up
