@@ -126,6 +126,10 @@ cmd_write() {
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
 		echo "apigatewayv2 ="
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "ecs ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "ec2 ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
 	} >> "$CONFIG_FILE"
 
 	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true

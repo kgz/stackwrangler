@@ -27,6 +27,9 @@ echo "==> Logs smoke"
 echo "==> API Gateway smoke"
 ./bin/apigw-smoke.sh
 
+echo "==> ECS smoke"
+./bin/ecs-smoke.sh
+
 echo "==> console deps"
 if [[ ! -d console/node_modules ]]; then
 	(cd console && yarn install)
