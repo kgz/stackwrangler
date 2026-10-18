@@ -4,47 +4,59 @@ Living product intent. Not a ticket; update when the destination shifts.
 
 ## Feel
 
-**One local AWS account** that speaks the real AWS API. The console and the CLI talk to that same account.
+**One local AWS account** that speaks the real AWS API. Console, CLI, and **IaC** (Terraform / CDK / SAM) talk to that same account.
 
-Learning target: use real tools (`aws …`) against something that *feels* like AWS — without a real AWS bill.
+Learning target: `terraform apply` / `aws …` against something that *feels* like AWS — bucket + Lambda that actually talk to each other — without a real AWS bill.
 
 End state: a **docker stack you run once** that auto-configures endpoints and API keys (profile `local`).
 
+## What “done” looks like for you
+
+```text
+./bin/awsbox up
+cd examples/terraform/s3-lambda   # (or your own module)
+terraform apply                   # named bucket + Lambda that does work
+aws --profile local …             # same resources visible in CLI + console
+```
+
+Later: same pattern for **ECS** (real Docker tasks) and **EC2** (container-backed instances) via LocalEmu.
+
+## Architecture note (important)
+
+| Surface | Backend today |
+|---------|----------------|
+| Console **General purpose buckets** UI | SeaweedFS `:8333` (AWS-look S3) |
+| IAM / Lambda / Logs / API GW / **IaC S3+events** | LocalEmu `:4566` |
+
+S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, etc.) must use **one** S3 backend. That path is **LocalEmu S3**. SeaweedFS stays the polished console buckets page until/unless we unify.
+
 ## Milestones (GitHub)
 
-**v1** = the most-used Serverless learning path (parallel tracks — finish S3 first, then stack the rest):
+**v1** (API + console slices) — **shipped**: S3 UI, IAM AccessDenied, Lambda, Logs, API Gateway.
 
-| Milestone | Scope |
-|-----------|--------|
-| [v1 — S3 general purpose](https://github.com/kgz/awsl/milestone/1) | SeaweedFS + profile `local` + CLI + AWS-look **General purpose buckets** |
-| [v1 — IAM](https://github.com/kgz/awsl/milestone/3) | Roles/policies; `AccessDenied` as a learning surface |
-| [v1 — Lambda](https://github.com/kgz/awsl/milestone/4) | Functions, invoke, console, local runtime |
-| [v1 — API Gateway](https://github.com/kgz/awsl/milestone/5) | HTTP/REST → local Lambdas |
-| [v1 — CloudWatch Logs](https://github.com/kgz/awsl/milestone/6) | Log groups + Lambda log tail |
+**v1.5 — IaC path** (next):
 
-**v2+** = deeper / less common:
+| Scope | Intent |
+|-------|--------|
+| Profile / endpoints for Terraform | `local` or `local-emu` → LocalEmu for S3+Lambda+IAM |
+| Example: S3 bucket (named) + Lambda | Apply creates both; put/invoke proves they work together |
+| Smoke + docs | `./bin/iac-smoke.sh` |
 
-| Milestone | Scope |
-|-----------|--------|
-| [v2 — S3 advanced](https://github.com/kgz/awsl/milestone/2) | Access Points, Storage Lens, Batch Ops, Directory/Table/Vector if backend allows |
+**v2 — compute samples**:
 
-Suggested build order inside v1: **S3 → IAM → Lambda → Logs → API Gateway** (each unblocks the next).
+| Scope | Intent |
+|-------|--------|
+| ECS Fargate-style task | LocalEmu real Docker tasks |
+| EC2 sample | Container-backed instance if useful |
+| Optional: unify console S3 onto LocalEmu | One S3 everywhere |
 
-### v1 S3 sidebar
-
-| Sidebar item | v1 S3 |
-|--------------|--------|
-| General purpose buckets | **Live** |
-| Directory / Table / Vector, Files, Access*, Storage* | Nav chrome → empty / later (**v2**) |
-| Object **preview** in UI (view contents) | Later backlog — not v1 |
+**v2 S3 advanced** (Access Points, specialty buckets, etc.) stays lower priority than IaC + compute.
 
 ```bash
 ./bin/awsbox up
 ./bin/awsbox console   # http://127.0.0.1:3000
 aws --profile local s3 ls
 ```
-
-**Why SeaweedFS (for S3):** MinIO images are gone. Backend is swappable; console is only a client. IAM / Lambda / Logs / API Gateway use LocalEmu (`IAM_ENFORCEMENT=1`) on `:4566`.
 
 ## What goes where
 
@@ -55,4 +67,5 @@ aws --profile local s3 ls
 | Milestones | GitHub milestones |
 | Delivery design | OpenSpec changes |
 | Console mocks | `design/awsbox-console/` |
+| IaC examples | `examples/` |
 | Product entry | `./bin/awsbox` |
