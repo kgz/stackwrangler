@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# awsbox — local S3 stack lifecycle (M1: SeaweedFS).
+# Usage: awsbox up | down | status
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
+ENDPOINT_DEFAULT="http://127.0.0.1:8333"
+
+ensure_env() {
+	if [[ ! -f "$ROOT/.env" ]]; then
+		cp "$ROOT/.env.example" "$ROOT/.env"
+		echo "created .env from .env.example"
+	fi
+}
+
+endpoint_url() {
+	if [[ -f "$ROOT/.env" ]]; then
+		# shellcheck disable=SC1091
+		set -a && source "$ROOT/.env" && set +a
+	fi
+	echo "${AWSBOX_ENDPOINT:-$ENDPOINT_DEFAULT}"
+}
+
+wait_healthy() {
+	local ep i code
+	ep="$(endpoint_url)"
+	for i in $(seq 1 40); do
+		# S3 often answers 403 without sig — any HTTP response means the port is up
+		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
+		if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+			return 0
+		fi
+		sleep 1
+	done
+	echo "error: S3 endpoint did not become ready: ${ep}" >&2
+	"${COMPOSE[@]}" ps >&2 || true
+	"${COMPOSE[@]}" logs --tail 40 s3 >&2 || true
+	exit 1
+}
+
+cmd_up() {
+	if ! command -v docker >/dev/null 2>&1; then
+		echo "error: Docker is required (not found on PATH)" >&2
+		exit 1
+	fi
+	ensure_env
+	"${COMPOSE[@]}" up -d
+	wait_healthy
+	"$ROOT/bin/awsbox-profile" write "$@"
+	local ep
+	ep="$(endpoint_url)"
+	echo
+	echo "S3 API:  ${ep}"
+	echo "Profile: local  (aws --profile local s3 ls)"
+}
+
+cmd_down() {
+	local remove_profile=0
+	if [[ "${1:-}" == "--remove-profile" ]]; then
+		remove_profile=1
+		shift
+	fi
+	"${COMPOSE[@]}" down "$@"
+	if [[ "$remove_profile" -eq 1 ]]; then
+		"$ROOT/bin/awsbox-profile" remove
+	fi
+}
+
+cmd_status() {
+	ensure_env
+	"${COMPOSE[@]}" ps
+	local ep
+	ep="$(endpoint_url)"
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
+	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "endpoint: ${ep} (live, http ${code})"
+	else
+		echo "endpoint: ${ep} (not reachable)"
+	fi
+}
+
+case "${1:-}" in
+	up)
+		shift
+		cmd_up "$@"
+		;;
+	down)
+		shift
+		cmd_down "$@"
+		;;
+	status)
+		cmd_status
+		;;
+	*)
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status" >&2
+		exit 1
+		;;
+esac
