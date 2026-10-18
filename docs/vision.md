@@ -10,34 +10,36 @@ Learning target: use real tools (`aws …`) against something that *feels* like 
 
 End state: a **docker stack you run once** that auto-configures endpoints and API keys (profile `local`).
 
-## Milestone 1 — fully mimic S3
+## Milestones (GitHub)
 
-Nothing else yet. No IAM UI / policy theatre.
+| Milestone | Scope |
+|-----------|--------|
+| [v1 — S3 general purpose](https://github.com/kgz/awsl/milestone/1) | SeaweedFS + `local` profile + CLI + AWS-look console for **General purpose buckets** |
+| [v2 — S3 access & management](https://github.com/kgz/awsl/milestone/2) | Access Points, grants, Storage Lens / Batch Ops; specialty bucket types if backend allows |
+| [v3 — IAM](https://github.com/kgz/awsl/milestone/3) | Policies / AccessDenied as a learning surface |
+| [v4 — Lambda](https://github.com/kgz/awsl/milestone/4) | Functions, invoke, logs |
+| [v5 — API Gateway](https://github.com/kgz/awsl/milestone/5) | HTTP/REST → local Lambdas |
 
-| Layer | What |
-|-------|------|
-| API | **SeaweedFS** in Docker (`weed mini` S3 on `:8333`) — swappable later |
-| Keys | Stack writes AWS profile `local` (endpoint + access key + secret) |
-| CLI | Every `aws s3` / day-to-day `aws s3api` command works against it |
-| UI | Console that **matches AWS S3 look and feel** — client only, same API calls |
+### v1 S3 sidebar — what is “in”?
+
+Real AWS S3 nav has many sections. **We do not implement all of them in v1.**
+
+| Sidebar item | v1 |
+|--------------|----|
+| General purpose buckets | **Live** (ListBuckets / Create / objects) |
+| Directory / Table / Vector buckets | Nav chrome only → empty / “not on local stack” |
+| File systems | Chrome only |
+| Access Points / Grants / Access Analyzer | Chrome only → **v2** |
+| Storage Lens / Batch Operations | Chrome only → **v2** |
+| Account settings / Marketplace | Chrome only |
 
 ```bash
 ./bin/awsbox up
-aws --profile local s3 mb s3://demo
+./bin/awsbox console   # http://127.0.0.1:3000
 aws --profile local s3 ls
-# open localhost console → S3 → same buckets
 ```
 
-Wrong key → `InvalidAccessKeyId`. Missing bucket → S3 error shapes. Console clicks are the same API calls.
-
-**Why SeaweedFS:** MinIO community images are gone / project archived. Backend is behind compose — swap to S3Mock / Garage / etc. without rewriting the console.
-
-## Later (not M1)
-
-- IAM / policies as a learning surface
-- Lambda, API Gateway, CloudWatch Logs
-- `serverless.yml` → deploy into the stack
-- More services, one at a time
+**Why SeaweedFS:** MinIO community images are gone. Backend is swappable; console is only a client.
 
 ## What goes where
 
@@ -45,6 +47,7 @@ Wrong key → `InvalidAccessKeyId`. Missing bucket → S3 error shapes. Console 
 |-------|------|
 | This north star | `docs/vision.md` |
 | Tickets | GitHub Project #8 |
+| Milestones | GitHub milestones v1–v5 |
 | Delivery design | OpenSpec changes |
-| Console mocks | `design/awsbox-console/` (Open Design) |
-| Product entry | `./bin/awsbox` → docker compose |
+| Console mocks | `design/awsbox-console/` |
+| Product entry | `./bin/awsbox` |

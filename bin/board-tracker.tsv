@@ -1,12 +1,19 @@
 # issue	expected_board	notes
 # expected_board: backlog | ready | in-progress | in-review | done
 1	backlog	epic overall
-10	backlog	M1 epic S3 only
-8	in-review	SeaweedFS docker + profile local
-9	backlog	aws s3 / s3api parity
-4	in-progress	console frame AWS look
-5	in-progress	S3 console UI
-2	done	superseded LocalStack CLI
-3	done	superseded serverless LocalStack
-6	done	superseded Lambda console
-7	done	superseded fixture
+10	backlog	M1 epic → milestone v1
+8	in-review	SeaweedFS stack PR #11
+9	backlog	aws s3/s3api parity
+4	in-review	console frame PR #12
+5	in-review	S3 buckets UI PR #12
+13	backlog	v1 sidebar chrome
+14	backlog	v1 bucket detail polish
+15	backlog	v2 specialty buckets
+16	backlog	v2 access points
+17	backlog	v2 storage lens/batch
+18	backlog	v3 IAM
+19	backlog	v4 Lambda
+2	done	superseded
+3	done	superseded
+6	done	superseded
+7	done	superseded
