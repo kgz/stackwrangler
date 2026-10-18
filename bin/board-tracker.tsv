@@ -132,7 +132,7 @@
 138	done	Console RDS databases UI
 141	backlog	Transfer native SFTP auth — drop sidecar
 143	backlog	Debt: unify dual S3 backends
-144	backlog	Debt: workload IAM authz smokes
+144	done	Debt: workload IAM authz smokes
 145	backlog	Debt: RDS create UI + Aurora fidelity
 146	backlog	Debt: ECS/EC2 console depth
 147	backlog	Debt: CFN write-path audit vs #93–95
