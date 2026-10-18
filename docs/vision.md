@@ -34,7 +34,8 @@ S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, e
 
 **Shipped**: S3 UI, IAM, Lambda, Logs, API Gateway, Terraform S3+Lambda, ECS, EC2, v2 S3 empty chrome.
 
-**v1.5 — CloudFormation / CDK / SAM** ([#7](https://github.com/kgz/awsl/milestone/7)): enable CFN → S3+Lambda CFN example → CDK/SAM.
+**v1.5 — CloudFormation / CDK / SAM** ([#7](https://github.com/kgz/awsl/milestone/7)) — **shipped**:
+`cloudformation` on LocalEmu; `examples/{cloudformation,cdk,sam}/s3-lambda` + `./bin/{cfn,cdk,sam}-smoke.sh`.
 
 **v1 expansion** (LocalEmu enable + profile + smoke; console when useful). Stub APIs (ALB/NLB/WAF/CDN) still get tickets — document limits.
 
