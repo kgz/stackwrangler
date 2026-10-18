@@ -1,13 +1,13 @@
 # issue	expected_board	notes
 # expected_board: backlog | ready | in-progress | in-review | done
 1	backlog	epic overall
-10	backlog	v1 S3 epic
+10	done	v1 S3 epic
 8	done	SeaweedFS stack
 9	done	s3 CLI parity
 4	done	console frame
 5	done	S3 buckets UI
 13	done	sidebar chrome
-14	in-review	bucket polish
+14	done	bucket polish
 15	backlog	v2 specialty buckets
 16	backlog	v2 access points
 17	backlog	v2 storage lens
