@@ -46,8 +46,8 @@ S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, e
 
 | Scope | Intent |
 |-------|--------|
-| ECS Fargate-style task | LocalEmu real Docker tasks |
-| EC2 sample | Container-backed instance if useful |
+| ECS Fargate-style task | `examples/terraform/ecs-nginx` + `./bin/ecs-smoke.sh` |
+| EC2 sample | Container-backed instance if useful (#39) |
 | Optional: unify console S3 onto LocalEmu | One S3 everywhere |
 
 **v2 S3 advanced** (Access Points, specialty buckets, etc.) stays lower priority than IaC + compute.
