@@ -1,4 +1,7 @@
 import { execFileSync } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 
 const profile = process.env.AWSBOX_PROFILE || 'local'
@@ -7,6 +10,12 @@ function aws(args: string[]): string {
   return execFileSync('aws', ['--profile', profile, ...args], {
     encoding: 'utf8',
   }).trim()
+}
+
+function putText(bucket: string, key: string, body: string): void {
+  const path = join(tmpdir(), `awsbox-${Date.now()}-${key}`)
+  writeFileSync(path, body)
+  aws(['s3', 'cp', path, `s3://${bucket}/${key}`])
 }
 
 test.describe('S3 general purpose buckets (UI + CLI)', () => {
@@ -87,5 +96,39 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
       page.getByRole('heading', { name: 'Directory buckets' }),
     ).toBeVisible()
     await expect(page.getByText('Not available on local stack')).toBeVisible()
+  })
+
+  test('empties a bucket in the UI; CLI sees no objects', async ({ page }) => {
+    const name = `e2e-empty-${Date.now()}`
+    aws(['s3', 'mb', `s3://${name}`])
+    putText(name, 'a.txt', 'a')
+    putText(name, 'b.txt', 'b')
+
+    await page.goto(`/buckets/${encodeURIComponent(name)}`)
+    await expect(page.getByText('a.txt')).toBeVisible()
+    await page.getByRole('button', { name: 'Empty' }).click()
+    await page.getByRole('button', { name: 'Empty', exact: true }).last().click()
+    await expect(page.getByText('No objects')).toBeVisible()
+
+    const listed = aws(['s3', 'ls', `s3://${name}/`])
+    expect(listed).toBe('')
+
+    aws(['s3', 'rb', `s3://${name}`, '--force'])
+  })
+
+  test('deletes a bucket in the UI; CLI no longer lists it', async ({ page }) => {
+    const name = `e2e-del-${Date.now()}`
+    aws(['s3', 'mb', `s3://${name}`])
+    putText(name, 'x.txt', 'x')
+
+    await page.goto(`/buckets/${encodeURIComponent(name)}`)
+    await page.getByRole('button', { name: 'Delete' }).click()
+    await page.getByRole('button', { name: 'Delete bucket' }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Buckets', exact: true }),
+    ).toBeVisible()
+
+    const listed = aws(['s3', 'ls'])
+    expect(listed).not.toContain(name)
   })
 })

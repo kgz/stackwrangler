@@ -3,6 +3,7 @@ import {
   DeleteBucketCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   ListBucketsCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -83,4 +84,45 @@ export async function getObjectBlob(bucket: string, key: string): Promise<Blob> 
 
 export async function deleteObject(bucket: string, key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }))
+}
+
+export async function headBucket(bucket: string): Promise<void> {
+  await s3.send(new HeadBucketCommand({ Bucket: bucket }))
+}
+
+/** Delete every object (paginated), then the bucket. */
+export async function emptyAndDeleteBucket(bucket: string): Promise<void> {
+  await emptyBucket(bucket)
+  await deleteBucket(bucket)
+}
+
+export async function emptyBucket(bucket: string): Promise<number> {
+  let deleted = 0
+  let token: string | undefined
+  do {
+    const page = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        ContinuationToken: token,
+      }),
+    )
+    for (const obj of page.Contents ?? []) {
+      if (!obj.Key) continue
+      await deleteObject(bucket, obj.Key)
+      deleted += 1
+    }
+    token = page.IsTruncated ? page.NextContinuationToken : undefined
+  } while (token)
+  return deleted
+}
+
+export function summarizeObjects(objects: S3Object[]): {
+  count: number
+  totalBytes: number
+} {
+  let totalBytes = 0
+  for (const o of objects) {
+    totalBytes += o.Size ?? 0
+  }
+  return { count: objects.length, totalBytes }
 }
