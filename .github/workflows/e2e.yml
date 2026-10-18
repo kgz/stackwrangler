@@ -18,6 +18,10 @@ jobs:
           unzip -q /tmp/awscliv2.zip -d /tmp
           sudo /tmp/aws/install --update
 
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -46,6 +50,9 @@ jobs:
 
       - name: API Gateway smoke
         run: ./bin/apigw-smoke.sh
+
+      - name: IaC smoke
+        run: ./bin/iac-smoke.sh
 
       - name: ECS smoke
         run: ./bin/ecs-smoke.sh
