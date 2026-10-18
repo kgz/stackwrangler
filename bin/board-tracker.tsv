@@ -91,7 +91,7 @@
 98	backlog	CodeDeploy
 99	backlog	CodeArtifact (+ CodeCommit)
 # Data movement
-100	in-progress	Transfer Family (SFTP)
+100	done	Transfer Family (SFTP)
 101	backlog	AWS Backup
 102	backlog	DMS
 103	backlog	DataSync stub
