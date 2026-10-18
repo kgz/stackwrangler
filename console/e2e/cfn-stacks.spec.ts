@@ -69,10 +69,10 @@ test.describe('CloudFormation stacks UI', () => {
     await expect(
       page.getByRole('heading', { name: /^Stacks \(/ }),
     ).toBeVisible()
-    await expect(page.getByRole('button', { name: stack })).toBeVisible({
+    await expect(page.getByRole('link', { name: stack })).toBeVisible({
       timeout: 15000,
     })
-    await page.getByRole('button', { name: stack }).click()
+    await page.getByRole('link', { name: stack }).click()
     await expect(page.getByRole('heading', { name: stack })).toBeVisible()
     await page.getByRole('button', { name: 'Resources' }).click()
     await expect(page.getByText('DemoBucket')).toBeVisible()
