@@ -444,3 +444,26 @@ table.data th {
   justify-content: flex-end;
   gap: 8px;
 }
+
+.props-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 12px 0 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--aws-border);
+}
+
+.props-strip > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.props-label {
+  font-size: 11px;
+  color: var(--aws-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
