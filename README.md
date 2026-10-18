@@ -35,8 +35,8 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 |------|--------|--------|
 | `./bin/awsbox up` + profile `local` | **Working** | Compose + managed AWS profile |
 | Console shell (AWS-look) | **Working** | Dark console frame |
-| Dual S3 (SeaweedFS + LocalEmu) | **Partial** | UI → `:8333`; Lambda/IaC → `:4566` |
-| IAM enforcement | **Partial** | `IAM_ENFORCEMENT=1`; deny-user lab; not every role path smoked |
+| Dual S3 (SeaweedFS + LocalEmu) | **Partial** | UI → `:8333`; Lambda/IaC → `:4566` · debt [#143](https://github.com/kgz/awsl/issues/143) |
+| IAM enforcement | **Partial** | deny-user lab only · workload roles debt [#144](https://github.com/kgz/awsl/issues/144) |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
 ---
@@ -58,9 +58,9 @@ Smokes: `./bin/s3-parity.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-datapla
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| Lambda | Docker invoke | Functions | **Working** |
-| ECS | Docker tasks (terraform sample) | Clusters / services / tasks | **Partial** |
-| EC2 | Docker-backed instances | Instances list | **Partial** |
+| Lambda | Docker invoke | Functions | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) |
+| ECS | Docker tasks (terraform sample) | Clusters / services / tasks | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) |
+| EC2 | Docker-backed instances | Instances list | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) |
 | ECR / EKS / Batch / App Runner / ASG | — | — | **Backlog** |
 
 Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ec2-smoke.sh`
@@ -82,7 +82,7 @@ Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ec2-smoke.sh`
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** → toward **Working** |
+| RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** · create/Aurora debt [#145](https://github.com/kgz/awsl/issues/145) |
 | DynamoDB / ElastiCache / other DBs | — | — | **Backlog** |
 
 Smoke: `./bin/rds-smoke.sh` (needs host `psql`)
@@ -125,7 +125,7 @@ Smoke: `./bin/iam-access-denied.sh`
 | Tool | Status |
 |------|--------|
 | Terraform S3+Lambda | **Working** (`examples/terraform/…`, local apply) |
-| CloudFormation | **Partial** — deploy + console stacks UI; Create/Update wizard **Backlog** |
+| CloudFormation | **Partial** — stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Pulumi / Ansible examples | **Backlog** |
 | CodePipeline / Build / Deploy / Artifact | **Backlog** |
