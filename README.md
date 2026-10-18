@@ -63,7 +63,7 @@ Smokes: `./bin/s3-parity.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-datapla
 | EC2 | Docker-backed instances | Instances list | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) |
 | ECR / EKS / Batch / App Runner / ASG | — | — | **Backlog** |
 
-Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ec2-smoke.sh`
+Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ec2-smoke.sh`
 
 ---
 

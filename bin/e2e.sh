@@ -33,6 +33,9 @@ echo "==> API Gateway smoke"
 echo "==> ECS smoke"
 ./bin/ecs-smoke.sh
 
+echo "==> ECS authz (sad: empty taskRole PutObject)"
+./bin/ecs-authz-smoke.sh
+
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
 

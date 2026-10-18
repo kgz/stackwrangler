@@ -13,7 +13,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Logs | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | — | thin | `logs-smoke.sh` |
 | API GW | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | — | thin | `apigw-smoke.sh` |
 | CFN / CDK / SAM | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | — | list/detail | `cfn\|cdk\|sam-smoke.sh` |
-| ECS | yes | **no** → [#150](https://github.com/kgz/awsl/issues/150) | task unreachable | list | `ecs-smoke.sh` |
+| ECS | yes | **yes** (`ecs-authz-smoke.sh`) | task unreachable | list | `ecs-smoke.sh`, `ecs-authz-smoke.sh` |
 | EC2 | yes | no → [#150](https://github.com/kgz/awsl/issues/150) | user-data | list | `ec2-smoke.sh` |
 | Transfer API | yes | no | — | list/create | `transfer-smoke.sh` |
 | Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |
