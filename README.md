@@ -93,7 +93,10 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 
 | Service | Status |
 |---------|--------|
-| SQS / SNS / EventBridge / Step Functions / Kinesis / MSK / SES / AppSync | **Backlog** |
+| SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [docs/sqs.md](docs/sqs.md) |
+| SNS / EventBridge / Step Functions / Kinesis / MSK / SES / AppSync | — | — | **Backlog** |
+
+Smoke: `./bin/sqs-smoke.sh` · sad: `./bin/sqs-authz-smoke.sh`
 
 ---
 
