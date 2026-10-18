@@ -1,0 +1,24 @@
+---
+description: Require explicit user approval before any real-AWS spend
+alwaysApply: true
+---
+
+# Real AWS cost — ask first
+
+**Never** create, update, or leave running resources in a **real** AWS account (CLI, console automation, SDK, CloudFormation, etc.) without the user **explicitly approving that action in the current turn**.
+
+This includes “cheap” or free-tier-ish things (SSM Parameter, empty S3 bucket, tiny SNS topic, CFN stack with only metadata). **$0–$1 × many still counts** — do not batch unapproved creates.
+
+## Allowed without asking
+
+- **Local** awsbox / LocalEmu / SeaweedFS / Docker (`--profile local`, `:4566`, `:8333`)
+- **Read-only** on real AWS when already authenticated for viewing UI (list/describe/screenshot) — no Create / Update / Delete / purchase
+
+## Before any real-AWS write
+
+1. State exactly what will be created (resource types + region)
+2. Estimate cost / free-tier note
+3. Say how it will be deleted afterward
+4. **Wait for explicit yes** (“go ahead”, “approved”, etc.)
+
+If unsure whether an account is real vs local — treat as real and ask.
