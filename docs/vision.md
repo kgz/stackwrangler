@@ -44,7 +44,7 @@ Suggested build order inside v1: **S3 → IAM → Lambda → Logs → API Gatewa
 aws --profile local s3 ls
 ```
 
-**Why SeaweedFS (for S3):** MinIO images are gone. Backend is swappable; console is only a client. IAM uses LocalEmu (`IAM_ENFORCEMENT=1`) on `:4566`; Lambda/APIGW can reuse that emulator.
+**Why SeaweedFS (for S3):** MinIO images are gone. Backend is swappable; console is only a client. IAM / Lambda / Logs / API Gateway use LocalEmu (`IAM_ENFORCEMENT=1`) on `:4566`.
 
 ## What goes where
 

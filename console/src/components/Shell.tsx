@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { config } from '../lib/config'
 
 type SectionId = 'buckets' | 'files' | 'access' | 'storage' | 'marketplace'
-type AppId = 's3' | 'iam' | 'lambda'
+type AppId = 's3' | 'iam' | 'lambda' | 'logs' | 'apigw'
 
 function Section({
   id,
@@ -127,33 +127,16 @@ function S3Sidebar({
   )
 }
 
-function IamSidebar() {
+function SimpleSidebar({ title, to, label }: { title: string; to: string; label: string }) {
   return (
     <>
       <div className="sidebar-title-row">
-        <h2>IAM</h2>
+        <h2>{title}</h2>
       </div>
       <div className="nav-section">
         <div className="nav-section-items">
-          <NavLink to="/iam" end className={itemClass}>
-            Users
-          </NavLink>
-        </div>
-      </div>
-    </>
-  )
-}
-
-function LambdaSidebar() {
-  return (
-    <>
-      <div className="sidebar-title-row">
-        <h2>Lambda</h2>
-      </div>
-      <div className="nav-section">
-        <div className="nav-section-items">
-          <NavLink to="/lambda" end className={itemClass}>
-            Functions
+          <NavLink to={to} end className={itemClass}>
+            {label}
           </NavLink>
         </div>
       </div>
@@ -164,6 +147,8 @@ function LambdaSidebar() {
 function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/iam')) return 'iam'
   if (pathname.startsWith('/lambda')) return 'lambda'
+  if (pathname.startsWith('/logs')) return 'logs'
+  if (pathname.startsWith('/apigateway')) return 'apigw'
   return 's3'
 }
 
@@ -201,7 +186,6 @@ export function Shell() {
         <NavLink to="/" className={() => (app === 's3' ? 'active' : undefined)}>
           S3
         </NavLink>
-        <span>EC2</span>
         <NavLink to="/iam" className={() => (app === 'iam' ? 'active' : undefined)}>
           IAM
         </NavLink>
@@ -211,13 +195,29 @@ export function Shell() {
         >
           Lambda
         </NavLink>
+        <NavLink
+          to="/apigateway"
+          className={() => (app === 'apigw' ? 'active' : undefined)}
+        >
+          API Gateway
+        </NavLink>
+        <NavLink
+          to="/logs"
+          className={() => (app === 'logs' ? 'active' : undefined)}
+        >
+          CloudWatch
+        </NavLink>
       </div>
       <div className="body">
         <aside className="sidebar">
           {app === 'iam' ? (
-            <IamSidebar />
+            <SimpleSidebar title="IAM" to="/iam" label="Users" />
           ) : app === 'lambda' ? (
-            <LambdaSidebar />
+            <SimpleSidebar title="Lambda" to="/lambda" label="Functions" />
+          ) : app === 'logs' ? (
+            <SimpleSidebar title="CloudWatch" to="/logs" label="Log groups" />
+          ) : app === 'apigw' ? (
+            <SimpleSidebar title="API Gateway" to="/apigateway" label="HTTP APIs" />
           ) : (
             <S3Sidebar open={open} toggle={toggle} />
           )}

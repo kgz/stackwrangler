@@ -2,8 +2,10 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Shell } from './components/Shell'
 import { BucketObjectsPage } from './pages/BucketObjectsPage'
 import { BucketsPage } from './pages/BucketsPage'
+import { ApiGatewayPage } from './pages/ApiGatewayPage'
 import { IamUsersPage } from './pages/IamUsersPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
+import { LogsPage } from './pages/LogsPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
 export default function App() {
@@ -15,6 +17,8 @@ export default function App() {
           <Route path="buckets/:name" element={<BucketObjectsPage />} />
           <Route path="iam" element={<IamUsersPage />} />
           <Route path="lambda" element={<LambdaFunctionsPage />} />
+          <Route path="logs" element={<LogsPage />} />
+          <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route path="directory-buckets" element={<PlaceholderPage />} />
           <Route path="table-buckets" element={<PlaceholderPage />} />
           <Route path="vector-buckets" element={<PlaceholderPage />} />

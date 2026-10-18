@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import {
   createHelloFunction,
+  deployZip,
   invokeFunction,
   listFunctions,
+  readFileAsBytes,
   type InvokeResult,
 } from '../lib/lambda'
+import { lambdaLogGroupName } from '../lib/logs'
+import { Link } from 'react-router-dom'
 
 export function LambdaFunctionsPage() {
   const [fns, setFns] = useState<FunctionConfiguration[]>([])
@@ -15,6 +19,8 @@ export function LambdaFunctionsPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [invokeOut, setInvokeOut] = useState<InvokeResult | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [deployName, setDeployName] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -71,12 +77,35 @@ export function LambdaFunctionsPage() {
     }
   }
 
+  async function onDeployZip(file: File) {
+    const name = deployName.trim() || selected || `awsbox-deploy-${Date.now()}`
+    setBusy(true)
+    setError(null)
+    setToast(null)
+    try {
+      const bytes = await readFileAsBytes(file)
+      await deployZip(name, bytes)
+      setSelected(name)
+      setDeployName(name)
+      setToast(`Deployed zip to ${name}`)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+      if (fileRef.current) {
+        fileRef.current.value = ''
+      }
+    }
+  }
+
   return (
     <div>
       <h1>Functions</h1>
       <p className="page-lead">
-        Lambda on the local emulator (Docker runtimes). Create a hello Node
-        function, then invoke it.
+        Lambda on the local emulator. Create hello, deploy a zip (
+        <code>index.handler</code>), or invoke. Logs:{' '}
+        <Link to="/logs">CloudWatch Logs</Link>.
       </p>
 
       {error ? <div className="error-banner">{error}</div> : null}
@@ -111,6 +140,36 @@ export function LambdaFunctionsPage() {
         </div>
       </div>
 
+      <div className="deploy-panel">
+        <h3>Deploy from zip</h3>
+        <p className="page-lead">
+          Node zip with <code>index.js</code> exporting <code>handler</code>.
+          Uses selected name, or the name field, or creates a new one.
+        </p>
+        <div className="toolbar-actions">
+          <label className="field-inline">
+            Function name
+            <input
+              type="text"
+              value={deployName}
+              placeholder={selected ?? 'awsbox-deploy-…'}
+              onChange={(e) => setDeployName(e.target.value)}
+            />
+          </label>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".zip,application/zip"
+            aria-label="Lambda zip file"
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void onDeployZip(file)
+            }}
+          />
+        </div>
+      </div>
+
       {loading ? (
         <p>Loading…</p>
       ) : fns.length === 0 ? (
@@ -123,6 +182,7 @@ export function LambdaFunctionsPage() {
               <th>Function name</th>
               <th>Runtime</th>
               <th>Handler</th>
+              <th>Logs</th>
             </tr>
           </thead>
           <tbody>
@@ -145,6 +205,9 @@ export function LambdaFunctionsPage() {
                   <td>{name}</td>
                   <td>{fn.Runtime ?? '—'}</td>
                   <td>{fn.Handler ?? '—'}</td>
+                  <td>
+                    <Link to="/logs">{lambdaLogGroupName(name)}</Link>
+                  </td>
                 </tr>
               )
             })}

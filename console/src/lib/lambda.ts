@@ -6,6 +6,8 @@ import {
   ListFunctionsCommand,
   ResourceConflictException,
   ResourceNotFoundException,
+  Runtime,
+  UpdateFunctionCodeCommand,
   type FunctionConfiguration,
 } from '@aws-sdk/client-lambda'
 import {
@@ -67,6 +69,70 @@ function b64ToBytes(b64: string): Uint8Array {
 export async function listFunctions(): Promise<FunctionConfiguration[]> {
   const out = await lambdaClient().send(new ListFunctionsCommand({}))
   return out.Functions ?? []
+}
+
+export async function deployZip(
+  name: string,
+  zipBytes: Uint8Array,
+  opts?: { createIfMissing?: boolean; handler?: string; runtime?: Runtime },
+): Promise<FunctionConfiguration> {
+  const client = lambdaClient()
+  const createIfMissing = opts?.createIfMissing ?? true
+  let exists = false
+  try {
+    await client.send(new GetFunctionCommand({ FunctionName: name }))
+    exists = true
+  } catch (err) {
+    if (!(err instanceof ResourceNotFoundException) && !isNoSuchEntity(err)) {
+      throw err
+    }
+  }
+
+  if (exists) {
+    await client.send(
+      new UpdateFunctionCodeCommand({
+        FunctionName: name,
+        ZipFile: zipBytes,
+      }),
+    )
+    await waitUntilActive(client, name)
+    const got = await client.send(new GetFunctionCommand({ FunctionName: name }))
+    if (!got.Configuration) {
+      throw new Error('update-function-code left no configuration')
+    }
+    return got.Configuration
+  }
+
+  if (!createIfMissing) {
+    throw new Error(`Function ${name} not found`)
+  }
+
+  const roleArn = await ensureExecutionRole()
+  const created = await client.send(
+    new CreateFunctionCommand({
+      FunctionName: name,
+      Runtime: opts?.runtime ?? Runtime.nodejs18x,
+      Role: roleArn,
+      Handler: opts?.handler ?? 'index.handler',
+      Code: { ZipFile: zipBytes },
+    }),
+  )
+  if (!created.FunctionName) {
+    throw new Error('create-function returned no name')
+  }
+  await waitUntilActive(client, created.FunctionName)
+  return {
+    FunctionName: created.FunctionName,
+    FunctionArn: created.FunctionArn,
+    Runtime: created.Runtime,
+    Handler: created.Handler,
+    Role: created.Role,
+  }
+}
+
+export async function readFileAsBytes(file: File): Promise<Uint8Array> {
+  const buf = await file.arrayBuffer()
+  return new Uint8Array(buf)
 }
 
 async function ensureExecutionRole(): Promise<string> {
