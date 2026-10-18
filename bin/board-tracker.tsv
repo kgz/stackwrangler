@@ -12,7 +12,7 @@
 16	backlog	v2 access points
 17	backlog	v2 storage lens
 18	done	v1 IAM AccessDenied
-19	backlog	v1 Lambda console
+19	done	v1 Lambda console
 20	backlog	v1 API Gateway
 21	backlog	v1 CloudWatch Logs
 22	backlog	v1 Lambda deploy/invoke

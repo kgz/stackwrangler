@@ -17,4 +17,4 @@
 
 ## 4. Ship
 
-- [ ] 4.1 PR Closes #19; board done
+- [x] 4.1 PR Closes #19; board done
