@@ -32,6 +32,7 @@
 48	done	CFN S3+Lambda example + cfn-smoke
 49	done	CDK sample over local CFN
 50	done	SAM sample over local CFN
+88	done	CloudFormation stacks console UI
 # v1 Networking
 51	backlog	VPC / AZs / SG polish
 52	backlog	ALB
