@@ -26,4 +26,4 @@
 31	done	objects delete confirm + toast
 37	done	terraform s3+lambda iac
 38	done	ECS Fargate sample
-39	backlog	EC2 sample
+39	done	EC2 sample
