@@ -4,8 +4,8 @@
 10	backlog	M1 epic S3 only
 8	in-review	SeaweedFS docker + profile local
 9	backlog	aws s3 / s3api parity
-4	backlog	console frame AWS look
-5	backlog	S3 console UI
+4	in-progress	console frame AWS look
+5	in-progress	S3 console UI
 2	done	superseded LocalStack CLI
 3	done	superseded serverless LocalStack
 6	done	superseded Lambda console

@@ -13,11 +13,10 @@ Needs Docker + [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/get
 ```bash
 cp .env.example .env   # first time only; awsbox up also does this
 ./bin/awsbox up
+./bin/awsbox console   # http://127.0.0.1:3000 — AWS-look S3 UI
+# other terminal:
 aws --profile local s3 mb s3://awsbox-smoke
 aws --profile local s3 ls
-echo hello | aws --profile local s3 cp - s3://awsbox-smoke/hello.txt
-aws --profile local s3 ls s3://awsbox-smoke
-aws --profile local s3 rb s3://awsbox-smoke --force
 ./bin/awsbox down                 # keep profile
 ./bin/awsbox down --remove-profile
 ```
@@ -25,6 +24,7 @@ aws --profile local s3 rb s3://awsbox-smoke --force
 | What | Where |
 |------|--------|
 | S3 API | `http://127.0.0.1:8333` (SeaweedFS) |
+| Console | `http://127.0.0.1:3000` (`./bin/awsbox console`) |
 | AWS profile | `local` (keys from `.env`) |
 
 `./bin/awsbox status` — container + live check.
