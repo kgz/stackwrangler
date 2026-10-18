@@ -29,6 +29,14 @@ aws --profile local s3 ls
 
 `./bin/awsbox status` — container + live check.
 
+S3 CLI parity (profile `local`):
+
+```bash
+./bin/s3-parity.sh
+# latest results: docs/s3-parity.md
+```
+
+
 If profile `local` already exists and isn’t awsbox-managed: `./bin/awsbox up --force`.
 
 ### WSL / Docker
