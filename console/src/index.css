@@ -149,39 +149,101 @@ input {
   overflow: auto;
 }
 
+.sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 10px;
+}
+
 .sidebar h2 {
-  margin: 0 16px 12px;
+  margin: 0;
   font-size: 16px;
   font-weight: 700;
 }
 
 .nav-section {
-  margin-bottom: 14px;
+  margin-bottom: 4px;
 }
 
-.nav-section .label {
-  padding: 4px 16px;
+.nav-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--aws-text);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: left;
+}
+
+.nav-section-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.chev {
+  display: inline-block;
+  width: 12px;
+  font-size: 10px;
   color: var(--aws-text-muted);
-  font-size: 12px;
-  text-transform: none;
+  transition: transform 0.12s ease;
 }
 
-.nav-section a,
-.nav-section button.nav-item {
+.chev.open {
+  transform: rotate(90deg);
+}
+
+.nav-section-items a {
   display: block;
   width: 100%;
   text-align: left;
   border: 0;
   background: transparent;
   color: var(--aws-text);
-  padding: 6px 16px 6px 28px;
+  padding: 6px 16px 6px 30px;
   cursor: pointer;
+  text-decoration: none;
+  font-size: 13px;
 }
 
-.nav-section a.active,
-.nav-section button.nav-item.active {
-  color: #fff;
-  background: rgba(9, 114, 211, 0.25);
+.nav-section-items a:hover {
+  background: rgba(255, 255, 255, 0.04);
+  text-decoration: none;
+  color: var(--aws-text);
+}
+
+.nav-section-items a.active {
+  color: var(--aws-link);
+  background: rgba(9, 114, 211, 0.18);
+  box-shadow: inset 3px 0 0 var(--aws-active);
+}
+
+.sidebar-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--aws-border);
+}
+
+.sidebar-footer > a {
+  display: block;
+  padding: 6px 12px 6px 30px;
+  color: var(--aws-text);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.sidebar-footer > a:hover {
+  background: rgba(255, 255, 255, 0.04);
+  text-decoration: none;
+}
+
+.sidebar-footer > a.active {
+  color: var(--aws-link);
+  background: rgba(9, 114, 211, 0.18);
   box-shadow: inset 3px 0 0 var(--aws-active);
 }
 
