@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { config } from '../lib/config'
 
 type SectionId = 'buckets' | 'files' | 'access' | 'storage' | 'marketplace'
+type AppId = 's3' | 'iam' | 'lambda'
 
 function Section({
   id,
@@ -143,9 +144,32 @@ function IamSidebar() {
   )
 }
 
+function LambdaSidebar() {
+  return (
+    <>
+      <div className="sidebar-title-row">
+        <h2>Lambda</h2>
+      </div>
+      <div className="nav-section">
+        <div className="nav-section-items">
+          <NavLink to="/lambda" end className={itemClass}>
+            Functions
+          </NavLink>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function currentApp(pathname: string): AppId {
+  if (pathname.startsWith('/iam')) return 'iam'
+  if (pathname.startsWith('/lambda')) return 'lambda'
+  return 's3'
+}
+
 export function Shell() {
   const location = useLocation()
-  const isIam = location.pathname.startsWith('/iam')
+  const app = currentApp(location.pathname)
   const [open, setOpen] = useState<Record<SectionId, boolean>>({
     buckets: true,
     files: true,
@@ -174,20 +198,29 @@ export function Shell() {
         </div>
       </header>
       <div className="fav-bar">
-        <NavLink to="/" className={({ isActive }) => (isActive && !isIam ? 'active' : undefined)}>
+        <NavLink to="/" className={() => (app === 's3' ? 'active' : undefined)}>
           S3
         </NavLink>
         <span>EC2</span>
-        <NavLink
-          to="/iam"
-          className={({ isActive }) => (isActive || isIam ? 'active' : undefined)}
-        >
+        <NavLink to="/iam" className={() => (app === 'iam' ? 'active' : undefined)}>
           IAM
+        </NavLink>
+        <NavLink
+          to="/lambda"
+          className={() => (app === 'lambda' ? 'active' : undefined)}
+        >
+          Lambda
         </NavLink>
       </div>
       <div className="body">
         <aside className="sidebar">
-          {isIam ? <IamSidebar /> : <S3Sidebar open={open} toggle={toggle} />}
+          {app === 'iam' ? (
+            <IamSidebar />
+          ) : app === 'lambda' ? (
+            <LambdaSidebar />
+          ) : (
+            <S3Sidebar open={open} toggle={toggle} />
+          )}
         </aside>
         <main className="main">
           <Outlet />

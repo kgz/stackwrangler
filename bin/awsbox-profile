@@ -118,12 +118,16 @@ cmd_write() {
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
 		echo "sts ="
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "lambda ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "logs ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
 	} >> "$CONFIG_FILE"
 
 	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true
 	sed -i '1{/^$/d}' "$CONFIG_FILE" 2>/dev/null || true
 
-	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, iam/sts ${IAM_ENDPOINT} (region ${REGION})"
+	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, iam/sts/lambda/logs ${IAM_ENDPOINT} (region ${REGION})"
 }
 
 cmd_remove() {

@@ -26,7 +26,7 @@ jobs:
 
       - name: Start SeaweedFS + LocalEmu + profile local
         run: |
-          chmod +x bin/awsbox bin/awsbox-profile bin/s3-parity.sh bin/iam-access-denied.sh bin/e2e.sh
+          chmod +x bin/awsbox bin/awsbox-profile bin/s3-parity.sh bin/iam-access-denied.sh bin/lambda-smoke.sh bin/e2e.sh
           ./bin/awsbox up --force
 
       - name: CLI parity
@@ -34,6 +34,9 @@ jobs:
 
       - name: IAM AccessDenied
         run: ./bin/iam-access-denied.sh
+
+      - name: Lambda smoke
+        run: ./bin/lambda-smoke.sh
 
       - name: Install console + Playwright browsers
         working-directory: console

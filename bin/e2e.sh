@@ -15,6 +15,9 @@ echo "==> CLI parity"
 echo "==> IAM AccessDenied"
 ./bin/iam-access-denied.sh
 
+echo "==> Lambda smoke"
+./bin/lambda-smoke.sh
+
 echo "==> console deps"
 if [[ ! -d console/node_modules ]]; then
 	(cd console && yarn install)
