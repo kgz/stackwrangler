@@ -23,7 +23,7 @@ services:
     image: localemu/localemu:latest
     user: root
     environment:
-      SERVICES: iam,sts,s3,lambda,logs,apigateway,apigatewayv2,ecs,ec2,cloudformation,transfer,rds
+      SERVICES: iam,sts,s3,lambda,logs,apigateway,apigatewayv2,ecs,ec2,cloudformation,transfer,rds,sqs
       IAM_ENFORCEMENT: "1"
       EC2_VM_MANAGER: docker
       # Real Postgres/MySQL containers via Docker (not moto-only)

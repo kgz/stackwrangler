@@ -45,6 +45,12 @@ echo "==> Transfer authz (sad: empty role PutObject)"
 echo "==> RDS authz (sad: wrong password)"
 ./bin/rds-authz-smoke.sh
 
+echo "==> SQS smoke"
+./bin/sqs-smoke.sh
+
+echo "==> SQS authz (sad: deny SendMessage)"
+./bin/sqs-authz-smoke.sh
+
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
 

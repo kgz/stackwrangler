@@ -50,7 +50,7 @@
 62	backlog	EFS / FSx / EBS
 63	backlog	other DB stubs
 # v1 Messaging
-64	backlog	SQS
+64	in-review	SQS
 65	backlog	SNS
 66	backlog	EventBridge + Scheduler
 67	backlog	Step Functions + Pipes
@@ -143,4 +143,5 @@
 159	done	RDS wrong-password auth deny smoke (from #150)
 162	backlog	Debt: unify single S3 brain (from #143)
 163	done	Real-AWS CFN S3+Lambda parity
-165	in-review	Real-AWS CFN Lambda AccessDenied parity
+165	done	Real-AWS CFN Lambda AccessDenied parity
+167	backlog	Debt: SQS console (from #64)
