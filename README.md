@@ -2,9 +2,7 @@
 
 One local AWS account. Real APIs. Console on localhost. Learn AWS without a bill.
 
-```bash
-awsbox up
-```
+**M1:** MinIO (S3) in Docker → auto profile `local` → full `aws s3` → AWS-look console. No IAM yet.
 
 See [docs/vision.md](docs/vision.md).
 

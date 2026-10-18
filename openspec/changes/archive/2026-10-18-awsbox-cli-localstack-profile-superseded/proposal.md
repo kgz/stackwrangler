@@ -33,3 +33,8 @@ Nothing in the repo yet starts a local AWS-shaped account. Issue #2 needs `awsbo
 - Depends on Docker; optional `aws` CLI for smoke docs
 - Touches `~/.aws/credentials` and `~/.aws/config` for profile `local` only
 - Unblocks #3 (deploy) and #4 (console) which both need the same endpoint
+
+
+## Superseded
+
+Replaced by S3-first MinIO milestone (no LocalStack / IAM in M1).
