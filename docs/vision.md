@@ -36,6 +36,7 @@ Suggested build order inside v1: **S3 → IAM → Lambda → Logs → API Gatewa
 |--------------|--------|
 | General purpose buckets | **Live** |
 | Directory / Table / Vector, Files, Access*, Storage* | Nav chrome → empty / later (**v2**) |
+| Object **preview** in UI (view contents) | Later backlog — not v1 |
 
 ```bash
 ./bin/awsbox up
