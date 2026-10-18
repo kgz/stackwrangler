@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom'
 import { config } from '../lib/config'
 import {
   createBucket,
+  emptyAndDeleteBucket,
+  emptyBucket,
   formatS3Error,
   listBuckets,
   type S3Bucket,
 } from '../lib/s3'
+
+type ConfirmKind = 'empty' | 'delete' | null
 
 export function BucketsPage() {
   const [buckets, setBuckets] = useState<S3Bucket[]>([])
@@ -15,12 +19,19 @@ export function BucketsPage() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState<ConfirmKind>(null)
+  const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      setBuckets(await listBuckets())
+      const next = await listBuckets()
+      setBuckets(next)
+      setSelected((cur) =>
+        cur && next.some((b) => b.Name === cur) ? cur : null,
+      )
     } catch (err) {
       setError(formatS3Error(err))
     } finally {
@@ -52,6 +63,31 @@ export function BucketsPage() {
     }
   }
 
+  async function onConfirmAction() {
+    if (!confirm || !selected) return
+    setBusy(true)
+    setError(null)
+    try {
+      if (confirm === 'empty') {
+        await emptyBucket(selected)
+      } else {
+        await emptyAndDeleteBucket(selected)
+        setSelected(null)
+      }
+      setConfirm(null)
+      await refresh()
+    } catch (err) {
+      setError(formatS3Error(err))
+      setConfirm(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function toggleRow(name: string) {
+    setSelected((cur) => (cur === name ? null : name))
+  }
+
   return (
     <>
       <div className="crumbs">
@@ -77,10 +113,20 @@ export function BucketsPage() {
           <button type="button" className="btn" onClick={() => void refresh()}>
             Refresh
           </button>
-          <button type="button" className="btn" disabled>
+          <button
+            type="button"
+            className="btn"
+            disabled={!selected || busy}
+            onClick={() => setConfirm('empty')}
+          >
             Empty
           </button>
-          <button type="button" className="btn" disabled>
+          <button
+            type="button"
+            className="btn"
+            disabled={!selected || busy}
+            onClick={() => setConfirm('delete')}
+          >
             Delete
           </button>
           <button
@@ -117,27 +163,47 @@ export function BucketsPage() {
           <table className="data">
             <thead>
               <tr>
+                <th className="col-check" aria-label="Select" />
                 <th>Name</th>
                 <th>AWS Region</th>
                 <th>Creation date</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b) => (
-                <tr key={b.Name}>
-                  <td>
-                    <Link to={`/buckets/${encodeURIComponent(b.Name ?? '')}`}>
-                      {b.Name}
-                    </Link>
-                  </td>
-                  <td>{config.region}</td>
-                  <td>
-                    {b.CreationDate
-                      ? b.CreationDate.toLocaleString()
-                      : '—'}
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((b) => {
+                const name = b.Name ?? ''
+                const isSelected = selected === name
+                return (
+                  <tr
+                    key={name}
+                    className={isSelected ? 'row-selected' : undefined}
+                    onClick={() => toggleRow(name)}
+                  >
+                    <td className="col-check" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        aria-label={`Select ${name}`}
+                        onChange={() => toggleRow(name)}
+                      />
+                    </td>
+                    <td>
+                      <Link
+                        to={`/buckets/${encodeURIComponent(name)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {name}
+                      </Link>
+                    </td>
+                    <td>{config.region}</td>
+                    <td>
+                      {b.CreationDate
+                        ? b.CreationDate.toLocaleString()
+                        : '—'}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
@@ -159,11 +225,56 @@ export function BucketsPage() {
               }}
             />
             <div className="modal-actions">
-              <button type="button" className="btn" onClick={() => setCreating(false)}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setCreating(false)}
+              >
                 Cancel
               </button>
-              <button type="button" className="btn btn-primary" onClick={() => void onCreate()}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void onCreate()}
+              >
                 Create bucket
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {confirm && selected ? (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h3>
+              {confirm === 'empty' ? 'Empty bucket?' : 'Delete bucket?'}
+            </h3>
+            <p style={{ color: 'var(--aws-text-muted)', marginTop: 0 }}>
+              {confirm === 'empty'
+                ? `Delete all objects in ${selected}. The bucket itself stays.`
+                : `Permanently delete ${selected} and all objects inside it.`}
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn"
+                disabled={busy}
+                onClick={() => setConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy}
+                onClick={() => void onConfirmAction()}
+              >
+                {busy
+                  ? 'Working…'
+                  : confirm === 'empty'
+                    ? 'Empty'
+                    : 'Delete bucket'}
               </button>
             </div>
           </div>

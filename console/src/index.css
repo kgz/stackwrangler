@@ -373,6 +373,27 @@ table.data td {
   border-bottom: 1px solid var(--aws-border);
 }
 
+table.data tbody tr {
+  cursor: pointer;
+}
+
+table.data tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+table.data tbody tr.row-selected {
+  background: rgba(9, 114, 211, 0.18);
+}
+
+table.data .col-check {
+  width: 36px;
+  padding-right: 0;
+}
+
+table.data .col-check input {
+  cursor: pointer;
+}
+
 table.data th {
   color: var(--aws-text-muted);
   font-weight: 700;
