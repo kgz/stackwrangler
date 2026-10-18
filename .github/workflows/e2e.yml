@@ -24,13 +24,16 @@ jobs:
           cache: yarn
           cache-dependency-path: console/yarn.lock
 
-      - name: Start SeaweedFS + profile local
+      - name: Start SeaweedFS + LocalEmu + profile local
         run: |
-          chmod +x bin/awsbox bin/awsbox-profile bin/s3-parity.sh bin/e2e.sh
+          chmod +x bin/awsbox bin/awsbox-profile bin/s3-parity.sh bin/iam-access-denied.sh bin/e2e.sh
           ./bin/awsbox up --force
 
       - name: CLI parity
         run: ./bin/s3-parity.sh | tee docs/s3-parity.md
+
+      - name: IAM AccessDenied
+        run: ./bin/iam-access-denied.sh
 
       - name: Install console + Playwright browsers
         working-directory: console

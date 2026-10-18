@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { config } from '../lib/config'
 
 type SectionId = 'buckets' | 'files' | 'access' | 'storage' | 'marketplace'
@@ -39,7 +39,113 @@ function itemClass({ isActive }: { isActive: boolean }): string | undefined {
   return isActive ? 'active' : undefined
 }
 
+function S3Sidebar({
+  open,
+  toggle,
+}: {
+  open: Record<SectionId, boolean>
+  toggle: (id: SectionId) => void
+}) {
+  return (
+    <>
+      <div className="sidebar-title-row">
+        <h2>Amazon S3</h2>
+      </div>
+
+      <Section id="buckets" label="Buckets" open={open.buckets} onToggle={toggle}>
+        <NavLink to="/" end className={itemClass}>
+          General purpose buckets
+        </NavLink>
+        <NavLink to="/directory-buckets" className={itemClass}>
+          Directory buckets
+        </NavLink>
+        <NavLink to="/table-buckets" className={itemClass}>
+          Table buckets
+        </NavLink>
+        <NavLink to="/vector-buckets" className={itemClass}>
+          Vector buckets
+        </NavLink>
+      </Section>
+
+      <Section id="files" label="Files" open={open.files} onToggle={toggle}>
+        <NavLink to="/file-systems" className={itemClass}>
+          File systems
+        </NavLink>
+      </Section>
+
+      <Section
+        id="access"
+        label="Access management and security"
+        open={open.access}
+        onToggle={toggle}
+      >
+        <NavLink to="/access-points" className={itemClass}>
+          Access Points
+        </NavLink>
+        <NavLink to="/access-points-fsx" className={itemClass}>
+          Access Points for FSx
+        </NavLink>
+        <NavLink to="/access-grants" className={itemClass}>
+          Access Grants
+        </NavLink>
+        <NavLink to="/access-analyzer" className={itemClass}>
+          IAM Access Analyzer
+        </NavLink>
+      </Section>
+
+      <Section
+        id="storage"
+        label="Storage management and insights"
+        open={open.storage}
+        onToggle={toggle}
+      >
+        <NavLink to="/storage-lens" className={itemClass}>
+          Storage Lens
+        </NavLink>
+        <NavLink to="/batch-operations" className={itemClass}>
+          Batch Operations
+        </NavLink>
+      </Section>
+
+      <div className="sidebar-footer">
+        <NavLink to="/account-settings" className={itemClass}>
+          Account and organization settings
+        </NavLink>
+        <Section
+          id="marketplace"
+          label="AWS Marketplace for S3"
+          open={open.marketplace}
+          onToggle={toggle}
+        >
+          <NavLink to="/marketplace" className={itemClass}>
+            Browse offerings
+          </NavLink>
+        </Section>
+      </div>
+    </>
+  )
+}
+
+function IamSidebar() {
+  return (
+    <>
+      <div className="sidebar-title-row">
+        <h2>IAM</h2>
+      </div>
+      <div className="nav-section">
+        <div className="nav-section-items">
+          <NavLink to="/iam" end className={itemClass}>
+            Users
+          </NavLink>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function Shell() {
+  const location = useLocation()
+  const isIam = location.pathname.startsWith('/iam')
   const [open, setOpen] = useState<Record<SectionId, boolean>>({
     buckets: true,
     files: true,
@@ -68,86 +174,20 @@ export function Shell() {
         </div>
       </header>
       <div className="fav-bar">
-        <span>S3</span>
+        <NavLink to="/" className={({ isActive }) => (isActive && !isIam ? 'active' : undefined)}>
+          S3
+        </NavLink>
         <span>EC2</span>
-        <span>IAM</span>
+        <NavLink
+          to="/iam"
+          className={({ isActive }) => (isActive || isIam ? 'active' : undefined)}
+        >
+          IAM
+        </NavLink>
       </div>
       <div className="body">
         <aside className="sidebar">
-          <div className="sidebar-title-row">
-            <h2>Amazon S3</h2>
-          </div>
-
-          <Section id="buckets" label="Buckets" open={open.buckets} onToggle={toggle}>
-            <NavLink to="/" end className={itemClass}>
-              General purpose buckets
-            </NavLink>
-            <NavLink to="/directory-buckets" className={itemClass}>
-              Directory buckets
-            </NavLink>
-            <NavLink to="/table-buckets" className={itemClass}>
-              Table buckets
-            </NavLink>
-            <NavLink to="/vector-buckets" className={itemClass}>
-              Vector buckets
-            </NavLink>
-          </Section>
-
-          <Section id="files" label="Files" open={open.files} onToggle={toggle}>
-            <NavLink to="/file-systems" className={itemClass}>
-              File systems
-            </NavLink>
-          </Section>
-
-          <Section
-            id="access"
-            label="Access management and security"
-            open={open.access}
-            onToggle={toggle}
-          >
-            <NavLink to="/access-points" className={itemClass}>
-              Access Points
-            </NavLink>
-            <NavLink to="/access-points-fsx" className={itemClass}>
-              Access Points for FSx
-            </NavLink>
-            <NavLink to="/access-grants" className={itemClass}>
-              Access Grants
-            </NavLink>
-            <NavLink to="/access-analyzer" className={itemClass}>
-              IAM Access Analyzer
-            </NavLink>
-          </Section>
-
-          <Section
-            id="storage"
-            label="Storage management and insights"
-            open={open.storage}
-            onToggle={toggle}
-          >
-            <NavLink to="/storage-lens" className={itemClass}>
-              Storage Lens
-            </NavLink>
-            <NavLink to="/batch-operations" className={itemClass}>
-              Batch Operations
-            </NavLink>
-          </Section>
-
-          <div className="sidebar-footer">
-            <NavLink to="/account-settings" className={itemClass}>
-              Account and organization settings
-            </NavLink>
-            <Section
-              id="marketplace"
-              label="AWS Marketplace for S3"
-              open={open.marketplace}
-              onToggle={toggle}
-            >
-              <NavLink to="/marketplace" className={itemClass}>
-                Browse offerings
-              </NavLink>
-            </Section>
-          </div>
+          {isIam ? <IamSidebar /> : <S3Sidebar open={open} toggle={toggle} />}
         </aside>
         <main className="main">
           <Outlet />

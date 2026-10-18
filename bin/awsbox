@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# awsbox — local S3 stack lifecycle (M1: SeaweedFS + console).
+# awsbox — local AWS stack lifecycle (SeaweedFS S3 + LocalStack IAM + console).
 # Usage: awsbox up | down | status | console
 set -euo pipefail
 
@@ -8,6 +8,7 @@ cd "$ROOT"
 
 COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
 ENDPOINT_DEFAULT="http://127.0.0.1:8333"
+IAM_ENDPOINT_DEFAULT="http://127.0.0.1:4566"
 CONSOLE_PID_FILE="$ROOT/.awsbox/console.pid"
 
 ensure_env() {
@@ -29,6 +30,7 @@ VITE_AWS_REGION=${AWSBOX_REGION:-us-east-1}
 VITE_AWS_ACCOUNT_ID=${AWSBOX_ACCOUNT_ID:-000000000000}
 VITE_AWS_REGION_LABEL=${AWSBOX_REGION_LABEL:-US East (N. Virginia)}
 VITE_S3_ENDPOINT=${AWSBOX_ENDPOINT:-$ENDPOINT_DEFAULT}
+VITE_IAM_ENDPOINT=${AWSBOX_IAM_ENDPOINT:-$IAM_ENDPOINT_DEFAULT}
 EOF
 }
 
@@ -40,19 +42,46 @@ endpoint_url() {
 	echo "${AWSBOX_ENDPOINT:-$ENDPOINT_DEFAULT}"
 }
 
+iam_endpoint_url() {
+	if [[ -f "$ROOT/.env" ]]; then
+		# shellcheck disable=SC1091
+		set -a && source "$ROOT/.env" && set +a
+	fi
+	echo "${AWSBOX_IAM_ENDPOINT:-$IAM_ENDPOINT_DEFAULT}"
+}
+
 wait_healthy() {
 	local ep i code
 	ep="$(endpoint_url)"
 	for i in $(seq 1 40); do
 		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
 		if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+			break
+		fi
+		sleep 1
+		if [[ "$i" -eq 40 ]]; then
+			echo "error: S3 endpoint did not become ready: ${ep}" >&2
+			"${COMPOSE[@]}" ps >&2 || true
+			"${COMPOSE[@]}" logs --tail 40 s3 >&2 || true
+			exit 1
+		fi
+	done
+
+	ep="$(iam_endpoint_url)"
+	for i in $(seq 1 90); do
+		if curl -sf --max-time 2 "${ep}/_localstack/health" >/dev/null 2>&1 \
+			|| curl -sf --max-time 2 "${ep}/_localemu/health" >/dev/null 2>&1; then
+			return 0
+		fi
+		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "${ep}/" || true)"
+		if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
 			return 0
 		fi
 		sleep 1
 	done
-	echo "error: S3 endpoint did not become ready: ${ep}" >&2
+	echo "error: IAM endpoint did not become ready: ${ep}" >&2
 	"${COMPOSE[@]}" ps >&2 || true
-	"${COMPOSE[@]}" logs --tail 40 s3 >&2 || true
+	"${COMPOSE[@]}" logs --tail 60 localstack >&2 || true
 	exit 1
 }
 
@@ -66,11 +95,13 @@ cmd_up() {
 	wait_healthy
 	"$ROOT/bin/awsbox-profile" write "$@"
 	sync_console_env
-	local ep
+	local ep iam
 	ep="$(endpoint_url)"
+	iam="$(iam_endpoint_url)"
 	echo
 	echo "S3 API:   ${ep}"
-	echo "Profile:  local  (aws --profile local s3 ls)"
+	echo "IAM API:  ${iam}"
+	echo "Profile:  local  (aws --profile local s3 ls | iam list-users)"
 	echo "Console:  ./bin/awsbox console   → http://127.0.0.1:3000"
 }
 
@@ -93,13 +124,21 @@ cmd_down() {
 cmd_status() {
 	ensure_env
 	"${COMPOSE[@]}" ps
-	local ep code
+	local ep code iam
 	ep="$(endpoint_url)"
 	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
 	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
-		echo "endpoint: ${ep} (live, http ${code})"
+		echo "s3:       ${ep} (live, http ${code})"
 	else
-		echo "endpoint: ${ep} (not reachable)"
+		echo "s3:       ${ep} (not reachable)"
+	fi
+	iam="$(iam_endpoint_url)"
+	if curl -sf --max-time 1 "${iam}/_localstack/health" >/dev/null 2>&1 \
+		|| curl -sf --max-time 1 "${iam}/_localemu/health" >/dev/null 2>&1 \
+		|| [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${iam}/" || true)" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "iam:      ${iam} (live)"
+	else
+		echo "iam:      ${iam} (not reachable)"
 	fi
 	if [[ -f "$CONSOLE_PID_FILE" ]] && kill -0 "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null; then
 		echo "console:  http://127.0.0.1:3000 (pid $(cat "$CONSOLE_PID_FILE"))"
