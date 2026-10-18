@@ -10,34 +10,41 @@ Learning target: use real tools (`aws …`) against something that *feels* like 
 
 End state: a **docker stack you run once** that auto-configures endpoints and API keys (profile `local`).
 
-## Milestone 1 — fully mimic S3
+## Milestones (GitHub)
 
-Nothing else yet. No IAM UI / policy theatre.
+**v1** = the most-used Serverless learning path (parallel tracks — finish S3 first, then stack the rest):
 
-| Layer | What |
-|-------|------|
-| API | **SeaweedFS** in Docker (`weed mini` S3 on `:8333`) — swappable later |
-| Keys | Stack writes AWS profile `local` (endpoint + access key + secret) |
-| CLI | Every `aws s3` / day-to-day `aws s3api` command works against it |
-| UI | Console that **matches AWS S3 look and feel** — client only, same API calls |
+| Milestone | Scope |
+|-----------|--------|
+| [v1 — S3 general purpose](https://github.com/kgz/awsl/milestone/1) | SeaweedFS + profile `local` + CLI + AWS-look **General purpose buckets** |
+| [v1 — IAM](https://github.com/kgz/awsl/milestone/3) | Roles/policies; `AccessDenied` as a learning surface |
+| [v1 — Lambda](https://github.com/kgz/awsl/milestone/4) | Functions, invoke, console, local runtime |
+| [v1 — API Gateway](https://github.com/kgz/awsl/milestone/5) | HTTP/REST → local Lambdas |
+| [v1 — CloudWatch Logs](https://github.com/kgz/awsl/milestone/6) | Log groups + Lambda log tail |
+
+**v2+** = deeper / less common:
+
+| Milestone | Scope |
+|-----------|--------|
+| [v2 — S3 advanced](https://github.com/kgz/awsl/milestone/2) | Access Points, Storage Lens, Batch Ops, Directory/Table/Vector if backend allows |
+
+Suggested build order inside v1: **S3 → IAM → Lambda → Logs → API Gateway** (each unblocks the next).
+
+### v1 S3 sidebar
+
+| Sidebar item | v1 S3 |
+|--------------|--------|
+| General purpose buckets | **Live** |
+| Directory / Table / Vector, Files, Access*, Storage* | Nav chrome → empty / later (**v2**) |
+| Object **preview** in UI (view contents) | Later backlog — not v1 |
 
 ```bash
 ./bin/awsbox up
-aws --profile local s3 mb s3://demo
+./bin/awsbox console   # http://127.0.0.1:3000
 aws --profile local s3 ls
-# open localhost console → S3 → same buckets
 ```
 
-Wrong key → `InvalidAccessKeyId`. Missing bucket → S3 error shapes. Console clicks are the same API calls.
-
-**Why SeaweedFS:** MinIO community images are gone / project archived. Backend is behind compose — swap to S3Mock / Garage / etc. without rewriting the console.
-
-## Later (not M1)
-
-- IAM / policies as a learning surface
-- Lambda, API Gateway, CloudWatch Logs
-- `serverless.yml` → deploy into the stack
-- More services, one at a time
+**Why SeaweedFS (for S3):** MinIO images are gone. Backend is swappable; console is only a client. Lambda/IAM/APIGW will need an additional API (e.g. LocalStack) in those tracks.
 
 ## What goes where
 
@@ -45,6 +52,7 @@ Wrong key → `InvalidAccessKeyId`. Missing bucket → S3 error shapes. Console 
 |-------|------|
 | This north star | `docs/vision.md` |
 | Tickets | GitHub Project #8 |
+| Milestones | GitHub milestones |
 | Delivery design | OpenSpec changes |
-| Console mocks | `design/awsbox-console/` (Open Design) |
-| Product entry | `./bin/awsbox` → docker compose |
+| Console mocks | `design/awsbox-console/` |
+| Product entry | `./bin/awsbox` |

@@ -8,6 +8,10 @@ build/
 .DS_Store
 .localstack/
 .awsbox/
+console/dist/
+console/.env
+!console/.env.example
+
 out.json
 .serverless/
 coverage/

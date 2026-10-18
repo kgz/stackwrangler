@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# awsbox — local S3 stack lifecycle (M1: SeaweedFS).
-# Usage: awsbox up | down | status
+# awsbox — local S3 stack lifecycle (M1: SeaweedFS + console).
+# Usage: awsbox up | down | status | console
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -8,12 +8,28 @@ cd "$ROOT"
 
 COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
 ENDPOINT_DEFAULT="http://127.0.0.1:8333"
+CONSOLE_PID_FILE="$ROOT/.awsbox/console.pid"
 
 ensure_env() {
 	if [[ ! -f "$ROOT/.env" ]]; then
 		cp "$ROOT/.env.example" "$ROOT/.env"
 		echo "created .env from .env.example"
 	fi
+}
+
+sync_console_env() {
+	ensure_env
+	# shellcheck disable=SC1091
+	set -a && source "$ROOT/.env" && set +a
+	mkdir -p "$ROOT/console"
+	cat > "$ROOT/console/.env" <<EOF
+VITE_AWS_ACCESS_KEY_ID=${AWSBOX_ACCESS_KEY:-awsbox}
+VITE_AWS_SECRET_ACCESS_KEY=${AWSBOX_SECRET_KEY:-awsboxawsbox}
+VITE_AWS_REGION=${AWSBOX_REGION:-us-east-1}
+VITE_AWS_ACCOUNT_ID=${AWSBOX_ACCOUNT_ID:-000000000000}
+VITE_AWS_REGION_LABEL=${AWSBOX_REGION_LABEL:-US East (N. Virginia)}
+VITE_S3_ENDPOINT=${AWSBOX_ENDPOINT:-$ENDPOINT_DEFAULT}
+EOF
 }
 
 endpoint_url() {
@@ -28,7 +44,6 @@ wait_healthy() {
 	local ep i code
 	ep="$(endpoint_url)"
 	for i in $(seq 1 40); do
-		# S3 often answers 403 without sig — any HTTP response means the port is up
 		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
 		if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
 			return 0
@@ -50,11 +65,13 @@ cmd_up() {
 	"${COMPOSE[@]}" up -d
 	wait_healthy
 	"$ROOT/bin/awsbox-profile" write "$@"
+	sync_console_env
 	local ep
 	ep="$(endpoint_url)"
 	echo
-	echo "S3 API:  ${ep}"
-	echo "Profile: local  (aws --profile local s3 ls)"
+	echo "S3 API:   ${ep}"
+	echo "Profile:  local  (aws --profile local s3 ls)"
+	echo "Console:  ./bin/awsbox console   → http://127.0.0.1:3000"
 }
 
 cmd_down() {
@@ -62,6 +79,10 @@ cmd_down() {
 	if [[ "${1:-}" == "--remove-profile" ]]; then
 		remove_profile=1
 		shift
+	fi
+	if [[ -f "$CONSOLE_PID_FILE" ]]; then
+		kill "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null || true
+		rm -f "$CONSOLE_PID_FILE"
 	fi
 	"${COMPOSE[@]}" down "$@"
 	if [[ "$remove_profile" -eq 1 ]]; then
@@ -72,7 +93,7 @@ cmd_down() {
 cmd_status() {
 	ensure_env
 	"${COMPOSE[@]}" ps
-	local ep
+	local ep code
 	ep="$(endpoint_url)"
 	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
 	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
@@ -80,6 +101,23 @@ cmd_status() {
 	else
 		echo "endpoint: ${ep} (not reachable)"
 	fi
+	if [[ -f "$CONSOLE_PID_FILE" ]] && kill -0 "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null; then
+		echo "console:  http://127.0.0.1:3000 (pid $(cat "$CONSOLE_PID_FILE"))"
+	else
+		echo "console:  not running (./bin/awsbox console)"
+	fi
+}
+
+cmd_console() {
+	sync_console_env
+	if [[ ! -d "$ROOT/console/node_modules" ]]; then
+		echo "installing console deps (yarn)…"
+		(cd "$ROOT/console" && yarn install)
+	fi
+	mkdir -p "$ROOT/.awsbox"
+	cd "$ROOT/console"
+	# foreground so logs visible; Ctrl+C stops
+	exec yarn dev --host 127.0.0.1 --port 3000
 }
 
 case "${1:-}" in
@@ -94,8 +132,11 @@ case "${1:-}" in
 	status)
 		cmd_status
 		;;
+	console)
+		cmd_console
+		;;
 	*)
-		echo "Usage: $0 up [--force] | down [--remove-profile] | status" >&2
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console" >&2
 		exit 1
 		;;
 esac
