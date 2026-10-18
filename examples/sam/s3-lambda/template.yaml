@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: awsbox SAM S3 + Lambda writer on LocalEmu
+
+Parameters:
+  BucketName:
+    Type: String
+  FunctionName:
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs18.x
+
+Resources:
+  DemoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+
+  WriterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Ref FunctionName
+      CodeUri: src/
+      Handler: index.handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref BucketName
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref BucketName
+
+Outputs:
+  BucketName:
+    Value: !Ref DemoBucket
+  FunctionName:
+    Value: !Ref WriterFunction

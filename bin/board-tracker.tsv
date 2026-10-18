@@ -28,10 +28,10 @@
 38	done	ECS Fargate sample
 39	done	EC2 sample
 # v1.5 CFN
-47	backlog	enable CFN on LocalEmu + profile
-48	backlog	CFN S3+Lambda example + cfn-smoke
-49	backlog	CDK sample over local CFN
-50	backlog	SAM sample over local CFN
+47	done	enable CFN on LocalEmu + profile
+48	done	CFN S3+Lambda example + cfn-smoke
+49	done	CDK sample over local CFN
+50	done	SAM sample over local CFN
 # v1 Networking
 51	backlog	VPC / AZs / SG polish
 52	backlog	ALB
