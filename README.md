@@ -60,7 +60,7 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 |---------|------------|---------|--------|
 | Lambda | Docker invoke | Functions | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) |
 | ECS | Docker tasks (terraform sample) | Clusters / services / tasks | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) |
-| EC2 | Docker-backed instances | Instances list | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) |
+| EC2 | Docker-backed instances | Instances list | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) · sad [#171](https://github.com/kgz/awsl/issues/171) |
 | ECR / EKS / Batch / App Runner / ASG | — | — | **Backlog** |
 
 Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ec2-smoke.sh`
@@ -83,7 +83,8 @@ Smokes: Lambda via console/CLI · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** · create/Aurora debt [#145](https://github.com/kgz/awsl/issues/145) |
-| DynamoDB / ElastiCache / other DBs | — | — | **Backlog** |
+| DynamoDB | put/get item | — | **Working** (CLI) · console [#174](https://github.com/kgz/awsl/issues/174) |
+| ElastiCache / other DBs | — | — | **Backlog** |
 
 Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`)
 
@@ -94,9 +95,13 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [docs/sqs.md](docs/sqs.md) |
-| SNS / EventBridge / Step Functions / Kinesis / MSK / SES / AppSync | — | — | **Backlog** |
+| SNS | publish | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) |
+| EventBridge | put-events + rule | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) |
+| Step Functions | Pass state machine | — | **Working** (CLI) · console [#175](https://github.com/kgz/awsl/issues/175) |
+| Kinesis | put/get records | — | **Working** (CLI) · console [#178](https://github.com/kgz/awsl/issues/178) |
+| MSK / SES / AppSync | — | — | **Backlog** |
 
-Smoke: `./bin/sqs-smoke.sh` · sad: `./bin/sqs-authz-smoke.sh`
+Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` (+ `*-authz-smoke.sh`)
 
 ---
 
@@ -106,7 +111,9 @@ Smoke: `./bin/sqs-smoke.sh` · sad: `./bin/sqs-authz-smoke.sh`
 |---------|------------|---------|--------|
 | IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** |
 | STS | Enabled | — | **Control plane** (polish backlog) |
-| KMS / Secrets / Cognito / ACM / detection | — | — | **Backlog** |
+| KMS | encrypt/decrypt | — | **Working** (CLI) · console [#177](https://github.com/kgz/awsl/issues/177) |
+| Secrets Manager | create/get | — | **Working** (CLI) · console [#176](https://github.com/kgz/awsl/issues/176) |
+| Cognito / ACM / detection | — | — | **Backlog** |
 | IAM Identity Center | — | — | **Backlog** |
 
 Smoke: `./bin/iam-access-denied.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
@@ -118,8 +125,8 @@ CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · s
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| CloudWatch Logs | Log groups | Log groups | **Working** (basic) |
-| API Gateway HTTP | APIs | HTTP APIs | **Partial** |
+| CloudWatch Logs | Log groups | Log groups | **Working** (basic) · sad [#169](https://github.com/kgz/awsl/issues/169) |
+| API Gateway HTTP | APIs | HTTP APIs | **Partial** · sad [#170](https://github.com/kgz/awsl/issues/170) |
 | Metrics / Alarms / SSM / CloudTrail / X-Ray / Orgs | — | — | **Backlog** |
 
 ---

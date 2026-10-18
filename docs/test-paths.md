@@ -43,6 +43,23 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./bin/aws-parity-cfn-authz.sh` |
 | SQS send/receive/delete | happy | covered | `./bin/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./bin/sqs-authz-smoke.sh` |
+| SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
+| SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
+| EventBridge put-events + rule | happy | covered | `./bin/events-smoke.sh` |
+| EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
+| DynamoDB put/get | happy | covered | `./bin/dynamodb-smoke.sh` |
+| DynamoDB deny PutItem | sad/authz | covered | `./bin/dynamodb-authz-smoke.sh` |
+| Step Functions Pass execution | happy | covered | `./bin/sfn-smoke.sh` |
+| Step Functions deny StartExecution | sad/authz | covered | `./bin/sfn-authz-smoke.sh` |
+| Secrets create/get | happy | covered | `./bin/secrets-smoke.sh` |
+| Secrets deny GetSecretValue | sad/authz | covered | `./bin/secrets-authz-smoke.sh` |
+| KMS encrypt/decrypt | happy | covered | `./bin/kms-smoke.sh` |
+| KMS deny Decrypt | sad/authz | covered | `./bin/kms-authz-smoke.sh` |
+| Kinesis put/get | happy | covered | `./bin/kinesis-smoke.sh` |
+| Kinesis deny PutRecord | sad/authz | covered | `./bin/kinesis-authz-smoke.sh` |
+| Logs deny PutLogEvents | sad/authz | covered | `./bin/logs-authz-smoke.sh` |
+| API GW deny CreateApi | sad/authz | covered | `./bin/apigw-authz-smoke.sh` |
+| EC2 deny RunInstances | sad/authz | covered | `./bin/ec2-authz-smoke.sh` |
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
 | CFN Create/Update in console | ui | missing | [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Transfer create-server / create-user API | happy | covered | `./bin/transfer-smoke.sh` |
