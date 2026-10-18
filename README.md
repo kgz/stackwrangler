@@ -106,7 +106,8 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 | KMS / Secrets / Cognito / ACM / detection | — | — | **Backlog** |
 | IAM Identity Center | — | — | **Backlog** |
 
-Smoke: `./bin/iam-access-denied.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))
+Smoke: `./bin/iam-access-denied.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
+CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` ([docs/aws-parity-cfn.md](docs/aws-parity-cfn.md))
 
 ---
 
