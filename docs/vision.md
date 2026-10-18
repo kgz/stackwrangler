@@ -53,7 +53,7 @@ S3 ↔ Lambda “actually do things” (notifications, Lambda writing objects, e
 | [Org staging](https://github.com/kgz/awsl/milestone/19) | Multi-service learning path (SFTP→…→RDS); console nav gaps |
 | [CFN write UI](https://github.com/kgz/awsl/milestone/20) | Create/Update/change sets/StackSets in console |
 | [Code*](https://github.com/kgz/awsl/milestone/15) | CodePipeline / Build / Deploy / Artifact |
-| [Data movement](https://github.com/kgz/awsl/milestone/16) | **Transfer Family (SFTP)**, Backup, DMS, DataSync |
+| [Data movement](https://github.com/kgz/awsl/milestone/16) | **Transfer Family (SFTP)** (`./bin/transfer-smoke.sh`), Backup, DMS, DataSync |
 | [Enterprise net](https://github.com/kgz/awsl/milestone/18) | TGW, VPN, PrivateLink, Lattice, Global Accelerator, Network Firewall |
 | [FinOps/catalogs](https://github.com/kgz/awsl/milestone/21) | Identity Center, STS, Cost/Budgets, RAM, Service Catalog, AppConfig |
 | [AI/ML stubs](https://github.com/kgz/awsl/milestone/17) | Bedrock, SageMaker, common AI APIs |
