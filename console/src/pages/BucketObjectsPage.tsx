@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ObjectPreview } from '../components/ObjectPreview'
 import { config } from '../lib/config'
 import {
   deleteObject,
@@ -42,6 +43,7 @@ export function BucketObjectsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [prefix, setPrefix] = useState('')
   const [tab, setTab] = useState<'objects' | 'properties'>('objects')
+  const [previewKey, setPreviewKey] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const summary = useMemo(() => summarizeObjects(objects), [objects])
@@ -121,10 +123,10 @@ export function BucketObjectsPage() {
     }
   }
 
-  async function onDownloadSelected() {
+  async function downloadKeys(keys: string[]) {
     setError(null)
     try {
-      for (const key of selectedKeys) {
+      for (const key of keys) {
         const blob = await getObjectBlob(bucket, key)
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -136,6 +138,10 @@ export function BucketObjectsPage() {
     } catch (err) {
       setError(formatS3Error(err))
     }
+  }
+
+  async function onDownloadSelected() {
+    await downloadKeys(selectedKeys)
   }
 
   async function copyS3Uri() {
@@ -312,6 +318,14 @@ export function BucketObjectsPage() {
               <button
                 type="button"
                 className="btn"
+                disabled={selectedKeys.length !== 1 || busy}
+                onClick={() => setPreviewKey(selectedKeys[0] ?? null)}
+              >
+                Open
+              </button>
+              <button
+                type="button"
+                className="btn"
                 disabled={selectedKeys.length === 0 || busy}
                 onClick={() => setConfirm('delete-objects')}
               >
@@ -388,7 +402,18 @@ export function BucketObjectsPage() {
                           onChange={() => toggleKey(key)}
                         />
                       </td>
-                      <td>{key}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="linkish"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPreviewKey(key)
+                          }}
+                        >
+                          {key}
+                        </button>
+                      </td>
                       <td>{objectType(key)}</td>
                       <td>
                         {o.LastModified
@@ -405,6 +430,17 @@ export function BucketObjectsPage() {
           )}
         </div>
       )}
+
+      {previewKey ? (
+        <ObjectPreview
+          bucket={bucket}
+          objectKey={previewKey}
+          onClose={() => setPreviewKey(null)}
+          onDownload={(key) => {
+            void downloadKeys([key])
+          }}
+        />
+      ) : null}
 
       {confirm ? (
         <div className="modal-backdrop">
