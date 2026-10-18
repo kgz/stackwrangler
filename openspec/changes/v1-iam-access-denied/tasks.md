@@ -19,4 +19,4 @@
 
 ## 4. Ship
 
-- [ ] 4.1 Tracker `#18` → done after merge; PR `Closes #18`
+- [x] 4.1 Tracker `#18` → done after merge; PR `Closes #18`
