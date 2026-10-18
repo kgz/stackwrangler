@@ -34,7 +34,8 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./bin/lambda-authz-smoke.sh` |
 | Lambda role missing other actions | sad/authz | missing | extend `lambda-authz-smoke.sh` / [#150](https://github.com/kgz/awsl/issues/150) |
 | ECS run-task + HTTP reachable | happy | covered | `./bin/ecs-smoke.sh` |
-| ECS task role AccessDenied | sad/authz | missing | [#150](https://github.com/kgz/awsl/issues/150) |
+| **ECS task role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./bin/ecs-authz-smoke.sh` |
+| ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
