@@ -5,18 +5,6 @@ const TITLES: Record<string, { title: string; blurb: string }> = {
     title: 'File systems',
     blurb: 'S3 file systems are not available on the local stack yet.',
   },
-  '/access-points': {
-    title: 'Access Points',
-    blurb: 'Access Points land in v2 — not wired to a local API yet.',
-  },
-  '/access-points-fsx': {
-    title: 'Access Points for FSx',
-    blurb: 'Not available on the local stack.',
-  },
-  '/access-grants': {
-    title: 'Access Grants',
-    blurb: 'Access Grants land in v2 — not wired yet.',
-  },
   '/access-analyzer': {
     title: 'IAM Access Analyzer',
     blurb: 'Requires IAM (v1 — IAM track). Not available here yet.',
