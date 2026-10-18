@@ -80,7 +80,7 @@
 # Org staging / multi-service IaC
 90	backlog	Epic: org-scale local staging for multi-service IaC
 91	backlog	Learning path: Transfer/SFTP → Lambda → S3 → ECS → RDS
-92	backlog	Console nav: link ECS + EC2
+92	done	Console nav: link ECS + EC2
 # CFN console write path
 93	backlog	Create stack wizard
 94	backlog	Update stack + change sets
@@ -115,8 +115,8 @@
 117	backlog	SageMaker stub
 118	backlog	Rekognition/Textract/Comprehend/Translate stubs
 # Containers console
-119	backlog	ECS console UI
-120	backlog	EC2 console UI
+119	done	ECS console UI
+120	done	EC2 console UI
 # Niche IaC / automation
 121	backlog	MWAA stub
 122	backlog	Amplify stub
@@ -128,3 +128,5 @@
 128	backlog	Pulumi sample
 129	backlog	Ansible playbook example
 133	done	Vision fully-working / LocalStack lesson
+137	done	Console Transfer servers UI
+138	done	Console RDS databases UI

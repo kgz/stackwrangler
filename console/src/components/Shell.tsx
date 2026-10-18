@@ -3,7 +3,17 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { config } from '../lib/config'
 
 type SectionId = 'buckets' | 'files' | 'access' | 'storage' | 'marketplace'
-type AppId = 's3' | 'iam' | 'lambda' | 'logs' | 'apigw' | 'cfn'
+type AppId =
+  | 's3'
+  | 'iam'
+  | 'lambda'
+  | 'logs'
+  | 'apigw'
+  | 'cfn'
+  | 'transfer'
+  | 'rds'
+  | 'ecs'
+  | 'ec2'
 
 function Section({
   id,
@@ -22,22 +32,19 @@ function Section({
     <div className="nav-section">
       <button
         type="button"
-        className="nav-section-toggle"
-        aria-expanded={open}
+        className="nav-section-title"
         onClick={() => onToggle(id)}
+        aria-expanded={open}
       >
-        <span className={`chev ${open ? 'open' : ''}`} aria-hidden>
-          ▸
-        </span>
         {label}
       </button>
-      {open ? <div className="nav-section-items">{children}</div> : null}
+      {open ? <div className="nav-section-body">{children}</div> : null}
     </div>
   )
 }
 
-function itemClass({ isActive }: { isActive: boolean }): string | undefined {
-  return isActive ? 'active' : undefined
+function itemClass({ isActive }: { isActive: boolean }) {
+  return isActive ? 'nav-item active' : 'nav-item'
 }
 
 function S3Sidebar({
@@ -49,11 +56,13 @@ function S3Sidebar({
 }) {
   return (
     <>
-      <div className="sidebar-title-row">
-        <h2>Amazon S3</h2>
-      </div>
-
-      <Section id="buckets" label="Buckets" open={open.buckets} onToggle={toggle}>
+      <h2 className="sidebar-title">Amazon S3</h2>
+      <Section
+        id="buckets"
+        label="Buckets"
+        open={open.buckets}
+        onToggle={toggle}
+      >
         <NavLink to="/" end className={itemClass}>
           General purpose buckets
         </NavLink>
@@ -67,19 +76,12 @@ function S3Sidebar({
           Vector buckets
         </NavLink>
       </Section>
-
       <Section id="files" label="Files" open={open.files} onToggle={toggle}>
         <NavLink to="/file-systems" className={itemClass}>
           File systems
         </NavLink>
       </Section>
-
-      <Section
-        id="access"
-        label="Access management and security"
-        open={open.access}
-        onToggle={toggle}
-      >
+      <Section id="access" label="Access" open={open.access} onToggle={toggle}>
         <NavLink to="/access-points" className={itemClass}>
           Access Points
         </NavLink>
@@ -93,10 +95,9 @@ function S3Sidebar({
           IAM Access Analyzer
         </NavLink>
       </Section>
-
       <Section
         id="storage"
-        label="Storage management and insights"
+        label="Storage"
         open={open.storage}
         onToggle={toggle}
       >
@@ -107,34 +108,41 @@ function S3Sidebar({
           Batch Operations
         </NavLink>
       </Section>
-
-      <div className="sidebar-footer">
+      <div className="nav-section">
         <NavLink to="/account-settings" className={itemClass}>
-          Account and organization settings
+          Account settings
         </NavLink>
-        <Section
-          id="marketplace"
-          label="AWS Marketplace for S3"
-          open={open.marketplace}
-          onToggle={toggle}
-        >
-          <NavLink to="/marketplace" className={itemClass}>
-            Browse offerings
-          </NavLink>
-        </Section>
       </div>
+      <Section
+        id="marketplace"
+        label="Marketplace"
+        open={open.marketplace}
+        onToggle={toggle}
+      >
+        <div className="nav-section-body">
+          <NavLink to="/marketplace" className={itemClass}>
+            Browse
+          </NavLink>
+        </div>
+      </Section>
     </>
   )
 }
 
-function SimpleSidebar({ title, to, label }: { title: string; to: string; label: string }) {
+function SimpleSidebar({
+  title,
+  to,
+  label,
+}: {
+  title: string
+  to: string
+  label: string
+}) {
   return (
     <>
-      <div className="sidebar-title-row">
-        <h2>{title}</h2>
-      </div>
+      <h2 className="sidebar-title">{title}</h2>
       <div className="nav-section">
-        <div className="nav-section-items">
+        <div className="nav-section-body">
           <NavLink to={to} end className={itemClass}>
             {label}
           </NavLink>
@@ -150,6 +158,10 @@ function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/logs')) return 'logs'
   if (pathname.startsWith('/apigateway')) return 'apigw'
   if (pathname.startsWith('/cloudformation')) return 'cfn'
+  if (pathname.startsWith('/transfer')) return 'transfer'
+  if (pathname.startsWith('/rds')) return 'rds'
+  if (pathname.startsWith('/ecs')) return 'ecs'
+  if (pathname.startsWith('/ec2')) return 'ec2'
   return 's3'
 }
 
@@ -214,6 +226,30 @@ export function Shell() {
         >
           CloudFormation
         </NavLink>
+        <NavLink
+          to="/transfer"
+          className={() => (app === 'transfer' ? 'active' : undefined)}
+        >
+          Transfer
+        </NavLink>
+        <NavLink
+          to="/rds"
+          className={() => (app === 'rds' ? 'active' : undefined)}
+        >
+          RDS
+        </NavLink>
+        <NavLink
+          to="/ecs"
+          className={() => (app === 'ecs' ? 'active' : undefined)}
+        >
+          ECS
+        </NavLink>
+        <NavLink
+          to="/ec2"
+          className={() => (app === 'ec2' ? 'active' : undefined)}
+        >
+          EC2
+        </NavLink>
       </div>
       <div className="body">
         <aside className="sidebar">
@@ -231,6 +267,18 @@ export function Shell() {
               to="/cloudformation"
               label="Stacks"
             />
+          ) : app === 'transfer' ? (
+            <SimpleSidebar
+              title="AWS Transfer Family"
+              to="/transfer"
+              label="Servers"
+            />
+          ) : app === 'rds' ? (
+            <SimpleSidebar title="RDS" to="/rds" label="Databases" />
+          ) : app === 'ecs' ? (
+            <SimpleSidebar title="ECS" to="/ecs" label="Clusters" />
+          ) : app === 'ec2' ? (
+            <SimpleSidebar title="EC2" to="/ec2" label="Instances" />
           ) : (
             <S3Sidebar open={open} toggle={toggle} />
           )}
