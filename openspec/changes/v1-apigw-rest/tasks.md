@@ -15,4 +15,4 @@
 ## 4. Ship
 
 - [x] 4.1 Gap check → Debt #189 (console), #190 (Deny 401/403), #191 (custom domain routing)
-- [ ] 4.2 PR Closes #184; board in-review
+- [x] 4.2 PR Closes #184; board in-review
