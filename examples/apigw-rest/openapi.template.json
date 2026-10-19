@@ -1,0 +1,33 @@
+{
+  "openapi": "3.0.1",
+  "info": { "title": "awsbox-rest-demo", "version": "1" },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-amazon-apigateway-authtype": "custom",
+        "x-amazon-apigateway-authorizer": {
+          "type": "request",
+          "identitySource": "method.request.header.Authorization",
+          "authorizerUri": "${AUTHORIZER_URI}",
+          "authorizerResultTtlInSeconds": 0
+        }
+      }
+    }
+  },
+  "paths": {
+    "/public/callback": {
+      "get": {
+        "x-amazon-apigateway-integration": { "type": "aws_proxy", "httpMethod": "POST", "uri": "${HANDLER_URI}" }
+      }
+    },
+    "/v1/items": {
+      "get": {
+        "security": [{ "bearer": [] }],
+        "x-amazon-apigateway-integration": { "type": "aws_proxy", "httpMethod": "POST", "uri": "${HANDLER_URI}" }
+      }
+    }
+  }
+}

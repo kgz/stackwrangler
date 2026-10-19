@@ -33,6 +33,13 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Lambda invoke hello (basic role) | happy | covered | `./bin/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./bin/lambda-deploy-smoke.sh` |
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./bin/lambda-authz-smoke.sh` |
+| REST API import from OpenAPI + `aws_proxy` public route | happy | covered | `./bin/apigw-rest-smoke.sh` · [apigw-rest.md](apigw-rest.md) |
+| REST REQUEST authorizer Allow → handler gets context | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
+| REST authorizer Deny → 401 (AWS 403) | sad/authz | thin | `./bin/apigw-rest-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
+| REST unknown route → 403 | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
+| REST custom domain + base-path mapping (control plane) | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST request via custom domain | happy | missing | [#191](https://github.com/kgz/awsl/issues/191) |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./bin/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./bin/lambda-vpc-smoke.sh` |
 | Non-VPC Lambda blocked from private hosts | sad/other | missing | [#187](https://github.com/kgz/awsl/issues/187) |

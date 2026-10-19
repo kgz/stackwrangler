@@ -36,6 +36,9 @@ echo "==> Logs smoke"
 echo "==> API Gateway smoke"
 ./bin/apigw-smoke.sh
 
+echo "==> API Gateway REST (OpenAPI + authorizer; sad: no token / Deny / unknown)"
+./bin/apigw-rest-smoke.sh
+
 echo "==> ECS smoke"
 ./bin/ecs-smoke.sh
 
