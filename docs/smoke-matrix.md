@@ -11,6 +11,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | IAM AccessDenied lab | — | **yes** (deny user) | — | yes | `iam-access-denied.sh` |
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |
 | Real AWS CFN S3+Lambda | **yes** (parity) | **yes** (empty role) | teardown | — | `aws-parity-cfn-s3-lambda.sh`, `aws-parity-cfn-authz.sh` |
+| Lambda VPC → host service | yes | no ([#187](https://github.com/kgz/awsl/issues/187)) | unmapped name | — | `lambda-vpc-smoke.sh` |
 | Lambda invoke/deploy | yes | **yes** (`lambda-authz-smoke.sh`) | state wait | thin | `lambda-smoke.sh`, `lambda-deploy-smoke.sh`, `lambda-authz-smoke.sh` |
 | Logs | yes | **yes** (`logs-authz-smoke.sh`) | — | thin | `logs-smoke.sh`, `logs-authz-smoke.sh` |
 | API GW | yes | **yes** (`apigw-authz-smoke.sh`) | — | thin | `apigw-smoke.sh`, `apigw-authz-smoke.sh` |
