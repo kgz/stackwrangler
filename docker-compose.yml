@@ -35,6 +35,9 @@ services:
       ROOT_ACCESS_KEYS: ${AWSBOX_ACCESS_KEY:-awsbox},AKIAIOSFODNN7EXAMPLE
       DISABLE_CORS_CHECKS: "1"
       EXTRA_CORS_ALLOWED_ORIGINS: "*"
+      # Extra `docker run` flags for Lambda containers, e.g. map internal hostnames
+      # to the host: --add-host=internal-nlb.example:host-gateway (docs/lambda-vpc.md)
+      LAMBDA_DOCKER_FLAGS: ${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}
     ports:
       - "127.0.0.1:4566:4566"
     volumes:
