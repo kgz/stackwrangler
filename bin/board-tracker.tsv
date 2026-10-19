@@ -157,9 +157,9 @@
 171	in-review	EC2 RunInstances AccessDenied
 180	backlog	Epic: settings/topology fidelity (hairpin etc)
 181	backlog	Debt: ECS same-host hairpin fidelity
-184	in-review	v1 API GW REST APIs (OpenAPI import, authorizers)
+184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
 185	backlog	Serverless v3 deploy smoke
-186	in-review	VPC Lambda → host services via mapped hostnames
+186	done	VPC Lambda → host services via mapped hostnames
 187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
 190	backlog	Debt: REST authorizer Deny 401 vs 403 (from #184)
