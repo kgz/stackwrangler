@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # awsbox — local AWS stack lifecycle (SeaweedFS S3 + LocalStack IAM + console).
-# Usage: awsbox up | down | status | console
+# Usage: awsbox up | down | status | console | hosts …
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -104,6 +104,14 @@ cmd_up() {
 	echo "IAM/Lambda: ${iam}"
 	echo "Profile:  local  (aws --profile local s3 ls | lambda list-functions)"
 	echo "Console:  ./bin/awsbox console   → http://127.0.0.1:3000"
+	# Prowler / S3 Control need awsbox.localhost (RFC 6761 often missing on WSL).
+	if ! "$ROOT/bin/awsbox-hosts" check >/dev/null 2>&1; then
+		echo
+		echo "Prowler host: awsbox.localhost not resolving (needed for S3 Control)."
+		echo "  ./bin/awsbox-hosts print   # line to add"
+		echo "  ./bin/awsbox-hosts apply   # sudo append to /etc/hosts"
+		echo "  docs/prowler.md            # WSL / Windows hosts notes"
+	fi
 }
 
 cmd_down() {
@@ -175,8 +183,12 @@ case "${1:-}" in
 	console)
 		cmd_console
 		;;
+	hosts)
+		shift
+		exec "$ROOT/bin/awsbox-hosts" "$@"
+		;;
 	*)
-		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console" >&2
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | hosts …" >&2
 		exit 1
 		;;
 esac

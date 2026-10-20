@@ -95,11 +95,12 @@ PY
 	fi
 	if [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]]; then
 		echo "error: ENDPOINT host '${host}' breaks S3 Control (<account-id>.${host} will not resolve)" >&2
-		echo "hint: use http://awsbox.localhost:4566 or set AWSBOX_PROWLER_ENDPOINT" >&2
+		echo "hint: default is http://awsbox.localhost:4566 — run: ./bin/awsbox-hosts print|apply" >&2
+		echo "hint: or set AWSBOX_PROWLER_ENDPOINT to a host that supports <account-id>.<host>" >&2
 		exit 1
 	fi
 	# Prefer IPv4 — LocalEmu compose binds 127.0.0.1 only.
-	AWSBOX_CHECK_HOST="$host" AWSBOX_CHECK_ACCOUNT="$ACCOUNT_ID" python3 - <<'PY'
+	if ! AWSBOX_CHECK_HOST="$host" AWSBOX_CHECK_ACCOUNT="$ACCOUNT_ID" python3 - <<'PY'
 import os, socket, sys
 
 host = os.environ["AWSBOX_CHECK_HOST"]
@@ -108,10 +109,6 @@ try:
     socket.getaddrinfo(host, 4566, socket.AF_INET)
 except OSError as e:
     print(f"error: cannot resolve {host!r} (AF_INET): {e}", file=sys.stderr)
-    print(
-        "hint: RFC 6761 *.localhost should resolve; or set AWSBOX_PROWLER_ENDPOINT",
-        file=sys.stderr,
-    )
     sys.exit(1)
 acct = f"{account}.{host}"
 try:
@@ -120,6 +117,12 @@ except OSError as e:
     print(f"error: cannot resolve account host {acct!r}: {e}", file=sys.stderr)
     sys.exit(1)
 PY
+	then
+		echo "hint: ./bin/awsbox-hosts print   # exact /etc/hosts line" >&2
+		echo "hint: ./bin/awsbox-hosts apply   # sudo append (see docs/prowler.md for WSL)" >&2
+		echo "hint: AWSBOX_PROWLER_ENDPOINT=http://…  # override (e.g. local dnsmasq wildcard)" >&2
+		exit 1
+	fi
 }
 
 check_localemu_digest() {
