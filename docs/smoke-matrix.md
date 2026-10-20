@@ -30,6 +30,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |
 | RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail | `rds-smoke.sh`, `rds-authz-smoke.sh` |
 | SQS | yes | **yes** (deny SendMessage) | — | no → [#167](https://github.com/kgz/awsl/issues/167) | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |
+| Prowler | yes (scoped unused-services) | ratchet (failing API count) | S3 Control host | — | `prowler-smoke.sh` |
 
 ## Rule
 
