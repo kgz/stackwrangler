@@ -11,7 +11,7 @@ Run [Prowler](https://docs.prowler.com/) against LocalEmu so a stack staged on a
 
 The smoke:
 
-1. Installs `prowler==5.45.0` into `.venv-prowler/` if needed
+1. Installs `prowler==5.45.0` into `.venv-prowler/` if needed (`uv venv`/`uv pip` when `uv` is on PATH; else `python3 -m venv` — needs distro `python3-venv` on Debian/Ubuntu/WSL). Removes a half-built venv if install fails.
 2. Runs under `env -i` with **only** awsbox dummy keys + `AWS_ENDPOINT_URL` (no host `~/.aws`, no real account fallthrough) — including the S3 Control spot-checks
 3. Defaults to `http://awsbox.localhost:4566` so S3 Control’s `<account-id>.<host>` form resolves via RFC 6761 `*.localhost` → loopback (no third-party DNS). Override with `AWSBOX_PROWLER_ENDPOINT`
 4. Runs `--scan-unused-services` with a scoped service list (~266 checks: s3, iam, ec2, rds, ssm, cloudwatch, cloudtrail, organizations, backup, awslambda, apigateway, batch, autoscaling)

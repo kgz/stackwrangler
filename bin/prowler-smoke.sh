@@ -26,9 +26,29 @@ ensure_prowler() {
 	if [[ -x "$VENV_DIR/bin/prowler" ]]; then
 		return 0
 	fi
+	# Drop a half-built venv from a previous failed attempt (e.g. missing python3-venv).
+	if [[ -d "$VENV_DIR" && ! -x "$VENV_DIR/bin/prowler" ]]; then
+		echo "removing incomplete ${VENV_DIR}" >&2
+		rm -rf "$VENV_DIR"
+	fi
 	echo "installing prowler==${PROWLER_VERSION} into ${VENV_DIR}" >&2
-	python3 -m venv "$VENV_DIR"
-	"$VENV_DIR/bin/pip" install -q "prowler==${PROWLER_VERSION}"
+	if ! (
+		set -e
+		if command -v uv >/dev/null 2>&1; then
+			# Prefer uv — avoids Debian/Ubuntu python3-venv package requirement.
+			uv venv "$VENV_DIR"
+			uv pip install --python "$VENV_DIR/bin/python" "prowler==${PROWLER_VERSION}"
+		else
+			python3 -m venv "$VENV_DIR"
+			"$VENV_DIR/bin/pip" install -q "prowler==${PROWLER_VERSION}"
+		fi
+		[[ -x "$VENV_DIR/bin/prowler" ]]
+	); then
+		rm -rf "$VENV_DIR"
+		echo "error: failed to install prowler==${PROWLER_VERSION}" >&2
+		echo "hint: install uv (https://docs.astral.sh/uv/) or distro package python3-venv, then retry" >&2
+		exit 1
+	fi
 }
 
 write_isolated_aws() {
