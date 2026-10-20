@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Isolated Prowler run against LocalEmu. Fails if distinct failing API calls
-# rise above testdata/prowler/failing-api-baseline.txt (#196).
+# rise above / diverge from testdata/prowler/failing-api-baseline.txt (#196).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -10,11 +10,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REGION="${AWSBOX_REGION:-us-east-1}"
 ACCESS_KEY="${AWSBOX_ACCESS_KEY:-awsbox}"
 SECRET_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
-# Account-id virtual host form needs a wildcard DNS host (not 127.0.0.1).
-ENDPOINT="${AWSBOX_PROWLER_ENDPOINT:-http://localhost.localstack.cloud:4566}"
+ACCOUNT_ID="${AWSBOX_ACCOUNT_ID:-000000000000}"
+# Account-id virtual host form needs a wildcard host (not 127.0.0.1).
+# Default: RFC 6761 *.localhost → loopback (no third-party DNS).
+ENDPOINT="${AWSBOX_PROWLER_ENDPOINT:-http://awsbox.localhost:4566}"
 BASELINE_FILE="${AWSBOX_PROWLER_BASELINE:-$ROOT/testdata/prowler/failing-api-baseline.txt}"
 VENV_DIR="${AWSBOX_PROWLER_VENV:-$ROOT/.venv-prowler}"
 PROWLER_VERSION="${AWSBOX_PROWLER_VERSION:-5.45.0}"
+IMAGE_DIGEST_FILE="${AWSBOX_LOCALEMU_DIGEST_FILE:-$ROOT/localemu-patches/IMAGE_DIGEST}"
 WORKDIR="${TMPDIR:-/tmp}/awsbox-prowler-$$"
 mkdir -p "$WORKDIR/out"
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -41,6 +44,86 @@ output = json
 EOF
 }
 
+# Run a command with the same isolated AWS env as Prowler (no host ~/.aws).
+isolated() {
+	env -i \
+		HOME="$WORKDIR" \
+		PATH="/usr/bin:/bin:${PATH:-/usr/bin:/bin}" \
+		TERM="${TERM:-dumb}" \
+		LANG="${LANG:-C.UTF-8}" \
+		AWS_ACCESS_KEY_ID="$ACCESS_KEY" \
+		AWS_SECRET_ACCESS_KEY="$SECRET_KEY" \
+		AWS_DEFAULT_REGION="$REGION" \
+		AWS_REGION="$REGION" \
+		AWS_ENDPOINT_URL="$ENDPOINT" \
+		AWS_SHARED_CREDENTIALS_FILE="$WORKDIR/credentials" \
+		AWS_CONFIG_FILE="$WORKDIR/config" \
+		AWS_EC2_METADATA_DISABLED=true \
+		"$@"
+}
+
+check_endpoint_host() {
+	local host
+	host="$(python3 - <<PY
+from urllib.parse import urlparse
+print(urlparse("${ENDPOINT}").hostname or "")
+PY
+)"
+	if [[ -z "$host" ]]; then
+		echo "error: could not parse host from ENDPOINT=${ENDPOINT}" >&2
+		exit 1
+	fi
+	if [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]]; then
+		echo "error: ENDPOINT host '${host}' breaks S3 Control (<account-id>.${host} will not resolve)" >&2
+		echo "hint: use http://awsbox.localhost:4566 or set AWSBOX_PROWLER_ENDPOINT" >&2
+		exit 1
+	fi
+	# Prefer IPv4 — LocalEmu compose binds 127.0.0.1 only.
+	AWSBOX_CHECK_HOST="$host" AWSBOX_CHECK_ACCOUNT="$ACCOUNT_ID" python3 - <<'PY'
+import os, socket, sys
+
+host = os.environ["AWSBOX_CHECK_HOST"]
+account = os.environ["AWSBOX_CHECK_ACCOUNT"]
+try:
+    socket.getaddrinfo(host, 4566, socket.AF_INET)
+except OSError as e:
+    print(f"error: cannot resolve {host!r} (AF_INET): {e}", file=sys.stderr)
+    print(
+        "hint: RFC 6761 *.localhost should resolve; or set AWSBOX_PROWLER_ENDPOINT",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+acct = f"{account}.{host}"
+try:
+    socket.getaddrinfo(acct, 4566, socket.AF_INET)
+except OSError as e:
+    print(f"error: cannot resolve account host {acct!r}: {e}", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+check_localemu_digest() {
+	[[ -f "$IMAGE_DIGEST_FILE" ]] || return 0
+	local want cid digests
+	want="$(grep -E '^sha256:' "$IMAGE_DIGEST_FILE" | head -1 | tr -d '[:space:]')"
+	[[ -n "$want" ]] || return 0
+	cid="$(docker compose -f "$ROOT/docker-compose.yml" ps -q localstack 2>/dev/null || true)"
+	[[ -n "$cid" ]] || {
+		echo "error: LocalEmu container not running (need ./bin/awsbox up)" >&2
+		exit 1
+	}
+	local img
+	img="$(docker inspect "$cid" --format '{{.Image}}' 2>/dev/null || true)"
+	digests="$(docker image inspect "$img" --format '{{range .RepoDigests}}{{println .}}{{end}}{{.Id}}' 2>/dev/null || true)"
+	if ! grep -qF "$want" <<<"$digests"; then
+		echo "error: running LocalEmu image does not match pinned ${want}" >&2
+		echo "running image ${img}:" >&2
+		echo "$digests" >&2
+		echo "hint: bump localemu-patches/IMAGE_DIGEST + compose image together after verifying patches" >&2
+		exit 1
+	fi
+}
+
 # Extract distinct failing API operations from Prowler ERROR logs.
 parse_failing_apis() {
 	python3 - <<'PY' "$1"
@@ -50,19 +133,16 @@ from pathlib import Path
 text = Path(sys.argv[1]).read_text(errors="replace")
 found: set[str] = set()
 
-# botocore: "An error occurred (Code) when calling the Op operation"
 for m in re.finditer(
     r"when calling the ([A-Za-z0-9]+) operation", text, re.I
 ):
     found.add(m.group(1))
 
-# "exception while calling s3control.GetPublicAccessBlock"
 for m in re.finditer(
     r"exception while calling\s+([a-z0-9_-]+)\.([A-Za-z0-9]+)", text, re.I
 ):
     found.add(f"{m.group(1)}.{m.group(2)}")
 
-# Unresolved / bad hosts (S3 Control classic failure mode)
 for m in re.finditer(r"Failed to resolve ['\"]([^'\"]+)['\"]", text, re.I):
     found.add(f"DNS:{m.group(1)}")
 for m in re.finditer(
@@ -70,15 +150,13 @@ for m in re.finditer(
 ):
     found.add(f"ENDPOINT:{m.group(1)}")
 
-# LocalEmu / moto not implemented
 for m in re.finditer(
     r"The ([A-Za-z0-9_]+) action has not been implemented", text
 ):
     found.add(m.group(1))
 
-# Ignore expected empty-account Organizations shape (valid AWS error)
-# and snake_case duplicates of CamelCase ops from moto messages.
-ignore = {"DescribeOrganization"}
+ignore = {"DescribeOrganization", "GetPublicAccessBlock"}
+# GetPublicAccessBlock NoSuch… is a valid AWS empty-account response, not a gap.
 found = {
     t
     for t in found
@@ -89,25 +167,18 @@ print("\n".join(sorted(found)))
 PY
 }
 
+baseline_tokens() {
+	grep -ve '^[[:space:]]*#' -e '^[[:space:]]*$' "$BASELINE_FILE" | sort -u || true
+}
+
 ensure_prowler
 write_isolated_aws
+check_endpoint_host
+check_localemu_digest
 
 LOG_FILE="$WORKDIR/prowler.log"
 set +e
-# env -i: no AWS_* from the operator shell; only what we pass.
-env -i \
-	HOME="$WORKDIR" \
-	PATH="/usr/bin:/bin:$VENV_DIR/bin" \
-	TERM="${TERM:-dumb}" \
-	LANG="${LANG:-C.UTF-8}" \
-	AWS_ACCESS_KEY_ID="$ACCESS_KEY" \
-	AWS_SECRET_ACCESS_KEY="$SECRET_KEY" \
-	AWS_DEFAULT_REGION="$REGION" \
-	AWS_REGION="$REGION" \
-	AWS_ENDPOINT_URL="$ENDPOINT" \
-	AWS_SHARED_CREDENTIALS_FILE="$WORKDIR/credentials" \
-	AWS_CONFIG_FILE="$WORKDIR/config" \
-	AWS_EC2_METADATA_DISABLED=true \
+isolated \
 	"$VENV_DIR/bin/prowler" aws \
 	--no-banner \
 	--log-level ERROR \
@@ -143,11 +214,15 @@ if [[ ! -f "$BASELINE_FILE" ]]; then
 	exit 1
 fi
 
-BASELINE_COUNT="$(grep -cve '^[[:space:]]*#' -e '^[[:space:]]*$' "$BASELINE_FILE" || true)"
-if [[ "$COUNT" -gt "$BASELINE_COUNT" ]]; then
-	echo "error: failing API count ${COUNT} > baseline ${BASELINE_COUNT} (${BASELINE_FILE})" >&2
-	echo "new vs baseline:" >&2
-	comm -13 <(grep -ve '^#' -e '^$' "$BASELINE_FILE" | sort -u) <(sort -u "$FAILING_FILE") >&2 || true
+BASELINE_SORTED="$WORKDIR/baseline.txt"
+baseline_tokens >"$BASELINE_SORTED"
+BASELINE_COUNT="$(wc -l <"$BASELINE_SORTED" | tr -d ' ')"
+
+# Set ratchet: fail on any new token (not only count growth).
+NEW_TOKENS="$(comm -13 "$BASELINE_SORTED" <(sort -u "$FAILING_FILE") || true)"
+if [[ -n "$NEW_TOKENS" ]]; then
+	echo "error: new failing API tokens vs baseline ${BASELINE_FILE}:" >&2
+	printf '%s\n' "$NEW_TOKENS" >&2
 	exit 1
 fi
 
@@ -156,10 +231,27 @@ if grep -qE 'DNS:.*127\.0\.0\.1|ENDPOINT:.*[0-9]+\.127\.0\.0\.1' "$FAILING_FILE"
 	exit 1
 fi
 
-# Spot-check: S3 Control public access must work on the smoke endpoint
-export AWS_ACCESS_KEY_ID="$ACCESS_KEY" AWS_SECRET_ACCESS_KEY="$SECRET_KEY" AWS_DEFAULT_REGION="$REGION" AWS_EC2_METADATA_DISABLED=true
-aws --endpoint-url "$ENDPOINT" s3control get-public-access-block --account-id 000000000000 >/dev/null
-aws --endpoint-url "$ENDPOINT" s3control list-access-points --account-id 000000000000 >/dev/null
-aws --endpoint-url "$ENDPOINT" s3control list-multi-region-access-points --account-id 000000000000 >/dev/null
+# Spot-check S3 Control under the same env -i isolation as the scan.
+isolated aws --endpoint-url "$ENDPOINT" s3control get-public-access-block \
+	--account-id "$ACCOUNT_ID" >/dev/null 2>"$WORKDIR/pab.err" && PAB_RC=0 || PAB_RC=$?
+if [[ "$PAB_RC" -ne 0 ]]; then
+	# Unset config → NoSuchPublicAccessBlockConfiguration is the AWS-shaped empty state.
+	if ! grep -q 'NoSuchPublicAccessBlockConfiguration' "$WORKDIR/pab.err"; then
+		cat "$WORKDIR/pab.err" >&2
+		echo "error: get-public-access-block failed unexpectedly" >&2
+		exit 1
+	fi
+fi
+isolated aws --endpoint-url "$ENDPOINT" s3control put-public-access-block \
+	--account-id "$ACCOUNT_ID" \
+	--public-access-block-configuration \
+	"BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" \
+	>/dev/null
+isolated aws --endpoint-url "$ENDPOINT" s3control get-public-access-block \
+	--account-id "$ACCOUNT_ID" >/dev/null
+isolated aws --endpoint-url "$ENDPOINT" s3control list-access-points \
+	--account-id "$ACCOUNT_ID" >/dev/null
+isolated aws --endpoint-url "$ENDPOINT" s3control list-multi-region-access-points \
+	--account-id "$ACCOUNT_ID" >/dev/null
 
-echo "OK: prowler-smoke (failing=${COUNT} ≤ baseline=${BASELINE_COUNT})"
+echo "OK: prowler-smoke (failing=${COUNT} baseline=${BASELINE_COUNT} set-ok endpoint=${ENDPOINT})"

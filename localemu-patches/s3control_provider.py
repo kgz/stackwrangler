@@ -1,7 +1,7 @@
 """S3 Control provider with Prowler-needed account reads (#196).
 
 Extends LocalEmu's tagging-only S3ControlProvider with moto-backed
-GetPublicAccessBlock / ListAccessPoints / ListMultiRegionAccessPoints.
+Get/PutPublicAccessBlock, ListAccessPoints, ListMultiRegionAccessPoints.
 Mounted over the image file at container start.
 """
 
@@ -17,6 +17,7 @@ from localemu.aws.api.s3control import (
     ListTagsForResourceResult,
     MaxResults,
     NonEmptyMaxLength1024String,
+    NoSuchPublicAccessBlockConfiguration,
     PublicAccessBlockConfiguration,
     S3ControlApi,
     S3ResourceArn,
@@ -41,15 +42,6 @@ def _s3control_backend(account_id: str, region: str):
     if region in account_backends:
         return account_backends[region]
     return account_backends[next(iter(account_backends))]
-
-
-def _default_public_access_block() -> PublicAccessBlockConfiguration:
-    return PublicAccessBlockConfiguration(
-        BlockPublicAcls=False,
-        IgnorePublicAcls=False,
-        BlockPublicPolicy=False,
-        RestrictPublicBuckets=False,
-    )
 
 
 class S3ControlProvider(S3ControlApi):
@@ -108,8 +100,9 @@ class S3ControlProvider(S3ControlApi):
         backend = _s3control_backend(account_id, context.region)
         block = backend.public_access_block
         if block is None:
-            return GetPublicAccessBlockOutput(
-                PublicAccessBlockConfiguration=_default_public_access_block()
+            # Match AWS: unset account block → NoSuchPublicAccessBlockConfiguration
+            raise NoSuchPublicAccessBlockConfiguration(
+                "The PublicAccessBlock configuration was not found"
             )
         return GetPublicAccessBlockOutput(
             PublicAccessBlockConfiguration=PublicAccessBlockConfiguration(
@@ -118,6 +111,26 @@ class S3ControlProvider(S3ControlApi):
                 BlockPublicPolicy=block.block_public_policy,
                 RestrictPublicBuckets=block.restrict_public_buckets,
             )
+        )
+
+    def put_public_access_block(
+        self,
+        context: RequestContext,
+        public_access_block_configuration: PublicAccessBlockConfiguration,
+        account_id: AccountId,
+        **kwargs,
+    ) -> None:
+        backend = _s3control_backend(account_id, context.region)
+        backend.put_public_access_block(
+            account_id,
+            {
+                "BlockPublicAcls": public_access_block_configuration.get("BlockPublicAcls"),
+                "IgnorePublicAcls": public_access_block_configuration.get("IgnorePublicAcls"),
+                "BlockPublicPolicy": public_access_block_configuration.get("BlockPublicPolicy"),
+                "RestrictPublicBuckets": public_access_block_configuration.get(
+                    "RestrictPublicBuckets"
+                ),
+            },
         )
 
     def list_access_points(
