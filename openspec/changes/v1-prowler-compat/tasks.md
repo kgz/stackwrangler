@@ -17,4 +17,4 @@
 ## 4. Ship
 
 - [x] 4.1 Gap check → Debt #197 (full catalog), #198 (empty-read depth)
-- [ ] 4.2 PR Closes #196; board in-review
+- [x] 4.2 PR Closes #196; board in-review
