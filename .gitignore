@@ -20,3 +20,4 @@ coverage/
 *.pyc
 __pycache__/
 .venv/
+.venv-prowler/

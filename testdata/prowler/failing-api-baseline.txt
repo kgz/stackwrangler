@@ -1,0 +1,3 @@
+# Distinct failing API tokens tolerated by bin/prowler-smoke.sh (#196).
+# Count of non-comment lines is the max allowed. Ratchet down as gaps close.
+# Current: 0 (scoped services + LocalEmu patches).

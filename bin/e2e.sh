@@ -74,6 +74,9 @@ echo "==> Logs / API GW / EC2 authz"
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
 
+echo "==> Prowler (isolated; skip if install blocked)"
+./bin/prowler-smoke.sh
+
 echo "==> console deps"
 if [[ ! -d console/node_modules ]]; then
 	(cd console && yarn install)

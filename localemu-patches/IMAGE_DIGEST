@@ -1,0 +1,3 @@
+# Digested LocalEmu image this patch tree was written against.
+# docker-compose.yml must use the same digest (not floating :latest).
+sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f46d7aa8123551cee10b
