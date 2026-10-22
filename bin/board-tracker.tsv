@@ -170,7 +170,7 @@
 201	done	v1: ECS taskdef secrets / host ports / failed-start status
 215	in-progress	full-flow-v1
 211	in-review	v1: ECR push/pull + ECS task images
-214	in-progress	full-flow-v1
+214	in-review	v1: Same IDs as a real account / custom resource IDs
 193	in-progress	v1: resource-based policy evaluation
 203	in-progress	v1: ELBv2 data plane
 204	in-progress	v1: VPC routing fidelity
