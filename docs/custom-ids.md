@@ -11,7 +11,7 @@ The account id embedded in ARNs comes from the access key:
 
 Per-key entries win. Restart `./bin/awsbox up` after changing either value. STS `GetCallerIdentity` and resource `OwnerId` fields return that account. The console account chip is `VITE_AWS_ACCOUNT_ID` ([#215](https://github.com/kgz/awsl/issues/215)), not this env.
 
-Patch: `localemu-patches/init/start.d/20-custom-ids.py` (mounted with the other start scripts). Moto already honours `_custom_id_` for REST APIs via `@moto_id`; the patch adds the format check and wires the types that never consulted that helper.
+Patch: `localemu-patches/init/start.d/20-custom-ids.py` (mounted with the other start scripts). Moto already honours `_custom_id_` for REST APIs via `@moto_id`; the patch wires the types that never consulted that helper.
 
 ## Supported types
 
@@ -26,7 +26,7 @@ Patch: `localemu-patches/init/start.d/20-custom-ids.py` (mounted with the other 
 | EC2 instance | Tag `_custom_id_` on `RunInstances` | `i-` + 8 or 17 hex. `MinCount` and `MaxCount` must be 1 |
 | Load balancer | Tag `_custom_id_` on `CreateLoadBalancer` | 16 hex. That is the ARN suffix. Moto still builds `arn:…:loadbalancer/app/<name>/<suffix>` (including for NLB) and puts the configured account id in the ARN |
 | Target group | Tag `_custom_id_` on `CreateTargetGroup` | 16 hex ARN suffix: `arn:…:targetgroup/<name>/<suffix>` |
-| REST API | Tag `_custom_id_` on `CreateRestApi` | 10 chars, `[a-z0-9]` |
+| REST API | Tag `_custom_id_` on `CreateRestApi` | LocalEmu native: lowercase only (no length check) |
 | HTTP API | Tag `_custom_id_` on `CreateApi` | 10 chars, `[a-z0-9]` |
 | Hosted zone | `CallerReference` prefixed with `_custom_id_:` (CreateHostedZone has no tags). A `<Tags>` entry with key `_custom_id_` is also accepted | `Z` + 13 to 32 chars from `A-Z` and `0-9` |
 | ECS cluster | Tag `_custom_id_` on `CreateCluster` | Full ARN `arn:<partition>:ecs:<region>:<account>:cluster/<ClusterName>`. The name segment must match `ClusterName` |
