@@ -113,6 +113,7 @@ Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` �
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** |
+| IAM OIDC / web identity | `AssumeRoleWithWebIdentity` checks a local JWKS; trust `StringEquals`/`StringLike` on `<issuer>:sub` and `:aud`. `repo:org/*` matches every repo in the org (risky). `iam:PassRole` is limited by `iam:PassedToService` | — | **CLI + smoke** · [docs/oidc.md](docs/oidc.md) · service-origin `kms:ViaService` / `aws:SourceArn` [#223](https://github.com/kgz/awsl/issues/223) |
 | STS | Enabled | — | **Control plane** (polish backlog) |
 | KMS | encrypt/decrypt | — | **Working** (CLI) · console [#177](https://github.com/kgz/awsl/issues/177) |
 | Secrets Manager | create/get | — | **Working** (CLI) · console [#176](https://github.com/kgz/awsl/issues/176) |
@@ -120,7 +121,7 @@ Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` �
 | IAM Identity Center | — | — | **Backlog** |
 | Prowler posture scan | Isolated CLI smoke vs LocalEmu | — | **Working** (scoped) · full catalog [#197](https://github.com/kgz/awsl/issues/197) · [docs/prowler.md](docs/prowler.md) |
 
-Smoke: `./bin/iam-access-denied.sh` · `./bin/prowler-smoke.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
+Smoke: `./bin/iam-access-denied.sh` · `./bin/oidc-smoke.sh` · `./bin/prowler-smoke.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
 CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · sad: `./bin/aws-parity-cfn-authz.sh` ([docs/aws-parity-cfn.md](docs/aws-parity-cfn.md))
 
 ---

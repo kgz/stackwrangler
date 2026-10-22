@@ -29,6 +29,13 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./bin/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./bin/iam-access-denied.sh` + IAM console lab |
+| OIDC `sub=repo:org/app:environment:prod` assumes tight role | happy | covered | `./bin/oidc-smoke.sh` · [oidc.md](oidc.md) |
+| OIDC `sub=repo:org/*` assumes any repo in the org | happy | covered | `./bin/oidc-smoke.sh` |
+| OIDC feature ref / other org / wrong aud / bad signature denied | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `iam:PassRole` when `iam:PassedToService=events.amazonaws.com` | happy | covered | `./bin/oidc-smoke.sh` |
+| `iam:PassRole` to Step Functions denied by `PassedToService` | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `iam:GetRole` only when `aws:ResourceTag/env=prod` | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./bin/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./bin/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./bin/lambda-deploy-smoke.sh` |
