@@ -45,6 +45,9 @@ echo "==> ECS smoke"
 echo "==> ECS authz (sad: empty taskRole PutObject)"
 ./bin/ecs-authz-smoke.sh
 
+echo "==> ECS taskdef (secrets / host ports / failed-start)"
+./bin/ecs-taskdef-smoke.sh
+
 echo "==> Transfer authz (sad: empty role PutObject)"
 ./bin/transfer-authz-smoke.sh
 

@@ -167,3 +167,4 @@
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
+201	in-review	v1: ECS taskdef secrets / host ports / failed-start status
