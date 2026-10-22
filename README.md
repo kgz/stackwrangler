@@ -72,9 +72,12 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 | Service | Status |
 |---------|--------|
 | VPC / SG / AZ polish | **Backlog** |
+| Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/SG · [docs/mirror.md](docs/mirror.md) · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
 | ALB / NLB / Classic ELB | **Backlog** |
 | WAFv2 / Route 53 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |
+
+Smoke: `./bin/mirror-smoke.sh`
 
 ---
 
