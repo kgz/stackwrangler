@@ -2,8 +2,9 @@
 # REST API (v1) imported from OpenAPI: aws_proxy + REQUEST Lambda authorizer
 # (examples/apigw-rest, docs/apigw-rest.md).
 # Happy: public route 200 with query passthrough; good token 200 with authorizer context.
-# Happy (control plane only): custom domain + root base-path mapping.
-# Sad: no token 401; denied token 401 (AWS returns 403, see docs); unknown route 403.
+# Happy: custom domain root mapping and a named base path (Host / local DNS).
+# Sad: no token 401; denied token 401 (AWS returns 403, see docs); unknown route 403;
+#      custom domain prefix with no base-path mapping 403 Forbidden.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,6 +25,7 @@ TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Serv
 KEEP="${AWSBOX_APIGW_REST_KEEP:-0}"
 API_ID=""
 DOMAIN="api-${TS}.example.test"
+BASE_PATH="partner"
 
 export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
 export AWS_SECRET_ACCESS_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
@@ -36,6 +38,7 @@ aws() {
 cleanup() {
 	rm -rf "$WORK"
 	[[ "$KEEP" == "1" ]] && return 0
+	aws apigateway delete-base-path-mapping --domain-name "$DOMAIN" --base-path "$BASE_PATH" >/dev/null 2>&1 || true
 	aws apigateway delete-base-path-mapping --domain-name "$DOMAIN" --base-path '(none)' >/dev/null 2>&1 || true
 	aws apigateway delete-domain-name --domain-name "$DOMAIN" >/dev/null 2>&1 || true
 	[[ -n "$API_ID" ]] && aws apigateway delete-rest-api --rest-api-id "$API_ID" >/dev/null 2>&1 || true
@@ -122,9 +125,38 @@ CERT="$(aws acm request-certificate --domain-name "$DOMAIN" --query CertificateA
 aws apigateway create-domain-name --domain-name "$DOMAIN" --regional-certificate-arn "$CERT" \
 	--endpoint-configuration types=REGIONAL >/dev/null
 aws apigateway create-base-path-mapping --domain-name "$DOMAIN" --rest-api-id "$API_ID" --stage local >/dev/null
-check "happy custom domain created (control plane)" "$DOMAIN" "$(aws apigateway get-domain-name --domain-name "$DOMAIN" --query domainName --output text)"
-check "happy root base-path mapping (control plane)" "$API_ID" "$(aws apigateway get-base-path-mappings --domain-name "$DOMAIN" --query 'items[0].restApiId' --output text)"
-# Requests are NOT routed by custom domain locally (they fall through to S3); see docs/apigw-rest.md.
+check "happy custom domain created" "$DOMAIN" "$(aws apigateway get-domain-name --domain-name "$DOMAIN" --query domainName --output text)"
+check "happy root base-path mapping" "$API_ID" "$(aws apigateway get-base-path-mappings --domain-name "$DOMAIN" --query 'items[0].restApiId' --output text)"
+
+EP_NO_SCHEME="${EP#*://}"
+EP_NO_SCHEME="${EP_NO_SCHEME%%/*}"
+EP_HOST="${EP_NO_SCHEME%%:*}"
+EP_PORT="${EP_NO_SCHEME##*:}"
+[[ "$EP_PORT" == "$EP_NO_SCHEME" ]] && EP_PORT=80
+query_pair() {
+	python3 -c 'import json,sys; q=json.load(open(sys.argv[1])).get("query") or {}; print(q.get("code","") + "/" + q.get("state",""))' "$1" 2>/dev/null || echo bad-body
+}
+event_path() {
+	python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("path",""))' "$1" 2>/dev/null || echo bad-body
+}
+
+code="$(req --resolve "${DOMAIN}:${EP_PORT}:${EP_HOST}" "http://${DOMAIN}:${EP_PORT}/public/callback?code=abc&state=xyz")"
+check "happy custom domain root mapping" 200 "$code" "$(cat "$WORK/body")"
+check "happy custom domain query passthrough" "abc/xyz" "$(query_pair "$WORK/body")"
+check "happy custom domain path" "/public/callback" "$(event_path "$WORK/body")"
+
+aws apigateway create-base-path-mapping --domain-name "$DOMAIN" --rest-api-id "$API_ID" --stage local --base-path "$BASE_PATH" >/dev/null
+code="$(req -H "Host: ${DOMAIN}" "${EP}/${BASE_PATH}/public/callback?code=abc&state=xyz")"
+check "happy named base path" 200 "$code" "$(cat "$WORK/body")"
+check "happy named base path stripped" "/public/callback" "$(event_path "$WORK/body")"
+check "happy named base path query" "abc/xyz" "$(query_pair "$WORK/body")"
+
+aws apigateway delete-base-path-mapping --domain-name "$DOMAIN" --base-path '(none)' >/dev/null
+code="$(req -H "Host: ${DOMAIN}" "${EP}/public/callback")"
+check "sad unmapped prefix" 403 "$code"
+check "sad unmapped prefix is Forbidden" "Forbidden" "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("message",""))' "$WORK/body" 2>/dev/null || echo bad-body)"
+code="$(req -H "Host: ${DOMAIN}" "${EP}/${BASE_PATH}/public/callback?code=abc&state=xyz")"
+check "happy named base path after root removed" 200 "$code" "$(cat "$WORK/body")"
 
 [[ "$FAIL" == "0" ]] || exit 1
 echo "OK: REST API from OpenAPI with REQUEST authorizer (${API_ID})"

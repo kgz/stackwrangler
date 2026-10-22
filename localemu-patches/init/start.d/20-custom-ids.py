@@ -9,9 +9,7 @@ method, so swapping that function for the duration of the call is enough.
 from __future__ import annotations
 
 import logging
-import os
 import re
-import sys
 import threading
 
 LOG = logging.getLogger("localemu.awsbox.custom_ids")
@@ -471,62 +469,7 @@ def _patch_ecs() -> None:
     Cluster.__init__ = cluster_init
 
 
-def _parse_account_map(raw: str) -> dict[str, str]:
-    parsed: dict[str, str] = {}
-    for part in raw.split(","):
-        item = part.strip()
-        if not item:
-            continue
-        key, sep, account = item.partition("=")
-        key = key.strip()
-        account = account.strip()
-        if not sep or not key or re.fullmatch(r"\d{12}", account) is None:
-            LOG.error("ignoring bad AWSBOX_ACCOUNT_IDS entry %r", item)
-            continue
-        parsed[key] = account
-    return parsed
-
-
-def _patch_account_ids() -> None:
-    from localemu.aws import accounts as accounts_mod
-    from localemu.constants import DEFAULT_AWS_ACCOUNT_ID
-
-    per_key = _parse_account_map(os.environ.get("AWSBOX_ACCOUNT_IDS", ""))
-    default = os.environ.get("AWSBOX_ACCOUNT_ID", "").strip()
-    if default and re.fullmatch(r"\d{12}", default) is None:
-        LOG.error("AWSBOX_ACCOUNT_ID must be 12 digits, ignoring %r", default)
-        default = ""
-    if not per_key and not default:
-        return
-
-    original = accounts_mod.get_account_id_from_access_key_id
-
-    def get_account_id_from_access_key_id(access_key_id: str) -> str:
-        mapped = per_key.get(access_key_id or "")
-        if mapped:
-            return mapped
-        resolved = original(access_key_id)
-        if default and resolved == DEFAULT_AWS_ACCOUNT_ID:
-            return default
-        return resolved
-
-    accounts_mod.get_account_id_from_access_key_id = get_account_id_from_access_key_id
-    for module in list(sys.modules.values()):
-        namespace = getattr(module, "__dict__", None)
-        if not isinstance(namespace, dict):
-            continue
-        for name, value in list(namespace.items()):
-            if value is original:
-                namespace[name] = get_account_id_from_access_key_id
-    LOG.info(
-        "awsbox account ids applied (default=%s, keys=%s)",
-        default or "-",
-        ",".join(sorted(per_key)),
-    )
-
-
 def _apply() -> None:
-    _patch_account_ids()
     _patch_ec2()
     _patch_elbv2()
     _patch_rest_api()
