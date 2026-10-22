@@ -76,6 +76,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | EC2 instance-profile missing GetSecretValue → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |
 | SSM SendCommand AWS-RunShellScript returns stdout | happy | covered | `./bin/ec2-imds-smoke.sh` |
 | SSM SendCommand without ssm:SendCommand → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |
+| Private subnet with no `0.0.0.0/0` cannot reach a public host | sad/other | covered | `./bin/vpc-routing-smoke.sh` · [vpc-routing.md](vpc-routing.md) |
+| Private subnet reaches a public host via an HTTP proxy over peering | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` |
+| NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |

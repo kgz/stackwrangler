@@ -83,6 +83,9 @@ echo "==> Logs / API GW / EC2 authz"
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
 
+echo "==> VPC routing"
+./bin/vpc-routing-smoke.sh
+
 echo "==> Prowler (isolated; skip if install blocked)"
 ./bin/prowler-smoke.sh
 

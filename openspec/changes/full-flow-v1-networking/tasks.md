@@ -1,9 +1,9 @@
 ## 1. VPC routing (#204)
 
-- [ ] 1.1 Extend subnet→Docker network attach for EC2 / ECS awsvpc / VPC Lambda
-- [ ] 1.2 Enforce route tables (local, peering, IGW, NAT, gateway endpoints)
-- [ ] 1.3 Smoke: private no-default-route isolation; peering both ways; NAT egress
-- [ ] 1.4 Docs + README + matrix/test-paths; PR → `beta/full-flow-v1`
+- [x] 1.1 Extend subnet→Docker network attach for EC2 / ECS awsvpc / VPC Lambda
+- [x] 1.2 Enforce route tables (local, peering, IGW, NAT). Gateway endpoints are [#230](https://github.com/kgz/awsl/issues/230)
+- [x] 1.3 Smoke: private no-default-route isolation; peering both ways; NAT egress
+- [x] 1.4 Docs + README + matrix/test-paths; PR → `beta/full-flow-v1`
 
 ## 2. Security groups (#205)
 

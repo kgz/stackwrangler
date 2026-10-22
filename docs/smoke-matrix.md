@@ -22,6 +22,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | ECS | yes | **yes** (`ecs-authz-smoke.sh`, secrets deny in `ecs-taskdef-smoke.sh`) | task unreachable | list | `ecs-smoke.sh`, `ecs-authz-smoke.sh`, `ecs-taskdef-smoke.sh` |
 | EC2 | yes | **yes** (`ec2-authz-smoke.sh`, instance-profile + `ssm:SendCommand` in `ec2-imds-smoke.sh`) | user-data | list | `ec2-smoke.sh`, `ec2-imds-smoke.sh`, `ec2-authz-smoke.sh` |
 | ECR | yes | **yes** (execution role without `ecr:BatchGetImage`) | — | no → [#217](https://github.com/kgz/awsl/issues/217) | `ecr-smoke.sh` |
+| VPC routes (private / peering / NAT) | yes | no | no default route; route removed | — | `vpc-routing-smoke.sh` |
 | SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |
 | EventBridge | yes | **yes** | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-smoke.sh`, `events-authz-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |

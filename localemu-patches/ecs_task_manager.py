@@ -1110,6 +1110,9 @@ class DockerTaskManager:
                         "ECS container %s already on VPC network %s",
                         docker_name, net,
                     )
+                    self._sync_subnet_routes(
+                        docker_name, subnet_ids, account_id, region,
+                    )
                     return
 
             if not subnet_ids:
@@ -1153,8 +1156,25 @@ class DockerTaskManager:
                 "ECS awsvpc task %s connected to %s (resolved from subnet)",
                 docker_name, vpc_network,
             )
+            self._sync_subnet_routes(docker_name, subnet_ids, account_id, region)
         except Exception as e:
             LOG.debug("Failed to connect container %s to VPC network: %s", docker_name, e)
+
+    def _sync_subnet_routes(
+        self,
+        docker_name: str,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+    ) -> None:
+        if not subnet_ids:
+            return
+        try:
+            from localemu.services.ec2.docker.vpc_routing import sync_workload
+
+            sync_workload(docker_name, subnet_ids[0], account_id, region)
+        except Exception as exc:
+            LOG.debug("vpc route sync skipped for %s: %s", docker_name, exc)
 
     def stop_task(self, task_arn: str) -> None:
         """Stop and remove all Docker containers for a task."""
