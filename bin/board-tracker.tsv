@@ -168,7 +168,7 @@
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
 201	done	v1: ECS taskdef secrets / host ports / failed-start status
-215	in-progress	full-flow-v1
+215	in-review	v1: Console labels for local display names
 211	in-review	v1: ECR push/pull + ECS task images
 214	in-review	v1: Same IDs as a real account / custom resource IDs
 193	in-progress	v1: resource-based policy evaluation
