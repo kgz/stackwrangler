@@ -26,4 +26,4 @@ cd console && yarn playwright test --ui   # interactive
 
 Needs: Docker, AWS CLI v2, Node 20+, yarn.
 
-IaC smokes (LocalEmu `:4566`): `./bin/iac-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`.
+IaC smokes (LocalEmu `:4566`): `./bin/iac-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`.
