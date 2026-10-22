@@ -163,24 +163,33 @@
 187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
 190	backlog	Debt: REST authorizer Deny 401 vs 403 (from #184)
-191	in-progress	Debt: REST custom domain routing (from #184)
+191	in-review	Debt: REST custom domain routing (from #184)
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
 201	done	v1: ECS taskdef secrets / host ports / failed-start status
-215	in-progress	full-flow-v1
-211	in-progress	full-flow-v1
-214	in-progress	full-flow-v1
-193	in-progress	v1: resource-based policy evaluation
+215	in-review	v1: Console labels for local display names
+211	in-review	v1: ECR push/pull + ECS task images
+214	in-review	v1: Same IDs as a real account / custom resource IDs
+193	in-review	v1: resource-based policy evaluation
 203	in-progress	v1: ELBv2 data plane
-204	in-progress	v1: VPC routing fidelity
-205	in-progress	v1: Security group enforcement
+204	in-review	v1: VPC routing fidelity
+205	in-review	v1: Security group enforcement
 206	in-progress	v1: Route 53 private hosted zones
 207	in-progress	v1: ECS services on EC2
-208	in-progress	v1: EC2 instance fidelity IMDS/SSM
-209	in-progress	v1: IAM OIDC AssumeRoleWithWebIdentity
-210	in-progress	v1: RDS MySQL / Aurora MySQL
-212	in-progress	v1: CFN rollback + delete cleanup
+208	in-review	v1: EC2 instance fidelity IMDS/SSM
+209	in-review	v1: IAM OIDC AssumeRoleWithWebIdentity
+210	in-review	v1: RDS MySQL / Aurora MySQL
+212	in-review	v1: CFN rollback + delete cleanup
 213	in-progress	v1: multi-account cross-account AssumeRole
-216	in-review	v1: synthetic mirror apply; real read #220
+216	in-review	v1: mirror real account fixture (scaffold)
 220	backlog	Debt: real-account mirror read path (from #216)
+217	backlog	Debt: ECR console (from #211)
+218	backlog	Debt: docker push via repositoryUri hostname (from #211)
+219	backlog	Debt: Lambda image pull ECR authz (from #211)
+223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
+228	backlog	Debt: CFN lifecycle gaps (from #212)
+230	backlog	Debt: VPC gateway endpoints + Lambda egress (from #204)
+233	backlog	Debt: cross-account resource policy coverage (from #193)
+236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
+237	backlog	Debt: VPC Lambda SG enforcement (from #205)
