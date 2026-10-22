@@ -28,5 +28,7 @@ Happy smokes prove bytes move. **Fidelity smokes** prove the *awkward* path matc
 | ECS task↔task on same host via service VIP / NAT hairpin | Classic “works across AZs, fails same host” | Debt — track under networking fidelity epic |
 | Dual S3 brains | Wrong endpoint “succeeds” | Documented split · unify [#162](https://github.com/kgz/awsl/issues/162) |
 | ECS task-role via 169.254 DNAT under compose | In-container SDK path | [#154](https://github.com/kgz/awsl/issues/154) |
+| NLB preserves client IP for the target security group | Target SG must see the caller, not the balancer | [#236](https://github.com/kgz/awsl/issues/236) |
+| VPC Lambda security groups | Function traffic should follow its groups | [#237](https://github.com/kgz/awsl/issues/237) |
 
 Add rows as Debts land; keep this file short.

@@ -19,6 +19,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | CFN / CDK / SAM | yes | **yes** (parity authz) | — | list/detail | `cfn\|cdk\|sam-smoke.sh`, `aws-parity-cfn-authz.sh` |
 | ECS | yes | **yes** (`ecs-authz-smoke.sh`, secrets deny in `ecs-taskdef-smoke.sh`) | task unreachable | list | `ecs-smoke.sh`, `ecs-authz-smoke.sh`, `ecs-taskdef-smoke.sh` |
 | EC2 | yes | **yes** (`ec2-authz-smoke.sh`) | user-data | list | `ec2-smoke.sh`, `ec2-authz-smoke.sh` |
+| Security groups | yes (SG A, prefix list, CIDR) | **yes** (SG B refused; live revoke) | NLB client IP [#236](https://github.com/kgz/awsl/issues/236) | — | `sg-enforcement-smoke.sh` |
 | SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |
 | EventBridge | yes | **yes** | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-smoke.sh`, `events-authz-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |

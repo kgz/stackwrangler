@@ -812,11 +812,15 @@ class DockerTaskManager:
                             "awsvpcConfiguration", {},
                         )
                         subnet_ids = awsvpc_cfg.get("subnets") or []
+                        sg_ids = list(awsvpc_cfg.get("securityGroups") or [])
                         self._connect_to_vpc_network(
                             docker_name, cluster_name,
                             subnet_ids=subnet_ids,
                             account_id=account_id,
                             region=region,
+                        )
+                        self._attach_awsvpc_sg(
+                            docker_name, subnet_ids, sg_ids, account_id, region,
                         )
 
                     # #79: Install DNAT so 169.254.170.2:80 inside this
@@ -922,6 +926,28 @@ class DockerTaskManager:
                 docker_name, e,
             )
 
+    def _attach_awsvpc_sg(
+        self,
+        docker_name: str,
+        subnet_ids: list[str] | None,
+        sg_ids: list[str],
+        account_id: str,
+        region: str,
+    ) -> None:
+        try:
+            from localemu.services.ec2.docker.sg_enforcement import attach_container
+
+            attach_container(
+                docker_name,
+                subnet_ids=subnet_ids,
+                sg_ids=sg_ids,
+                account_id=account_id,
+                region=region,
+                kind="ecs",
+            )
+        except Exception:
+            LOG.debug("awsvpc SG attach skipped for %s", docker_name, exc_info=True)
+
     def _connect_to_vpc_network(
         self,
         docker_name: str,
@@ -1010,6 +1036,14 @@ class DockerTaskManager:
 
         for container in task_info.containers:
             docker_name = container.docker_name
+            try:
+                from localemu.services.ec2.docker.sg_enforcement import (
+                    release_container,
+                )
+
+                release_container(docker_name)
+            except Exception:
+                LOG.debug("awsvpc SG release skipped for %s", docker_name, exc_info=True)
             try:
                 DOCKER_CLIENT.stop_container(docker_name, timeout=10)
             except Exception:

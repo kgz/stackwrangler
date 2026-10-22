@@ -49,6 +49,8 @@ services:
       # ECS taskdef fidelity (#201): secrets valueFrom, host ports, failed-start status
       - ./localemu-patches/ecs_task_manager.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_manager.py:ro
       - ./localemu-patches/ecs_provider.py:/opt/code/localemu/src/localemu/services/ecs/provider.py:ro
+      # Security groups (#205): ECS awsvpc + RDS + prefix lists on top of EC2 sg_iptables
+      - ./localemu-patches/sg_enforcement.py:/opt/code/localemu/src/localemu/services/ec2/docker/sg_enforcement.py:ro
     healthcheck:
       test:
         [

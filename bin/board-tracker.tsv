@@ -174,7 +174,7 @@
 193	in-progress	v1: resource-based policy evaluation
 203	in-progress	v1: ELBv2 data plane
 204	in-review	v1: VPC routing fidelity
-205	in-progress	v1: Security group enforcement
+205	in-review	v1: Security group enforcement
 206	in-progress	v1: Route 53 private hosted zones
 207	in-progress	v1: ECS services on EC2
 208	in-progress	v1: EC2 instance fidelity IMDS/SSM
@@ -190,3 +190,5 @@
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	backlog	Debt: VPC gateway endpoints + Lambda egress (from #204)
+236	backlog	Debt: NLB client IP versus target security group (from #205)
+237	backlog	Debt: VPC Lambda security group enforcement (from #205)
