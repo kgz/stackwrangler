@@ -180,7 +180,7 @@
 208	in-progress	v1: EC2 instance fidelity IMDS/SSM
 209	in-review	v1: IAM OIDC AssumeRoleWithWebIdentity
 210	in-progress	v1: RDS MySQL / Aurora MySQL
-212	in-progress	v1: CFN rollback + delete cleanup
+212	in-review	v1: CFN rollback + delete cleanup
 213	in-progress	v1: multi-account cross-account AssumeRole
 216	in-review	v1: mirror real account fixture (scaffold)
 220	backlog	Debt: real-account mirror read path (from #216)
@@ -188,3 +188,4 @@
 218	backlog	Debt: docker push via repositoryUri hostname (from #211)
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
+228	backlog	Debt: CFN lifecycle gaps (from #212)
