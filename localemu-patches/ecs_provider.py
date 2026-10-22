@@ -13,7 +13,8 @@ Architecture (same pattern as EC2 Docker backend):
   1. Moto owns all state: clusters, task definitions, task records, ARNs.
   2. Docker provides execution: real containers from task definitions.
   3. Moto's RunTask requires a registered container instance (EC2 launch type).
-     We register a synthetic instance per cluster so Moto's check passes.
+     We register a synthetic instance lazily when the cluster has none,
+     so an ASG or RegisterContainerInstance target is used first (#207).
 """
 
 import logging
@@ -724,14 +725,16 @@ def _handle_describe_tasks(
 def _handle_create_cluster(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    """CreateCluster: let Moto handle it, then register a synthetic instance."""
+    """CreateCluster: leave placement to a real container instance.
+
+    A synthetic EC2 instance is registered lazily on RunTask / CreateService
+    only when the cluster still has none. Registering one here would win
+    placement over an ASG instance or RegisterContainerInstance that arrives
+    next (#207).
+    """
     result = call_moto(context)
     cluster_name = result.get("cluster", {}).get("clusterName", "")
     LOG.info("ECS cluster created: %s", cluster_name)
-
-    if _init_task_manager() and cluster_name:
-        _ensure_synthetic_instance(context, cluster_name)
-
     return result
 
 
@@ -804,99 +807,28 @@ _service_tasks_lock = threading.Lock()
 def _handle_create_service(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    """CreateService: let Moto create the service record, then launch desiredCount tasks."""
+    """CreateService: Moto record, then EC2 scheduling / target registration (#207)."""
     result = call_moto(context)
-
-    mgr = _init_task_manager()
     service_data = result.get("service")
-    if not mgr or not service_data:
+    if not service_data or not _init_task_manager():
         return result
+    from localemu.services.ecs.ec2_services import on_create_service
 
-    desired_count = service_data.get("desiredCount", 0)
-    task_def_arn = service_data.get("taskDefinition", "")
-    cluster_arn = service_data.get("clusterArn", "")
-    service_arn = service_data.get("serviceArn", "")
-    launch_type = service_data.get("launchType", "EC2")
-
-    if desired_count > 0 and task_def_arn:
-        # Pass the full cluster ARN to the task manager so
-        # the ``localemu.cluster`` Docker label matches what RunTask writes
-        # (the ARN). Using the short name here made label-scoped docker
-        # queries (e.g. by ops tooling) skip every service-started
-        # container, even though RunTask-launched containers were findable.
-        # Moto's ``run_task`` accepts either form; we still normalise to the
-        # short name for the ``_ensure_synthetic_instance`` lookup against
-        # moto's internal dict which is keyed by short name.
-        cluster_short = _normalize_cluster_name(cluster_arn) if cluster_arn else "default"
-        cluster_label = cluster_arn or cluster_short
-        _ensure_synthetic_instance(context, cluster_short, launch_type=launch_type)
-
-        task_arns = _run_service_tasks(
-            context, cluster_label, task_def_arn, desired_count, launch_type,
-            network_configuration=service_data.get("networkConfiguration"),
-        )
-        with _service_tasks_lock:
-            _service_tasks[service_arn] = task_arns
-
-        service_data["runningCount"] = len(task_arns)
-        service_data["status"] = "ACTIVE"
-        LOG.info(
-            "ECS service %s created with %d/%d tasks",
-            service_data.get("serviceName"), len(task_arns), desired_count,
-        )
-
+    on_create_service(context, request, service_data)
     return result
 
 
 def _handle_update_service(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    """UpdateService: let Moto update the record, then scale Docker tasks."""
+    """UpdateService: scale, or replace tasks when the task definition changes."""
     result = call_moto(context)
-
-    mgr = _init_task_manager()
     service_data = result.get("service")
-    if not mgr or not service_data:
+    if not service_data or not _init_task_manager():
         return result
+    from localemu.services.ecs.ec2_services import on_update_service
 
-    service_arn = service_data.get("serviceArn", "")
-    desired_count = service_data.get("desiredCount", 0)
-    task_def_arn = service_data.get("taskDefinition", "")
-    cluster_arn = service_data.get("clusterArn", "")
-    launch_type = service_data.get("launchType", "EC2")
-
-    with _service_tasks_lock:
-        current_task_arns = _service_tasks.get(service_arn, [])
-        current_count = len(current_task_arns)
-
-    if desired_count > current_count:
-        # Scale up: label tasks with the cluster ARN (not
-        # the short name) so they are discoverable via docker-label queries
-        # and match RunTask's labelling.
-        cluster_label = cluster_arn or _normalize_cluster_name(cluster_arn or "default")
-        new_arns = _run_service_tasks(
-            context, cluster_label, task_def_arn, desired_count - current_count, launch_type,
-            network_configuration=service_data.get("networkConfiguration"),
-        )
-        with _service_tasks_lock:
-            _service_tasks.setdefault(service_arn, []).extend(new_arns)
-        LOG.info("ECS service %s scaled up: %d -> %d tasks", service_arn, current_count, desired_count)
-
-    elif desired_count < current_count:
-        # Scale down - stop excess tasks
-        to_stop = current_count - desired_count
-        with _service_tasks_lock:
-            arns_to_stop = _service_tasks.get(service_arn, [])[-to_stop:]
-            _service_tasks[service_arn] = _service_tasks.get(service_arn, [])[:-to_stop]
-
-        for task_arn in arns_to_stop:
-            try:
-                mgr.stop_task(task_arn)
-            except Exception as e:
-                LOG.debug("Failed to stop task %s during scale-down: %s", task_arn, e)
-        LOG.info("ECS service %s scaled down: %d -> %d tasks", service_arn, current_count, desired_count)
-
-    service_data["runningCount"] = desired_count
+    on_update_service(context, request, service_data)
     return result
 
 
@@ -910,11 +842,15 @@ def _handle_delete_service(
 
     result = call_moto(context)
 
+    from localemu.services.ecs.ec2_services import on_delete_service
+
+    on_delete_service(cluster, service_name)
+
     mgr = _init_task_manager()
     if not mgr:
         return result
 
-    # Find matching service ARN
+    # Find matching service ARN (fallback if the scheduler never tracked it)
     service_arn = None
     with _service_tasks_lock:
         for arn in list(_service_tasks.keys()):
@@ -965,6 +901,7 @@ def _run_service_tasks(
     count: int,
     launch_type: str,
     network_configuration: dict | None = None,
+    group: str | None = None,
 ) -> list[str]:
     """Run N tasks for a service, returning the task ARNs created.
 
@@ -991,6 +928,7 @@ def _run_service_tasks(
                 tags=None,
                 launch_type=launch_type,
                 networking_configuration=network_configuration,
+                group=group,
             )
             if not moto_tasks:
                 continue
@@ -1242,6 +1180,12 @@ class EcsStateLifecycleHook(ServiceLifecycleHook):
 
     def on_before_state_reset(self) -> None:
         global _task_manager
+        try:
+            from localemu.services.ecs.ec2_services import reset_state
+
+            reset_state()
+        except Exception:
+            LOG.debug("ECS EC2 scheduler reset failed", exc_info=True)
         _task_def_cache.clear()
         _full_td_cache.clear()
         _synthetic_instances.clear()
@@ -1366,6 +1310,9 @@ def create_ecs_service() -> Service:
 
     _patch_moto_resource_requirements_none_safe()
     _patch_moto_eni_private_dns_name()
+    from localemu.services.ecs.ec2_services import install
+
+    install()
     service_model = load_service("ecs")
     dispatch_table = EcsDispatcher(service_model)
     skeleton = Skeleton(service_model, dispatch_table)
