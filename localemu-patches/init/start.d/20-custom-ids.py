@@ -28,7 +28,6 @@ _PATTERNS: dict[str, re.Pattern[str]] = {
     "instance": re.compile(rf"^i-{_HEX_8_OR_17}$"),
     "lb-suffix": re.compile(r"^[0-9a-f]{16}$"),
     "tg-suffix": re.compile(r"^[0-9a-f]{16}$"),
-    "rest-api": re.compile(r"^[a-z0-9]{10}$"),
     "http-api": re.compile(r"^[a-z0-9]{10}$"),
     "hosted-zone": re.compile(r"^Z[A-Z0-9]{13,32}$"),
 }
@@ -309,22 +308,6 @@ def _patch_elbv2() -> None:
     _wrap("create_target_group", "tg-suffix", "target_groups")
 
 
-def _patch_rest_api() -> None:
-    from moto.apigateway.models import APIGatewayBackend
-
-    original = APIGatewayBackend.create_rest_api
-
-    def create_rest_api(self, *args: object, **kwargs: object):
-        custom_id = extract(_find_tags(args, kwargs))
-        if custom_id:
-            _check("apigateway", "rest-api", custom_id)
-            if custom_id in getattr(self, "apis", {}):
-                _invalid("apigateway", custom_id, "That id is already in use.")
-        return original(self, *args, **kwargs)
-
-    APIGatewayBackend.create_rest_api = create_rest_api
-
-
 def _patch_http_api() -> None:
     from moto.apigatewayv2.models import Api, ApiGatewayV2Backend
     from moto.utilities.utils import get_partition
@@ -472,7 +455,6 @@ def _patch_ecs() -> None:
 def _apply() -> None:
     _patch_ec2()
     _patch_elbv2()
-    _patch_rest_api()
     _patch_http_api()
     _patch_hosted_zone()
     _patch_ecs()
