@@ -179,7 +179,7 @@
 207	in-progress	v1: ECS services on EC2
 208	in-progress	v1: EC2 instance fidelity IMDS/SSM
 209	in-review	v1: IAM OIDC AssumeRoleWithWebIdentity
-210	in-progress	v1: RDS MySQL / Aurora MySQL
+210	in-review	v1: RDS MySQL / Aurora MySQL
 212	in-review	v1: CFN rollback + delete cleanup
 213	in-progress	v1: multi-account cross-account AssumeRole
 216	in-review	v1: mirror real account fixture (scaffold)
