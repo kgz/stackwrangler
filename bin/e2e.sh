@@ -51,6 +51,9 @@ echo "==> ECS authz (sad: empty taskRole PutObject)"
 echo "==> ECS taskdef (secrets / host ports / failed-start)"
 ./bin/ecs-taskdef-smoke.sh
 
+echo "==> ECS host-network task-role creds (loopback, no DNAT)"
+./bin/ecs-host-creds-smoke.sh
+
 echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
 ./bin/ecr-smoke.sh
 

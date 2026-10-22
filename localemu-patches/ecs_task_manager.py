@@ -669,13 +669,24 @@ class DockerTaskManager:
                 )
                 env_vars["AWS_DEFAULT_REGION"] = region
                 env_vars["AWS_REGION"] = region
-                env_vars["AWS_ENDPOINT_URL"] = f"http://host.docker.internal:{_gw_port}"
+                # Host-mode tasks share the host netns, where the gateway is
+                # published on 127.0.0.1 only.
+                _gw_host = "127.0.0.1" if network_mode == "host" else "host.docker.internal"
+                env_vars["AWS_ENDPOINT_URL"] = f"http://{_gw_host}:{_gw_port}"
                 if task_role_arn:
-                    # RELATIVE_URI resolves against 169.254.170.2 (one of
-                    # the SDK's four approved hosts). DNAT does the rest.
-                    env_vars["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = (
-                        f"/v2/credentials/{task_id}"
-                    )
+                    if network_mode == "host":
+                        # Host mode shares the host netns: no DNAT (it would land in
+                        # the host's NAT table). Loopback is SDK-approved; the creds
+                        # port is published on host 127.0.0.1 (start.d/05-ecs-creds-port.py).
+                        env_vars["AWS_CONTAINER_CREDENTIALS_FULL_URI"] = (
+                            f"http://127.0.0.1:{_creds_port}/v2/credentials/{task_id}"
+                        )
+                    else:
+                        # RELATIVE_URI resolves against 169.254.170.2 (one of
+                        # the SDK's four approved hosts). DNAT does the rest.
+                        env_vars["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = (
+                            f"/v2/credentials/{task_id}"
+                        )
                     # Mint STS creds via moto's backend; the assumed_role
                     # entry it creates lets our IAM enforcer resolve the
                     # signed request back to the correct role.
@@ -719,6 +730,7 @@ class DockerTaskManager:
                         env_vars.pop(
                             "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", None,
                         )
+                        env_vars.pop("AWS_CONTAINER_CREDENTIALS_FULL_URI", None)
 
                 # Build port mappings. AWS accepts portMappings with
                 # networkMode=host when hostPort==containerPort (or omitted);
@@ -985,7 +997,7 @@ class DockerTaskManager:
                     # credentials server. Done post-start because we need
                     # the container's netns. host.docker.internal resolves
                     # inside the container via --add-host above.
-                    if task_role_arn:
+                    if task_role_arn and network_mode != "host":
                         self._install_task_creds_dnat(docker_name, _creds_port)
 
                     container_info = EcsContainerInfo(

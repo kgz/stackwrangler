@@ -27,6 +27,8 @@ services:
       SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
       # Host docker daemon pulls this address (published below). #211
       AWSBOX_ECR_REGISTRY: 127.0.0.1:5000
+      # ECS task-role credentials for host-network tasks (start.d/05-ecs-creds-port.py)
+      AWSBOX_ECS_CREDS_PORT: ${AWSBOX_ECS_CREDS_PORT:-4571}
       IAM_ENFORCEMENT: "1"
       EC2_VM_MANAGER: docker
       # Real Postgres/MySQL containers via Docker (not moto-only).
@@ -50,6 +52,7 @@ services:
       LAMBDA_DOCKER_FLAGS: ${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}
     ports:
       - "127.0.0.1:4566:4566"
+      - "127.0.0.1:${AWSBOX_ECS_CREDS_PORT:-4571}:${AWSBOX_ECS_CREDS_PORT:-4571}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs.
