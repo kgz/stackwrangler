@@ -18,6 +18,9 @@ echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
 echo "==> IAM AccessDenied"
 ./bin/iam-access-denied.sh
 
+echo "==> IAM OIDC + PassRole"
+./bin/oidc-smoke.sh
+
 echo "==> Lambda smoke"
 ./bin/lambda-smoke.sh
 
@@ -48,6 +51,9 @@ echo "==> ECS authz (sad: empty taskRole PutObject)"
 echo "==> ECS taskdef (secrets / host ports / failed-start)"
 ./bin/ecs-taskdef-smoke.sh
 
+echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
+./bin/ecr-smoke.sh
+
 echo "==> Transfer authz (sad: empty role PutObject)"
 ./bin/transfer-authz-smoke.sh
 
@@ -77,6 +83,11 @@ echo "==> Logs / API GW / EC2 authz"
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
 
+echo "==> VPC routing"
+./bin/vpc-routing-smoke.sh
+
+echo "==> Security groups (allow SG A, refuse SG B, live reapply)"
+./bin/sg-enforcement-smoke.sh
 echo "==> Prowler (isolated; skip if install blocked)"
 ./bin/prowler-smoke.sh
 

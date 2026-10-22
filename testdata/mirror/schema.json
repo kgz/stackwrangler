@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "awsl.mirror/v1",
+  "title": "awsl mirror fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "region", "resources"],
+  "properties": {
+    "schema": { "const": "awsl.mirror/v1" },
+    "region": { "type": "string", "minLength": 1 },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vpcs", "subnets", "securityGroups"],
+      "properties": {
+        "vpcs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/vpc" }
+        },
+        "subnets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/subnet" }
+        },
+        "securityGroups": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/securityGroup" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "vpc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "cidr"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^vpc-[0-9a-f]{8,17}$" },
+        "cidr": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "subnet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "vpcId", "cidr", "availabilityZone"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^subnet-[0-9a-f]{8,17}$" },
+        "vpcId": { "type": "string", "pattern": "^vpc-[0-9a-f]{8,17}$" },
+        "cidr": { "type": "string" },
+        "availabilityZone": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "securityGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "vpcId", "name", "description"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^sg-[0-9a-f]{8,17}$" },
+        "vpcId": { "type": "string", "pattern": "^vpc-[0-9a-f]{8,17}$" },
+        "name": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

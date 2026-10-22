@@ -1,0 +1,30 @@
+{
+  "schema": "awsl.mirror/v1",
+  "region": "us-east-1",
+  "resources": {
+    "vpcs": [
+      {
+        "id": "vpc-02160000000000001",
+        "cidr": "10.216.0.0/16",
+        "name": "mirror-demo"
+      }
+    ],
+    "subnets": [
+      {
+        "id": "subnet-02160000000000001",
+        "vpcId": "vpc-02160000000000001",
+        "cidr": "10.216.1.0/24",
+        "availabilityZone": "us-east-1a",
+        "name": "mirror-demo-a"
+      }
+    ],
+    "securityGroups": [
+      {
+        "id": "sg-02160000000000001",
+        "vpcId": "vpc-02160000000000001",
+        "name": "mirror-demo",
+        "description": "synthetic mirror fixture"
+      }
+    ]
+  }
+}
