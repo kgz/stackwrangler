@@ -90,6 +90,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Logs create/put/get | happy | covered | `./bin/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./bin/apigw-smoke.sh` |
 | **Seaweed vs LocalEmu S3 are separate stores** | sad/other | covered | `./bin/s3-dual-endpoint-smoke.sh` · [s3-backends.md](s3-backends.md) |
+| `awsl apply` synthetic VPC/subnet/SG ids + CIDRs | happy | covered | `./bin/mirror-smoke.sh` · [mirror.md](mirror.md) |
+| `awsl mirror --out` inside the repo (not gitignored) | sad/other | covered | `./bin/mirror-smoke.sh` |
+| `awsl apply` non-local endpoint | sad/other | covered | `./bin/mirror-smoke.sh` |
+| Real-account `awsl mirror` read (Describe/List/Get only) | happy | missing | [#220](https://github.com/kgz/awsl/issues/220) |
 
 ---
 

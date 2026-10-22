@@ -182,4 +182,5 @@
 210	in-progress	v1: RDS MySQL / Aurora MySQL
 212	in-progress	v1: CFN rollback + delete cleanup
 213	in-progress	v1: multi-account cross-account AssumeRole
-216	in-progress	v1: mirror real account fixture (scaffold)
+216	in-review	v1: synthetic mirror apply; real read #220
+220	backlog	Debt: real-account mirror read path (from #216)
