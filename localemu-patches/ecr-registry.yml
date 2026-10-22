@@ -1,0 +1,15 @@
+version: 0.1
+log:
+  level: info
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
+http:
+  addr: :5000
+notifications:
+  endpoints:
+    - name: awsbox-ecr
+      url: http://localstack:5099/v1/push
+      timeout: 2s
+      threshold: 5
+      backoff: 1s
