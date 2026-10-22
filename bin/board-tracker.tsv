@@ -174,7 +174,7 @@
 193	in-review	v1: resource-based policy evaluation
 203	in-progress	v1: ELBv2 data plane
 204	in-review	v1: VPC routing fidelity
-205	in-progress	v1: Security group enforcement
+205	in-review	v1: Security group enforcement
 206	in-progress	v1: Route 53 private hosted zones
 207	in-progress	v1: ECS services on EC2
 208	in-progress	v1: EC2 instance fidelity IMDS/SSM
@@ -191,3 +191,5 @@
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	backlog	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)
+236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
+237	backlog	Debt: VPC Lambda SG enforcement (from #205)
