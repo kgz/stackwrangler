@@ -178,7 +178,8 @@
 206	in-progress	v1: Route 53 private hosted zones
 207	in-progress	v1: ECS services on EC2
 208	in-progress	v1: EC2 instance fidelity IMDS/SSM
-209	in-progress	v1: IAM OIDC AssumeRoleWithWebIdentity
+209	in-review	v1: IAM OIDC AssumeRoleWithWebIdentity
+223	backlog	Debt: service-origin IAM condition keys (from #209)
 210	in-progress	v1: RDS MySQL / Aurora MySQL
 212	in-progress	v1: CFN rollback + delete cleanup
 213	in-progress	v1: multi-account cross-account AssumeRole
