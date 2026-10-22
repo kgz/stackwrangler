@@ -36,7 +36,8 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | `./bin/awsbox up` + profile `local` | **Working** | Compose + managed AWS profile |
 | Console shell (AWS-look) | **Working** | Dark console frame |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
-| IAM enforcement | **Partial** | deny-user lab only · workload roles debt [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM enforcement | **Partial** | resource policies `./bin/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
+| Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [docs/custom-ids.md](docs/custom-ids.md) · `./bin/custom-id-smoke.sh` |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
 ---
@@ -59,11 +60,12 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | Lambda | Docker invoke · VPC → host services ([docs/lambda-vpc.md](docs/lambda-vpc.md)) | Functions | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) · VPC isolation **Partial** ([#187](https://github.com/kgz/awsl/issues/187)) |
-| ECS | Docker tasks · secrets/`valueFrom` · host ports · failed-start status | Clusters / services / tasks | **Partial** · secrets/host/status [#201](https://github.com/kgz/awsl/issues/201) · depth [#146](https://github.com/kgz/awsl/issues/146) |
-| EC2 | Docker-backed instances | Instances list | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) · sad [#171](https://github.com/kgz/awsl/issues/171) |
-| ECR / EKS / Batch / App Runner / ASG | — | — | **Backlog** |
+| EC2 | Docker instances · IMDSv2 instance-profile creds · user data · SSM `SendCommand` | Instances list | **Partial** · console depth [#146](https://github.com/kgz/awsl/issues/146) |
+| ECS | Docker tasks · secrets/`valueFrom` · host ports · failed-start status · pull from ECR URI | Clusters / services / tasks | **Partial** · secrets/host/status [#201](https://github.com/kgz/awsl/issues/201) · depth [#146](https://github.com/kgz/awsl/issues/146) |
+| ECR | create-repository · `get-login-password` · push/pull `127.0.0.1:5000/<repo>` · ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` (needs `ecr:BatchGetImage`) | — | **Partial** · push the repositoryUri hostname [#218](https://github.com/kgz/awsl/issues/218) · Lambda image authz [#219](https://github.com/kgz/awsl/issues/219) · console [#217](https://github.com/kgz/awsl/issues/217) |
+| EKS / Batch / App Runner / ASG | — | — | **Backlog** |
 
-Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/vpc-routing-smoke.sh`
+Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ec2-imds-smoke.sh` · `./bin/ec2-authz-smoke.sh` · `./bin/ecr-smoke.sh` · `./bin/vpc-routing-smoke.sh`
 
 ---
 
@@ -71,11 +73,14 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 
 | Service | Status |
 |---------|--------|
+| Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/SG · [docs/mirror.md](docs/mirror.md) · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
 | VPC routes / peering / NAT | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · gateway endpoints / Lambda egress [#230](https://github.com/kgz/awsl/issues/230) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | SG / AZ polish | **Backlog** |
 | ALB / NLB / Classic ELB | **Backlog** |
 | WAFv2 / Route 53 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |
+
+Smoke: `./bin/mirror-smoke.sh`
 
 ---
 
@@ -84,10 +89,11 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** · create/Aurora debt [#145](https://github.com/kgz/awsl/issues/145) |
+| RDS (MySQL / Aurora MySQL) | Docker DB · writer/reader · `rds!` secret | Databases + `mysql` hint | **Partial** · failover [#225](https://github.com/kgz/awsl/issues/225) · console create [#145](https://github.com/kgz/awsl/issues/145) |
 | DynamoDB | put/get item | — | **Working** (CLI) · console [#174](https://github.com/kgz/awsl/issues/174) |
 | ElastiCache / other DBs | — | — | **Backlog** |
 
-Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`)
+Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`) · MySQL/Aurora: `./bin/rds-mysql-smoke.sh` (needs host `mysql`)
 
 ---
 
@@ -110,15 +116,17 @@ Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` �
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** |
+| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** · resource policies `./bin/resource-policy-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM OIDC / web identity | `AssumeRoleWithWebIdentity` checks a local JWKS; trust `StringEquals`/`StringLike` on `<issuer>:sub` and `:aud`. `repo:org/*` matches every repo in the org (risky). `iam:PassRole` is limited by `iam:PassedToService` | — | **CLI + smoke** · [docs/oidc.md](docs/oidc.md) · service-origin `kms:ViaService` / `aws:SourceArn` [#223](https://github.com/kgz/awsl/issues/223) |
 | STS | Enabled | — | **Control plane** (polish backlog) |
-| KMS | encrypt/decrypt | — | **Working** (CLI) · console [#177](https://github.com/kgz/awsl/issues/177) |
-| Secrets Manager | create/get | — | **Working** (CLI) · console [#176](https://github.com/kgz/awsl/issues/176) |
+| KMS | encrypt/decrypt · key policy on Encrypt/Decrypt/GenerateDataKey | — | **Partial** · key policy `./bin/resource-policy-smoke.sh` · console [#177](https://github.com/kgz/awsl/issues/177) |
+| Secrets Manager | create/get · resource policy on Get/Describe | — | **Partial** · resource policy `./bin/resource-policy-smoke.sh` · console [#176](https://github.com/kgz/awsl/issues/176) |
+| Multiple accounts | Key→account, isolated state, cross-account AssumeRole | — | **CLI + smoke** · [docs/multi-account.md](docs/multi-account.md) |
 | Cognito / ACM / detection | — | — | **Backlog** |
 | IAM Identity Center | — | — | **Backlog** |
 | Prowler posture scan | Isolated CLI smoke vs LocalEmu | — | **Working** (scoped) · full catalog [#197](https://github.com/kgz/awsl/issues/197) · [docs/prowler.md](docs/prowler.md) |
 
-Smoke: `./bin/iam-access-denied.sh` · `./bin/prowler-smoke.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
+Smoke: `./bin/iam-access-denied.sh` · `./bin/resource-policy-smoke.sh` · `./bin/oidc-smoke.sh` · `./bin/prowler-smoke.sh` · `./bin/multi-account-smoke.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
 CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · sad: `./bin/aws-parity-cfn-authz.sh` ([docs/aws-parity-cfn.md](docs/aws-parity-cfn.md))
 
 ---
@@ -129,7 +137,7 @@ CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · s
 |---------|------------|---------|--------|
 | CloudWatch Logs | Log groups | Log groups | **Working** (basic) · sad [#169](https://github.com/kgz/awsl/issues/169) |
 | API Gateway HTTP | APIs | HTTP APIs | **Partial** · sad [#170](https://github.com/kgz/awsl/issues/170) |
-| API Gateway REST (v1) | OpenAPI import · `aws_proxy` · REQUEST authorizers ([docs/apigw-rest.md](docs/apigw-rest.md)) | — ([#189](https://github.com/kgz/awsl/issues/189)) | **Partial** · Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) · custom domains control plane only [#191](https://github.com/kgz/awsl/issues/191) |
+| API Gateway REST (v1) | OpenAPI import · `aws_proxy` · REQUEST authorizers · custom domain Host + base path ([docs/apigw-rest.md](docs/apigw-rest.md)) | — ([#189](https://github.com/kgz/awsl/issues/189)) | **Partial** · Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) |
 | Metrics / Alarms / SSM / CloudTrail / Orgs (empty reads) | Enabled for scanners (Prowler) | — | **Partial** (read-empty) · [#198](https://github.com/kgz/awsl/issues/198) · [docs/prowler.md](docs/prowler.md) |
 | X-Ray / deeper observability | — | — | **Backlog** |
 
@@ -140,12 +148,12 @@ CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · s
 | Tool | Status |
 |------|--------|
 | Terraform S3+Lambda | **Working** (`examples/terraform/…`, local apply) |
-| CloudFormation | **Partial** — stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
+| CloudFormation | **Partial** — failed create rolls back and delete-stack removes resources ([#212](https://github.com/kgz/awsl/issues/212)); in-place rollback / Snapshot [#228](https://github.com/kgz/awsl/issues/228); stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Pulumi / Ansible examples | **Backlog** |
 | CodePipeline / Build / Deploy / Artifact | **Backlog** |
 
-Smokes: `./bin/cfn-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`
+Smokes: `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`
 
 ---
 
@@ -163,7 +171,7 @@ VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS — epic [#90](https://g
 
 ## Quick start
 
-Needs Docker + [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Optional: `psql`, `sshpass` for RDS / Transfer dataplane smokes.
+Needs Docker + [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Optional: `psql`, `mysql`, `sshpass` for RDS / Transfer dataplane smokes.
 
 ```bash
 cp .env.example .env   # first time; awsbox up also does this

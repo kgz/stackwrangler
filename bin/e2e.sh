@@ -18,6 +18,9 @@ echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
 echo "==> IAM AccessDenied"
 ./bin/iam-access-denied.sh
 
+echo "==> IAM OIDC + PassRole"
+./bin/oidc-smoke.sh
+
 echo "==> Lambda smoke"
 ./bin/lambda-smoke.sh
 
@@ -47,6 +50,9 @@ echo "==> ECS authz (sad: empty taskRole PutObject)"
 
 echo "==> ECS taskdef (secrets / host ports / failed-start)"
 ./bin/ecs-taskdef-smoke.sh
+
+echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
+./bin/ecr-smoke.sh
 
 echo "==> Transfer authz (sad: empty role PutObject)"
 ./bin/transfer-authz-smoke.sh
