@@ -177,7 +177,7 @@
 205	in-review	v1: Security group enforcement
 206	in-progress	v1: Route 53 private hosted zones
 207	in-progress	v1: ECS services on EC2
-208	in-progress	v1: EC2 instance fidelity IMDS/SSM
+208	in-review	v1: EC2 instance fidelity IMDS/SSM
 209	in-review	v1: IAM OIDC AssumeRoleWithWebIdentity
 210	in-review	v1: RDS MySQL / Aurora MySQL
 212	in-review	v1: CFN rollback + delete cleanup
