@@ -7,9 +7,9 @@
 
 ## 2. Security groups (#205)
 
-- [ ] 2.1 Enforce SG ingress/egress on workload paths (CIDR + SG ref)
-- [ ] 2.2 NLB client-IP passthrough vs target SG
-- [ ] 2.3 Smoke allow/deny + NLB path; docs; PR → beta
+- [x] 2.1 Enforce SG ingress/egress on workload paths (CIDR + SG ref + prefix list) for EC2, ECS awsvpc, and RDS
+- [x] 2.2 NLB client-IP passthrough vs target SG is [#236](https://github.com/kgz/awsl/issues/236); VPC Lambda is [#237](https://github.com/kgz/awsl/issues/237)
+- [x] 2.3 Smoke allow/deny + live reapply; docs; PR → beta
 
 ## 3. ELBv2 data plane (#203)
 

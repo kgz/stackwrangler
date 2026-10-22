@@ -29,5 +29,7 @@ Happy smokes prove bytes move. **Fidelity smokes** prove the *awkward* path matc
 | Private subnet route table (no default, peering, NAT) | EC2 cannot reach a public host until a route says so | Covered · `./bin/vpc-routing-smoke.sh` · gateway endpoints / Lambda egress [#230](https://github.com/kgz/awsl/issues/230) |
 | Dual S3 brains | Wrong endpoint “succeeds” | Documented split · unify [#162](https://github.com/kgz/awsl/issues/162) |
 | ECS task-role via 169.254 DNAT under compose | In-container SDK path | [#154](https://github.com/kgz/awsl/issues/154) |
+| NLB preserves client IP for the target security group | Target SG must see the caller, not the balancer | [#236](https://github.com/kgz/awsl/issues/236) |
+| VPC Lambda security groups | Function traffic should follow its groups | [#237](https://github.com/kgz/awsl/issues/237) |
 
 Add rows as Debts land; keep this file short.

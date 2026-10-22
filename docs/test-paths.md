@@ -81,6 +81,12 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` |
 | NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
 | Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |
+| SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./bin/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
+| SG rule revoke/authorize updates a running target | sad/other | covered | `./bin/sg-enforcement-smoke.sh` |
+| Prefix list and CIDR allow one address and refuse another | happy | covered | `./bin/sg-enforcement-smoke.sh` |
+| RDS on a subnet allows 5432 only from SG A | happy | covered | `./bin/sg-enforcement-smoke.sh` |
+| NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
+| VPC Lambda traffic filtered by its security groups | sad/other | missing | [#237](https://github.com/kgz/awsl/issues/237) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |

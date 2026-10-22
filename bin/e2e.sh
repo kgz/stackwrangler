@@ -86,6 +86,8 @@ echo "==> EC2 smoke"
 echo "==> VPC routing"
 ./bin/vpc-routing-smoke.sh
 
+echo "==> Security groups (allow SG A, refuse SG B, live reapply)"
+./bin/sg-enforcement-smoke.sh
 echo "==> Prowler (isolated; skip if install blocked)"
 ./bin/prowler-smoke.sh
 

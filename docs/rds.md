@@ -31,6 +31,6 @@ Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.p
 | Reader port | Host port is on the reader DB instance, not a second cluster port field |
 | Aurora MySQL failover | Postgres `pg_ctl` path only — [#225](https://github.com/kgz/awsl/issues/225) |
 | Managed secret rotation | Create/get only |
-| Security groups / VPC | API-shaped; connect on the published host port |
+| Security groups / VPC | Enforced on the VPC address when a DB subnet group is set ([docs/sg-enforcement.md](sg-enforcement.md)); published host port is separate |
 | Private DNS from workloads | [#206](https://github.com/kgz/awsl/issues/206) |
 | Console create | Not wired — [#145](https://github.com/kgz/awsl/issues/145) |

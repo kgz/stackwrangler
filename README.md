@@ -65,7 +65,7 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 | ECR | create-repository · `get-login-password` · push/pull `127.0.0.1:5000/<repo>` · ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` (needs `ecr:BatchGetImage`) | — | **Partial** · push the repositoryUri hostname [#218](https://github.com/kgz/awsl/issues/218) · Lambda image authz [#219](https://github.com/kgz/awsl/issues/219) · console [#217](https://github.com/kgz/awsl/issues/217) |
 | EKS / Batch / App Runner / ASG | — | — | **Backlog** |
 
-Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ec2-imds-smoke.sh` · `./bin/ec2-authz-smoke.sh` · `./bin/ecr-smoke.sh` · `./bin/vpc-routing-smoke.sh`
+Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ec2-imds-smoke.sh` · `./bin/ec2-authz-smoke.sh` · `./bin/ecr-smoke.sh` · `./bin/vpc-routing-smoke.sh` · `./bin/sg-enforcement-smoke.sh`
 
 ---
 
@@ -75,7 +75,8 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 |---------|--------|
 | Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/SG · [docs/mirror.md](docs/mirror.md) · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
 | VPC routes / peering / NAT | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · gateway endpoints / Lambda egress [#230](https://github.com/kgz/awsl/issues/230) · console [#146](https://github.com/kgz/awsl/issues/146) |
-| SG / AZ polish | **Backlog** |
+| VPC security groups | **Partial** · [docs/sg-enforcement.md](docs/sg-enforcement.md) · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · VPC Lambda [#237](https://github.com/kgz/awsl/issues/237) · console [#146](https://github.com/kgz/awsl/issues/146) |
+| VPC / AZ polish | **Backlog** |
 | ALB / NLB / Classic ELB | **Backlog** |
 | WAFv2 / Route 53 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |

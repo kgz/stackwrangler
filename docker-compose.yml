@@ -71,6 +71,8 @@ services:
       - ./localemu-patches/cfn_change_set_model_executor.py:/opt/code/localemu/src/localemu/services/cloudformation/engine/v2/change_set_model_executor.py:ro
       # VPC route tables (#204): private subnets, peering, NAT
       - ./localemu-patches/vpc_routing.py:/opt/code/localemu/src/localemu/services/ec2/docker/vpc_routing.py:ro
+      # Security groups (#205): ECS awsvpc + RDS + prefix lists on top of EC2 sg_iptables
+      - ./localemu-patches/sg_enforcement.py:/opt/code/localemu/src/localemu/services/ec2/docker/sg_enforcement.py:ro
     healthcheck:
       test:
         [
