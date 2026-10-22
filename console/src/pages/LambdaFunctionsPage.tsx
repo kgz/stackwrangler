@@ -10,6 +10,7 @@ import {
 } from '../lib/lambda'
 import { lambdaLogGroupName } from '../lib/logs'
 import { Link } from 'react-router-dom'
+import { ResourceLabel } from '../components/ResourceLabel'
 
 export function LambdaFunctionsPage() {
   const [fns, setFns] = useState<FunctionConfiguration[]>([])
@@ -202,7 +203,9 @@ export function LambdaFunctionsPage() {
                       onChange={() => setSelected(name)}
                     />
                   </td>
-                  <td>{name}</td>
+                  <td>
+                    <ResourceLabel ids={[name, fn.FunctionArn]}>{name}</ResourceLabel>
+                  </td>
                   <td>{fn.Runtime ?? '—'}</td>
                   <td>{fn.Handler ?? '—'}</td>
                   <td>

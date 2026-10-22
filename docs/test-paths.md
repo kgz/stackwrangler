@@ -87,6 +87,9 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | RDS on a subnet allows 5432 only from SG A | happy | covered | `./bin/sg-enforcement-smoke.sh` |
 | NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
 | VPC Lambda traffic filtered by its security groups | sad/other | missing | [#237](https://github.com/kgz/awsl/issues/237) |
+| Console label for a VPC ID and an NLB ARN glob | happy | covered | `./bin/labels-smoke.sh` · [labels.md](labels.md) |
+| `GET /_awsl/labels` | happy | covered | `./bin/labels-smoke.sh` |
+| Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./bin/labels-smoke.sh` |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |

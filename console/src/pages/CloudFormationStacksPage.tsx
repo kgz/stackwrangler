@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ResourceLabel } from '../components/ResourceLabel'
 import {
   deleteStack,
   describeStack,
@@ -52,7 +53,6 @@ function StatusBadge({ status }: { status: string | undefined }) {
 }
 
 function StacksList() {
-  const navigate = useNavigate()
   const [stacks, setStacks] = useState<StackSummary[]>([])
   const [filter, setFilter] = useState('')
   const [includeDeleted, setIncludeDeleted] = useState(false)
@@ -220,13 +220,15 @@ function StacksList() {
                       />
                     </td>
                     <td>
-                      <Link
-                        className="cfn-stack-link"
-                        to={`/cloudformation/stacks/${encodeURIComponent(name)}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {name}
-                      </Link>
+                      <ResourceLabel ids={[name, s.StackId]}>
+                        <Link
+                          className="cfn-stack-link"
+                          to={`/cloudformation/stacks/${encodeURIComponent(name)}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {name}
+                        </Link>
+                      </ResourceLabel>
                     </td>
                     <td>
                       <StatusBadge status={s.StackStatus} />
@@ -349,7 +351,11 @@ function StackDetail({ name }: { name: string }) {
         <div className="cfn-detail">
           <div className="cfn-page-head">
             <div>
-              <h1 className="page-title">{name}</h1>
+              <h1 className="page-title">
+                <ResourceLabel ids={[name, stack?.StackId]} detail>
+                  {name}
+                </ResourceLabel>
+              </h1>
               {stack ? (
                 <div className="cfn-subtitle">
                   <StatusBadge status={stack.StackStatus} />
@@ -534,7 +540,9 @@ function StackDetail({ name }: { name: string }) {
                       <tr key={r.LogicalResourceId}>
                         <td>{r.LogicalResourceId ?? '—'}</td>
                         <td>
-                          <code>{r.PhysicalResourceId ?? '—'}</code>
+                          <ResourceLabel ids={[r.PhysicalResourceId]}>
+                            <code>{r.PhysicalResourceId ?? '—'}</code>
+                          </ResourceLabel>
                         </td>
                         <td className="cfn-muted">{r.ResourceType ?? '—'}</td>
                         <td>

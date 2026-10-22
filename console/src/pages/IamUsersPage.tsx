@@ -5,6 +5,7 @@ import {
   type AccessDeniedLabResult,
 } from '../lib/iam'
 import type { User } from '@aws-sdk/client-iam'
+import { ResourceLabel } from '../components/ResourceLabel'
 
 export function IamUsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -97,7 +98,11 @@ export function IamUsersPage() {
           <tbody>
             {users.map((u) => (
               <tr key={u.UserId ?? u.UserName}>
-                <td>{u.UserName}</td>
+                <td>
+                  <ResourceLabel ids={[u.UserName, u.UserId, u.Arn]}>
+                    {u.UserName}
+                  </ResourceLabel>
+                </td>
                 <td>
                   {u.CreateDate
                     ? new Date(u.CreateDate).toLocaleString()

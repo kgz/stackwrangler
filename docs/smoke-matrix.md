@@ -40,6 +40,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Prowler | yes (scoped unused-services) | ratchet (failing API count) | S3 Control host | — | `prowler-smoke.sh` |
 | Account mirror | yes (synthetic apply) | n/a (local apply) | in-repo write + non-local endpoint | — | `mirror-smoke.sh` |
 | Custom resource IDs | yes | n/a (same create APIs as service smokes) | bad `_custom_id_` | n/a | `custom-id-smoke.sh` |
+| Console labels | yes (VPC id + NLB ARN glob) | — | missing file → no labels | list/detail | `labels-smoke.sh` |
 
 ## Rule
 

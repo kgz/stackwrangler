@@ -35,6 +35,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 |------|--------|--------|
 | `./bin/awsbox up` + profile `local` | **Working** | Compose + managed AWS profile |
 | Console shell (AWS-look) | **Working** | Dark console frame |
+| Console labels | **Working** | `AWSBOX_LABELS` file kept outside the repo · [docs/labels.md](docs/labels.md) · `./bin/labels-smoke.sh` |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
 | IAM enforcement | **Partial** | resource policies `./bin/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [docs/custom-ids.md](docs/custom-ids.md) · `./bin/custom-id-smoke.sh` |

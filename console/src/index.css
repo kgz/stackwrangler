@@ -976,3 +976,33 @@ table.data th {
   margin: 0;
   word-break: break-all;
 }
+
+.resource-id {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.resource-label-text,
+a.resource-label-link {
+  font-weight: 600;
+}
+
+a.resource-label-link {
+  color: var(--aws-link);
+  text-decoration: none;
+}
+
+a.resource-label-link:hover {
+  color: var(--aws-link-hover);
+  text-decoration: underline;
+}
+
+.resource-label-note {
+  flex-basis: 100%;
+  color: var(--aws-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
