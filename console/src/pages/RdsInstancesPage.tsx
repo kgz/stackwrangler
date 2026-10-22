@@ -15,15 +15,24 @@ function endpointLabel(db: DBInstance): string {
   return `${a}:${p}`
 }
 
+function isMysqlEngine(engine: string | undefined): boolean {
+  const name = (engine ?? '').toLowerCase()
+  return name === 'mysql' || name === 'mariadb' || name.startsWith('aurora-mysql')
+}
+
 function connectHint(db: DBInstance): string {
   const host = db.Endpoint?.Address ?? '127.0.0.1'
-  const port = db.Endpoint?.Port ?? 5432
   const user = db.MasterUsername ?? 'awsbox'
   const name = db.DBName ?? 'awsbox'
   const h =
     host.includes('rds.amazonaws.com') || host === 'localhost'
       ? '127.0.0.1'
       : host
+  const mysql = isMysqlEngine(db.Engine)
+  const port = db.Endpoint?.Port ?? (mysql ? 3306 : 5432)
+  if (mysql) {
+    return `mysql -h ${h} -P ${port} -u ${user} -p ${name}`
+  }
   return `psql -h ${h} -p ${port} -U ${user} -d ${name}`
 }
 
@@ -95,7 +104,7 @@ function InstancesList() {
             type="button"
             className="btn btn-primary"
             disabled
-            title="Use ./bin/rds-smoke.sh"
+            title="Use ./bin/rds-smoke.sh or ./bin/rds-mysql-smoke.sh"
           >
             Create database
           </button>
@@ -103,7 +112,7 @@ function InstancesList() {
       </div>
       <p className="page-lead">
         Docker-backed instances when <code>RDS_DOCKER_BACKEND=1</code>. Create
-        via <code>./bin/rds-smoke.sh</code>.
+        via <code>./bin/rds-smoke.sh</code> or <code>./bin/rds-mysql-smoke.sh</code>.
       </p>
       {error ? <div className="error-banner">{error}</div> : null}
       {toast ? (
@@ -117,8 +126,8 @@ function InstancesList() {
         ) : dbs.length === 0 ? (
           <div className="empty">
             <strong>No databases</strong>
-            Run <code>./bin/rds-smoke.sh</code> (keep with{' '}
-            <code>AWSBOX_RDS_KEEP=1</code> to inspect).
+            Run <code>./bin/rds-smoke.sh</code> or <code>./bin/rds-mysql-smoke.sh</code>{' '}
+            (keep with <code>AWSBOX_RDS_KEEP=1</code> to inspect).
           </div>
         ) : (
           <table className="data">

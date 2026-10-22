@@ -18,6 +18,9 @@ echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
 echo "==> IAM AccessDenied"
 ./bin/iam-access-denied.sh
 
+echo "==> IAM OIDC + PassRole"
+./bin/oidc-smoke.sh
+
 echo "==> Lambda smoke"
 ./bin/lambda-smoke.sh
 
