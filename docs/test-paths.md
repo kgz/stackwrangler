@@ -132,6 +132,9 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `awsl mirror --out` inside the repo (not gitignored) | sad/other | covered | `./bin/mirror-smoke.sh` |
 | `awsl apply` non-local endpoint | sad/other | covered | `./bin/mirror-smoke.sh` |
 | Real-account `awsl mirror` read (Describe/List/Get only) | happy | missing | [#220](https://github.com/kgz/awsl/issues/220) |
+| Create VPC/subnet/SG with `_custom_id_` + account id in OwnerId/STS/ARNs | happy | covered | `./bin/custom-id-smoke.sh` · [custom-ids.md](custom-ids.md) |
+| Create route table, IGW, peering, instance, LB/TG suffix, REST/HTTP API, hosted zone, ECS cluster ARN with `_custom_id_` | happy | covered | `./bin/custom-id-smoke.sh` |
+| `_custom_id_` value fails the id format check | sad/other | covered | `./bin/custom-id-smoke.sh` |
 
 ---
 
