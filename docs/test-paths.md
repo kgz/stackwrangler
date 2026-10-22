@@ -38,8 +38,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
 | REST authorizer Deny → 401 (AWS 403) | sad/authz | thin | `./bin/apigw-rest-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
 | REST unknown route → 403 | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
-| REST custom domain + base-path mapping (control plane) | happy | covered | `./bin/apigw-rest-smoke.sh` |
-| REST request via custom domain | happy | missing | [#191](https://github.com/kgz/awsl/issues/191) |
+| REST custom domain + base-path mapping | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST request via custom domain (root mapping, local DNS) | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST request via custom domain named base path | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST custom domain unmapped prefix → 403 Forbidden | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./bin/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./bin/lambda-vpc-smoke.sh` |
 | Non-VPC Lambda blocked from private hosts | sad/other | missing | [#187](https://github.com/kgz/awsl/issues/187) |
