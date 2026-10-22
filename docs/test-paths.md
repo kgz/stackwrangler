@@ -46,6 +46,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Lambda role missing other actions | sad/authz | missing | extend `lambda-authz-smoke.sh` / [#150](https://github.com/kgz/awsl/issues/150) |
 | ECS run-task + HTTP reachable | happy | covered | `./bin/ecs-smoke.sh` |
 | **ECS task role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./bin/ecs-authz-smoke.sh` |
+| ECS secrets `valueFrom` (ASM JSON key + SSM) via execution role | happy | covered | `./bin/ecs-taskdef-smoke.sh` |
+| **ECS execution role deny GetSecretValue → ResourceInitializationError** | sad/authz | covered | `./bin/ecs-taskdef-smoke.sh` |
+| ECS `networkMode: host` + portMappings listens on host | happy | covered | `./bin/ecs-taskdef-smoke.sh` |
+| ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./bin/ecs-taskdef-smoke.sh` |
 | ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |

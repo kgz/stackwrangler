@@ -46,6 +46,9 @@ services:
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs
       - ./localemu-patches/s3control_provider.py:/opt/code/localemu/src/localemu/services/s3control/provider.py:ro
       - ./localemu-patches/init/start.d:/etc/localemu/init/start.d:ro
+      # ECS taskdef fidelity (#201): secrets valueFrom, host ports, failed-start status
+      - ./localemu-patches/ecs_task_manager.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_manager.py:ro
+      - ./localemu-patches/ecs_provider.py:/opt/code/localemu/src/localemu/services/ecs/provider.py:ro
     healthcheck:
       test:
         [

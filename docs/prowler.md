@@ -70,6 +70,7 @@ Do **not** point `AWS_ENDPOINT_URL` at `http://127.0.0.1:4566` for Prowler — b
 | `SERVICES` includes `s3control`, `ssm`, `cloudwatch`, `cloudtrail`, `organizations`, `backup`, `batch`, `application-autoscaling`, `autoscaling`, `dax`, … | Empty-account describe/list for scanners |
 | `localemu-patches/s3control_provider.py` | Account Get/PutPublicAccessBlock + access-point lists (AWS-shaped empty get) |
 | `localemu-patches/init/start.d/10-prowler-stubs.py` | EC2/IAM/RDS/SSM/Backup actions Prowler probes |
+| `localemu-patches/ecs_task_manager.py` / `ecs_provider.py` | ECS secrets `valueFrom`, host ports, failed-start status (#201) |
 | `localemu/localemu@sha256:…` (pinned) | Avoid silent break of file mounts on `:latest` drift |
 | `./bin/awsbox-hosts` | Check / print / apply loopback hosts for S3 Control |
 
