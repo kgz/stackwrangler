@@ -3,7 +3,7 @@
 Digest: `localemu/localemu@sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f46d7aa8123551cee10b`
 
 ## Already present
-- `elbv2/provider.py` + `listener_router.py` — HTTP/HTTPS only; ephemeral bind port; instance targets → `127.0.0.1`
+- `elbv2/provider.py` + `listener_router.py` — upstream is HTTP/HTTPS only, ephemeral bind, instance targets → `127.0.0.1`. #203 overlays both files (`localemu-patches/elbv2_*.py`): TCP/TLS, requested port, instance IPs, host-netns DNAT for client source IP
 - `ec2/docker/vpc_network.py` — per-VPC bridge; IGW toggles `--internal`
 - `container_routing.py` — peering `/32` between EC2 containers
 - `nat_gateway.py` — NAT exists but attaches **all** VPC containers (ignores route tables)

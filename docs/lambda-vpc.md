@@ -30,4 +30,4 @@ It creates a VPC, subnet and security group, deploys a Lambda with `VpcConfig`, 
 
 - `VpcConfig` is stored and returned, but has no network effect: no ENIs, subnet routing or security-group checks ([#51](https://github.com/kgz/awsl/issues/51)).
 - Mappings apply to every function, so a Lambda **without** `VpcConfig` can also reach mapped hosts. In AWS it couldn't reach private addresses ([#187](https://github.com/kgz/awsl/issues/187)).
-- No NLB in between; the name points straight at your service ([#53](https://github.com/kgz/awsl/issues/53)).
+- NLB/ALB forwarding is covered by [elbv2.md](elbv2.md). This smoke still hits the host directly.

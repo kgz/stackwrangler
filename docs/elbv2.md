@@ -4,6 +4,7 @@ LocalEmu `elbv2` on `:4566` (`SERVICES` includes `elbv2`). Listeners are real so
 
 ```bash
 ./bin/awsbox up --force    # remounts localemu-patches/elbv2_*.py
+./bin/elbv2-smoke.sh           # NLB/ALB forward, client IP, health, DNS, authz
 ./bin/apigw-nlb-ecs-smoke.sh   # VPC_LINK → internal NLB → ECS ip target
 ```
 

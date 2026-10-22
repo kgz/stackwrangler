@@ -91,6 +91,9 @@ echo "==> VPC routing"
 
 echo "==> Security groups (allow SG A, refuse SG B, live reapply)"
 ./bin/sg-enforcement-smoke.sh
+echo "==> ELBv2 data plane"
+./bin/elbv2-smoke.sh
+
 echo "==> Prowler (isolated; skip if install blocked)"
 ./bin/prowler-smoke.sh
 

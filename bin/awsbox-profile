@@ -140,12 +140,14 @@ cmd_write() {
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
 		echo "acm ="
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "elbv2 ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
 	} >> "$CONFIG_FILE"
 
 	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true
 	sed -i '1{/^$/d}' "$CONFIG_FILE" 2>/dev/null || true
 
-	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, iam/sts/lambda/logs/cfn/transfer/rds/route53/acm ${IAM_ENDPOINT} (region ${REGION})"
+	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, iam/sts/lambda/logs/cfn/transfer/rds/route53/acm/elbv2 ${IAM_ENDPOINT} (region ${REGION})"
 }
 
 cmd_remove() {
