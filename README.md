@@ -86,10 +86,11 @@ Smoke: `./bin/mirror-smoke.sh`
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** · create/Aurora debt [#145](https://github.com/kgz/awsl/issues/145) |
+| RDS (MySQL / Aurora MySQL) | Docker DB · writer/reader · `rds!` secret | Databases + `mysql` hint | **Partial** · failover [#225](https://github.com/kgz/awsl/issues/225) · console create [#145](https://github.com/kgz/awsl/issues/145) |
 | DynamoDB | put/get item | — | **Working** (CLI) · console [#174](https://github.com/kgz/awsl/issues/174) |
 | ElastiCache / other DBs | — | — | **Backlog** |
 
-Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`)
+Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`) · MySQL/Aurora: `./bin/rds-mysql-smoke.sh` (needs host `mysql`)
 
 ---
 
@@ -166,7 +167,7 @@ VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS — epic [#90](https://g
 
 ## Quick start
 
-Needs Docker + [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Optional: `psql`, `sshpass` for RDS / Transfer dataplane smokes.
+Needs Docker + [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Optional: `psql`, `mysql`, `sshpass` for RDS / Transfer dataplane smokes.
 
 ```bash
 cp .env.example .env   # first time; awsbox up also does this
