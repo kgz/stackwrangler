@@ -29,6 +29,12 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./bin/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./bin/iam-access-denied.sh` + IAM console lab |
+| Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./bin/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |
+| S3 bucket and IAM role in A hidden from B | sad/authz | covered | `./bin/multi-account-smoke.sh` |
+| `sts:AssumeRole` role in B trusts `arn:aws:iam::<A>:root` + `sts:ExternalId`; user in A assumes | happy | covered | `./bin/multi-account-smoke.sh` |
+| AssumeRole without ExternalId / from account C / user missing `sts:AssumeRole` | sad/authz | covered | `./bin/multi-account-smoke.sh` |
+| Trust `StringEquals` `aws:PrincipalOrgID` does not allow | sad/authz | covered | `./bin/multi-account-smoke.sh` |
+| Cross-account resource policy Allow | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./bin/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./bin/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./bin/lambda-deploy-smoke.sh` |
@@ -100,6 +106,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./bin/lambda-smoke.sh           # happy
 ./bin/lambda-authz-smoke.sh     # sad/authz
+./bin/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
 ./bin/transfer-dataplane-smoke.sh
 ./bin/rds-smoke.sh              # needs psql
 # …add others as you touch a surface
