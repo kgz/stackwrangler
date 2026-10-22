@@ -31,6 +31,6 @@ Uses host port `24568` (`AWSBOX_VPCE_HOST_PORT`) so it does not take over a stac
 
 ## Limits
 
-- Private DNS is answered by the awsbox resolver, not a real Route 53 private hosted zone API object ([#206](https://github.com/kgz/awsl/issues/206) covers PHZ).
+- Endpoint names are answered by the awsbox resolver, not a Route 53 private hosted zone API object. User-created private zones are in [r53-private.md](r53-private.md).
 - Gateway endpoints stay with [#230](https://github.com/kgz/awsl/issues/230).
 - Console VPC endpoints stay with [#146](https://github.com/kgz/awsl/issues/146).

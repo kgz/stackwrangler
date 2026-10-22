@@ -52,6 +52,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Account mirror tags | yes (tagged VPC/subnet/RT + TF data sources) | n/a (local apply) | — | — | `mirror-tags-smoke.sh` |
 | Custom resource IDs | yes | n/a (same create APIs as service smokes) | bad `_custom_id_` | n/a | `custom-id-smoke.sh` |
 | Console labels | yes (VPC id + NLB ARN glob) | — | missing file → no labels | list/detail | `labels-smoke.sh` |
+| Route 53 private zones | yes (associated VPC CNAME connect, alias, A/AAAA, EC2) | **yes** (deny `route53:ListHostedZones`) | unassociated VPC NXDOMAIN | no → [#245](https://github.com/kgz/awsl/issues/245) | `r53-private-smoke.sh` |
 
 ## Rule
 

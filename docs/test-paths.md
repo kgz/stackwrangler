@@ -83,6 +83,13 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull authz | sad/authz | missing | [#219](https://github.com/kgz/awsl/issues/219) |
 | ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
+| Private zone CNAME → internal NLB resolves and connects from ECS in the associated VPC | happy | covered | `./bin/r53-private-smoke.sh` · [r53-private.md](r53-private.md) |
+| Private zone alias to ALB returns the ALB addresses | happy | covered | `./bin/r53-private-smoke.sh` |
+| Private zone A and AAAA from the associated VPC | happy | covered | `./bin/r53-private-smoke.sh` |
+| EC2 in the associated VPC resolves the private zone | happy | covered | `./bin/r53-private-smoke.sh` |
+| Private names from an unassociated VPC | sad/other | covered | `./bin/r53-private-smoke.sh` |
+| **`route53:ListHostedZones` explicit deny** | sad/authz | covered | `./bin/r53-private-smoke.sh` |
+| Lambda `VpcConfig` private DNS | happy | missing | [#245](https://github.com/kgz/awsl/issues/245) |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
 | EC2 IMDSv2 instance-profile reads secret | happy | covered | `./bin/ec2-imds-smoke.sh` |
 | EC2 instance-profile missing GetSecretValue → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |

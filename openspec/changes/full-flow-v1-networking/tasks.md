@@ -19,9 +19,9 @@
 
 ## 4. Private DNS (#206)
 
-- [ ] 4.1 Resolver for workloads (Docker DNS / forwarder)
-- [ ] 4.2 Private zone VPC association + CNAME/alias to ELB
-- [ ] 4.3 Smoke associated vs unassociated; docs; PR → beta
+- [x] 4.1 Resolver for workloads (Docker DNS / forwarder)
+- [x] 4.2 Private zone VPC association + CNAME/alias to ELB
+- [x] 4.3 Smoke associated vs unassociated; docs; PR → beta
 
 ## 5. Gap check
 

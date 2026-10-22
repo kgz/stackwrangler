@@ -551,8 +551,22 @@ def _udp_loop() -> None:
                 LOG.debug("udp send failed", exc_info=True)
 
 
+_R53_PATH = "/opt/code/localemu/src/localemu/services/route53/private_resolver.py"
+
+
 def serve() -> None:
     import signal
+
+    # One process owns UDP/TCP 53 on each VPC address; the Route 53 resolver
+    # answers private hosted zones, then falls back to this module's endpoints.
+    if os.path.isfile(_R53_PATH):
+        import runpy
+
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+        LOG.info("VPCE private DNS resolver starting")
+
+        runpy.run_path(_R53_PATH, run_name="awsbox_r53_serve")["serve"]()
+        return
 
     signal.signal(signal.SIGHUP, signal.SIG_IGN)
     os.environ["AWS_EC2_METADATA_DISABLED"] = "true"

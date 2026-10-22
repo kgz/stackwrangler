@@ -27,6 +27,9 @@ Digest: `localemu/localemu@sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f4
 4. Smoke: `bin/sg-enforcement-smoke.sh`
 5. NLB client IP [#236](https://github.com/kgz/awsl/issues/236); VPC Lambda [#237](https://github.com/kgz/awsl/issues/237)
 
+## #206 private DNS
+Resolver process (`localemu-patches/r53_private_resolver.py`, boot.d) binds UDP/TCP 53 on this container's per-VPC address. ECS awsvpc, EC2 (`AmazonProvidedDNS`), and Lambda `VpcConfig` pass that address as Docker `--dns`. Answers are limited to zones associated with the destination VPC. CNAME/alias to an ELBv2 DNS name returns that address; a TCP proxy on the listener port connects IP targets. `elbv2` is in `SERVICES`. Smoke: `bin/r53-private-smoke.sh`.
+
 ## Shared touchpoints
 - `localemu-patches/ecs_task_manager.py`
 - `ec2/docker/{vpc_network,instance_routes,nat_gateway,address_index,sg_iptables}.py`
