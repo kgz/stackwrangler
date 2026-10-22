@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { config } from '../lib/config'
+import { LabelsProvider } from '../lib/labelsContext'
 
 type SectionId = 'buckets' | 'files' | 'access' | 'storage' | 'marketplace'
 type AppId =
@@ -152,6 +153,27 @@ function SimpleSidebar({
   )
 }
 
+function Ec2Sidebar() {
+  return (
+    <>
+      <h2 className="sidebar-title">EC2</h2>
+      <div className="nav-section">
+        <div className="nav-section-body">
+          <NavLink to="/ec2" end className={itemClass}>
+            Instances
+          </NavLink>
+          <NavLink to="/ec2/vpcs" className={itemClass}>
+            Your VPCs
+          </NavLink>
+          <NavLink to="/ec2/load-balancers" className={itemClass}>
+            Load balancers
+          </NavLink>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/iam')) return 'iam'
   if (pathname.startsWith('/lambda')) return 'lambda'
@@ -181,6 +203,7 @@ export function Shell() {
   }
 
   return (
+    <LabelsProvider>
     <div className="app-shell">
       <header className="top-nav">
         <NavLink to="/" className="brand">
@@ -278,7 +301,7 @@ export function Shell() {
           ) : app === 'ecs' ? (
             <SimpleSidebar title="ECS" to="/ecs" label="Clusters" />
           ) : app === 'ec2' ? (
-            <SimpleSidebar title="EC2" to="/ec2" label="Instances" />
+            <Ec2Sidebar />
           ) : (
             <S3Sidebar open={open} toggle={toggle} />
           )}
@@ -288,5 +311,6 @@ export function Shell() {
         </main>
       </div>
     </div>
+    </LabelsProvider>
   )
 }

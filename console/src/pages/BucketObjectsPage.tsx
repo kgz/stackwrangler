@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ObjectPreview } from '../components/ObjectPreview'
+import { ResourceLabel } from '../components/ResourceLabel'
 import { config } from '../lib/config'
 import {
   deleteObject,
@@ -198,7 +199,11 @@ export function BucketObjectsPage() {
         <Link to="/">Amazon S3</Link> &gt; <Link to="/">Buckets</Link> &gt;{' '}
         {bucket}
       </div>
-      <h1 className="page-title">{bucket}</h1>
+      <h1 className="page-title">
+        <ResourceLabel ids={[bucket, `arn:aws:s3:::${bucket}`]} detail>
+          {bucket}
+        </ResourceLabel>
+      </h1>
 
       <div className="tabs">
         <button

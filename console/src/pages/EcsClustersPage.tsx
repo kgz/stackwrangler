@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ResourceLabel } from '../components/ResourceLabel'
 import {
   describeClusters,
   describeServices,
@@ -82,15 +83,19 @@ function ClustersList() {
                 return (
                   <tr key={c.clusterArn ?? name}>
                     <td>
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={() =>
-                          navigate(`/ecs/clusters/${encodeURIComponent(name)}`)
-                        }
-                      >
-                        {name}
-                      </button>
+                      <ResourceLabel ids={[c.clusterArn, name]}>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() =>
+                            navigate(
+                              `/ecs/clusters/${encodeURIComponent(name)}`,
+                            )
+                          }
+                        >
+                          {name}
+                        </button>
+                      </ResourceLabel>
                     </td>
                     <td>{c.status ?? '—'}</td>
                     <td>{c.activeServicesCount ?? '—'}</td>
@@ -171,7 +176,11 @@ function ClusterDetail({ name }: { name: string }) {
                 <div>
                   <dt>ARN</dt>
                   <dd>
-                    <code className="cfn-arn">{cluster?.clusterArn ?? '—'}</code>
+                    <ResourceLabel ids={[cluster?.clusterArn, name]} detail>
+                      <code className="cfn-arn">
+                        {cluster?.clusterArn ?? '—'}
+                      </code>
+                    </ResourceLabel>
                   </dd>
                 </div>
               </dl>
@@ -193,7 +202,11 @@ function ClusterDetail({ name }: { name: string }) {
                   <tbody>
                     {services.map((s) => (
                       <tr key={s.serviceArn ?? s.serviceName}>
-                        <td>{s.serviceName ?? '—'}</td>
+                        <td>
+                          <ResourceLabel ids={[s.serviceArn, s.serviceName]}>
+                            {s.serviceName ?? '—'}
+                          </ResourceLabel>
+                        </td>
                         <td>{s.status ?? '—'}</td>
                         <td>{s.desiredCount ?? '—'}</td>
                         <td>{s.runningCount ?? '—'}</td>
@@ -224,7 +237,9 @@ function ClusterDetail({ name }: { name: string }) {
                       return (
                         <tr key={arn}>
                           <td>
-                            <code>{short}</code>
+                            <ResourceLabel ids={[arn]}>
+                              <code>{short || '—'}</code>
+                            </ResourceLabel>
                           </td>
                           <td>{t.lastStatus ?? '—'}</td>
                           <td>{t.desiredStatus ?? '—'}</td>

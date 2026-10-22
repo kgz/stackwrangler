@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ResourceLabel } from '../components/ResourceLabel'
 import {
   createSftpServer,
   deleteServer,
@@ -152,18 +153,20 @@ function ServersList() {
                       />
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(
-                            `/transfer/servers/${encodeURIComponent(id)}`,
-                          )
-                        }}
-                      >
-                        {id}
-                      </button>
+                      <ResourceLabel ids={[id, s.Arn]}>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(
+                              `/transfer/servers/${encodeURIComponent(id)}`,
+                            )
+                          }}
+                        >
+                          {id}
+                        </button>
+                      </ResourceLabel>
                     </td>
                     <td>{s.State ?? '—'}</td>
                     <td className="cfn-muted">
@@ -218,7 +221,11 @@ function ServerDetail({ serverId }: { serverId: string }) {
         <span>{serverId}</span>
       </div>
       <div className="cfn-page-head">
-        <h1 className="page-title">{serverId}</h1>
+        <h1 className="page-title">
+          <ResourceLabel ids={[serverId, server?.Arn]} detail>
+            {serverId}
+          </ResourceLabel>
+        </h1>
         <button type="button" className="btn" onClick={() => void refresh()}>
           Refresh
         </button>
@@ -272,7 +279,9 @@ function ServerDetail({ serverId }: { serverId: string }) {
                         <td>{u.UserName ?? '—'}</td>
                         <td className="cfn-muted">{u.HomeDirectory ?? '—'}</td>
                         <td className="cfn-muted">
-                          <code>{u.Arn ?? '—'}</code>
+                          <ResourceLabel ids={[u.Arn]}>
+                            <code>{u.Arn ?? '—'}</code>
+                          </ResourceLabel>
                         </td>
                       </tr>
                     ))}

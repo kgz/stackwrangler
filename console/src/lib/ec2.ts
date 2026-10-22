@@ -1,8 +1,10 @@
 import {
   DescribeInstancesCommand,
+  DescribeVpcsCommand,
   EC2Client,
   type Instance,
   type Reservation,
+  type Vpc,
 } from '@aws-sdk/client-ec2'
 import { emuCreds } from './emu'
 
@@ -22,4 +24,14 @@ export async function listInstances(): Promise<Instance[]> {
   return instances
 }
 
-export type { Instance }
+export async function listVpcs(): Promise<Vpc[]> {
+  const out = await client().send(new DescribeVpcsCommand({}))
+  return out.Vpcs ?? []
+}
+
+export async function describeVpc(vpcId: string): Promise<Vpc | null> {
+  const out = await client().send(new DescribeVpcsCommand({ VpcIds: [vpcId] }))
+  return out.Vpcs?.[0] ?? null
+}
+
+export type { Instance, Vpc }

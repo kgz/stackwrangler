@@ -8,6 +8,7 @@ import {
   localInvokeUrl,
 } from '../lib/apigw'
 import { listFunctions } from '../lib/lambda'
+import { ResourceLabel } from '../components/ResourceLabel'
 
 export function ApiGatewayPage() {
   const [apis, setApis] = useState<Api[]>([])
@@ -138,7 +139,9 @@ export function ApiGatewayPage() {
                 <tr key={id}>
                   <td>{a.Name}</td>
                   <td>
-                    <code>{id}</code>
+                    <ResourceLabel ids={[id, a.ApiEndpoint]}>
+                      <code>{id}</code>
+                    </ResourceLabel>
                   </td>
                   <td>
                     <code>{localInvokeUrl(id)}</code>

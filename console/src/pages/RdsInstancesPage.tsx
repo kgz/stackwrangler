@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ResourceLabel } from '../components/ResourceLabel'
 import {
   deleteDbInstance,
   describeDbInstance,
@@ -150,16 +151,18 @@ function InstancesList() {
                       />
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/rds/databases/${encodeURIComponent(id)}`)
-                        }}
-                      >
-                        {id}
-                      </button>
+                      <ResourceLabel ids={[id, db.DBInstanceArn]}>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/rds/databases/${encodeURIComponent(id)}`)
+                          }}
+                        >
+                          {id}
+                        </button>
+                      </ResourceLabel>
                     </td>
                     <td>{db.DBInstanceStatus ?? '—'}</td>
                     <td className="cfn-muted">
@@ -208,7 +211,11 @@ function InstanceDetail({ id }: { id: string }) {
         <span>{id}</span>
       </div>
       <div className="cfn-page-head">
-        <h1 className="page-title">{id}</h1>
+        <h1 className="page-title">
+          <ResourceLabel ids={[id, db?.DBInstanceArn]} detail>
+            {id}
+          </ResourceLabel>
+        </h1>
         <button type="button" className="btn" onClick={() => void refresh()}>
           Refresh
         </button>
