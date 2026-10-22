@@ -26,6 +26,7 @@ Happy smokes prove bytes move. **Fidelity smokes** prove the *awkward* path matc
 | Gap | Why it matters | Status |
 |-----|----------------|--------|
 | ECS task↔task on same host via service VIP / NAT hairpin | Classic “works across AZs, fails same host” | Debt — track under networking fidelity epic |
+| Private subnet route table (no default, peering, NAT) | EC2 cannot reach a public host until a route says so | Covered · `./bin/vpc-routing-smoke.sh` · gateway endpoints / Lambda egress [#230](https://github.com/kgz/awsl/issues/230) |
 | Dual S3 brains | Wrong endpoint “succeeds” | Documented split · unify [#162](https://github.com/kgz/awsl/issues/162) |
 | ECS task-role via 169.254 DNAT under compose | In-container SDK path | [#154](https://github.com/kgz/awsl/issues/154) |
 | NLB preserves client IP for the target security group | Target SG must see the caller, not the balancer | [#236](https://github.com/kgz/awsl/issues/236) |
