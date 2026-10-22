@@ -52,6 +52,9 @@ services:
       # ECS taskdef fidelity (#201): secrets valueFrom, host ports, failed-start status
       - ./localemu-patches/ecs_task_manager.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_manager.py:ro
       - ./localemu-patches/ecs_provider.py:/opt/code/localemu/src/localemu/services/ecs/provider.py:ro
+      # CFN lifecycle (#212): failed-create rollback, delete-stack cleanup, honest status
+      - ./localemu-patches/cfn_v2_provider.py:/opt/code/localemu/src/localemu/services/cloudformation/v2/provider.py:ro
+      - ./localemu-patches/cfn_change_set_model_executor.py:/opt/code/localemu/src/localemu/services/cloudformation/engine/v2/change_set_model_executor.py:ro
     healthcheck:
       test:
         [
