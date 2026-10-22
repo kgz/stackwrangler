@@ -163,8 +163,11 @@
 187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
 190	backlog	Debt: REST authorizer Deny 401 vs 403 (from #184)
-191	backlog	Debt: REST custom domain routing (from #184)
+191	in-progress	Debt: REST custom domain routing (from #184)
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
 201	done	v1: ECS taskdef secrets / host ports / failed-start status
+215	in-progress	full-flow-v1
+211	in-progress	full-flow-v1
+214	in-progress	full-flow-v1
