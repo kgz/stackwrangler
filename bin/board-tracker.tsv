@@ -173,7 +173,7 @@
 214	in-review	v1: Same IDs as a real account / custom resource IDs
 193	in-progress	v1: resource-based policy evaluation
 203	in-progress	v1: ELBv2 data plane
-204	in-progress	v1: VPC routing fidelity
+204	in-review	v1: VPC routing fidelity
 205	in-progress	v1: Security group enforcement
 206	in-progress	v1: Route 53 private hosted zones
 207	in-progress	v1: ECS services on EC2
@@ -189,3 +189,4 @@
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
+230	backlog	Debt: VPC gateway endpoints + Lambda egress (from #204)
