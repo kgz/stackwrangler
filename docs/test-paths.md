@@ -29,6 +29,13 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./bin/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./bin/iam-access-denied.sh` + IAM console lab |
+| OIDC `sub=repo:org/app:environment:prod` assumes tight role | happy | covered | `./bin/oidc-smoke.sh` · [oidc.md](oidc.md) |
+| OIDC `sub=repo:org/*` assumes any repo in the org | happy | covered | `./bin/oidc-smoke.sh` |
+| OIDC feature ref / other org / wrong aud / bad signature denied | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `iam:PassRole` when `iam:PassedToService=events.amazonaws.com` | happy | covered | `./bin/oidc-smoke.sh` |
+| `iam:PassRole` to Step Functions denied by `PassedToService` | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `iam:GetRole` only when `aws:ResourceTag/env=prod` | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./bin/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./bin/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./bin/lambda-deploy-smoke.sh` |
@@ -38,8 +45,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
 | REST authorizer Deny → 401 (AWS 403) | sad/authz | thin | `./bin/apigw-rest-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
 | REST unknown route → 403 | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
-| REST custom domain + base-path mapping (control plane) | happy | covered | `./bin/apigw-rest-smoke.sh` |
-| REST request via custom domain | happy | missing | [#191](https://github.com/kgz/awsl/issues/191) |
+| REST custom domain + base-path mapping | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST request via custom domain (root mapping, local DNS) | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST request via custom domain named base path | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST custom domain unmapped prefix → 403 Forbidden | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./bin/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./bin/lambda-vpc-smoke.sh` |
 | Non-VPC Lambda blocked from private hosts | sad/other | missing | [#187](https://github.com/kgz/awsl/issues/187) |
@@ -52,7 +61,16 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./bin/ecs-taskdef-smoke.sh` |
 | ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
+| EC2 IMDSv2 instance-profile reads secret | happy | covered | `./bin/ec2-imds-smoke.sh` |
+| EC2 instance-profile missing GetSecretValue → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |
+| SSM SendCommand AWS-RunShellScript returns stdout | happy | covered | `./bin/ec2-imds-smoke.sh` |
+| SSM SendCommand without ssm:SendCommand → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
+| CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN failed update → `UPDATE_ROLLBACK_COMPLETE` (not `UPDATE_COMPLETE`) | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN failed update reverts in-place resource changes | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
+| CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./bin/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./bin/aws-parity-cfn-authz.sh` |
 | Prowler aws scan (isolated, scoped unused-services) | happy | covered | `./bin/prowler-smoke.sh` · [prowler.md](prowler.md) |
@@ -96,9 +114,18 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | RDS Postgres SQL round-trip | happy | covered | `./bin/rds-smoke.sh` |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./bin/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
+| RDS MySQL instance + managed secret | happy | covered | `./bin/rds-mysql-smoke.sh` |
+| **RDS MySQL wrong password → access denied** | sad/authz | covered | `./bin/rds-mysql-smoke.sh` |
+| Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./bin/rds-mysql-smoke.sh` |
+| **Aurora MySQL reader rejects writes** | sad/other | covered | `./bin/rds-mysql-smoke.sh` |
+| Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./bin/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./bin/apigw-smoke.sh` |
 | **Seaweed vs LocalEmu S3 are separate stores** | sad/other | covered | `./bin/s3-dual-endpoint-smoke.sh` · [s3-backends.md](s3-backends.md) |
+| `awsl apply` synthetic VPC/subnet/SG ids + CIDRs | happy | covered | `./bin/mirror-smoke.sh` · [mirror.md](mirror.md) |
+| `awsl mirror --out` inside the repo (not gitignored) | sad/other | covered | `./bin/mirror-smoke.sh` |
+| `awsl apply` non-local endpoint | sad/other | covered | `./bin/mirror-smoke.sh` |
+| Real-account `awsl mirror` read (Describe/List/Get only) | happy | missing | [#220](https://github.com/kgz/awsl/issues/220) |
 
 ---
 
@@ -111,6 +138,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ./bin/lambda-authz-smoke.sh     # sad/authz
 ./bin/transfer-dataplane-smoke.sh
 ./bin/rds-smoke.sh              # needs psql
+./bin/rds-mysql-smoke.sh        # needs mysql
 # …add others as you touch a surface
 ```
 

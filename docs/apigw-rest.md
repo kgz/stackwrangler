@@ -15,7 +15,7 @@ Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-r
 | Missing identity source → 401 | Working (matches AWS) |
 | Unknown route → 403 `Missing Authentication Token` | Working (matches AWS) |
 | Authorizer **Deny** | **401**; AWS returns 403 → [#190](https://github.com/kgz/awsl/issues/190) |
-| Custom domain + base-path mapping | Control plane only (needs `route53,acm` in SERVICES); requests aren't routed by domain → [#191](https://github.com/kgz/awsl/issues/191) |
+| Custom domain + base-path mapping | Working. `Host` (or DNS pointed at the edge) reaches the mapped API/stage. Needs `route53,acm` in SERVICES to create the domain. |
 | Console | HTTP APIs only → [#189](https://github.com/kgz/awsl/issues/189) |
 
 ## Calling a stage
@@ -23,6 +23,17 @@ Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-r
 ```text
 http://127.0.0.1:4566/restapis/<api-id>/<stage>/_user_request_/<path>
 ```
+
+Custom domain (`create-domain-name` + `create-base-path-mapping`). Point the name at the edge with a `Host` header or local DNS (`curl --resolve name:4566:127.0.0.1`):
+
+```text
+http://<domain>/<path>                    base path (none) — root mapping
+http://<domain>/<base-path>/<path>        named mapping; the base path is stripped before the route is matched
+```
+
+The longest matching base path wins. `(none)` catches every other path on that host. A prefix that matches nothing, and no root mapping, returns **403** `{"message":"Forbidden"}`.
+
+Routing lives in `localemu-patches/init/start.d/20-apigw-custom-domain.py`.
 
 ## Gotchas
 
