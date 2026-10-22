@@ -26,6 +26,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Step Functions | yes | **yes** | — | no → [#175](https://github.com/kgz/awsl/issues/175) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` |
 | Secrets Manager | yes | **yes** | — | no → [#176](https://github.com/kgz/awsl/issues/176) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` |
 | KMS | yes | **yes** | — | no → [#177](https://github.com/kgz/awsl/issues/177) | `kms-smoke.sh`, `kms-authz-smoke.sh` |
+| Resource policies (SM, KMS, S3) | yes (delegation allows) | **yes** (explicit deny / no key-policy delegation) | cross-account [#233](https://github.com/kgz/awsl/issues/233) | — | `resource-policy-smoke.sh` |
 | Kinesis | yes | **yes** | — | no → [#178](https://github.com/kgz/awsl/issues/178) | `kinesis-smoke.sh`, `kinesis-authz-smoke.sh` |
 | Transfer API | yes | **yes** (`transfer-authz-smoke.sh`) | — | list/create | `transfer-smoke.sh`, `transfer-authz-smoke.sh` |
 | Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |

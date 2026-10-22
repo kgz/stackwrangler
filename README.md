@@ -36,7 +36,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | `./bin/awsbox up` + profile `local` | **Working** | Compose + managed AWS profile |
 | Console shell (AWS-look) | **Working** | Dark console frame |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
-| IAM enforcement | **Partial** | deny-user lab only · workload roles debt [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM enforcement | **Partial** | resource policies `./bin/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
 ---
@@ -113,16 +113,16 @@ Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` �
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** |
+| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** · resource policies `./bin/resource-policy-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | IAM OIDC / web identity | `AssumeRoleWithWebIdentity` checks a local JWKS; trust `StringEquals`/`StringLike` on `<issuer>:sub` and `:aud`. `repo:org/*` matches every repo in the org (risky). `iam:PassRole` is limited by `iam:PassedToService` | — | **CLI + smoke** · [docs/oidc.md](docs/oidc.md) · service-origin `kms:ViaService` / `aws:SourceArn` [#223](https://github.com/kgz/awsl/issues/223) |
 | STS | Enabled | — | **Control plane** (polish backlog) |
-| KMS | encrypt/decrypt | — | **Working** (CLI) · console [#177](https://github.com/kgz/awsl/issues/177) |
-| Secrets Manager | create/get | — | **Working** (CLI) · console [#176](https://github.com/kgz/awsl/issues/176) |
+| KMS | encrypt/decrypt · key policy on Encrypt/Decrypt/GenerateDataKey | — | **Partial** · key policy `./bin/resource-policy-smoke.sh` · console [#177](https://github.com/kgz/awsl/issues/177) |
+| Secrets Manager | create/get · resource policy on Get/Describe | — | **Partial** · resource policy `./bin/resource-policy-smoke.sh` · console [#176](https://github.com/kgz/awsl/issues/176) |
 | Cognito / ACM / detection | — | — | **Backlog** |
 | IAM Identity Center | — | — | **Backlog** |
 | Prowler posture scan | Isolated CLI smoke vs LocalEmu | — | **Working** (scoped) · full catalog [#197](https://github.com/kgz/awsl/issues/197) · [docs/prowler.md](docs/prowler.md) |
 
-Smoke: `./bin/iam-access-denied.sh` · `./bin/oidc-smoke.sh` · `./bin/prowler-smoke.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
+Smoke: `./bin/iam-access-denied.sh` · `./bin/resource-policy-smoke.sh` · `./bin/oidc-smoke.sh` · `./bin/prowler-smoke.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
 CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · sad: `./bin/aws-parity-cfn-authz.sh` ([docs/aws-parity-cfn.md](docs/aws-parity-cfn.md))
 
 ---
