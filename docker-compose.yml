@@ -27,7 +27,8 @@ services:
       SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
       IAM_ENFORCEMENT: "1"
       EC2_VM_MANAGER: docker
-      # Real Postgres/MySQL containers via Docker (not moto-only)
+      # Real Postgres/MySQL containers via Docker (not moto-only).
+      # Aurora MySQL writer/reader + managed secret: init/start.d/20-rds-mysql.py
       RDS_DOCKER_BACKEND: "1"
       DEBUG: "0"
       PERSISTENCE: "0"

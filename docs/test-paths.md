@@ -87,6 +87,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | RDS Postgres SQL round-trip | happy | covered | `./bin/rds-smoke.sh` |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./bin/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
+| RDS MySQL instance + managed secret | happy | covered | `./bin/rds-mysql-smoke.sh` |
+| **RDS MySQL wrong password → access denied** | sad/authz | covered | `./bin/rds-mysql-smoke.sh` |
+| Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./bin/rds-mysql-smoke.sh` |
+| **Aurora MySQL reader rejects writes** | sad/other | covered | `./bin/rds-mysql-smoke.sh` |
+| Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./bin/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./bin/apigw-smoke.sh` |
 | **Seaweed vs LocalEmu S3 are separate stores** | sad/other | covered | `./bin/s3-dual-endpoint-smoke.sh` · [s3-backends.md](s3-backends.md) |
@@ -102,6 +107,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ./bin/lambda-authz-smoke.sh     # sad/authz
 ./bin/transfer-dataplane-smoke.sh
 ./bin/rds-smoke.sh              # needs psql
+./bin/rds-mysql-smoke.sh        # needs mysql
 # …add others as you touch a surface
 ```
 
