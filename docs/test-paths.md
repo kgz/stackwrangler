@@ -90,6 +90,9 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Logs create/put/get | happy | covered | `./bin/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./bin/apigw-smoke.sh` |
 | **Seaweed vs LocalEmu S3 are separate stores** | sad/other | covered | `./bin/s3-dual-endpoint-smoke.sh` · [s3-backends.md](s3-backends.md) |
+| Create VPC/subnet/SG with `_custom_id_` + account id in OwnerId/STS/ARNs | happy | covered | `./bin/custom-id-smoke.sh` · [custom-ids.md](custom-ids.md) |
+| Create route table, IGW, peering, instance, LB/TG suffix, REST/HTTP API, hosted zone, ECS cluster ARN with `_custom_id_` | happy | covered | `./bin/custom-id-smoke.sh` |
+| `_custom_id_` value fails the id format check | sad/other | covered | `./bin/custom-id-smoke.sh` |
 
 ---
 

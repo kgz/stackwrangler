@@ -33,6 +33,9 @@ services:
       PERSISTENCE: "0"
       GATEWAY_LISTEN: 0.0.0.0:4566
       AWS_DEFAULT_REGION: ${AWSBOX_REGION:-us-east-1}
+      # Account id embedded in ARNs. Per-key map wins. docs/custom-ids.md
+      AWSBOX_ACCOUNT_ID: ${AWSBOX_ACCOUNT_ID:-}
+      AWSBOX_ACCOUNT_IDS: ${AWSBOX_ACCOUNT_IDS:-}
       ROOT_ACCESS_KEYS: ${AWSBOX_ACCESS_KEY:-awsbox},AKIAIOSFODNN7EXAMPLE
       DISABLE_CORS_CHECKS: "1"
       EXTRA_CORS_ALLOWED_ORIGINS: "*"
@@ -44,6 +47,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs
+      # Custom resource ids (#214): localemu-patches/init/start.d/20-custom-ids.py
       - ./localemu-patches/s3control_provider.py:/opt/code/localemu/src/localemu/services/s3control/provider.py:ro
       - ./localemu-patches/init/start.d:/etc/localemu/init/start.d:ro
       # ECS taskdef fidelity (#201): secrets valueFrom, host ports, failed-start status

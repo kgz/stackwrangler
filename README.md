@@ -37,6 +37,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | Console shell (AWS-look) | **Working** | Dark console frame |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
 | IAM enforcement | **Partial** | deny-user lab only · workload roles debt [#144](https://github.com/kgz/awsl/issues/144) |
+| Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [docs/custom-ids.md](docs/custom-ids.md) · `./bin/custom-id-smoke.sh` |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
 ---
