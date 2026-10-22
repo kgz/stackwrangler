@@ -35,6 +35,8 @@ services:
       DEBUG: "0"
       PERSISTENCE: "0"
       GATEWAY_LISTEN: 0.0.0.0:4566
+      # Host-loopback publish for ECS host-networkMode task-role creds (#252)
+      LOCALEMU_ECS_CREDS_PORT: "4599"
       AWS_DEFAULT_REGION: ${AWSBOX_REGION:-us-east-1}
       # Key→account map (listed keys are root there; per-key wins); default account in ARNs.
       # docs/multi-account.md · docs/custom-ids.md
@@ -50,6 +52,8 @@ services:
       LAMBDA_DOCKER_FLAGS: ${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}
     ports:
       - "127.0.0.1:4566:4566"
+      # ECS task-role credentials (#252) — host-mode tasks use 127.0.0.1:4599
+      - "127.0.0.1:4599:4599"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs.
@@ -62,7 +66,9 @@ services:
       - ./localemu-patches/oidc:/opt/awsbox/oidc:ro
       # ECS taskdef fidelity (#201): secrets valueFrom, host ports, failed-start status
       # ECR image pull authz (#211) lives in the same task manager mount
+      # Host-mode task-role creds without host iptables (#252)
       - ./localemu-patches/ecs_task_manager.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_manager.py:ro
+      - ./localemu-patches/ecs_task_credentials.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_credentials.py:ro
       - ./localemu-patches/ecs_provider.py:/opt/code/localemu/src/localemu/services/ecs/provider.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro

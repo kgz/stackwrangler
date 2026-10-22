@@ -193,3 +193,5 @@
 233	backlog	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	backlog	Debt: VPC Lambda SG enforcement (from #205)
+252	in-review	ECS host-network task-role credentials without host iptables
+254	backlog	Debt: ECS bridge task-role creds without iptables (from #252)

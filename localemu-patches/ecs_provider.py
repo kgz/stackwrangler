@@ -446,7 +446,13 @@ def _resolve_full_task_definition(context: RequestContext, task_def_arn: str) ->
     try:
         td_obj = _find_moto_task_definition(context, task_def_arn)
         if td_obj:
-            result["networkMode"] = getattr(td_obj, "network_mode", None) or getattr(td_obj, "networkMode", "bridge") or "bridge"
+            _nm = (
+                getattr(td_obj, "network_mode", None)
+                or getattr(td_obj, "networkMode", "bridge")
+                or "bridge"
+            )
+            # moto may store an Enum; DockerTaskManager compares to "host"
+            result["networkMode"] = str(_nm).split(".")[-1].lower()
             result["cpu"] = getattr(td_obj, "cpu", None)
             result["memory"] = getattr(td_obj, "memory", None)
             # Extract volumes

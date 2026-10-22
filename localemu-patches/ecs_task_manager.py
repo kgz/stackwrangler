@@ -518,8 +518,12 @@ class DockerTaskManager:
                 if name:
                     container_overrides[name] = co
 
-        # Extract network mode from task definition
-        network_mode = task_definition.get("networkMode", "bridge")
+        # Extract network mode from task definition (moto may yield an Enum)
+        network_mode = str(
+            task_definition.get("networkMode", "bridge") or "bridge"
+        ).lower()
+        if network_mode.startswith("networkmode."):
+            network_mode = network_mode.split(".", 1)[1]
 
         # Task role for IAM — RunTask's ``overrides.taskRoleArn`` wins over
         # the task definition's ``taskRoleArn`` (AWS API semantics).
@@ -645,14 +649,12 @@ class DockerTaskManager:
                 env_vars["LOCALEMU_ECS_CLUSTER"] = cluster_name
                 env_vars["LOCALEMU_ECS_CONTAINER_NAME"] = c_name
 
-                # / #79: Standard ECS env vars. The credentials
-                # endpoint runs on the LocalEmu host; inside the task
-                # container we DNAT 169.254.170.2:80 → host:creds_port
-                # after start_container (AWS SDK only trusts the approved
-                # link-local hosts for the credentials endpoint, so we
-                # MUST present 169.254.170.2). The DNAT install happens
-                # below after docker start, inside the container's
-                # netns (requires NET_ADMIN capability).
+                # #79 / #252: task-role credentials endpoint on the LocalEmu
+                # host. Host networkMode shares the host netns — never DNAT
+                # (that would mutate the host iptables). Use FULL_URI on
+                # 127.0.0.1 (SDK allow-listed) + Authorization token.
+                # Bridge/awsvpc keep RELATIVE_URI + post-start DNAT to
+                # 169.254.170.2 (requires NET_ADMIN + iptables in the image).
                 from localemu import config as _le_config
                 from localemu.services.ecs.docker.task_credentials import (
                     get_task_credentials_server,
@@ -660,22 +662,40 @@ class DockerTaskManager:
                 _creds_server = get_task_credentials_server()
                 _creds_port = _creds_server.port
                 _gw_port = _le_config.GATEWAY_LISTEN[0].port
+                _host_network = network_mode == "host"
+                _creds_auth_token: str | None = None
 
-                env_vars["ECS_CONTAINER_METADATA_URI"] = (
-                    f"http://169.254.170.2/v3/{task_id}"
-                )
-                env_vars["ECS_CONTAINER_METADATA_URI_V4"] = (
-                    f"http://169.254.170.2/v4/{task_id}"
-                )
+                if _host_network:
+                    env_vars["ECS_CONTAINER_METADATA_URI"] = (
+                        f"http://127.0.0.1:{_creds_port}/v3/{task_id}"
+                    )
+                    env_vars["ECS_CONTAINER_METADATA_URI_V4"] = (
+                        f"http://127.0.0.1:{_creds_port}/v4/{task_id}"
+                    )
+                else:
+                    env_vars["ECS_CONTAINER_METADATA_URI"] = (
+                        f"http://169.254.170.2/v3/{task_id}"
+                    )
+                    env_vars["ECS_CONTAINER_METADATA_URI_V4"] = (
+                        f"http://169.254.170.2/v4/{task_id}"
+                    )
                 env_vars["AWS_DEFAULT_REGION"] = region
                 env_vars["AWS_REGION"] = region
                 env_vars["AWS_ENDPOINT_URL"] = f"http://host.docker.internal:{_gw_port}"
                 if task_role_arn:
-                    # RELATIVE_URI resolves against 169.254.170.2 (one of
-                    # the SDK's four approved hosts). DNAT does the rest.
-                    env_vars["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = (
-                        f"/v2/credentials/{task_id}"
-                    )
+                    if _host_network:
+                        import secrets as _secrets
+                        _creds_auth_token = _secrets.token_hex(16)
+                        env_vars["AWS_CONTAINER_CREDENTIALS_FULL_URI"] = (
+                            f"http://127.0.0.1:{_creds_port}/v2/credentials/{task_id}"
+                        )
+                        env_vars["AWS_CONTAINER_AUTHORIZATION_TOKEN"] = (
+                            _creds_auth_token
+                        )
+                    else:
+                        env_vars["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = (
+                            f"/v2/credentials/{task_id}"
+                        )
                     # Mint STS creds via moto's backend; the assumed_role
                     # entry it creates lets our IAM enforcer resolve the
                     # signed request back to the correct role.
@@ -691,20 +711,25 @@ class DockerTaskManager:
                             duration=3600,
                             external_id=None,
                         )
-                        _creds_server.store.put(task_id, {
-                            "RoleArn": task_role_arn,
-                            "AccessKeyId": assumed.access_key_id,
-                            "SecretAccessKey": assumed.secret_access_key,
-                            "Token": assumed.session_token,
-                            "Expiration": (
-                                datetime.now(timezone.utc) + timedelta(hours=1)
-                            ).isoformat().replace("+00:00", "Z"),
-                        })
+                        _creds_server.store.put(
+                            task_id,
+                            {
+                                "RoleArn": task_role_arn,
+                                "AccessKeyId": assumed.access_key_id,
+                                "SecretAccessKey": assumed.secret_access_key,
+                                "Token": assumed.session_token,
+                                "Expiration": (
+                                    datetime.now(timezone.utc) + timedelta(hours=1)
+                                ).isoformat().replace("+00:00", "Z"),
+                            },
+                            auth_token=_creds_auth_token,
+                        )
                         LOG.info(
                             "Generated task-role credentials for ECS task %s "
-                            "(role=%s, key=%s***)",
+                            "(role=%s, key=%s***, host_network=%s)",
                             task_id, task_role_arn,
                             assumed.access_key_id[:4],
+                            _host_network,
                         )
                     except Exception as e:
                         LOG.error(
@@ -713,11 +738,14 @@ class DockerTaskManager:
                             "NoCredentialsError",
                             task_id, task_role_arn, e, exc_info=True,
                         )
-                        # Drop the relative URI so the SDK fails at
-                        # credential discovery rather than hitting an
-                        # empty endpoint.
                         env_vars.pop(
                             "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", None,
+                        )
+                        env_vars.pop(
+                            "AWS_CONTAINER_CREDENTIALS_FULL_URI", None,
+                        )
+                        env_vars.pop(
+                            "AWS_CONTAINER_AUTHORIZATION_TOKEN", None,
                         )
 
                 # Build port mappings. AWS accepts portMappings with
@@ -907,15 +935,13 @@ class DockerTaskManager:
                     cpu_shares=cpu_shares,
                     mem_limit=mem_limit,
                     additional_flags=additional_flags,
-                    # #79: NET_ADMIN lets us install an iptables DNAT rule
-                    # in the container's netns that redirects
-                    # 169.254.170.2:80 → host.docker.internal:<creds_port>.
-                    # AWS SDKs only trust a handful of allow-listed hosts
-                    # (169.254.170.2, 169.254.170.23, localhost, ::1) for
-                    # the container-credentials endpoint, so we *must*
-                    # present 169.254.170.2 — pointing FULL_URI directly
-                    # at host.docker.internal fails SDK validation.
-                    cap_add=["NET_ADMIN"],
+                    # #79 / #252: NET_ADMIN only for bridge/awsvpc DNAT.
+                    # Host mode must not touch the host NAT table.
+                    cap_add=(
+                        ["NET_ADMIN"]
+                        if task_role_arn and not _host_network
+                        else None
+                    ),
                     labels={
                         "localemu.service": "ecs",
                         "localemu.cluster": cluster_name,
@@ -980,12 +1006,9 @@ class DockerTaskManager:
                             docker_name, subnet_ids, sg_ids, account_id, region,
                         )
 
-                    # #79: Install DNAT so 169.254.170.2:80 inside this
-                    # container is redirected to our host-bound task-
-                    # credentials server. Done post-start because we need
-                    # the container's netns. host.docker.internal resolves
-                    # inside the container via --add-host above.
-                    if task_role_arn:
+                    # #79 / #252: DNAT only for bridge/awsvpc. Host-mode
+                    # tasks already have FULL_URI → 127.0.0.1:<creds_port>.
+                    if task_role_arn and not _host_network:
                         self._install_task_creds_dnat(docker_name, _creds_port)
 
                     container_info = EcsContainerInfo(
