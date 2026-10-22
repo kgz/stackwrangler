@@ -52,6 +52,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./bin/ecs-taskdef-smoke.sh` |
 | ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
+| Private subnet with no `0.0.0.0/0` cannot reach a public host | sad/other | covered | `./bin/vpc-routing-smoke.sh` · [vpc-routing.md](vpc-routing.md) |
+| Private subnet reaches a public host via an HTTP proxy over peering | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` |
+| NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./bin/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./bin/aws-parity-cfn-authz.sh` |

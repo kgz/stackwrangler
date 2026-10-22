@@ -63,7 +63,7 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 | EC2 | Docker-backed instances | Instances list | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) · sad [#171](https://github.com/kgz/awsl/issues/171) |
 | ECR / EKS / Batch / App Runner / ASG | — | — | **Backlog** |
 
-Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh`
+Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/vpc-routing-smoke.sh`
 
 ---
 
@@ -71,7 +71,8 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 
 | Service | Status |
 |---------|--------|
-| VPC / SG / AZ polish | **Backlog** |
+| VPC routes / peering / NAT | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · gateway endpoints / Lambda egress [#230](https://github.com/kgz/awsl/issues/230) · console [#146](https://github.com/kgz/awsl/issues/146) |
+| SG / AZ polish | **Backlog** |
 | ALB / NLB / Classic ELB | **Backlog** |
 | WAFv2 / Route 53 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |
