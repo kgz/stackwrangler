@@ -70,8 +70,17 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Step Functions deny StartExecution | sad/authz | covered | `./bin/sfn-authz-smoke.sh` |
 | Secrets create/get | happy | covered | `./bin/secrets-smoke.sh` |
 | Secrets deny GetSecretValue | sad/authz | covered | `./bin/secrets-authz-smoke.sh` |
+| Secret resource policy explicit deny beats Lambda-role IAM Allow (`GetSecretValue`, `DescribeSecret`) | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
 | KMS encrypt/decrypt | happy | covered | `./bin/kms-smoke.sh` |
 | KMS deny Decrypt | sad/authz | covered | `./bin/kms-authz-smoke.sh` |
+| KMS key policy delegates to IAM and role Encrypt/Decrypt/GenerateDataKey succeeds | happy | covered | `./bin/resource-policy-smoke.sh` |
+| KMS key policy without IAM delegation denies a role IAM allows | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| KMS key policy explicit deny Encrypt | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| S3 bucket policy explicit deny GetObject/ListBucket | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| Secrets Manager CMK GetSecretValue follows key policy | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| Secrets Manager CreateSecret/PutSecretValue with a CMK follows key policy | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| SSM SecureString GetParameter/PutParameter follows CMK key policy | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| Cross-account resource policy (identity and resource must both allow) | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) · needs [#213](https://github.com/kgz/awsl/issues/213) |
 | Kinesis put/get | happy | covered | `./bin/kinesis-smoke.sh` |
 | Kinesis deny PutRecord | sad/authz | covered | `./bin/kinesis-authz-smoke.sh` |
 | Logs deny PutLogEvents | sad/authz | covered | `./bin/logs-authz-smoke.sh` |

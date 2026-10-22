@@ -171,7 +171,8 @@
 215	in-progress	full-flow-v1
 211	in-progress	full-flow-v1
 214	in-progress	full-flow-v1
-193	in-progress	v1: resource-based policy evaluation
+193	in-review	v1: resource-based policy evaluation
+233	backlog	Debt: cross-account resource policy smoke (from #193)
 203	in-progress	v1: ELBv2 data plane
 204	in-progress	v1: VPC routing fidelity
 205	in-progress	v1: Security group enforcement
