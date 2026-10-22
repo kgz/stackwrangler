@@ -2,7 +2,9 @@
 
 awsbox patch (#201): secrets ``valueFrom`` via execution role, host-mode
 portMappings without Docker PortBindings, and STOPPED + stoppedReason when
-containers never start. Mounted over the LocalEmu image file.
+containers never start. (#211): ECR image URIs require ``ecr:BatchGetImage``
+on the execution role, then pull from the local registry. Mounted over the
+LocalEmu image file.
 
 Port mapping TOCTOU is a known limitation. Docker's port allocation
 is inherently non-atomic — between get_free_tcp_port() and the actual bind
@@ -11,6 +13,8 @@ trade-off for local emulation; production ECS does not have this issue.
 """
 
 import logging
+import os
+import re
 import shlex
 import threading
 import time
@@ -30,6 +34,11 @@ LOG = logging.getLogger(__name__)
 
 # Label for identifying ECS containers
 ECS_CONTAINER_LABEL = "localemu.service=ecs"
+
+# <account>.dkr.ecr.<region>.amazonaws.com/<repo>[:tag|@digest]
+_ECR_IMAGE_RE = re.compile(
+    r"^(?P<account>\d+)\.dkr\.ecr\.(?P<region>[a-z0-9-]+)\.amazonaws\.com/(?P<ref>.+)$"
+)
 
 # Image pull locks (same pattern as Lambda, EC2, and RDS)
 # PERF-R2-01: bounded with LRU eviction to prevent unbounded growth
@@ -196,22 +205,21 @@ class DockerTaskManager:
         # Bare SSM name / path
         return {"service": "ssm", "name": vf}
 
-    def _execution_role_clients(
+    def _execution_role_boto_kwargs(
         self,
         *,
         execution_role_arn: str,
         region: str,
         account_id: str,
         task_id: str,
-    ):
-        """Boto3 clients signed as the execution role via the gateway.
+    ) -> dict:
+        """Boto3 kwargs signed as the execution role via the gateway.
 
         ``connect_to`` marks calls as internal and skips IAM. Real ECS
         agents hit the public APIs with the execution role, so we mint
         STS creds (moto) and call ``127.0.0.1:<gateway>`` — same path
         IAM_ENFORCEMENT evaluates for AccessDenied.
         """
-        import boto3
         from botocore.config import Config as BotoConfig
         from localemu import config as _le_config
         from moto.sts.models import sts_backends
@@ -226,24 +234,136 @@ class DockerTaskManager:
             external_id=None,
         )
         gw_port = _le_config.GATEWAY_LISTEN[0].port
-        endpoint = f"http://127.0.0.1:{gw_port}"
-        cfg = BotoConfig(
-            retries={"max_attempts": 2, "mode": "standard"},
-            connect_timeout=5,
-            read_timeout=10,
-        )
-        common = {
+        return {
             "region_name": region,
-            "endpoint_url": endpoint,
+            "endpoint_url": f"http://127.0.0.1:{gw_port}",
             "aws_access_key_id": assumed.access_key_id,
             "aws_secret_access_key": assumed.secret_access_key,
             "aws_session_token": assumed.session_token,
-            "config": cfg,
+            "config": BotoConfig(
+                retries={"max_attempts": 2, "mode": "standard"},
+                connect_timeout=5,
+                read_timeout=10,
+            ),
         }
+
+    def _execution_role_clients(
+        self,
+        *,
+        execution_role_arn: str,
+        region: str,
+        account_id: str,
+        task_id: str,
+    ):
+        import boto3
+
+        common = self._execution_role_boto_kwargs(
+            execution_role_arn=execution_role_arn,
+            region=region,
+            account_id=account_id,
+            task_id=task_id,
+        )
         return (
             boto3.client("secretsmanager", **common),
             boto3.client("ssm", **common),
         )
+
+    @staticmethod
+    def _ecr_local_ref(ref: str) -> str:
+        registry = os.environ.get("AWSBOX_ECR_REGISTRY", "127.0.0.1:5000").strip().rstrip("/")
+        return f"{registry}/{ref}"
+
+    @staticmethod
+    def _ecr_image_id(ref: str) -> tuple[str, dict]:
+        if "@" in ref:
+            name, digest = ref.split("@", 1)
+            return name, {"imageDigest": digest}
+        if ":" in ref:
+            name, tag = ref.rsplit(":", 1)
+            return name, {"imageTag": tag}
+        return ref, {"imageTag": "latest"}
+
+    @staticmethod
+    def _is_access_denied(exc: BaseException) -> bool:
+        code = ""
+        message = str(exc)
+        response = getattr(exc, "response", None)
+        if isinstance(response, dict):
+            err = response.get("Error") or {}
+            if isinstance(err, dict):
+                code = str(err.get("Code") or "")
+                message = str(err.get("Message") or message)
+        blob = f"{code} {message}".lower()
+        return (
+            "accessdenied" in blob.replace("_", "")
+            or "not authorized" in blob
+            or "explicit deny" in blob
+            or "implicit deny" in blob
+        )
+
+    def _resolve_ecr_image(
+        self,
+        image: str,
+        *,
+        execution_role_arn: str | None,
+        region: str,
+        account_id: str,
+        task_id: str,
+    ) -> str:
+        """Map an ECR image URI to the local registry after BatchGetImage.
+
+        Non-ECR images (Docker Hub, ``public.ecr.aws``) are unchanged.
+        Bytes are pushed to ``AWSBOX_ECR_REGISTRY`` (default ``127.0.0.1:5000``);
+        the task definition keeps the amazonaws.com URI.
+        """
+        match = _ECR_IMAGE_RE.match(image)
+        if not match:
+            return image
+        if not execution_role_arn:
+            raise RuntimeError(
+                "CannotPullContainerError: execution role is not specified "
+                "for ECR image pull (ecr:BatchGetImage)"
+            )
+        import boto3
+
+        ref = match.group("ref")
+        repository, image_id = self._ecr_image_id(ref)
+        ecr = boto3.client(
+            "ecr",
+            **self._execution_role_boto_kwargs(
+                execution_role_arn=execution_role_arn,
+                region=region,
+                account_id=account_id,
+                task_id=task_id,
+            ),
+        )
+        try:
+            resp = ecr.batch_get_image(
+                repositoryName=repository,
+                imageIds=[image_id],
+            )
+        except Exception as e:
+            if self._is_access_denied(e):
+                raise RuntimeError(
+                    "CannotPullContainerError: execution role is not "
+                    "authorized to perform ecr:BatchGetImage"
+                ) from e
+            raise RuntimeError(f"CannotPullContainerError: {e}") from e
+        for failure in resp.get("failures") or []:
+            code = str(failure.get("failureCode") or "")
+            if "accessdenied" in code.lower().replace("_", ""):
+                raise RuntimeError(
+                    "CannotPullContainerError: execution role is not "
+                    "authorized to perform ecr:BatchGetImage"
+                )
+        local = self._ecr_local_ref(ref)
+        LOG.info(
+            "ECS task %s pulling ECR image %s as %s",
+            task_id[:12],
+            image,
+            local,
+        )
+        return local
 
     def _resolve_container_secrets(
         self,
@@ -618,13 +738,50 @@ class DockerTaskManager:
                         ports.add(host_port, container_port)
                         host_ports[container_port] = host_port
 
+                docker_image = image
+                try:
+                    docker_image = self._resolve_ecr_image(
+                        image,
+                        execution_role_arn=execution_role_arn,
+                        region=region,
+                        account_id=account_id,
+                        task_id=task_id,
+                    )
+                except Exception as e:
+                    reason = str(e)
+                    if "CannotPullContainerError" not in reason and not reason.startswith(
+                        "ResourceInitializationError"
+                    ):
+                        reason = f"CannotPullContainerError: {reason}"
+                    LOG.warning(
+                        "ECS image auth failed for task %s container %s: %s",
+                        task_id[:12],
+                        c_name,
+                        reason,
+                    )
+                    task_info.stopped_reason = reason
+                    task_info.status = "STOPPED"
+                    task_info.stopped_at = time.time()
+                    task_info.containers.append(
+                        EcsContainerInfo(
+                            container_name=c_name,
+                            docker_name=self._container_name(
+                                cluster_name, task_id, c_name
+                            ),
+                            image=image,
+                            status="STOPPED",
+                            exit_code=1,
+                        )
+                    )
+                    break
+
                 # Ensure image is available
                 try:
-                    self._ensure_image(image)
+                    self._ensure_image(docker_image)
                 except Exception as e:
                     LOG.warning(
                         "Failed to pull image %s for ECS task %s: %s",
-                        image, task_id, e,
+                        docker_image, task_id, e,
                     )
                     task_info.stopped_reason = (
                         f"CannotPullContainerError: {e}"
@@ -737,7 +894,7 @@ class DockerTaskManager:
 
                 # Container config
                 container_config = ContainerConfiguration(
-                    image_name=image,
+                    image_name=docker_image,
                     name=docker_name,
                     env_vars=env_vars,
                     ports=ports,

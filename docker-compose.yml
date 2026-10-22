@@ -24,7 +24,9 @@ services:
     image: localemu/localemu@sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f46d7aa8123551cee10b
     user: root
     environment:
-      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
+      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
+      # Host docker daemon pulls this address (published below). #211
+      AWSBOX_ECR_REGISTRY: 127.0.0.1:5000
       IAM_ENFORCEMENT: "1"
       EC2_VM_MANAGER: docker
       # Real Postgres/MySQL containers via Docker (not moto-only)
@@ -47,6 +49,7 @@ services:
       - ./localemu-patches/s3control_provider.py:/opt/code/localemu/src/localemu/services/s3control/provider.py:ro
       - ./localemu-patches/init/start.d:/etc/localemu/init/start.d:ro
       # ECS taskdef fidelity (#201): secrets valueFrom, host ports, failed-start status
+      # ECR image pull authz (#211) lives in the same task manager mount
       - ./localemu-patches/ecs_task_manager.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_manager.py:ro
       - ./localemu-patches/ecs_provider.py:/opt/code/localemu/src/localemu/services/ecs/provider.py:ro
     healthcheck:
@@ -67,6 +70,18 @@ services:
     ports:
       - "127.0.0.1:2222:22"
     command: awsbox:awsboxpass:1001:1001:upload
+
+  # Docker distribution registry. Push/pull 127.0.0.1:5000/<repo>:<tag>.
+  # ECS/Lambda amazonaws.com ECR URIs are rewritten to this address (#211, #218).
+  ecr-registry:
+    image: registry:2
+    depends_on:
+      localstack:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./localemu-patches/ecr-registry.yml:/etc/docker/registry/config.yml:ro
 
 volumes:
   seaweed-data:

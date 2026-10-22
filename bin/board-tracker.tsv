@@ -169,5 +169,8 @@
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
 201	done	v1: ECS taskdef secrets / host ports / failed-start status
 215	in-progress	full-flow-v1
-211	in-progress	full-flow-v1
+211	in-review	full-flow-v1
+217	backlog	Debt: ECR console (from #211)
+218	backlog	Debt: docker push to ECR repositoryUri hostname (from #211)
+219	backlog	Debt: Lambda ECR image pull authz (from #211)
 214	in-progress	full-flow-v1

@@ -59,11 +59,12 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | Lambda | Docker invoke · VPC → host services ([docs/lambda-vpc.md](docs/lambda-vpc.md)) | Functions | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) · VPC isolation **Partial** ([#187](https://github.com/kgz/awsl/issues/187)) |
-| ECS | Docker tasks · secrets/`valueFrom` · host ports · failed-start status | Clusters / services / tasks | **Partial** · secrets/host/status [#201](https://github.com/kgz/awsl/issues/201) · depth [#146](https://github.com/kgz/awsl/issues/146) |
+| ECS | Docker tasks · secrets/`valueFrom` · host ports · failed-start status · pull from ECR URI | Clusters / services / tasks | **Partial** · secrets/host/status [#201](https://github.com/kgz/awsl/issues/201) · depth [#146](https://github.com/kgz/awsl/issues/146) |
 | EC2 | Docker-backed instances | Instances list | **Partial** · depth [#146](https://github.com/kgz/awsl/issues/146) · sad [#171](https://github.com/kgz/awsl/issues/171) |
-| ECR / EKS / Batch / App Runner / ASG | — | — | **Backlog** |
+| ECR | create-repository · `get-login-password` · push/pull `127.0.0.1:5000/<repo>` · ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` (needs `ecr:BatchGetImage`) | — | **Partial** · push the repositoryUri hostname [#218](https://github.com/kgz/awsl/issues/218) · Lambda image authz [#219](https://github.com/kgz/awsl/issues/219) · console [#217](https://github.com/kgz/awsl/issues/217) |
+| EKS / Batch / App Runner / ASG | — | — | **Backlog** |
 
-Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh`
+Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ecr-smoke.sh`
 
 ---
 
