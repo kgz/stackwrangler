@@ -29,6 +29,19 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./bin/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./bin/iam-access-denied.sh` + IAM console lab |
+| OIDC `sub=repo:org/app:environment:prod` assumes tight role | happy | covered | `./bin/oidc-smoke.sh` · [oidc.md](oidc.md) |
+| OIDC `sub=repo:org/*` assumes any repo in the org | happy | covered | `./bin/oidc-smoke.sh` |
+| OIDC feature ref / other org / wrong aud / bad signature denied | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `iam:PassRole` when `iam:PassedToService=events.amazonaws.com` | happy | covered | `./bin/oidc-smoke.sh` |
+| `iam:PassRole` to Step Functions denied by `PassedToService` | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `iam:GetRole` only when `aws:ResourceTag/env=prod` | sad/authz | covered | `./bin/oidc-smoke.sh` |
+| `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
+| Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./bin/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |
+| S3 bucket and IAM role in A hidden from B | sad/authz | covered | `./bin/multi-account-smoke.sh` |
+| `sts:AssumeRole` role in B trusts `arn:aws:iam::<A>:root` + `sts:ExternalId`; user in A assumes | happy | covered | `./bin/multi-account-smoke.sh` |
+| AssumeRole without ExternalId / from account C / user missing `sts:AssumeRole` | sad/authz | covered | `./bin/multi-account-smoke.sh` |
+| Trust `StringEquals` `aws:PrincipalOrgID` does not allow | sad/authz | covered | `./bin/multi-account-smoke.sh` |
+| Cross-account resource policy Allow | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./bin/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./bin/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./bin/lambda-deploy-smoke.sh` |
@@ -38,21 +51,70 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
 | REST authorizer Deny → 401 (AWS 403) | sad/authz | thin | `./bin/apigw-rest-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
 | REST unknown route → 403 | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
-| REST custom domain + base-path mapping (control plane) | happy | covered | `./bin/apigw-rest-smoke.sh` |
-| REST request via custom domain | happy | missing | [#191](https://github.com/kgz/awsl/issues/191) |
+| REST custom domain + base-path mapping | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST request via custom domain (root mapping, local DNS) | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST request via custom domain named base path | happy | covered | `./bin/apigw-rest-smoke.sh` |
+| REST custom domain unmapped prefix → 403 Forbidden | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
+| REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A · [apigw-rest.md](apigw-rest.md) |
+| REST VPC_LINK to NLB with stopped/unhealthy target → 5xx | sad | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A |
+| REST `HTTP_PROXY` straight to an ECS awsvpc task, path param + injected service token reach backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
+| REST no token / Deny authorizer: backend receives nothing | sad/authz | thin | `./bin/apigw-nlb-ecs-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
+| REST backend task stopped → API 5xx (AWS 504/503, emulator 500) | sad/other | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./bin/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./bin/lambda-vpc-smoke.sh` |
 | Non-VPC Lambda blocked from private hosts | sad/other | missing | [#187](https://github.com/kgz/awsl/issues/187) |
+| Lambda reads per-stage secret → OAuth client-credentials token → POST to external HTTP API | happy | covered | `./bin/lambda-secret-oauth-smoke.sh` |
+| Lambda stage isolation (stage=b uses b's secret) and env-var base URL drives the call | happy | covered | `./bin/lambda-secret-oauth-smoke.sh` |
+| Lambda role missing `secretsmanager:GetSecretValue` → fails, external API sees no request | sad/authz | covered | `./bin/lambda-secret-oauth-smoke.sh` |
+| Lambda OAuth wrong client secret → 401, document not posted | sad/other | covered | `./bin/lambda-secret-oauth-smoke.sh` |
 | Lambda role missing other actions | sad/authz | missing | extend `lambda-authz-smoke.sh` / [#150](https://github.com/kgz/awsl/issues/150) |
 | ECS run-task + HTTP reachable | happy | covered | `./bin/ecs-smoke.sh` |
 | **ECS task role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./bin/ecs-authz-smoke.sh` |
 | ECS secrets `valueFrom` (ASM JSON key + SSM) via execution role | happy | covered | `./bin/ecs-taskdef-smoke.sh` |
 | **ECS execution role deny GetSecretValue → ResourceInitializationError** | sad/authz | covered | `./bin/ecs-taskdef-smoke.sh` |
 | ECS `networkMode: host` + portMappings listens on host | happy | covered | `./bin/ecs-taskdef-smoke.sh` |
+| ECS `networkMode: host` task role: creds on host 127.0.0.1 (`AWS_CONTAINER_CREDENTIALS_FULL_URI`), endpoint on loopback, no DNAT | happy | covered | `./bin/ecs-host-creds-smoke.sh` |
+| ECS host task without a role gets no credentials env; another task id → 404 | sad/authz | covered | `./bin/ecs-host-creds-smoke.sh` |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./bin/ecs-taskdef-smoke.sh` |
+| ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./bin/ecr-smoke.sh` |
+| ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` | happy | covered | `./bin/ecr-smoke.sh` |
+| **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./bin/ecr-smoke.sh` |
+| `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
+| Lambda `PackageType=Image` ECR pull authz | sad/authz | missing | [#219](https://github.com/kgz/awsl/issues/219) |
 | ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
+| EC2 IMDSv2 instance-profile reads secret | happy | covered | `./bin/ec2-imds-smoke.sh` |
+| EC2 instance-profile missing GetSecretValue → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |
+| SSM SendCommand AWS-RunShellScript returns stdout | happy | covered | `./bin/ec2-imds-smoke.sh` |
+| SSM SendCommand without ssm:SendCommand → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |
+| Private subnet with no `0.0.0.0/0` cannot reach a public host | sad/other | covered | `./bin/vpc-routing-smoke.sh` · [vpc-routing.md](vpc-routing.md) |
+| Private subnet reaches a public host via an HTTP proxy over peering | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` |
+| NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| Private ECS task reaches a public host only through an egress proxy (`HTTP_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
+| Same task with proxy env unset cannot reach the public host directly | sad/other | covered | `./bin/egress-proxy-smoke.sh` |
+| Egress proxy allowlist refuses another host (task sees 403) | sad/authz | covered | `./bin/egress-proxy-smoke.sh` |
+| Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
+| Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered (currently fails) | `./bin/egress-proxy-smoke.sh` |
+| Non-root image in private subnet (no default route) cannot reach a public host | sad/other | covered | `./bin/egress-proxy-smoke.sh` · [#270](https://github.com/kgz/awsl/issues/270) |
+| Interface VPCE `PrivateDnsEnabled`: service hostname resolves in-VPC and call reaches awsbox (ecr/logs/ssm/sts/ecs) | happy | covered | `./bin/vpce-private-dns-smoke.sh` · [vpce-private-dns.md](vpce-private-dns.md) |
+| Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./bin/vpce-private-dns-smoke.sh` |
+| Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |
+| SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./bin/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
+| SG rule revoke/authorize updates a running target | sad/other | covered | `./bin/sg-enforcement-smoke.sh` |
+| Prefix list and CIDR allow one address and refuse another | happy | covered | `./bin/sg-enforcement-smoke.sh` |
+| RDS on a subnet allows 5432 only from SG A | happy | covered | `./bin/sg-enforcement-smoke.sh` |
+| NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
+| VPC Lambda traffic filtered by its security groups | sad/other | missing | [#237](https://github.com/kgz/awsl/issues/237) |
+| Console label for a VPC ID and an NLB ARN glob | happy | covered | `./bin/labels-smoke.sh` · [labels.md](labels.md) |
+| `GET /_awsl/labels` | happy | covered | `./bin/labels-smoke.sh` |
+| Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./bin/labels-smoke.sh` |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
+| CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN failed update → `UPDATE_ROLLBACK_COMPLETE` (not `UPDATE_COMPLETE`) | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN failed update reverts in-place resource changes | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
+| CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./bin/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./bin/aws-parity-cfn-authz.sh` |
 | Prowler aws scan (isolated, scoped unused-services) | happy | covered | `./bin/prowler-smoke.sh` · [prowler.md](prowler.md) |
@@ -60,8 +122,13 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | S3 Control GetPublicAccessBlock / ListAccessPoints (account) | happy | covered | `./bin/prowler-smoke.sh` spot-check |
 | SQS send/receive/delete | happy | covered | `./bin/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./bin/sqs-authz-smoke.sh` |
+| SQS → Lambda event source mapping invokes Lambda, message deleted | happy | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
+| SQS redrive (maxReceiveCount 2) to DLQ on Lambda failure | happy | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
+| Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | failing (emulator accepts mapping) | `./bin/sqs-lambda-dlq-smoke.sh` |
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
+| SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./bin/events-smoke.sh` |
 | EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
 | DynamoDB put/get | happy | covered | `./bin/dynamodb-smoke.sh` |
@@ -70,8 +137,17 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Step Functions deny StartExecution | sad/authz | covered | `./bin/sfn-authz-smoke.sh` |
 | Secrets create/get | happy | covered | `./bin/secrets-smoke.sh` |
 | Secrets deny GetSecretValue | sad/authz | covered | `./bin/secrets-authz-smoke.sh` |
+| Secret resource policy explicit deny beats Lambda-role IAM Allow (`GetSecretValue`, `DescribeSecret`) | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
 | KMS encrypt/decrypt | happy | covered | `./bin/kms-smoke.sh` |
 | KMS deny Decrypt | sad/authz | covered | `./bin/kms-authz-smoke.sh` |
+| KMS key policy delegates to IAM and role Encrypt/Decrypt/GenerateDataKey succeeds | happy | covered | `./bin/resource-policy-smoke.sh` |
+| KMS key policy without IAM delegation denies a role IAM allows | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| KMS key policy explicit deny Encrypt | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| S3 bucket policy explicit deny GetObject/ListBucket | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| Secrets Manager CMK GetSecretValue follows key policy | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| Secrets Manager CreateSecret/PutSecretValue with a CMK follows key policy | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| SSM SecureString GetParameter/PutParameter follows CMK key policy | sad/authz | covered | `./bin/resource-policy-smoke.sh` |
+| Cross-account resource policy (identity and resource must both allow) | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) · needs [#213](https://github.com/kgz/awsl/issues/213) |
 | Kinesis put/get | happy | covered | `./bin/kinesis-smoke.sh` |
 | Kinesis deny PutRecord | sad/authz | covered | `./bin/kinesis-authz-smoke.sh` |
 | Logs deny PutLogEvents | sad/authz | covered | `./bin/logs-authz-smoke.sh` |
@@ -87,9 +163,25 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | RDS Postgres SQL round-trip | happy | covered | `./bin/rds-smoke.sh` |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./bin/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
+| RDS MySQL instance + managed secret | happy | covered | `./bin/rds-mysql-smoke.sh` |
+| **RDS MySQL wrong password → access denied** | sad/authz | covered | `./bin/rds-mysql-smoke.sh` |
+| Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./bin/rds-mysql-smoke.sh` |
+| **Aurora MySQL reader rejects writes** | sad/other | covered | `./bin/rds-mysql-smoke.sh` |
+| Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./bin/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./bin/apigw-smoke.sh` |
 | **Seaweed vs LocalEmu S3 are separate stores** | sad/other | covered | `./bin/s3-dual-endpoint-smoke.sh` · [s3-backends.md](s3-backends.md) |
+| `awsl apply` synthetic VPC/subnet/SG ids + CIDRs | happy | covered | `./bin/mirror-smoke.sh` · [mirror.md](mirror.md) |
+| `awsl apply` fixture tags (Name, CDK subnet, Tier=private RT) + TF data sources | happy | covered | `./bin/mirror-tags-smoke.sh` · [mirror.md](mirror.md) |
+| `awsl mirror --out` inside the repo (not gitignored) | sad/other | covered | `./bin/mirror-smoke.sh` |
+| `awsl apply` non-local endpoint | sad/other | covered | `./bin/mirror-smoke.sh` |
+| Real-account `awsl mirror` read (Describe/List/Get only) | happy | missing | [#220](https://github.com/kgz/awsl/issues/220) |
+| Create VPC/subnet/SG with `_custom_id_` + account id in OwnerId/STS/ARNs | happy | covered | `./bin/custom-id-smoke.sh` · [custom-ids.md](custom-ids.md) |
+| Create route table, IGW, peering, instance, LB/TG suffix, REST/HTTP API, hosted zone, ECS cluster ARN with `_custom_id_` | happy | covered | `./bin/custom-id-smoke.sh` |
+| `_custom_id_` value fails the id format check | sad/other | covered | `./bin/custom-id-smoke.sh` |
+| Terraform bootstrap state bucket + DynamoDB lock, then remote-state apply | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh` · [terraform-awsbox.md](terraform-awsbox.md) |
+| Terraform second plan no-change with S3 backend on LocalEmu | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh` |
+| Terraform backend smoke canary: real AWS STS succeeds → abort | sad/other | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh` |
 
 ---
 
@@ -100,8 +192,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./bin/lambda-smoke.sh           # happy
 ./bin/lambda-authz-smoke.sh     # sad/authz
+./bin/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
 ./bin/transfer-dataplane-smoke.sh
 ./bin/rds-smoke.sh              # needs psql
+./bin/rds-mysql-smoke.sh        # needs mysql
 # …add others as you touch a surface
 ```
 
