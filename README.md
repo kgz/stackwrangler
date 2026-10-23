@@ -74,7 +74,7 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 
 | Service | Status |
 |---------|--------|
-| Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/SG · [docs/mirror.md](docs/mirror.md) · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
+| Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/RT/SG + fixture tags · [docs/mirror.md](docs/mirror.md) · `./bin/mirror-tags-smoke.sh` · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
 | VPC routes / peering / NAT | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · gateway endpoints / Lambda egress [#230](https://github.com/kgz/awsl/issues/230) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC security groups | **Partial** · [docs/sg-enforcement.md](docs/sg-enforcement.md) · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · VPC Lambda [#237](https://github.com/kgz/awsl/issues/237) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC / AZ polish | **Backlog** |
@@ -82,7 +82,7 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 | WAFv2 / Route 53 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |
 
-Smoke: `./bin/mirror-smoke.sh`
+Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh`
 
 ---
 

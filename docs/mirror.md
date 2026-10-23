@@ -1,12 +1,13 @@
 # Account mirror (`awsl mirror` / `awsl apply`)
 
-Synthetic topology fixtures for the local emulator. This pass applies a VPC, subnet, and security group. Reading a real account is [#220](https://github.com/kgz/awsl/issues/220) — `mirror` does not call AWS.
+Synthetic topology fixtures for the local emulator. This pass applies a VPC, subnet, route table, and security group, including arbitrary resource tags so tag-filtered Terraform data sources resolve. Reading a real account is [#220](https://github.com/kgz/awsl/issues/220) — `mirror` does not call AWS.
 
 ## Commands
 
 ```bash
 ./bin/awsl mirror dry-run
 ./bin/awsl apply testdata/mirror/synthetic-vpc.json
+./bin/awsl apply testdata/mirror/tagged-vpc.json
 # same entry points:
 ./bin/awsbox mirror dry-run
 ./bin/awsbox apply testdata/mirror/synthetic-vpc.json
@@ -27,21 +28,27 @@ Synthetic topology fixtures for the local emulator. This pass applies a VPC, sub
 
 Schema: [testdata/mirror/schema.json](../testdata/mirror/schema.json) (`awsl.mirror/v1`).
 
-Example (no account data, no secrets): [testdata/mirror/synthetic-vpc.json](../testdata/mirror/synthetic-vpc.json).
+Examples (no account data, no secrets):
+
+- [testdata/mirror/synthetic-vpc.json](../testdata/mirror/synthetic-vpc.json) — minimal VPC/subnet/SG
+- [testdata/mirror/tagged-vpc.json](../testdata/mirror/tagged-vpc.json) — Name / CDK subnet tags / `Tier=private` route tables
 
 | Field | Meaning |
 |-------|---------|
-| `resources.vpcs[]` | `id`, `cidr`, optional `name` |
-| `resources.subnets[]` | `id`, `vpcId`, `cidr`, `availabilityZone`, optional `name` |
-| `resources.securityGroups[]` | `id`, `vpcId`, `name`, `description` |
+| `resources.vpcs[]` | `id`, `cidr`, optional `name`, optional `tags` |
+| `resources.subnets[]` | `id`, `vpcId`, `cidr`, `availabilityZone`, optional `name`, optional `tags` |
+| `resources.routeTables[]` | optional; `id`, `vpcId`, optional `name`, optional `subnetIds`, optional `tags` |
+| `resources.securityGroups[]` | `id`, `vpcId`, `name`, `description`, optional `tags` |
+
+`name` sets the `Name` tag when `tags.Name` is absent. Apply always adds `awsbox:resource-id` from the fixture id (do not put that key in `tags`).
 
 Unknown fields are rejected, including `secret`, `password`, `environment`, and `valueFrom`.
 
-## Ids
+## Ids and tags
 
-Apply sends tag `awsbox:resource-id` set to the fixture id. LocalEmu's start hook `localemu-patches/init/start.d/20-mirror-resource-ids.py` uses that tag as the VPC, subnet, or security group id. Recreate the emulator after pulling the hook (`./bin/awsbox up` recreates when the compose spec changes; a container started from an older tree will not pin ids).
+Apply sends tag `awsbox:resource-id` set to the fixture id. LocalEmu's start hook `localemu-patches/init/start.d/20-mirror-resource-ids.py` uses that tag as the VPC, subnet, route table, or security group id. Recreate the emulator after pulling the hook (`./bin/awsbox up` recreates when the compose spec changes; a container started from an older tree will not pin ids).
 
-`describe-vpcs` / `describe-subnets` / `describe-security-groups` then return the fixture ids and CIDRs. A second `apply` of the same fixture is a no-op when those already match.
+`describe-vpcs` / `describe-subnets` / `describe-route-tables` / `describe-security-groups` then return the fixture ids, CIDRs, and tags. A second `apply` of the same fixture is a no-op for matching shape and re-applies any missing tags / subnet associations.
 
 Creates that omit the tag still get moto's random ids.
 
@@ -53,4 +60,5 @@ Smoke (throwaway LocalEmu, no shared stack, no real AWS):
 
 ```bash
 ./bin/mirror-smoke.sh
+./bin/mirror-tags-smoke.sh
 ```

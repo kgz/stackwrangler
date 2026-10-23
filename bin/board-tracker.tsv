@@ -185,6 +185,7 @@
 216	in-review	v1: mirror real account fixture (scaffold)
 257	done	v1: Document Terraform against awsbox (backend/lock)
 220	backlog	Debt: real-account mirror read path (from #216)
+256	in-review	v1: mirror/fixture tags for TF data sources
 217	backlog	Debt: ECR console (from #211)
 218	backlog	Debt: docker push via repositoryUri hostname (from #211)
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
