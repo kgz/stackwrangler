@@ -198,4 +198,4 @@
 258	done	v1: VPC Interface endpoint private DNS
 269	done	v1: ECS tasks reach emulator endpoint
 270	done	v1: no-default-route for non-root containers
-265	in-review	v1: SNS delivery respects SQS queue policy
+265	done	v1: SNS→SQS respects queue resource policy
