@@ -201,5 +201,5 @@
 265	done	v1: SNS→SQS respects queue resource policy
 267	done	v1: REST VPC_LINK via NLB
 268	done	v1: ECS awsvpc task IP in subnet CIDR
-271	in-review	v1: awsvpc not on default docker bridge
+271	done	v1: awsvpc not on default docker bridge
 282	backlog	Debt: SG iptables install needs egress (from #271)
