@@ -55,6 +55,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST request via custom domain (root mapping, local DNS) | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST request via custom domain named base path | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST custom domain unmapped prefix → 403 Forbidden | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
+| REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | missing | `./bin/apigw-nlb-ecs-smoke.sh` (phase A fails: `VPC_LINK` ignored, NLB DNS unresolvable) |
+| REST `HTTP_PROXY` straight to an ECS awsvpc task, path param + injected service token reach backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
+| REST no token / Deny authorizer: backend receives nothing | sad/authz | thin | `./bin/apigw-nlb-ecs-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
+| REST backend task stopped → API 5xx (AWS 504/503, emulator 500) | sad/other | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./bin/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./bin/lambda-vpc-smoke.sh` |
 | Non-VPC Lambda blocked from private hosts | sad/other | missing | [#187](https://github.com/kgz/awsl/issues/187) |
