@@ -200,4 +200,4 @@
 270	done	v1: no-default-route for non-root containers
 265	done	v1: SNS→SQS respects queue resource policy
 267	done	v1: REST VPC_LINK via NLB
-268	in-review	v1: ECS awsvpc describe-tasks ENI IP in subnet CIDR
+268	done	v1: ECS awsvpc task IP in subnet CIDR
