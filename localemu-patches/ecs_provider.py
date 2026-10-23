@@ -45,6 +45,138 @@ def _normalize_cluster_name(cluster: str) -> str:
     return cluster
 
 
+def _resolve_task_private_ipv4(task_info) -> str | None:
+    """Best ENI address for an awsvpc task (task-level, else first container)."""
+    ip = getattr(task_info, "private_ipv4", None)
+    if ip:
+        return ip
+    for ci in getattr(task_info, "containers", []) or []:
+        cip = getattr(ci, "private_ipv4", None)
+        if cip:
+            return cip
+    # Live Docker probe when recovered tasks lack a stored address
+    vpc_id = getattr(task_info, "vpc_id", None)
+    if not vpc_id:
+        return None
+    network = f"localemu-vpc-{vpc_id}"
+    try:
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+    except Exception:
+        return None
+    for ci in getattr(task_info, "containers", []) or []:
+        name = getattr(ci, "docker_name", None)
+        if not name:
+            continue
+        try:
+            found = DOCKER_CLIENT.get_container_ipv4_for_network(name, network)
+        except TypeError:
+            try:
+                found = DOCKER_CLIENT.get_container_ipv4_for_network(
+                    container_name_or_id=name,
+                    container_network=network,
+                )
+            except Exception:
+                found = None
+        except Exception:
+            found = None
+        if found and found not in ("localhost", "127.0.0.1"):
+            return str(found).split("/")[0]
+    return None
+
+
+def _set_attachment_detail(details: list, name: str, value: str) -> None:
+    for d in details:
+        if d.get("name") == name:
+            d["value"] = value
+            return
+    details.append({"name": name, "value": value})
+
+
+def _apply_awsvpc_eni_ip(task: dict, task_info, account_id: str, region: str) -> None:
+    """Overwrite moto's random privateIPv4Address with the container VPC IP (#268)."""
+    ip = _resolve_task_private_ipv4(task_info)
+    if not ip:
+        return
+
+    for att in task.get("attachments") or []:
+        if att.get("type") != "ElasticNetworkInterface":
+            continue
+        details = att.setdefault("details", [])
+        _set_attachment_detail(details, "privateIPv4Address", ip)
+        if getattr(task_info, "subnet_id", None):
+            _set_attachment_detail(details, "subnetId", task_info.subnet_id)
+
+    for mc in task.get("containers") or []:
+        c_ip = ip
+        for ci in getattr(task_info, "containers", []) or []:
+            if ci.container_name == mc.get("name") and getattr(ci, "private_ipv4", None):
+                c_ip = ci.private_ipv4
+                break
+        nis = mc.get("networkInterfaces")
+        if not nis:
+            mc["networkInterfaces"] = [{"privateIpv4Address": c_ip}]
+        else:
+            for ni in nis:
+                ni["privateIpv4Address"] = c_ip
+
+    _patch_moto_task_eni_ip(task.get("taskArn", ""), ip, account_id, region)
+
+
+def _patch_moto_task_eni_ip(
+    task_arn: str, ip: str, account_id: str, region: str,
+) -> None:
+    """Keep moto's Task.attachments / ENI in sync for later DescribeTasks."""
+    if not task_arn or not ip:
+        return
+    try:
+        backend = moto_backends.get_backend("ecs")[account_id][region]
+    except Exception:
+        return
+    moto_task = None
+    for cluster in getattr(backend, "clusters", {}).values():
+        tasks = getattr(cluster, "tasks", None) or {}
+        if task_arn in tasks:
+            moto_task = tasks[task_arn]
+            break
+        # short id key
+        short = task_arn.split("/")[-1]
+        if short in tasks:
+            moto_task = tasks[short]
+            break
+    if moto_task is None:
+        return
+
+    eni_id = None
+    for att in getattr(moto_task, "attachments", None) or []:
+        details = att.get("details") if isinstance(att, dict) else None
+        if not details:
+            continue
+        for d in details:
+            if d.get("name") == "privateIPv4Address":
+                d["value"] = ip
+            elif d.get("name") == "networkInterfaceId":
+                eni_id = d.get("value")
+
+    if not eni_id:
+        return
+    try:
+        ec2 = moto_backends.get_backend("ec2")[account_id][region]
+        eni = ec2.get_network_interface(eni_id) if hasattr(ec2, "get_network_interface") else None
+        if eni is None:
+            enis = getattr(ec2, "network_interfaces", None) or {}
+            eni = enis.get(eni_id)
+        if eni is None:
+            return
+        for attr in ("private_ip_address", "private_ip", "_private_ip"):
+            if hasattr(eni, attr):
+                try:
+                    setattr(eni, attr, ip)
+                except Exception:
+                    pass
+    except Exception:
+        LOG.debug("moto ENI IP patch failed for %s", eni_id, exc_info=True)
+
+
 def _init_task_manager():
     """Initialize the Docker Task Manager.
 
@@ -325,6 +457,8 @@ def _handle_run_task(
                                 mc["networkBindings"] = bindings
                             break
 
+                _apply_awsvpc_eni_ip(task, ti, context.account_id, context.region)
+
                 LOG.info(
                     "ECS task %s %s with %d containers",
                     task_arn, ti.status, len(ti.containers),
@@ -579,6 +713,10 @@ def _handle_describe_tasks(
                             for c_port, h_port in ci.host_ports.items()
                         ]
                     break
+
+        _apply_awsvpc_eni_ip(
+            task, task_info, context.account_id, context.region,
+        )
 
     return result
 

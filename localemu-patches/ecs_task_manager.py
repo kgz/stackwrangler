@@ -57,6 +57,8 @@ class EcsContainerInfo:
     host_ports: dict[int, int] = field(default_factory=dict)
     status: str = "PENDING"
     exit_code: int | None = None
+    # awsvpc: address on localemu-vpc-* (subnet-pinned when possible)
+    private_ipv4: str | None = None
 
 
 @dataclass
@@ -75,6 +77,12 @@ class EcsTaskInfo:
     stopped_at: float | None = None
     # AWS DescribeTasks field when the task never reached RUNNING
     stopped_reason: str | None = None
+    # awsvpc ENI address reported on attachments / networkInterfaces (#268)
+    private_ipv4: str | None = None
+    subnet_id: str | None = None
+    vpc_id: str | None = None
+    # SubnetAllocator reservations to release on stop
+    reserved_ips: list[str] = field(default_factory=list)
 
 
 class DockerTaskManager:
@@ -996,17 +1004,19 @@ class DockerTaskManager:
 
                     # Connect to the VPC network derived
                     # from the task's awsvpcConfiguration.subnets.
+                    private_ipv4 = None
                     if network_mode == "awsvpc":
                         awsvpc_cfg = (network_configuration or {}).get(
                             "awsvpcConfiguration", {},
                         )
                         subnet_ids = awsvpc_cfg.get("subnets") or []
                         sg_ids = list(awsvpc_cfg.get("securityGroups") or [])
-                        self._connect_to_vpc_network(
+                        private_ipv4 = self._connect_to_vpc_network(
                             docker_name, cluster_name,
                             subnet_ids=subnet_ids,
                             account_id=account_id,
                             region=region,
+                            task_info=task_info,
                         )
                         self._use_private_resolv(
                             docker_name, subnet_ids, account_id, region,
@@ -1029,8 +1039,11 @@ class DockerTaskManager:
                         image=image,
                         host_ports=host_ports,
                         status="RUNNING",
+                        private_ipv4=private_ipv4,
                     )
                     task_info.containers.append(container_info)
+                    if private_ipv4 and not task_info.private_ipv4:
+                        task_info.private_ipv4 = private_ipv4
 
                     # Track started time
                     task_info.started_at = time.time()
@@ -1252,21 +1265,15 @@ class DockerTaskManager:
         subnet_ids: list[str] | None = None,
         account_id: str = "",
         region: str = "",
-    ) -> None:
+        task_info: EcsTaskInfo | None = None,
+    ) -> str | None:
         """Connect an awsvpc-mode task container to the right VPC network.
 
-        Previously this shelled out to ``docker network ls`` and
-        took the first ``localemu-vpc-*`` result. With multiple VPCs
-        that was a silent isolation failure — tasks could land in the
-        wrong VPC.
-
-        The subnet IDs from the RunTask request's
-        ``networkConfiguration.awsvpcConfiguration.subnets`` are the
-        authoritative source of "which VPC should this task be on". We
-        resolve the first one that maps to a known VPC via moto and
-        attach. If no subnet resolves, we log a warning and leave the
-        container on its default network rather than pick an arbitrary
-        VPC — correctness over liveness.
+        Pins an address from ``SubnetAllocator`` inside the subnet CIDR
+        (same path as EC2/RDS) so ``DescribeTasks`` privateIPv4Address
+        matches the container on ``localemu-vpc-*`` and ip-type target
+        registration reaches the task (#268). Moto's
+        ``random_private_ip()`` is outside the subnet and must not win.
         """
         try:
             networks = DOCKER_CLIENT.get_networks(docker_name)
@@ -1279,7 +1286,7 @@ class DockerTaskManager:
                     self._sync_subnet_routes(
                         docker_name, subnet_ids, account_id, region,
                     )
-                    return
+                    return self._container_ip_on_network(docker_name, net)
 
             if not subnet_ids:
                 LOG.warning(
@@ -1289,7 +1296,7 @@ class DockerTaskManager:
                     "on RunTask to enable per-VPC isolation.",
                     docker_name,
                 )
-                return
+                return None
 
             from localemu.services.ec2.docker.vpc_network import (
                 get_vpc_network_manager,
@@ -1297,34 +1304,162 @@ class DockerTaskManager:
             vpcm = get_vpc_network_manager()
 
             vpc_id = None
-            for subnet_id in subnet_ids:
+            subnet_id = None
+            for sid in subnet_ids:
                 try:
                     resolved = vpcm.get_vpc_id_for_subnet(
-                        subnet_id, account_id, region,
+                        sid, account_id, region,
                     )
                 except Exception:
                     resolved = None
                 if resolved:
                     vpc_id = resolved
+                    subnet_id = sid
                     break
 
-            if not vpc_id:
+            if not vpc_id or not subnet_id:
                 LOG.warning(
                     "ECS awsvpc task %s: none of subnets=%s resolve to a VPC in %s/%s — "
                     "skipping VPC network attach",
                     docker_name, subnet_ids, account_id, region,
                 )
-                return
+                return None
 
-            vpc_network = f"localemu-vpc-{vpc_id}"
-            DOCKER_CLIENT.connect_container_to_network(vpc_network, docker_name)
-            LOG.info(
-                "ECS awsvpc task %s connected to %s (resolved from subnet)",
+            if task_info is not None:
+                task_info.vpc_id = vpc_id
+                task_info.subnet_id = subnet_id
+
+            try:
+                ensured = vpcm.ensure_network_for_vpc(vpc_id)
+            except Exception:
+                ensured = None
+                LOG.debug(
+                    "ensure_network_for_vpc(%s) failed", vpc_id, exc_info=True,
+                )
+            vpc_network = ensured or f"localemu-vpc-{vpc_id}"
+            try:
+                DOCKER_CLIENT.inspect_network(vpc_network)
+            except Exception:
+                LOG.warning(
+                    "ECS awsvpc task %s: VPC network %s missing — "
+                    "cannot pin subnet IP (CreateVpc bridge failed?)",
+                    docker_name, vpc_network,
+                )
+                return None
+
+            ipv4_kwarg, reserved = self._reserve_awsvpc_ip(
+                vpc_id, subnet_id, docker_name,
+            )
+            try:
+                DOCKER_CLIENT.connect_container_to_network(
+                    vpc_network, docker_name, ipv4_address=ipv4_kwarg,
+                )
+            except Exception:
+                if reserved is not None:
+                    self._release_reserved_ip(reserved)
+                raise
+            if reserved is not None and task_info is not None:
+                task_info.reserved_ips.append(str(reserved))
+
+            ip = ipv4_kwarg or self._container_ip_on_network(
                 docker_name, vpc_network,
             )
+            LOG.info(
+                "ECS awsvpc task %s connected to %s (subnet=%s ip=%s)",
+                docker_name, vpc_network, subnet_id, ip or "-",
+            )
             self._sync_subnet_routes(docker_name, subnet_ids, account_id, region)
+            return ip
         except Exception as e:
-            LOG.debug("Failed to connect container %s to VPC network: %s", docker_name, e)
+            LOG.warning(
+                "Failed to connect container %s to VPC network: %s",
+                docker_name, e,
+            )
+            return None
+
+    def _reserve_awsvpc_ip(
+        self,
+        vpc_id: str,
+        subnet_id: str,
+        docker_name: str,
+    ) -> tuple[str | None, object | None]:
+        """Reserve a subnet CIDR address for awsvpc attach.
+
+        Returns ``(ipv4_for_connect, reserved_addr_or_None)``. On allocator
+        miss, falls back to Docker auto-IPAM (``None, None``).
+        """
+        try:
+            from localemu import config as _config
+        except Exception:
+            return None, None
+        if not getattr(_config, "LOCALEMU_VPC_IP_PINNING", True):
+            return None, None
+        try:
+            from localemu.services.ec2.docker.subnet_allocator import (
+                InsufficientFreeAddressesInSubnet,
+                UnknownSubnet,
+                get_subnet_allocator,
+            )
+            from localemu.services.ec2.docker.vm_manager import (
+                _realign_subnet_pool_to_vpc_bridge,
+            )
+        except Exception:
+            LOG.debug("awsvpc IP pin imports failed", exc_info=True)
+            return None, None
+
+        owner_key = f"eni-ecs-{docker_name.removeprefix('localemu-')}"
+        try:
+            _realign_subnet_pool_to_vpc_bridge(vpc_id, subnet_id)
+            reserved = get_subnet_allocator().reserve(
+                vpc_id=vpc_id,
+                subnet_id=subnet_id,
+                owner_key=owner_key,
+            )
+            return str(reserved), reserved
+        except (UnknownSubnet, InsufficientFreeAddressesInSubnet) as e:
+            LOG.warning(
+                "ECS %s: cannot pin IP in subnet %s (%s) — "
+                "falling back to Docker auto-IPAM",
+                docker_name, subnet_id, e,
+            )
+            return None, None
+        except Exception:
+            LOG.warning(
+                "ECS %s: allocator reserve raised — fall back to auto-IPAM",
+                docker_name, exc_info=True,
+            )
+            return None, None
+
+    @staticmethod
+    def _release_reserved_ip(ip: object) -> None:
+        try:
+            from localemu.services.ec2.docker.subnet_allocator import (
+                get_subnet_allocator,
+            )
+
+            get_subnet_allocator().release(ip)
+        except Exception:
+            LOG.debug("awsvpc IP release failed for %s", ip, exc_info=True)
+
+    @staticmethod
+    def _container_ip_on_network(docker_name: str, network: str) -> str | None:
+        try:
+            ip = DOCKER_CLIENT.get_container_ipv4_for_network(
+                docker_name, network,
+            )
+        except TypeError:
+            try:
+                ip = DOCKER_CLIENT.get_container_ipv4_for_network(
+                    container_name_or_id=docker_name,
+                    container_network=network,
+                )
+            except Exception:
+                return None
+        except Exception:
+            return None
+        if not ip or ip in ("localhost", "127.0.0.1"):
+            return None
+        return str(ip).split("/")[0]
 
     def _sync_subnet_routes(
         self,
@@ -1370,6 +1505,10 @@ class DockerTaskManager:
             except Exception:
                 pass
             container.status = "STOPPED"
+
+        for ip in list(task_info.reserved_ips):
+            self._release_reserved_ip(ip)
+        task_info.reserved_ips.clear()
 
         task_info.status = "STOPPED"
         # Track stop time
