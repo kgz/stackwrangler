@@ -21,6 +21,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/subnet" }
         },
+        "routeTables": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/routeTable" }
+        },
         "securityGroups": {
           "type": "array",
           "items": { "$ref": "#/$defs/securityGroup" }
@@ -29,6 +33,10 @@
     }
   },
   "$defs": {
+    "tags": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
     "vpc": {
       "type": "object",
       "additionalProperties": false,
@@ -36,7 +44,8 @@
       "properties": {
         "id": { "type": "string", "pattern": "^vpc-[0-9a-f]{8,17}$" },
         "cidr": { "type": "string" },
-        "name": { "type": "string" }
+        "name": { "type": "string" },
+        "tags": { "$ref": "#/$defs/tags" }
       }
     },
     "subnet": {
@@ -48,7 +57,23 @@
         "vpcId": { "type": "string", "pattern": "^vpc-[0-9a-f]{8,17}$" },
         "cidr": { "type": "string" },
         "availabilityZone": { "type": "string" },
-        "name": { "type": "string" }
+        "name": { "type": "string" },
+        "tags": { "$ref": "#/$defs/tags" }
+      }
+    },
+    "routeTable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "vpcId"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^rtb-[0-9a-f]{8,17}$" },
+        "vpcId": { "type": "string", "pattern": "^vpc-[0-9a-f]{8,17}$" },
+        "name": { "type": "string" },
+        "subnetIds": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^subnet-[0-9a-f]{8,17}$" }
+        },
+        "tags": { "$ref": "#/$defs/tags" }
       }
     },
     "securityGroup": {
@@ -59,7 +84,8 @@
         "id": { "type": "string", "pattern": "^sg-[0-9a-f]{8,17}$" },
         "vpcId": { "type": "string", "pattern": "^vpc-[0-9a-f]{8,17}$" },
         "name": { "type": "string" },
-        "description": { "type": "string" }
+        "description": { "type": "string" },
+        "tags": { "$ref": "#/$defs/tags" }
       }
     }
   }
