@@ -45,7 +45,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail | `rds-smoke.sh`, `rds-authz-smoke.sh` |
 | RDS MySQL / Aurora MySQL | yes | **yes** (wrong password) | reader read-only | list/detail · create [#145](https://github.com/kgz/awsl/issues/145) | `rds-mysql-smoke.sh` |
 | SQS | yes | **yes** (deny SendMessage) | — | no → [#167](https://github.com/kgz/awsl/issues/167) | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |
-| SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ) | **yes** (role without SQS read perms → CreateEventSourceMapping refused; emulator gap, script fails) | — | — | `sqs-lambda-dlq-smoke.sh` |
+| SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ) | **yes** (role without SQS read perms → CreateEventSourceMapping refused) | — | — | `sqs-lambda-dlq-smoke.sh` |
 | Prowler | yes (scoped unused-services) | ratchet (failing API count) | S3 Control host | — | `prowler-smoke.sh` |
 | Account mirror | yes (synthetic apply) | n/a (local apply) | in-repo write + non-local endpoint | — | `mirror-smoke.sh` |
 | Terraform S3 backend + lock | yes (opt-in) | — | canary abort if real AWS STS succeeds | — | `terraform-backend-smoke.sh` (`AWSBOX_TERRAFORM_BACKEND_SMOKE=1`) |

@@ -6,6 +6,7 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 ./bin/awsbox up --force   # after enabling sqs in compose
 ./bin/sqs-smoke.sh
 ./bin/sqs-authz-smoke.sh
+./bin/sqs-lambda-dlq-smoke.sh
 ```
 
 | Area | Status |
@@ -13,4 +14,5 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | create / send / receive / delete | Working (smoke) |
 | Deny-user SendMessage | Working (`sqs-authz-smoke.sh`) |
 | SNS → SQS delivery respects queue policy (`aws:SourceArn`) | Working (`sns-sqs-fanout-smoke.sh`) |
+| SQS → Lambda ESM + DLQ | Working (`sqs-lambda-dlq-smoke.sh`; create refuses role without ReceiveMessage/DeleteMessage/GetQueueAttributes when `IAM_ENFORCEMENT=1`) · post-create revoke [#285](https://github.com/kgz/awsl/issues/285) |
 | Console | Not wired — Debt from #64 |
