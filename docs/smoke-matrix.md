@@ -35,3 +35,4 @@ Honest coverage grid. Update when adding or closing a smoke.
 ## Rule
 
 New or “done” service smokes must have **≥1 happy** and **≥1 sad** (prefer authz), and a row in [test-paths.md](test-paths.md). If sad is deferred, open/link a **Debt:** ticket before parent `done` (`./bin/gap-check.sh`).
+| Account mirror tags | yes (tagged VPC/subnet/RT + TF data sources) | n/a (local apply) | — | — | `mirror-tags-smoke.sh` |

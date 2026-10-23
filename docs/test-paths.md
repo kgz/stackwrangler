@@ -106,3 +106,4 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ```
 
 Wire new paths here **in the same PR** as the smoke. If deferred → Debt ticket + link in the Status column.
+| `awsl apply` fixture tags (Name, CDK subnet, Tier=private RT) + TF data sources | happy | covered | `./bin/mirror-tags-smoke.sh` · [mirror.md](mirror.md) |

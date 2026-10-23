@@ -205,3 +205,4 @@ Closing a ticket that leaves a bridge, disabled console action, or happy-only sm
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
 Console mocks: `design/awsbox-console/` · `./bin/od-design-run.sh --issue <n> "…"`
+| Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/RT/SG + fixture tags · [docs/mirror.md](docs/mirror.md) · `./bin/mirror-tags-smoke.sh` · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
