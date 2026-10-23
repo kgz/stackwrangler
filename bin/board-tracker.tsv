@@ -196,5 +196,5 @@
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	backlog	Debt: VPC Lambda SG enforcement (from #205)
 258	done	v1: VPC Interface endpoint private DNS
-269	in-review	v1: ECS tasks reach injected emulator endpoint
-270	in-review	v1: egress block for non-root images
+269	done	v1: ECS tasks reach emulator endpoint
+270	done	v1: no-default-route for non-root containers
