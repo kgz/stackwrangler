@@ -35,3 +35,4 @@ Honest coverage grid. Update when adding or closing a smoke.
 ## Rule
 
 New or “done” service smokes must have **≥1 happy** and **≥1 sad** (prefer authz), and a row in [test-paths.md](test-paths.md). If sad is deferred, open/link a **Debt:** ticket before parent `done` (`./bin/gap-check.sh`).
+| VPCE private DNS (ecr/logs/ssm/sts/ecs) | yes (in-VPC resolve + call) | n/a (isolation is other-VPC) | other VPC does not get endpoint IP | — | `vpce-private-dns-smoke.sh` |

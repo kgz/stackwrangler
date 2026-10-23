@@ -205,3 +205,4 @@ Closing a ticket that leaves a bridge, disabled console action, or happy-only sm
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
 Console mocks: `design/awsbox-console/` · `./bin/od-design-run.sh --issue <n> "…"`
+Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ecs-host-creds-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ec2-imds-smoke.sh` · `./bin/ec2-authz-smoke.sh` · `./bin/ecr-smoke.sh` · `./bin/vpc-routing-smoke.sh` · `./bin/sg-enforcement-smoke.sh` · `./bin/vpce-private-dns-smoke.sh`
