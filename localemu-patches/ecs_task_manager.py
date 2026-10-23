@@ -669,10 +669,13 @@ class DockerTaskManager:
                 )
                 env_vars["AWS_DEFAULT_REGION"] = region
                 env_vars["AWS_REGION"] = region
-                # Host-mode tasks share the host netns, where the gateway is
-                # published on 127.0.0.1 only.
-                _gw_host = "127.0.0.1" if network_mode == "host" else "host.docker.internal"
+                # #269: host.docker.internal → bridge gateway, but compose
+                # publishes :4566 on 127.0.0.1 only. Point at this LocalEmu
+                # container's docker-network IP (same idea as EC2 IMDS) and
+                # attach the task to that network after start.
+                _gw_host, _gw_net = self._emulator_endpoint_target(network_mode)
                 env_vars["AWS_ENDPOINT_URL"] = f"http://{_gw_host}:{_gw_port}"
+                self._append_no_proxy(env_vars, _gw_host)
                 if task_role_arn:
                     if network_mode == "host":
                         # Host mode shares the host netns: no DNAT (it would land in
@@ -985,6 +988,12 @@ class DockerTaskManager:
                         task_info.containers.append(container_info)
                         continue
 
+                    # #269: join LocalEmu's network *before* VPC route sync so
+                    # the compose-network default route is stripped with the
+                    # rest (private subnet must not gain egress via eth2).
+                    if network_mode != "host" and _gw_net:
+                        self._connect_to_emulator_network(docker_name, _gw_net)
+
                     # Connect to the VPC network derived
                     # from the task's awsvpcConfiguration.subnets.
                     if network_mode == "awsvpc":
@@ -1110,6 +1119,59 @@ class DockerTaskManager:
                 "could not point %s resolv.conf at %s",
                 docker_name,
                 dns_ip,
+                exc_info=True,
+            )
+
+    @staticmethod
+    def _append_no_proxy(env_vars: dict[str, str], host: str) -> None:
+        """Ensure SDKs/tools skip HTTP(S)_PROXY for the emulator host (#269)."""
+        if not host:
+            return
+        for key in ("NO_PROXY", "no_proxy"):
+            existing = env_vars.get(key, "")
+            parts = [p.strip() for p in existing.split(",") if p.strip()]
+            if host not in parts:
+                parts.append(host)
+            env_vars[key] = ",".join(parts)
+
+    @staticmethod
+    def _emulator_endpoint_target(network_mode: str) -> tuple[str, str | None]:
+        """Host (or IP) for AWS_ENDPOINT_URL and optional docker network to join.
+
+        Host-network tasks use loopback (compose publishes on 127.0.0.1).
+        Other modes prefer this LocalEmu container's address on its compose
+        network so tasks do not depend on the loopback-only host publish.
+        """
+        if network_mode == "host":
+            return "127.0.0.1", None
+        try:
+            from localemu.services.ec2.docker.vpc_endpoint import _localemu_gateway
+
+            ip, net = _localemu_gateway()
+        except Exception:
+            LOG.debug("emulator gateway lookup failed", exc_info=True)
+            ip, net = None, None
+        if ip:
+            return ip, net if net and net != "bridge" else None
+        return "host.docker.internal", None
+
+    def _connect_to_emulator_network(self, docker_name: str, network: str) -> None:
+        """Attach the task to LocalEmu's docker network for AWS_ENDPOINT_URL (#269)."""
+        try:
+            networks = DOCKER_CLIENT.get_networks(docker_name)
+            if network in networks:
+                return
+            DOCKER_CLIENT.connect_container_to_network(network, docker_name)
+            LOG.info(
+                "ECS container %s connected to emulator network %s",
+                docker_name,
+                network,
+            )
+        except Exception:
+            LOG.warning(
+                "could not attach %s to emulator network %s",
+                docker_name,
+                network,
                 exc_info=True,
             )
 

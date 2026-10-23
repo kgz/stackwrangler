@@ -53,9 +53,11 @@ _proxy_image_lock = threading.Lock()
 def _localemu_gateway() -> tuple[str | None, str | None]:
     """Return ``(ipv4, network_name)`` for this LocalEmu gateway container.
 
-    Prefer ``bridge``, then any other attached network. The proxy is connected
-    to that network so it can reach GATEWAY_LISTEN without the host publish
-    port (smokes bind LocalEmu to ephemeral host ports).
+    Prefer ``bridge``, then the compose/default network. Skip
+    ``localemu-vpc-*`` / ``localemu-pubport*`` so a stray VPC attachment
+    does not become the injected ``AWS_ENDPOINT_URL`` (#269). The proxy
+    (and ECS tasks) join that network to reach GATEWAY_LISTEN without the
+    loopback-only host publish.
     """
     try:
         import docker
@@ -69,6 +71,8 @@ def _localemu_gateway() -> tuple[str | None, str | None]:
             if addr:
                 return addr, "bridge"
         for name, info in nets.items():
+            if name.startswith("localemu-vpc-") or name.startswith("localemu-pubport"):
+                continue
             addr = str((info or {}).get("IPAddress") or "").split("/")[0]
             if addr:
                 return addr, name

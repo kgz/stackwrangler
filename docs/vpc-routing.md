@@ -2,6 +2,8 @@
 
 Subnet route tables control EC2 egress, and ECS `awsvpc` tasks get the same rules. A private subnet whose table has no `0.0.0.0/0` route cannot reach a public host. A peering route (including a non-RFC1918 CIDR) reaches the other VPC, and removing that route breaks that direction. A `0.0.0.0/0` route to a NAT gateway or internet gateway restores egress.
 
+ECS tasks still reach the injected `AWS_ENDPOINT_URL` (LocalEmu’s compose-network IP on `:4566`) without a default route: the task joins that network and the route filter allows the gateway `/32`. Host publish stays loopback-only for the CLI.
+
 ```bash
 ./bin/vpc-routing-smoke.sh
 ```

@@ -192,12 +192,15 @@ fi
 
 # 4) NO_PROXY: emulator endpoint from the task env, not via the proxy
 : > "$WORKDIR/proxy.log"
+EMU_URL="$(dx 'echo $AWS_ENDPOINT_URL')"
+EMU_HOST="${EMU_URL#*://}"; EMU_HOST="${EMU_HOST%%/*}"; EMU_HOST="${EMU_HOST%%:*}"
 # busybox wget ignores NO_PROXY, so the task shell applies it the way curl/SDKs do.
-OUT="$(dx 'h=${AWS_ENDPOINT_URL#*//}; h=${h%%:*}; case ",$NO_PROXY," in *",$h,"*) unset http_proxy HTTP_PROXY;; esac; wget -qO- -T4 "$AWS_ENDPOINT_URL/_localstack/health"' || true)"
-if [[ "$OUT" == *'"services"'* ]] && ! grep -q 'host.docker.internal' "$WORKDIR/proxy.log"; then
+# LocalEmu serves health at /_localemu/health (/_localstack/health is IAM 403).
+OUT="$(dx 'h=${AWS_ENDPOINT_URL#*//}; h=${h%%/*}; h=${h%%:*}; case ",$NO_PROXY," in *",$h,"*) unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY;; esac; wget -qO- -T4 "$AWS_ENDPOINT_URL/_localemu/health"' || true)"
+if [[ "$OUT" == *'"services"'* ]] && ! grep -qF "$EMU_HOST" "$WORKDIR/proxy.log"; then
 	ok "task reached emulator endpoint directly (NO_PROXY respected)"
 else
-	bad "emulator endpoint (\$AWS_ENDPOINT_URL=$(dx 'echo $AWS_ENDPOINT_URL')) not reachable from task: '${OUT:0:120}'; proxy log: $(cat "$WORKDIR/proxy.log")"
+	bad "emulator endpoint (\$AWS_ENDPOINT_URL=${EMU_URL}) not reachable from task: '${OUT:0:120}'; proxy log: $(cat "$WORKDIR/proxy.log")"
 fi
 
 if [[ "$FAILS" -ne 0 ]]; then
