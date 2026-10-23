@@ -26,6 +26,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | ECR | yes | **yes** (execution role without `ecr:BatchGetImage`) | — | no → [#217](https://github.com/kgz/awsl/issues/217) | `ecr-smoke.sh` |
 | VPC routes (private / peering / NAT) | yes | no | no default route; route removed | — | `vpc-routing-smoke.sh` |
 | Egress via proxy (private ECS task, no default route) | yes (fetch via `HTTP_PROXY`, proxy log); emulator via `NO_PROXY` | **yes** (proxy allowlist refusal 403) | no direct route without proxy env | — | `egress-proxy-smoke.sh` |
+| Egress via proxy (private ECS task, no default route) | yes (fetch via `HTTP_PROXY`, proxy log) | **yes** (proxy allowlist refusal 403) | no direct route without proxy env; non-root image blocked; emulator via `NO_PROXY` (fails: gap) | — | `egress-proxy-smoke.sh` |
 | Security groups | yes (SG A, prefix list, CIDR) | **yes** (SG B refused; live revoke) | NLB client IP [#236](https://github.com/kgz/awsl/issues/236) | — | `sg-enforcement-smoke.sh` |
 | VPCE private DNS (ecr/logs/ssm/sts/ecs) | yes (in-VPC resolve + call) | n/a (isolation is other-VPC) | other VPC does not get endpoint IP | — | `vpce-private-dns-smoke.sh` |
 | SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |

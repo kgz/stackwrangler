@@ -462,10 +462,13 @@ def _connect(network: str, container: str) -> None:
 
 
 def _sh(container: str, script: str) -> None:
+    # user=0: non-root images still need route/iptables changes in this netns.
     from localemu.utils.docker_utils import DOCKER_CLIENT
 
     try:
-        DOCKER_CLIENT.exec_in_container(container, ["sh", "-c", script])
+        DOCKER_CLIENT.exec_in_container(
+            container, ["sh", "-c", script], user="0"
+        )
     except Exception:
         LOG.debug("exec in %s failed", container, exc_info=True)
 

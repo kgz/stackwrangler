@@ -6,6 +6,7 @@
 # - Sad: same task, proxy env unset -> no direct route to the target.
 # - Sad: proxy allowlist refuses another target -> task sees the proxy's 403.
 # - NO_PROXY: the task still reaches the emulator endpoint without the proxy.
+# - Non-root image (curlimages/curl): no default route still blocks direct egress.
 # Asserts what real AWS does; every FAIL is reported, rc=1 if any.
 set -euo pipefail
 
@@ -201,6 +202,29 @@ if [[ "$OUT" == *'"services"'* ]] && ! grep -qF "$EMU_HOST" "$WORKDIR/proxy.log"
 	ok "task reached emulator endpoint directly (NO_PROXY respected)"
 else
 	bad "emulator endpoint (\$AWS_ENDPOINT_URL=${EMU_URL}) not reachable from task: '${OUT:0:120}'; proxy log: $(cat "$WORKDIR/proxy.log")"
+fi
+
+# 5) non-root image: no default route still blocks direct egress (#270)
+register "${FAMILY}-nonroot" '[{"name":"c","image":"curlimages/curl:8.5.0","essential":true,"memory":128,"command":["sleep","3600"]}]'
+NR_TASK="$(run "${FAMILY}-nonroot")"
+NR_CTR=""
+for _ in $(seq 1 30); do
+	NR_CTR="$(docker ps --filter "label=localemu.task-arn=${NR_TASK}" --format '{{.Names}}' | head -1 || true)"
+	[[ -n "$NR_CTR" ]] && docker exec "$NR_CTR" true >/dev/null 2>&1 && break
+	NR_CTR=""; sleep 2
+done
+if [[ -z "$NR_CTR" ]]; then
+	bad "non-root task container not usable ($(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$NR_TASK" --query 'tasks[0].{last:lastStatus,stop:stoppedReason}' --output text 2>/dev/null || true))"
+else
+	: > "$WORKDIR/ok.log"
+	# Image user is curl_user; route sync must still remove the default as root.
+	NR_OUT="$(docker exec "$NR_CTR" curl -sS --max-time 4 "http://${OK_IP}:${TPORT}/" 2>&1 || true)"
+	NR_UID="$(docker exec "$NR_CTR" id -u 2>/dev/null || true)"
+	if [[ "$NR_UID" != "0" && "$NR_OUT" != *public-ok* && ! -s "$WORKDIR/ok.log" ]]; then
+		ok "non-root image (uid=${NR_UID}): direct fetch blocked (${NR_OUT:0:60})"
+	else
+		bad "non-root: expected block for uid!=0; uid='${NR_UID}' out='${NR_OUT}' target=$(cat "$WORKDIR/ok.log"); routes: $(docker exec -u 0 "$NR_CTR" ip route 2>/dev/null | tr '\n' ';')"
+	fi
 fi
 
 if [[ "$FAILS" -ne 0 ]]; then
