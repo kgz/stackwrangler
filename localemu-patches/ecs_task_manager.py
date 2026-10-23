@@ -1459,8 +1459,8 @@ class DockerTaskManager:
                 "ECS awsvpc task %s connected to %s (subnet=%s ip=%s)",
                 docker_name, vpc_network, subnet_id, ip or "-",
             )
-                        self._detach_default_bridge(docker_name)
-self._sync_subnet_routes(docker_name, subnet_ids, account_id, region)
+            self._detach_default_bridge(docker_name)
+            self._sync_subnet_routes(docker_name, subnet_ids, account_id, region)
             return ip
         except Exception as e:
             LOG.warning(
