@@ -902,6 +902,17 @@ class DockerTaskManager:
                 additional_flags_parts.append(
                     "--add-host host.docker.internal:host-gateway"
                 )
+                if network_mode == "awsvpc":
+                    awsvpc_cfg = (network_configuration or {}).get(
+                        "awsvpcConfiguration"
+                    ) or {}
+                    dns_ip = self._private_dns_ip(
+                        awsvpc_cfg.get("subnets") or [],
+                        account_id,
+                        region,
+                    )
+                    if dns_ip:
+                        additional_flags_parts.append(f"--dns {dns_ip}")
                 additional_flags = " ".join(additional_flags_parts) if additional_flags_parts else None
 
                 # Container config
@@ -988,6 +999,9 @@ class DockerTaskManager:
                             account_id=account_id,
                             region=region,
                         )
+                        self._use_private_resolv(
+                            docker_name, subnet_ids, account_id, region,
+                        )
                         self._attach_awsvpc_sg(
                             docker_name, subnet_ids, sg_ids, account_id, region,
                         )
@@ -1046,6 +1060,58 @@ class DockerTaskManager:
             results.append(task_info)
 
         return results
+
+    def _private_dns_ip(
+        self,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+    ) -> str | None:
+        if not subnet_ids:
+            return None
+        try:
+            from localemu.services.ec2.docker.vpce_private_dns import (
+                dns_server_ip_for_subnet,
+            )
+        except Exception:
+            LOG.debug("VPCE private DNS helper unavailable", exc_info=True)
+            return None
+        for subnet_id in subnet_ids:
+            try:
+                ip = dns_server_ip_for_subnet(subnet_id, account_id, region)
+            except Exception:
+                LOG.warning(
+                    "VPCE private DNS address lookup failed for %s",
+                    subnet_id,
+                    exc_info=True,
+                )
+                ip = None
+            if ip:
+                return ip
+        return None
+
+    def _use_private_resolv(
+        self,
+        docker_name: str,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+    ) -> None:
+        dns_ip = self._private_dns_ip(subnet_ids, account_id, region)
+        if not dns_ip:
+            return
+        try:
+            DOCKER_CLIENT.exec_in_container(
+                docker_name,
+                ["sh", "-c", f"printf 'nameserver {dns_ip}\\n' > /etc/resolv.conf"],
+            )
+        except Exception:
+            LOG.warning(
+                "could not point %s resolv.conf at %s",
+                docker_name,
+                dns_ip,
+                exc_info=True,
+            )
 
     def _install_task_creds_dnat(self, docker_name: str, creds_port: int) -> None:
         """Install iptables DNAT rule redirecting 169.254.170.2:80 → host:creds_port.
