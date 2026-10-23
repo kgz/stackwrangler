@@ -138,7 +138,7 @@ CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · s
 
 | Tool | Status |
 |------|--------|
-| Terraform S3+Lambda | **Working** (`examples/terraform/…`, local apply) |
+| Terraform S3+Lambda | **Working** (`examples/terraform (see also `docs/terraform-awsbox.md` / `examples/terraform/awsbox-backend`)/…`, local apply) |
 | CloudFormation | **Partial** — stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Pulumi / Ansible examples | **Backlog** |
