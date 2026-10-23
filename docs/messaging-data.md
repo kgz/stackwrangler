@@ -11,6 +11,7 @@ docker compose up -d --force-recreate localstack
 |---------|-------|-----|
 | SQS | `sqs-smoke.sh` | `sqs-authz-smoke.sh` |
 | SNS | `sns-smoke.sh` | `sns-authz-smoke.sh` |
+| SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter) | same (wrong/missing queue `SourceArn`; unsubscribe) |
 | EventBridge | `events-smoke.sh` | `events-authz-smoke.sh` |
 | DynamoDB | `dynamodb-smoke.sh` | `dynamodb-authz-smoke.sh` |
 | Step Functions | `sfn-smoke.sh` | `sfn-authz-smoke.sh` |

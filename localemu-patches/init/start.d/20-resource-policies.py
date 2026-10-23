@@ -4,11 +4,18 @@ Secrets Manager documents, KMS key-policy delegation, cross-account
 "both must allow", and implicit CMK checks for Secrets Manager and SSM.
 S3 bucket policies already load in the enforcer; role-ARN matching is
 patched so an assumed-role session matches a policy that names the role.
+
+Also: SNS→SQS delivery evaluates the queue resource policy. connect_to()
+marks the SendMessage as an internal hop and the stock IAM enforcer
+bypasses it; AWS still requires the queue policy to Allow
+sns.amazonaws.com (usually with aws:SourceArn). We gate in the SNS
+publisher so a deny becomes a silent drop (same as AWS).
 """
 
 from __future__ import annotations
 
 import logging
+import os
 
 LOG = logging.getLogger("localemu.awsbox.resource_policies")
 
@@ -23,6 +30,11 @@ def _service_name(context) -> str:
     service = getattr(context, "service", None)
     name = getattr(service, "service_name", None)
     return name if isinstance(name, str) else ""
+
+
+def _iam_mode():
+    mode = os.environ.get("IAM_ENFORCEMENT", "").strip().lower()
+    return mode == "1", mode == "soft", (mode == "1" or mode == "soft")
 
 
 def _install() -> None:
@@ -165,6 +177,85 @@ def _install() -> None:
                 status_code=403,
             )
 
+    def _queue_allows_sns(queue_arn: str, topic_arn: str) -> bool:
+        """True when the queue policy Allows sns.amazonaws.com from topic_arn."""
+        enforce, audit, enabled = _iam_mode()
+        if not enabled:
+            return True
+        if not queue_arn or not isinstance(queue_arn, str) or not queue_arn.startswith("arn:"):
+            return False
+        parts = queue_arn.split(":")
+        region = parts[3] if len(parts) > 3 and parts[3] else "us-east-1"
+        account_id = parts[4] if len(parts) > 4 and parts[4] else "000000000000"
+        policy = enforcer._get_resource_policy("sqs", queue_arn, account_id, region)
+        effect = rp.evaluate_service_delivery(
+            "sns.amazonaws.com",
+            "sqs:SendMessage",
+            queue_arn,
+            policy,
+            topic_arn,
+            account_id,
+            region,
+        )
+        if effect == "allow":
+            return True
+        wire = (
+            f"User: sns.amazonaws.com is not authorized to perform: "
+            f"sqs:SendMessage on resource: {queue_arn}"
+        )
+        if audit and not enforce:
+            LOG.warning("IAM AUDIT DENY (SNS→SQS): %s", wire)
+            return True
+        LOG.info("IAM DENY (SNS→SQS): %s (source=%s)", wire, topic_arn)
+        return False
+
+    def _patch_sns_sqs_publishers() -> None:
+        from localemu.services.sns import publisher as sns_publisher
+
+        orig_sqs = sns_publisher.SqsTopicPublisher._publish
+
+        def sqs_publish(self, context, subscriber):
+            queue_arn = subscriber.get("Endpoint") or ""
+            topic_arn = subscriber.get("TopicArn") or ""
+            if not _queue_allows_sns(queue_arn, topic_arn):
+                # Mirror AWS: Subscribe succeeded; delivery is silently dropped.
+                try:
+                    sns_publisher.store_delivery_log(
+                        context.message,
+                        subscriber,
+                        success=False,
+                        topic_attributes=getattr(context, "topic_attributes", None),
+                    )
+                except Exception:
+                    LOG.debug("SNS→SQS deny delivery log failed", exc_info=True)
+                return
+            return orig_sqs(self, context, subscriber)
+
+        sns_publisher.SqsTopicPublisher._publish = sqs_publish
+
+        orig_batch = sns_publisher.SqsBatchTopicPublisher._publish
+
+        def sqs_batch_publish(self, context, subscriber):
+            queue_arn = subscriber.get("Endpoint") or ""
+            topic_arn = subscriber.get("TopicArn") or ""
+            if not _queue_allows_sns(queue_arn, topic_arn):
+                try:
+                    for message in getattr(context, "messages", None) or []:
+                        sns_publisher.store_delivery_log(
+                            message,
+                            subscriber,
+                            success=False,
+                            topic_attributes=getattr(context, "topic_attributes", None),
+                        )
+                except Exception:
+                    LOG.debug("SNS→SQS batch deny delivery log failed", exc_info=True)
+                return
+            return orig_batch(self, context, subscriber)
+
+        sns_publisher.SqsBatchTopicPublisher._publish = sqs_batch_publish
+
+    _patch_sns_sqs_publishers()
+
     orig_call = enforcer.IAMEnforcementHandler.__call__
 
     def _call(self, chain, context, response):
@@ -178,7 +269,7 @@ def _install() -> None:
         _implicit_kms(self, context)
 
     enforcer.IAMEnforcementHandler.__call__ = _call
-    LOG.info("awsbox resource policy hooks applied")
+    LOG.info("awsbox resource policy hooks applied (SNS→SQS queue policy gated)")
 
 
 _install()

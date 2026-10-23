@@ -100,23 +100,33 @@ def _load_s3_bucket_policy(target: ResourceTarget) -> dict | None:
 
 
 def _load_sqs_queue_policy(target: ResourceTarget) -> dict | None:
+    # LocalEmu SQS is native (sqs_stores); moto is a fallback only.
+    try:
+        from localemu.services.sqs.models import sqs_stores
+
+        store = sqs_stores[target.account_id][target.region]
+        queues = getattr(store, "queues", None) or {}
+        for queue in queues.values() if isinstance(queues, dict) else queues:
+            arn = getattr(queue, "arn", None)
+            name = getattr(queue, "name", None) or getattr(queue, "queue_name", None)
+            if arn == target.arn or name == target.name:
+                return _parse_policy(
+                    (getattr(queue, "attributes", None) or {}).get("Policy")
+                    or getattr(queue, "policy", None),
+                )
+    except Exception as e:
+        LOG.debug("SQS native policy load failed for %s: %s", target.arn, e)
+
     try:
         from moto.sqs import sqs_backends
         backend = sqs_backends[target.account_id][target.region]
         queue = backend.queues.get(target.name)
         if queue is None:
             return None
-        policy = (getattr(queue, "policy", None)
-                  or getattr(queue, "attributes", {}).get("Policy")
-                  or None)
-        if isinstance(policy, str):
-            try:
-                return json.loads(policy)
-            except json.JSONDecodeError:
-                return None
-        if isinstance(policy, dict):
-            return policy
-        return None
+        return _parse_policy(
+            getattr(queue, "policy", None)
+            or getattr(queue, "attributes", {}).get("Policy"),
+        )
     except Exception as e:
         LOG.debug("SQS policy load failed for %s: %s", target.arn, e)
         return None
@@ -781,6 +791,73 @@ def evaluate_both_required(orig_evaluate, evaluator, caller, action: str, resour
     if identity == Decision.ALLOW and effect == "allow":
         return Decision.ALLOW
     return Decision.IMPLICIT_DENY
+
+
+# --------------------------------------------------------------------------
+# Service-principal delivery (SNS → SQS, …)
+# --------------------------------------------------------------------------
+
+
+def normalize_service_principal(value: str | None) -> str | None:
+    """Map ``sns`` / ``sns.amazonaws.com`` to the full service principal."""
+    if not value or not isinstance(value, str):
+        return None
+    sp = value.strip()
+    if not sp:
+        return None
+    if "." not in sp:
+        return f"{sp}.amazonaws.com"
+    return sp
+
+
+def service_delivery_context(source_arn: str | None, region: str) -> dict:
+    """Condition keys SNS (and friends) present on the wire to the target."""
+    ctx: dict[str, str] = {
+        "aws:RequestedRegion": region or "us-east-1",
+    }
+    if source_arn and isinstance(source_arn, str):
+        ctx["aws:SourceArn"] = source_arn
+        parts = source_arn.split(":")
+        if len(parts) >= 5 and parts[4]:
+            ctx["aws:SourceAccount"] = parts[4]
+            ctx["aws:PrincipalAccount"] = parts[4]
+    return ctx
+
+
+def service_caller(service_principal: str, account_id: str):
+    """Synthetic caller for ``Principal: {Service: …}`` resource-policy grants."""
+    from localemu.services.iam_enforcement.identity import CallerIdentity
+
+    return CallerIdentity(
+        principal_type="Service",
+        account_id=account_id,
+        arn=service_principal,
+        acting_services=[service_principal],
+    )
+
+
+def evaluate_service_delivery(
+    service_principal: str,
+    action: str,
+    resource_arn: str,
+    resource_policy: dict | None,
+    source_arn: str | None,
+    account_id: str,
+    region: str,
+) -> str:
+    """``allow`` / ``deny`` / ``neutral`` for a service→resource delivery.
+
+    Real AWS only delivers when the target resource policy Allows the service
+    principal (typically with ``aws:SourceArn``). No document → not allowed.
+    Identity policies do not apply to service principals.
+    """
+    if not resource_policy:
+        return "neutral"
+    caller = service_caller(service_principal, account_id)
+    conditions = service_delivery_context(source_arn, region)
+    return resource_policy_effect(
+        resource_policy, caller, action, resource_arn, conditions,
+    )
 
 
 def _truthy(value: Any) -> bool:
