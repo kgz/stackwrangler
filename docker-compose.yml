@@ -7,7 +7,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWSBOX_ACCESS_KEY:-awsbox}
       AWS_SECRET_ACCESS_KEY: ${AWSBOX_SECRET_KEY:-awsboxawsbox}
     ports:
-      - "127.0.0.1:8333:8333"
+      - "127.0.0.1:${AWSBOX_S3_HOST_PORT:-8333}:8333"
     volumes:
       - seaweed-data:/data
     healthcheck:
@@ -26,7 +26,7 @@ services:
     environment:
       SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
       # Host docker daemon pulls this address (published below). #211
-      AWSBOX_ECR_REGISTRY: 127.0.0.1:5000
+      AWSBOX_ECR_REGISTRY: 127.0.0.1:${AWSBOX_ECR_HOST_PORT:-5000}
       # ECS task-role credentials for host-network tasks (start.d/05-ecs-creds-port.py)
       AWSBOX_ECS_CREDS_PORT: ${AWSBOX_ECS_CREDS_PORT:-4571}
       IAM_ENFORCEMENT: "1"
@@ -80,6 +80,10 @@ services:
       # Interface VPCE private DNS (#258): resolver + proxy forward to gateway IP
       - ./localemu-patches/vpce_private_dns.py:/opt/code/localemu/src/localemu/services/ec2/docker/vpce_private_dns.py:ro
       - ./localemu-patches/vpc_endpoint.py:/opt/code/localemu/src/localemu/services/ec2/docker/vpc_endpoint.py:ro
+      # ELBv2 data plane (#203) + NLB DNS for VPC_LINK (#267)
+      - ./localemu-patches/elbv2_listener_router.py:/opt/code/localemu/src/localemu/services/elbv2/listener_router.py:ro
+      - ./localemu-patches/elbv2_provider.py:/opt/code/localemu/src/localemu/services/elbv2/provider.py:ro
+      - ./.awsbox:/var/lib/awsbox
     healthcheck:
       test:
         [
@@ -96,7 +100,7 @@ services:
   sftp:
     image: atmoz/sftp:alpine
     ports:
-      - "127.0.0.1:2222:22"
+      - "127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}:22"
     command: awsbox:awsboxpass:1001:1001:upload
 
   # Docker distribution registry. Push/pull 127.0.0.1:5000/<repo>:<tag>.
@@ -107,7 +111,7 @@ services:
       localstack:
         condition: service_healthy
     ports:
-      - "127.0.0.1:5000:5000"
+      - "127.0.0.1:${AWSBOX_ECR_HOST_PORT:-5000}:5000"
     volumes:
       - ./localemu-patches/ecr-registry.yml:/etc/docker/registry/config.yml:ro
 

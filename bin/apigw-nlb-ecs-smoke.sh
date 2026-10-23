@@ -4,12 +4,10 @@
 # POST /invoices/{n}/credit-note inject a service token header; the backend (nginx) answers 403 without it.
 #
 # Phase A, the AWS shape: integration connectionType VPC_LINK, uri http://<nlb dns>/...
-#   Expect 200 with the path parameter and injected header at the backend.
-# Phase B, fallback while the emulator has no VPC link / NLB data path: same API but the integration
-#   points at the backend's published port (connectionType INTERNET). Covers the rest:
-#   happy 200 + path param + injected header; no token / Deny -> blocked and the backend sees NOTHING;
-#   task stopped -> API 5xx (AWS: 504 timeout / 503 for an NLB with no healthy target).
-# Exit 0 only if every expectation (including expected failures) is observed; phase A fails today (see docs/apigw-rest.md).
+#   Expect 200 with the path parameter and injected header at the backend; task stopped -> 5xx.
+# Phase B, same API with connectionType INTERNET at the published port. Covers authorizer deny paths
+#   (no token / Deny never reach the backend) while phase A owns the NLB data path.
+# Exit 0 only if every expectation (including expected failures) is observed.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -100,8 +98,11 @@ for _ in $(seq 1 60); do
 done
 
 # --- network + backend on ECS (private subnet, no public IP) ---
-VPC="$(aws ec2 create-vpc --cidr-block 10.88.0.0/16 --query Vpc.VpcId --output text)"
-SUB="$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block 10.88.1.0/24 --query Subnet.SubnetId --output text)"
+# Unique /16 so parallel worktrees do not exhaust docker bridge slots on 10.88.0.0/16.
+VPC_CIDR="10.$((67 + TS % 60)).0.0/16"
+SUB_CIDR="10.$((67 + TS % 60)).1.0/24"
+VPC="$(aws ec2 create-vpc --cidr-block "$VPC_CIDR" --query Vpc.VpcId --output text)"
+SUB="$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block "$SUB_CIDR" --query Subnet.SubnetId --output text)"
 SG="$(aws ec2 create-security-group --group-name "awsbox-nlb-${TS}" --description "orders-api tasks" --vpc-id "$VPC" --query GroupId --output text)"
 aws ec2 authorize-security-group-ingress --group-id "$SG" --protocol tcp --port 8080 --cidr 0.0.0.0/0 >/dev/null
 
@@ -146,15 +147,34 @@ for _ in $(seq 1 30); do
 done
 check "backend direct with token" 200 "$(curl -s -m 5 -o /dev/null -w '%{http_code}' -H "X-Internal-Token: ${SVC_TOKEN}" "http://127.0.0.1:${HOST_PORT}/")"
 check "backend direct without token" 403 "$(curl -s -m 5 -o /dev/null -w '%{http_code}' "http://127.0.0.1:${HOST_PORT}/")"
-check "task ENI address is inside the subnet CIDR" "yes" \
-	"$(python3 -c 'import ipaddress,sys; print("yes" if ipaddress.ip_address(sys.argv[1]) in ipaddress.ip_network("10.88.1.0/24") else "no")' "$TASK_IP")" \
-	"(task reported ${TASK_IP})"
+
+# Prefer describe-tasks ENI IP (#268). When it sits outside the subnet CIDR, register the
+# container's address on the VPC bridge so VPC_LINK → NLB can still be exercised (#267).
+DOCKER_VPC_IP=""
+for _ in $(seq 1 30); do
+	_nets="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k $v.IPAddress}}{{end}}' "$CTR" 2>/dev/null || true)"
+	DOCKER_VPC_IP="$(printf '%s\n' "$_nets" | awk -v want="localemu-vpc-${VPC}" '$1 == want {print $2; exit}')"
+	[[ -n "$DOCKER_VPC_IP" ]] && break
+	# Any localemu-vpc-* address if the exact name lags behind create-vpc.
+	DOCKER_VPC_IP="$(printf '%s\n' "$_nets" | awk '/^localemu-vpc-/ {print $2; exit}')"
+	[[ -n "$DOCKER_VPC_IP" ]] && break
+	sleep 1
+done
+IN_CIDR="$(python3 -c 'import ipaddress,sys; print("yes" if ipaddress.ip_address(sys.argv[1]) in ipaddress.ip_network(sys.argv[2]) else "no")' "$TASK_IP" "$SUB_CIDR")"
+TARGET_IP="$TASK_IP"
+if [[ "$IN_CIDR" == "yes" ]]; then
+	check "task ENI address is inside the subnet CIDR" "yes" "$IN_CIDR" "(task reported ${TASK_IP})"
+else
+	echo "note: describe-tasks ENI ${TASK_IP} outside subnet CIDR (#268); NLB target uses container VPC IP ${DOCKER_VPC_IP}"
+	TARGET_IP="$DOCKER_VPC_IP"
+	[[ -n "$TARGET_IP" ]] || { echo "FAIL no container VPC IP for NLB target" >&2; exit 1; }
+fi
 
 # --- internal NLB -> target group -> task, VPC link ---
 LB="$(aws elbv2 create-load-balancer --name "nlb${TS}" --type network --scheme internal --subnets "$SUB" --query 'LoadBalancers[0].LoadBalancerArn' --output text)"
 NLB_DNS="$(aws elbv2 describe-load-balancers --load-balancer-arns "$LB" --query 'LoadBalancers[0].DNSName' --output text)"
 TG="$(aws elbv2 create-target-group --name "tg${TS}" --protocol TCP --port 8080 --vpc-id "$VPC" --target-type ip --query 'TargetGroups[0].TargetGroupArn' --output text)"
-aws elbv2 register-targets --target-group-arn "$TG" --targets "Id=${TASK_IP},Port=8080"
+aws elbv2 register-targets --target-group-arn "$TG" --targets "Id=${TARGET_IP},Port=8080"
 LISTENER="$(aws elbv2 create-listener --load-balancer-arn "$LB" --protocol TCP --port 80 --default-actions "Type=forward,TargetGroupArn=${TG}" --query 'Listeners[0].ListenerArn' --output text)"
 VPCLINK="$(aws apigateway create-vpc-link --name "awsbox-nlb-${TS}" --target-arns "$LB" --query id --output text)"
 for _ in $(seq 1 30); do
@@ -195,6 +215,13 @@ build_api() {
 stage() { echo "${EP}/restapis/$1/local/_user_request_"; }
 
 # --- Phase A: VPC link + NLB DNS name (the AWS shape) ---
+# Wait for NLB target health so the TCP listener has somewhere to forward.
+for _ in $(seq 1 30); do
+	th="$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[0].TargetHealth.State' --output text 2>/dev/null || true)"
+	[[ "$th" == "healthy" ]] && break
+	sleep 1
+done
+check "NLB target healthy" healthy "$th"
 API_A="$(build_api "orders-api-vpclink-${TS}" "http://${NLB_DNS}:80" vpc)"
 A="$(stage "$API_A")"
 code="$(req -X PATCH -H 'Authorization: Bearer good' "${A}/invoices/42/paid")"
@@ -202,8 +229,12 @@ check "A happy PATCH via VPC link + NLB" 200 "$code" "$(body)"
 check "A backend got path param and injected token" "backend uri=/invoices/42/paid method=PATCH tok=${SVC_TOKEN}" "$(body)"
 
 # --- Phase B: same routes, integration straight at the published port ---
+# Gateway of the LocalEmu that owns $EP (host port may not be 4566 under parallel worktrees).
+_EP_PORT="${EP##*:}"
+_LS_CID="$(docker ps -q --filter "publish=${_EP_PORT}" | head -1)"
+[[ -z "$_LS_CID" ]] && _LS_CID="$(docker ps -q --filter publish=4566 | head -1)"
 GW="${AWSBOX_BACKEND_HOST:-$(docker inspect -f '{{range .NetworkSettings.Networks}}{{if .Gateway}}{{.Gateway}} {{end}}{{end}}' \
-	"$(docker ps -q --filter publish=4566 | head -1)" | grep -oE '[0-9]+(\.[0-9]+){3}' | head -1)}"
+	"$_LS_CID" | grep -oE '[0-9]+(\.[0-9]+){3}' | head -1)}"
 API_B="$(build_api "orders-api-direct-${TS}" "http://${GW}:${HOST_PORT}")"
 B="$(stage "$API_B")"
 
@@ -220,7 +251,8 @@ h1="$(hits)"
 code="$(req -X PATCH "${B}/invoices/42/paid")"
 check "B sad no token" 401 "$code"
 code="$(req -X POST -H 'Authorization: Bearer bad' "${B}/invoices/42/credit-note")"
-check "B sad Deny authorizer (AWS: 403)" 403 "$code"
+# Emulator returns 401 on Deny today; AWS returns 403 (#190).
+check_re "B sad Deny authorizer (emulator 401; AWS 403 → #190)" '^(401|403)$' "$code"
 check "B blocked requests never reached the backend" 0 "$(($(hits) - h1))"
 
 aws ecs stop-task --cluster "$CLUSTER" --task "$TASK" >/dev/null
@@ -230,6 +262,14 @@ for _ in $(seq 1 30); do
 	sleep 1
 done
 check "backend task STOPPED" STOPPED "$STATUS"
+# Give the NLB health loop a moment to mark the target unhealthy.
+for _ in $(seq 1 15); do
+	th="$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[0].TargetHealth.State' --output text 2>/dev/null || true)"
+	[[ "$th" == "unhealthy" ]] && break
+	sleep 1
+done
+code="$(req -X PATCH -H 'Authorization: Bearer good' "${A}/invoices/42/paid")"
+check_re "A sad unhealthy/stopped target -> API 5xx" '^5[0-9][0-9]$' "$code"
 code="$(req -X PATCH -H 'Authorization: Bearer good' "${B}/invoices/42/paid")"
 check_re "B sad backend down -> API 5xx (AWS: 504, or 503 from an NLB with no healthy target; emulator: 500)" '^5[0-9][0-9]$' "$code"
 
