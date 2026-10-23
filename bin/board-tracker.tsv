@@ -168,3 +168,5 @@
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
 201	in-review	v1: ECS taskdef secrets / host ports / failed-start status
+270	done	v1: no-default-route for non-root containers
+269	done	v1: ECS tasks reach emulator endpoint
