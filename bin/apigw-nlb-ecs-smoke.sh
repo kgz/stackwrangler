@@ -107,9 +107,6 @@ for _ in $(seq 1 60); do
 done
 
 # --- network + backend on ECS (private subnet, no public IP) ---
-# Unique /16 so parallel worktrees do not exhaust docker bridge slots on 10.88.0.0/16.
-VPC_CIDR="10.$((67 + TS % 60)).0.0/16"
-SUB_CIDR="10.$((67 + TS % 60)).1.0/24"
 # Pick a /16 not already used by a Docker bridge (parallel worktrees + leftover
 # localemu-vpc-* after DeleteVpc). Override with AWSBOX_SMOKE_VPC_CIDR.
 VPC_CIDR="${AWSBOX_SMOKE_VPC_CIDR:-$(python3 - <<'PY'
@@ -128,6 +125,7 @@ for line in subprocess.check_output(
             text=True,
         ).strip()
     except Exception:
+        continue
     if cidr:
         used.add(cidr)
 for i in range(200, 250):
