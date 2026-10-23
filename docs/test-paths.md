@@ -82,6 +82,8 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Private subnet reaches a public host via an HTTP proxy over peering | happy | covered | `./bin/vpc-routing-smoke.sh` |
 | VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` |
 | NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| Interface VPCE `PrivateDnsEnabled`: service hostname resolves in-VPC and call reaches awsbox (ecr/logs/ssm/sts/ecs) | happy | covered | `./bin/vpce-private-dns-smoke.sh` · [vpce-private-dns.md](vpce-private-dns.md) |
+| Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./bin/vpce-private-dns-smoke.sh` |
 | Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |
 | SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./bin/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
 | SG rule revoke/authorize updates a running target | sad/other | covered | `./bin/sg-enforcement-smoke.sh` |
