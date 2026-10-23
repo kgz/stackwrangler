@@ -150,12 +150,13 @@ CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · s
 | Tool | Status |
 |------|--------|
 | Terraform S3+Lambda | **Working** (`examples/terraform/…`, local apply) |
+| Terraform S3 backend + lock | **Working** ([docs/terraform-awsbox.md](docs/terraform-awsbox.md), `examples/terraform/awsbox-backend/`) |
 | CloudFormation | **Partial** — failed create rolls back and delete-stack removes resources ([#212](https://github.com/kgz/awsl/issues/212)); in-place rollback / Snapshot [#228](https://github.com/kgz/awsl/issues/228); stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Pulumi / Ansible examples | **Backlog** |
 | CodePipeline / Build / Deploy / Artifact | **Backlog** |
 
-Smokes: `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`
+Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`
 
 ---
 
