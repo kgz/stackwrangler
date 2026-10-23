@@ -16,6 +16,7 @@ Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-r
 | Unknown route → 403 `Missing Authentication Token` | Working (matches AWS) |
 | Authorizer **Deny** | **401**; AWS returns 403 → [#190](https://github.com/kgz/awsl/issues/190) |
 | Custom domain + base-path mapping | Working. `Host` (or DNS pointed at the edge) reaches the mapped API/stage. Needs `route53,acm` in SERVICES to create the domain. |
+| `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./bin/apigw-nlb-ecs-smoke.sh` phase A. |
 | Console | HTTP APIs only → [#189](https://github.com/kgz/awsl/issues/189) |
 
 ## Calling a stage
@@ -34,6 +35,23 @@ http://<domain>/<base-path>/<path>        named mapping; the base path is stripp
 The longest matching base path wins. `(none)` catches every other path on that host. A prefix that matches nothing, and no root mapping, returns **403** `{"message":"Forbidden"}`.
 
 Routing lives in `localemu-patches/init/start.d/20-apigw-custom-domain.py`.
+
+## VPC link → NLB
+
+```bash
+./bin/apigw-nlb-ecs-smoke.sh
+```
+
+`create-vpc-link` + `put-integration --connection-type VPC_LINK --connection-id …` with
+`uri http://<nlb-dns>:80/...` forwards through the ELBv2 TCP listener to registered targets.
+NLB DNS is published into LocalEmu `/etc/hosts` (and `.awsbox/elbv2.hosts`); the invoke path also
+rewrites `*.elb.amazonaws.com` to the listener bind address
+(`localemu-patches/init/start.d/20-apigw-vpc-link.py`).
+
+Stopped or unhealthy targets return 5xx on invoke (AWS: 504 / 503).
+
+`describe-tasks` ENI IPs that sit outside the subnet CIDR are [#268](https://github.com/kgz/awsl/issues/268);
+the smoke registers the container's VPC-bridge address in that case so phase A still covers the NLB path.
 
 ## Gotchas
 
