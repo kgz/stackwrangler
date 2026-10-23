@@ -23,6 +23,12 @@ variable "family" {
   default = "awsbox-nginx"
 }
 
+variable "vpc_cidr" {
+  type        = string
+  default     = "10.42.0.0/16"
+  description = "VPC CIDR; smokes pass a unique /16 to avoid Docker bridge collisions."
+}
+
 provider "aws" {
   region                      = "us-east-1"
   access_key                  = var.awsbox_access_key

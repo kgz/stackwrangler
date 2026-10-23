@@ -168,3 +168,5 @@
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
 201	in-review	v1: ECS taskdef secrets / host ports / failed-start status
+271	done	v1: awsvpc not on default docker bridge
+282	backlog	Debt: SG iptables install needs egress (from #271)
