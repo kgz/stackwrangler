@@ -15,7 +15,7 @@ Digest: `localemu/localemu@sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f4
 #204 → #205 → #203 → #206
 
 ## #204 first slice
-1. Pin ECS awsvpc / EC2 subnet IPs; track subnet_id
+1. Pin ECS awsvpc / EC2 subnet IPs; track subnet_id — ECS awsvpc done in [#268](https://github.com/kgz/awsl/issues/268) (`ecs_task_manager` + DescribeTasks enrichment)
 2. In workload netns: drop egress unless route table allows (igw/nat/pcx both sides)
 3. Peering + NAT honour subnet route tables (`DeleteRoute` breaks reachability)
 4. Smoke: `bin/vpc-routing-smoke.sh`
