@@ -2,7 +2,9 @@
 
 awsbox patch (#201): secrets ``valueFrom`` via execution role, host-mode
 portMappings without Docker PortBindings, and STOPPED + stoppedReason when
-containers never start. Mounted over the LocalEmu image file.
+containers never start. (#211): ECR image URIs require ``ecr:BatchGetImage``
+on the execution role, then pull from the local registry. Mounted over the
+LocalEmu image file.
 
 Port mapping TOCTOU is a known limitation. Docker's port allocation
 is inherently non-atomic — between get_free_tcp_port() and the actual bind
@@ -11,6 +13,8 @@ trade-off for local emulation; production ECS does not have this issue.
 """
 
 import logging
+import os
+import re
 import shlex
 import threading
 import time
@@ -31,6 +35,11 @@ LOG = logging.getLogger(__name__)
 # Label for identifying ECS containers
 ECS_CONTAINER_LABEL = "localemu.service=ecs"
 
+# <account>.dkr.ecr.<region>.amazonaws.com/<repo>[:tag|@digest]
+_ECR_IMAGE_RE = re.compile(
+    r"^(?P<account>\d+)\.dkr\.ecr\.(?P<region>[a-z0-9-]+)\.amazonaws\.com/(?P<ref>.+)$"
+)
+
 # Image pull locks (same pattern as Lambda, EC2, and RDS)
 # PERF-R2-01: bounded with LRU eviction to prevent unbounded growth
 _IMAGE_PULL_LOCKS_MAXSIZE = 64
@@ -48,6 +57,8 @@ class EcsContainerInfo:
     host_ports: dict[int, int] = field(default_factory=dict)
     status: str = "PENDING"
     exit_code: int | None = None
+    # awsvpc: address on localemu-vpc-* (subnet-pinned when possible)
+    private_ipv4: str | None = None
 
 
 @dataclass
@@ -66,6 +77,12 @@ class EcsTaskInfo:
     stopped_at: float | None = None
     # AWS DescribeTasks field when the task never reached RUNNING
     stopped_reason: str | None = None
+    # awsvpc ENI address reported on attachments / networkInterfaces (#268)
+    private_ipv4: str | None = None
+    subnet_id: str | None = None
+    vpc_id: str | None = None
+    # SubnetAllocator reservations to release on stop
+    reserved_ips: list[str] = field(default_factory=list)
 
 
 class DockerTaskManager:
@@ -196,22 +213,21 @@ class DockerTaskManager:
         # Bare SSM name / path
         return {"service": "ssm", "name": vf}
 
-    def _execution_role_clients(
+    def _execution_role_boto_kwargs(
         self,
         *,
         execution_role_arn: str,
         region: str,
         account_id: str,
         task_id: str,
-    ):
-        """Boto3 clients signed as the execution role via the gateway.
+    ) -> dict:
+        """Boto3 kwargs signed as the execution role via the gateway.
 
         ``connect_to`` marks calls as internal and skips IAM. Real ECS
         agents hit the public APIs with the execution role, so we mint
         STS creds (moto) and call ``127.0.0.1:<gateway>`` — same path
         IAM_ENFORCEMENT evaluates for AccessDenied.
         """
-        import boto3
         from botocore.config import Config as BotoConfig
         from localemu import config as _le_config
         from moto.sts.models import sts_backends
@@ -226,24 +242,136 @@ class DockerTaskManager:
             external_id=None,
         )
         gw_port = _le_config.GATEWAY_LISTEN[0].port
-        endpoint = f"http://127.0.0.1:{gw_port}"
-        cfg = BotoConfig(
-            retries={"max_attempts": 2, "mode": "standard"},
-            connect_timeout=5,
-            read_timeout=10,
-        )
-        common = {
+        return {
             "region_name": region,
-            "endpoint_url": endpoint,
+            "endpoint_url": f"http://127.0.0.1:{gw_port}",
             "aws_access_key_id": assumed.access_key_id,
             "aws_secret_access_key": assumed.secret_access_key,
             "aws_session_token": assumed.session_token,
-            "config": cfg,
+            "config": BotoConfig(
+                retries={"max_attempts": 2, "mode": "standard"},
+                connect_timeout=5,
+                read_timeout=10,
+            ),
         }
+
+    def _execution_role_clients(
+        self,
+        *,
+        execution_role_arn: str,
+        region: str,
+        account_id: str,
+        task_id: str,
+    ):
+        import boto3
+
+        common = self._execution_role_boto_kwargs(
+            execution_role_arn=execution_role_arn,
+            region=region,
+            account_id=account_id,
+            task_id=task_id,
+        )
         return (
             boto3.client("secretsmanager", **common),
             boto3.client("ssm", **common),
         )
+
+    @staticmethod
+    def _ecr_local_ref(ref: str) -> str:
+        registry = os.environ.get("AWSBOX_ECR_REGISTRY", "127.0.0.1:5000").strip().rstrip("/")
+        return f"{registry}/{ref}"
+
+    @staticmethod
+    def _ecr_image_id(ref: str) -> tuple[str, dict]:
+        if "@" in ref:
+            name, digest = ref.split("@", 1)
+            return name, {"imageDigest": digest}
+        if ":" in ref:
+            name, tag = ref.rsplit(":", 1)
+            return name, {"imageTag": tag}
+        return ref, {"imageTag": "latest"}
+
+    @staticmethod
+    def _is_access_denied(exc: BaseException) -> bool:
+        code = ""
+        message = str(exc)
+        response = getattr(exc, "response", None)
+        if isinstance(response, dict):
+            err = response.get("Error") or {}
+            if isinstance(err, dict):
+                code = str(err.get("Code") or "")
+                message = str(err.get("Message") or message)
+        blob = f"{code} {message}".lower()
+        return (
+            "accessdenied" in blob.replace("_", "")
+            or "not authorized" in blob
+            or "explicit deny" in blob
+            or "implicit deny" in blob
+        )
+
+    def _resolve_ecr_image(
+        self,
+        image: str,
+        *,
+        execution_role_arn: str | None,
+        region: str,
+        account_id: str,
+        task_id: str,
+    ) -> str:
+        """Map an ECR image URI to the local registry after BatchGetImage.
+
+        Non-ECR images (Docker Hub, ``public.ecr.aws``) are unchanged.
+        Bytes are pushed to ``AWSBOX_ECR_REGISTRY`` (default ``127.0.0.1:5000``);
+        the task definition keeps the amazonaws.com URI.
+        """
+        match = _ECR_IMAGE_RE.match(image)
+        if not match:
+            return image
+        if not execution_role_arn:
+            raise RuntimeError(
+                "CannotPullContainerError: execution role is not specified "
+                "for ECR image pull (ecr:BatchGetImage)"
+            )
+        import boto3
+
+        ref = match.group("ref")
+        repository, image_id = self._ecr_image_id(ref)
+        ecr = boto3.client(
+            "ecr",
+            **self._execution_role_boto_kwargs(
+                execution_role_arn=execution_role_arn,
+                region=region,
+                account_id=account_id,
+                task_id=task_id,
+            ),
+        )
+        try:
+            resp = ecr.batch_get_image(
+                repositoryName=repository,
+                imageIds=[image_id],
+            )
+        except Exception as e:
+            if self._is_access_denied(e):
+                raise RuntimeError(
+                    "CannotPullContainerError: execution role is not "
+                    "authorized to perform ecr:BatchGetImage"
+                ) from e
+            raise RuntimeError(f"CannotPullContainerError: {e}") from e
+        for failure in resp.get("failures") or []:
+            code = str(failure.get("failureCode") or "")
+            if "accessdenied" in code.lower().replace("_", ""):
+                raise RuntimeError(
+                    "CannotPullContainerError: execution role is not "
+                    "authorized to perform ecr:BatchGetImage"
+                )
+        local = self._ecr_local_ref(ref)
+        LOG.info(
+            "ECS task %s pulling ECR image %s as %s",
+            task_id[:12],
+            image,
+            local,
+        )
+        return local
 
     def _resolve_container_secrets(
         self,
@@ -549,13 +677,27 @@ class DockerTaskManager:
                 )
                 env_vars["AWS_DEFAULT_REGION"] = region
                 env_vars["AWS_REGION"] = region
-                env_vars["AWS_ENDPOINT_URL"] = f"http://host.docker.internal:{_gw_port}"
+                # #269: host.docker.internal → bridge gateway, but compose
+                # publishes :4566 on 127.0.0.1 only. Point at this LocalEmu
+                # container's docker-network IP (same idea as EC2 IMDS) and
+                # attach the task to that network after start.
+                _gw_host, _gw_net = self._emulator_endpoint_target(network_mode)
+                env_vars["AWS_ENDPOINT_URL"] = f"http://{_gw_host}:{_gw_port}"
+                self._append_no_proxy(env_vars, _gw_host)
                 if task_role_arn:
-                    # RELATIVE_URI resolves against 169.254.170.2 (one of
-                    # the SDK's four approved hosts). DNAT does the rest.
-                    env_vars["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = (
-                        f"/v2/credentials/{task_id}"
-                    )
+                    if network_mode == "host":
+                        # Host mode shares the host netns: no DNAT (it would land in
+                        # the host's NAT table). Loopback is SDK-approved; the creds
+                        # port is published on host 127.0.0.1 (start.d/05-ecs-creds-port.py).
+                        env_vars["AWS_CONTAINER_CREDENTIALS_FULL_URI"] = (
+                            f"http://127.0.0.1:{_creds_port}/v2/credentials/{task_id}"
+                        )
+                    else:
+                        # RELATIVE_URI resolves against 169.254.170.2 (one of
+                        # the SDK's four approved hosts). DNAT does the rest.
+                        env_vars["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] = (
+                            f"/v2/credentials/{task_id}"
+                        )
                     # Mint STS creds via moto's backend; the assumed_role
                     # entry it creates lets our IAM enforcer resolve the
                     # signed request back to the correct role.
@@ -599,6 +741,7 @@ class DockerTaskManager:
                         env_vars.pop(
                             "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", None,
                         )
+                        env_vars.pop("AWS_CONTAINER_CREDENTIALS_FULL_URI", None)
 
                 # Build port mappings. AWS accepts portMappings with
                 # networkMode=host when hostPort==containerPort (or omitted);
@@ -618,13 +761,50 @@ class DockerTaskManager:
                         ports.add(host_port, container_port)
                         host_ports[container_port] = host_port
 
+                docker_image = image
+                try:
+                    docker_image = self._resolve_ecr_image(
+                        image,
+                        execution_role_arn=execution_role_arn,
+                        region=region,
+                        account_id=account_id,
+                        task_id=task_id,
+                    )
+                except Exception as e:
+                    reason = str(e)
+                    if "CannotPullContainerError" not in reason and not reason.startswith(
+                        "ResourceInitializationError"
+                    ):
+                        reason = f"CannotPullContainerError: {reason}"
+                    LOG.warning(
+                        "ECS image auth failed for task %s container %s: %s",
+                        task_id[:12],
+                        c_name,
+                        reason,
+                    )
+                    task_info.stopped_reason = reason
+                    task_info.status = "STOPPED"
+                    task_info.stopped_at = time.time()
+                    task_info.containers.append(
+                        EcsContainerInfo(
+                            container_name=c_name,
+                            docker_name=self._container_name(
+                                cluster_name, task_id, c_name
+                            ),
+                            image=image,
+                            status="STOPPED",
+                            exit_code=1,
+                        )
+                    )
+                    break
+
                 # Ensure image is available
                 try:
-                    self._ensure_image(image)
+                    self._ensure_image(docker_image)
                 except Exception as e:
                     LOG.warning(
                         "Failed to pull image %s for ECS task %s: %s",
-                        image, task_id, e,
+                        docker_image, task_id, e,
                     )
                     task_info.stopped_reason = (
                         f"CannotPullContainerError: {e}"
@@ -733,11 +913,22 @@ class DockerTaskManager:
                 additional_flags_parts.append(
                     "--add-host host.docker.internal:host-gateway"
                 )
+                if network_mode == "awsvpc":
+                    awsvpc_cfg = (network_configuration or {}).get(
+                        "awsvpcConfiguration"
+                    ) or {}
+                    dns_ip = self._private_dns_ip(
+                        awsvpc_cfg.get("subnets") or [],
+                        account_id,
+                        region,
+                    )
+                    if dns_ip:
+                        additional_flags_parts.append(f"--dns {dns_ip}")
                 additional_flags = " ".join(additional_flags_parts) if additional_flags_parts else None
 
                 # Container config
                 container_config = ContainerConfiguration(
-                    image_name=image,
+                    image_name=docker_image,
                     name=docker_name,
                     env_vars=env_vars,
                     ports=ports,
@@ -805,18 +996,33 @@ class DockerTaskManager:
                         task_info.containers.append(container_info)
                         continue
 
+                    # #269: join LocalEmu's network *before* VPC route sync so
+                    # the compose-network default route is stripped with the
+                    # rest (private subnet must not gain egress via eth2).
+                    if network_mode != "host" and _gw_net:
+                        self._connect_to_emulator_network(docker_name, _gw_net)
+
                     # Connect to the VPC network derived
                     # from the task's awsvpcConfiguration.subnets.
+                    private_ipv4 = None
                     if network_mode == "awsvpc":
                         awsvpc_cfg = (network_configuration or {}).get(
                             "awsvpcConfiguration", {},
                         )
                         subnet_ids = awsvpc_cfg.get("subnets") or []
-                        self._connect_to_vpc_network(
+                        sg_ids = list(awsvpc_cfg.get("securityGroups") or [])
+                        private_ipv4 = self._connect_to_vpc_network(
                             docker_name, cluster_name,
                             subnet_ids=subnet_ids,
                             account_id=account_id,
                             region=region,
+                            task_info=task_info,
+                        )
+                        self._use_private_resolv(
+                            docker_name, subnet_ids, account_id, region,
+                        )
+                        self._attach_awsvpc_sg(
+                            docker_name, subnet_ids, sg_ids, account_id, region,
                         )
 
                     # #79: Install DNAT so 169.254.170.2:80 inside this
@@ -824,7 +1030,7 @@ class DockerTaskManager:
                     # credentials server. Done post-start because we need
                     # the container's netns. host.docker.internal resolves
                     # inside the container via --add-host above.
-                    if task_role_arn:
+                    if task_role_arn and network_mode != "host":
                         self._install_task_creds_dnat(docker_name, _creds_port)
 
                     container_info = EcsContainerInfo(
@@ -833,8 +1039,11 @@ class DockerTaskManager:
                         image=image,
                         host_ports=host_ports,
                         status="RUNNING",
+                        private_ipv4=private_ipv4,
                     )
                     task_info.containers.append(container_info)
+                    if private_ipv4 and not task_info.private_ipv4:
+                        task_info.private_ipv4 = private_ipv4
 
                     # Track started time
                     task_info.started_at = time.time()
@@ -873,6 +1082,111 @@ class DockerTaskManager:
             results.append(task_info)
 
         return results
+
+    def _private_dns_ip(
+        self,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+    ) -> str | None:
+        if not subnet_ids:
+            return None
+        try:
+            from localemu.services.ec2.docker.vpce_private_dns import (
+                dns_server_ip_for_subnet,
+            )
+        except Exception:
+            LOG.debug("VPCE private DNS helper unavailable", exc_info=True)
+            return None
+        for subnet_id in subnet_ids:
+            try:
+                ip = dns_server_ip_for_subnet(subnet_id, account_id, region)
+            except Exception:
+                LOG.warning(
+                    "VPCE private DNS address lookup failed for %s",
+                    subnet_id,
+                    exc_info=True,
+                )
+                ip = None
+            if ip:
+                return ip
+        return None
+
+    def _use_private_resolv(
+        self,
+        docker_name: str,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+    ) -> None:
+        dns_ip = self._private_dns_ip(subnet_ids, account_id, region)
+        if not dns_ip:
+            return
+        try:
+            DOCKER_CLIENT.exec_in_container(
+                docker_name,
+                ["sh", "-c", f"printf 'nameserver {dns_ip}\\n' > /etc/resolv.conf"],
+            )
+        except Exception:
+            LOG.warning(
+                "could not point %s resolv.conf at %s",
+                docker_name,
+                dns_ip,
+                exc_info=True,
+            )
+
+    @staticmethod
+    def _append_no_proxy(env_vars: dict[str, str], host: str) -> None:
+        """Ensure SDKs/tools skip HTTP(S)_PROXY for the emulator host (#269)."""
+        if not host:
+            return
+        for key in ("NO_PROXY", "no_proxy"):
+            existing = env_vars.get(key, "")
+            parts = [p.strip() for p in existing.split(",") if p.strip()]
+            if host not in parts:
+                parts.append(host)
+            env_vars[key] = ",".join(parts)
+
+    @staticmethod
+    def _emulator_endpoint_target(network_mode: str) -> tuple[str, str | None]:
+        """Host (or IP) for AWS_ENDPOINT_URL and optional docker network to join.
+
+        Host-network tasks use loopback (compose publishes on 127.0.0.1).
+        Other modes prefer this LocalEmu container's address on its compose
+        network so tasks do not depend on the loopback-only host publish.
+        """
+        if network_mode == "host":
+            return "127.0.0.1", None
+        try:
+            from localemu.services.ec2.docker.vpc_endpoint import _localemu_gateway
+
+            ip, net = _localemu_gateway()
+        except Exception:
+            LOG.debug("emulator gateway lookup failed", exc_info=True)
+            ip, net = None, None
+        if ip:
+            return ip, net if net and net != "bridge" else None
+        return "host.docker.internal", None
+
+    def _connect_to_emulator_network(self, docker_name: str, network: str) -> None:
+        """Attach the task to LocalEmu's docker network for AWS_ENDPOINT_URL (#269)."""
+        try:
+            networks = DOCKER_CLIENT.get_networks(docker_name)
+            if network in networks:
+                return
+            DOCKER_CLIENT.connect_container_to_network(network, docker_name)
+            LOG.info(
+                "ECS container %s connected to emulator network %s",
+                docker_name,
+                network,
+            )
+        except Exception:
+            LOG.warning(
+                "could not attach %s to emulator network %s",
+                docker_name,
+                network,
+                exc_info=True,
+            )
 
     def _install_task_creds_dnat(self, docker_name: str, creds_port: int) -> None:
         """Install iptables DNAT rule redirecting 169.254.170.2:80 → host:creds_port.
@@ -922,6 +1236,28 @@ class DockerTaskManager:
                 docker_name, e,
             )
 
+    def _attach_awsvpc_sg(
+        self,
+        docker_name: str,
+        subnet_ids: list[str] | None,
+        sg_ids: list[str],
+        account_id: str,
+        region: str,
+    ) -> None:
+        try:
+            from localemu.services.ec2.docker.sg_enforcement import attach_container
+
+            attach_container(
+                docker_name,
+                subnet_ids=subnet_ids,
+                sg_ids=sg_ids,
+                account_id=account_id,
+                region=region,
+                kind="ecs",
+            )
+        except Exception:
+            LOG.debug("awsvpc SG attach skipped for %s", docker_name, exc_info=True)
+
     def _connect_to_vpc_network(
         self,
         docker_name: str,
@@ -929,21 +1265,15 @@ class DockerTaskManager:
         subnet_ids: list[str] | None = None,
         account_id: str = "",
         region: str = "",
-    ) -> None:
+        task_info: EcsTaskInfo | None = None,
+    ) -> str | None:
         """Connect an awsvpc-mode task container to the right VPC network.
 
-        Previously this shelled out to ``docker network ls`` and
-        took the first ``localemu-vpc-*`` result. With multiple VPCs
-        that was a silent isolation failure — tasks could land in the
-        wrong VPC.
-
-        The subnet IDs from the RunTask request's
-        ``networkConfiguration.awsvpcConfiguration.subnets`` are the
-        authoritative source of "which VPC should this task be on". We
-        resolve the first one that maps to a known VPC via moto and
-        attach. If no subnet resolves, we log a warning and leave the
-        container on its default network rather than pick an arbitrary
-        VPC — correctness over liveness.
+        Pins an address from ``SubnetAllocator`` inside the subnet CIDR
+        (same path as EC2/RDS) so ``DescribeTasks`` privateIPv4Address
+        matches the container on ``localemu-vpc-*`` and ip-type target
+        registration reaches the task (#268). Moto's
+        ``random_private_ip()`` is outside the subnet and must not win.
         """
         try:
             networks = DOCKER_CLIENT.get_networks(docker_name)
@@ -953,7 +1283,10 @@ class DockerTaskManager:
                         "ECS container %s already on VPC network %s",
                         docker_name, net,
                     )
-                    return
+                    self._sync_subnet_routes(
+                        docker_name, subnet_ids, account_id, region,
+                    )
+                    return self._container_ip_on_network(docker_name, net)
 
             if not subnet_ids:
                 LOG.warning(
@@ -963,7 +1296,7 @@ class DockerTaskManager:
                     "on RunTask to enable per-VPC isolation.",
                     docker_name,
                 )
-                return
+                return None
 
             from localemu.services.ec2.docker.vpc_network import (
                 get_vpc_network_manager,
@@ -971,33 +1304,178 @@ class DockerTaskManager:
             vpcm = get_vpc_network_manager()
 
             vpc_id = None
-            for subnet_id in subnet_ids:
+            subnet_id = None
+            for sid in subnet_ids:
                 try:
                     resolved = vpcm.get_vpc_id_for_subnet(
-                        subnet_id, account_id, region,
+                        sid, account_id, region,
                     )
                 except Exception:
                     resolved = None
                 if resolved:
                     vpc_id = resolved
+                    subnet_id = sid
                     break
 
-            if not vpc_id:
+            if not vpc_id or not subnet_id:
                 LOG.warning(
                     "ECS awsvpc task %s: none of subnets=%s resolve to a VPC in %s/%s — "
                     "skipping VPC network attach",
                     docker_name, subnet_ids, account_id, region,
                 )
-                return
+                return None
 
-            vpc_network = f"localemu-vpc-{vpc_id}"
-            DOCKER_CLIENT.connect_container_to_network(vpc_network, docker_name)
-            LOG.info(
-                "ECS awsvpc task %s connected to %s (resolved from subnet)",
+            if task_info is not None:
+                task_info.vpc_id = vpc_id
+                task_info.subnet_id = subnet_id
+
+            try:
+                ensured = vpcm.ensure_network_for_vpc(vpc_id)
+            except Exception:
+                ensured = None
+                LOG.debug(
+                    "ensure_network_for_vpc(%s) failed", vpc_id, exc_info=True,
+                )
+            vpc_network = ensured or f"localemu-vpc-{vpc_id}"
+            try:
+                DOCKER_CLIENT.inspect_network(vpc_network)
+            except Exception:
+                LOG.warning(
+                    "ECS awsvpc task %s: VPC network %s missing — "
+                    "cannot pin subnet IP (CreateVpc bridge failed?)",
+                    docker_name, vpc_network,
+                )
+                return None
+
+            ipv4_kwarg, reserved = self._reserve_awsvpc_ip(
+                vpc_id, subnet_id, docker_name,
+            )
+            try:
+                DOCKER_CLIENT.connect_container_to_network(
+                    vpc_network, docker_name, ipv4_address=ipv4_kwarg,
+                )
+            except Exception:
+                if reserved is not None:
+                    self._release_reserved_ip(reserved)
+                raise
+            if reserved is not None and task_info is not None:
+                task_info.reserved_ips.append(str(reserved))
+
+            ip = ipv4_kwarg or self._container_ip_on_network(
                 docker_name, vpc_network,
             )
+            LOG.info(
+                "ECS awsvpc task %s connected to %s (subnet=%s ip=%s)",
+                docker_name, vpc_network, subnet_id, ip or "-",
+            )
+            self._sync_subnet_routes(docker_name, subnet_ids, account_id, region)
+            return ip
         except Exception as e:
-            LOG.debug("Failed to connect container %s to VPC network: %s", docker_name, e)
+            LOG.warning(
+                "Failed to connect container %s to VPC network: %s",
+                docker_name, e,
+            )
+            return None
+
+    def _reserve_awsvpc_ip(
+        self,
+        vpc_id: str,
+        subnet_id: str,
+        docker_name: str,
+    ) -> tuple[str | None, object | None]:
+        """Reserve a subnet CIDR address for awsvpc attach.
+
+        Returns ``(ipv4_for_connect, reserved_addr_or_None)``. On allocator
+        miss, falls back to Docker auto-IPAM (``None, None``).
+        """
+        try:
+            from localemu import config as _config
+        except Exception:
+            return None, None
+        if not getattr(_config, "LOCALEMU_VPC_IP_PINNING", True):
+            return None, None
+        try:
+            from localemu.services.ec2.docker.subnet_allocator import (
+                InsufficientFreeAddressesInSubnet,
+                UnknownSubnet,
+                get_subnet_allocator,
+            )
+            from localemu.services.ec2.docker.vm_manager import (
+                _realign_subnet_pool_to_vpc_bridge,
+            )
+        except Exception:
+            LOG.debug("awsvpc IP pin imports failed", exc_info=True)
+            return None, None
+
+        owner_key = f"eni-ecs-{docker_name.removeprefix('localemu-')}"
+        try:
+            _realign_subnet_pool_to_vpc_bridge(vpc_id, subnet_id)
+            reserved = get_subnet_allocator().reserve(
+                vpc_id=vpc_id,
+                subnet_id=subnet_id,
+                owner_key=owner_key,
+            )
+            return str(reserved), reserved
+        except (UnknownSubnet, InsufficientFreeAddressesInSubnet) as e:
+            LOG.warning(
+                "ECS %s: cannot pin IP in subnet %s (%s) — "
+                "falling back to Docker auto-IPAM",
+                docker_name, subnet_id, e,
+            )
+            return None, None
+        except Exception:
+            LOG.warning(
+                "ECS %s: allocator reserve raised — fall back to auto-IPAM",
+                docker_name, exc_info=True,
+            )
+            return None, None
+
+    @staticmethod
+    def _release_reserved_ip(ip: object) -> None:
+        try:
+            from localemu.services.ec2.docker.subnet_allocator import (
+                get_subnet_allocator,
+            )
+
+            get_subnet_allocator().release(ip)
+        except Exception:
+            LOG.debug("awsvpc IP release failed for %s", ip, exc_info=True)
+
+    @staticmethod
+    def _container_ip_on_network(docker_name: str, network: str) -> str | None:
+        try:
+            ip = DOCKER_CLIENT.get_container_ipv4_for_network(
+                docker_name, network,
+            )
+        except TypeError:
+            try:
+                ip = DOCKER_CLIENT.get_container_ipv4_for_network(
+                    container_name_or_id=docker_name,
+                    container_network=network,
+                )
+            except Exception:
+                return None
+        except Exception:
+            return None
+        if not ip or ip in ("localhost", "127.0.0.1"):
+            return None
+        return str(ip).split("/")[0]
+
+    def _sync_subnet_routes(
+        self,
+        docker_name: str,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+    ) -> None:
+        if not subnet_ids:
+            return
+        try:
+            from localemu.services.ec2.docker.vpc_routing import sync_workload
+
+            sync_workload(docker_name, subnet_ids[0], account_id, region)
+        except Exception as exc:
+            LOG.debug("vpc route sync skipped for %s: %s", docker_name, exc)
 
     def stop_task(self, task_arn: str) -> None:
         """Stop and remove all Docker containers for a task."""
@@ -1011,6 +1489,14 @@ class DockerTaskManager:
         for container in task_info.containers:
             docker_name = container.docker_name
             try:
+                from localemu.services.ec2.docker.sg_enforcement import (
+                    release_container,
+                )
+
+                release_container(docker_name)
+            except Exception:
+                LOG.debug("awsvpc SG release skipped for %s", docker_name, exc_info=True)
+            try:
                 DOCKER_CLIENT.stop_container(docker_name, timeout=10)
             except Exception:
                 pass
@@ -1019,6 +1505,10 @@ class DockerTaskManager:
             except Exception:
                 pass
             container.status = "STOPPED"
+
+        for ip in list(task_info.reserved_ips):
+            self._release_reserved_ip(ip)
+        task_info.reserved_ips.clear()
 
         task_info.status = "STOPPED"
         # Track stop time
