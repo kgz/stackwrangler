@@ -99,6 +99,8 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
 | Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered (currently fails) | `./bin/egress-proxy-smoke.sh` |
 | Non-root image in private subnet (no default route) cannot reach a public host | sad/other | covered | `./bin/egress-proxy-smoke.sh` · [#270](https://github.com/kgz/awsl/issues/270) |
+| ECS `awsvpc` task is not on the default docker bridge (`ip route` / networks) | sad/other | covered | `./bin/egress-proxy-smoke.sh` · [#271](https://github.com/kgz/awsl/issues/271) |
+| Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered (currently fails) | `./bin/egress-proxy-smoke.sh` · [#269](https://github.com/kgz/awsl/issues/269) |
 | Interface VPCE `PrivateDnsEnabled`: service hostname resolves in-VPC and call reaches awsbox (ecr/logs/ssm/sts/ecs) | happy | covered | `./bin/vpce-private-dns-smoke.sh` · [vpce-private-dns.md](vpce-private-dns.md) |
 | Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./bin/vpce-private-dns-smoke.sh` |
 | Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |

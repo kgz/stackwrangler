@@ -840,11 +840,24 @@ class DockerTaskManager:
 
                 # Determine Docker network mode
                 docker_network = None
+                awsvpc_gateway = None
                 if network_mode == "host":
                     docker_network = "host"
                 elif network_mode == "none":
                     docker_network = "none"
-                # Awsvpc handled after container creation 
+                elif network_mode == "awsvpc":
+                    # Create on the VPC bridge only (#271). Default docker
+                    # bridge left a 172.17.0.0/16 on-link route to the host.
+                    awsvpc_cfg_early = (network_configuration or {}).get(
+                        "awsvpcConfiguration"
+                    ) or {}
+                    docker_network, awsvpc_gateway = self._resolve_awsvpc_network(
+                        awsvpc_cfg_early.get("subnets") or [],
+                        account_id,
+                        region,
+                    )
+                    if not docker_network:
+                        docker_network = "none"
 
                 # Extract CPU/memory limits from container definition
                 cpu_shares = None
@@ -910,9 +923,14 @@ class DockerTaskManager:
                 # the LocalEmu gateway. On Docker Desktop this is a no-op
                 # (the DNS name resolves automatically); on Linux + Docker
                 # CE it's required.
-                additional_flags_parts.append(
-                    "--add-host host.docker.internal:host-gateway"
-                )
+                if network_mode == "awsvpc" and awsvpc_gateway:
+                    additional_flags_parts.append(
+                        f"--add-host host.docker.internal:{awsvpc_gateway}"
+                    )
+                else:
+                    additional_flags_parts.append(
+                        "--add-host host.docker.internal:host-gateway"
+                    )
                 if network_mode == "awsvpc":
                     awsvpc_cfg = (network_configuration or {}).get(
                         "awsvpcConfiguration"
@@ -1258,6 +1276,77 @@ class DockerTaskManager:
         except Exception:
             LOG.debug("awsvpc SG attach skipped for %s", docker_name, exc_info=True)
 
+    def _resolve_awsvpc_network(
+        self,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+    ) -> tuple[str | None, str | None]:
+        """Return ``(docker_network, gateway_ip)`` for awsvpc subnets.
+
+        Ensures the VPC Docker bridge exists. Gateway is the host address
+        on that bridge (explicit host reachability without docker0).
+        """
+        if not subnet_ids:
+            return None, None
+        try:
+            from localemu.services.ec2.docker.vpc_network import (
+                get_vpc_network_manager,
+            )
+
+            vpcm = get_vpc_network_manager()
+            vpc_id = None
+            for subnet_id in subnet_ids:
+                try:
+                    resolved = vpcm.get_vpc_id_for_subnet(
+                        subnet_id, account_id, region,
+                    )
+                except Exception:
+                    resolved = None
+                if resolved:
+                    vpc_id = resolved
+                    break
+            if not vpc_id:
+                return None, None
+            vpc_network = vpcm.ensure_network_for_vpc(vpc_id)
+            if not vpc_network:
+                # ensure failed (CIDR collision / pool exhausted) — do not
+                # invent a network name; create would fail on a missing net.
+                candidate = f"localemu-vpc-{vpc_id}"
+                try:
+                    DOCKER_CLIENT.inspect_network(candidate)
+                    vpc_network = candidate
+                except Exception:
+                    return None, None
+            gateway = self._docker_network_gateway(vpc_network)
+            return vpc_network, gateway
+        except Exception:
+            LOG.debug(
+                "awsvpc network resolve failed for subnets=%s",
+                subnet_ids,
+                exc_info=True,
+            )
+            return None, None
+
+    @staticmethod
+
+    def _detach_default_bridge(self, docker_name: str) -> None:
+        """Drop the default docker bridge if still attached (#271)."""
+        try:
+            networks = DOCKER_CLIENT.get_networks(docker_name)
+        except Exception:
+            return
+        if "bridge" not in networks:
+            return
+        try:
+            DOCKER_CLIENT.disconnect_container_from_network("bridge", docker_name)
+            LOG.info("ECS awsvpc task %s detached from default bridge", docker_name)
+        except Exception:
+            LOG.debug(
+                "detach %s from bridge failed", docker_name, exc_info=True,
+            )
+
+
     def _connect_to_vpc_network(
         self,
         docker_name: str,
@@ -1276,6 +1365,8 @@ class DockerTaskManager:
         ``random_private_ip()`` is outside the subnet and must not win.
         """
         try:
+            self._detach_default_bridge(docker_name)
+
             networks = DOCKER_CLIENT.get_networks(docker_name)
             for net in networks:
                 if net.startswith("localemu-vpc-"):
@@ -1368,6 +1459,7 @@ class DockerTaskManager:
                 "ECS awsvpc task %s connected to %s (subnet=%s ip=%s)",
                 docker_name, vpc_network, subnet_id, ip or "-",
             )
+            self._detach_default_bridge(docker_name)
             self._sync_subnet_routes(docker_name, subnet_ids, account_id, region)
             return ip
         except Exception as e:

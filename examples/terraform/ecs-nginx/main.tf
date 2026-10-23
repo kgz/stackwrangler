@@ -1,5 +1,6 @@
 resource "aws_vpc" "this" {
-  cidr_block = "10.42.0.0/16"
+  # Unique per apply so Docker VPC bridges do not collide on 10.42/16 (#271).
+  cidr_block = var.vpc_cidr
   tags = {
     Name = "${var.cluster_name}-vpc"
   }
@@ -7,7 +8,7 @@ resource "aws_vpc" "this" {
 
 resource "aws_subnet" "this" {
   vpc_id     = aws_vpc.this.id
-  cidr_block = "10.42.1.0/24"
+  cidr_block = cidrsubnet(var.vpc_cidr, 8, 1)
   tags = {
     Name = "${var.cluster_name}-subnet"
   }
