@@ -164,6 +164,15 @@ done
 echo "task=${TASK##*/} ctr=${CTR} proxy=${PROXY_URL} target=http://${OK_IP}:${TPORT}/"
 dx() { docker exec "$CTR" sh -c "$1" 2>&1; }
 
+# 0) awsvpc must not sit on the default docker bridge (#271)
+ROUTES="$(dx 'ip route' || true)"
+NETS="$(docker inspect "$CTR" --format '{{range $k, $_ := .NetworkSettings.Networks}}{{$k}} {{end}}' 2>/dev/null || true)"
+if echo "$NETS" | grep -qw bridge || echo "$ROUTES" | grep -qE '(^|[[:space:]])172\.17\.'; then
+	bad "awsvpc still on default bridge (nets='${NETS}' routes='${ROUTES//$'\n'/; }')"
+else
+	ok "awsvpc not on default bridge (nets=${NETS% } routes=${ROUTES//$'\n'/; })"
+fi
+
 # 1) happy: via proxy env
 OUT="$(dx "wget -qO- -T5 http://${OK_IP}:${TPORT}/" || true)"
 if [[ "$OUT" == *public-ok* ]] && grep -q "ALLOW GET ${OK_IP}:${TPORT}/" "$WORKDIR/proxy.log"; then
