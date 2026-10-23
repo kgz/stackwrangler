@@ -127,7 +127,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
-| SNS → SQS queue policy not allowing topic → not delivered; unsubscribe stops delivery | sad/authz | covered (fails on emulator gap) | `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./bin/events-smoke.sh` |
 | EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
 | DynamoDB put/get | happy | covered | `./bin/dynamodb-smoke.sh` |

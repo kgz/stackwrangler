@@ -2,8 +2,11 @@
 # SNS -> SQS fan-out: envelope, raw delivery, filter policy, queue-policy authz (sad), unsubscribe.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Caller-exported AWSBOX_* wins over .env (parallel worktrees / alt ports).
+_PRESET_EP="${AWSBOX_IAM_ENDPOINT-}"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+[[ -n "$_PRESET_EP" ]] && AWSBOX_IAM_ENDPOINT="$_PRESET_EP"
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 REGION="${AWSBOX_REGION:-us-east-1}"
 export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
@@ -13,10 +16,11 @@ TS="$(date +%s)"
 TOPIC="awsbox-fanout-${TS}"
 QOK="awsbox-fanout-ok-${TS}"
 QDENY="awsbox-fanout-deny-${TS}"
+QNOPOL="awsbox-fanout-nopol-${TS}"
 KEEP="${AWSBOX_AUTHZ_KEEP:-0}"
 WAIT="${AWSBOX_FANOUT_WAIT:-8}"   # seconds to wait for a delivery
 QUIET="${AWSBOX_FANOUT_QUIET:-4}" # seconds to wait before declaring "not delivered"
-TOPIC_ARN="" QOK_URL="" QDENY_URL="" SUBS=()
+TOPIC_ARN="" QOK_URL="" QDENY_URL="" QNOPOL_URL="" SUBS=()
 aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }
 cleanup() {
 	[[ "$KEEP" == "1" ]] && return 0
@@ -24,6 +28,7 @@ cleanup() {
 	[[ -n "$TOPIC_ARN" ]] && aws sns delete-topic --topic-arn "$TOPIC_ARN" >/dev/null 2>&1 || true
 	[[ -n "$QOK_URL" ]] && aws sqs delete-queue --queue-url "$QOK_URL" >/dev/null 2>&1 || true
 	[[ -n "$QDENY_URL" ]] && aws sqs delete-queue --queue-url "$QDENY_URL" >/dev/null 2>&1 || true
+	[[ -n "$QNOPOL_URL" ]] && aws sqs delete-queue --queue-url "$QNOPOL_URL" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -113,9 +118,22 @@ ok "queue policy not allowing the topic: message NOT delivered"
 # drain the keep message the allowed sub got
 recv "$QOK_URL" "$WAIT" >/dev/null
 
-# 5. unsubscribe stops delivery
+# 5. sad: queue with no policy receives nothing (Subscribe still succeeds)
+QNOPOL_URL="$(aws sqs create-queue --queue-name "$QNOPOL" --query QueueUrl --output text)"
+QNOPOL_ARN="$(aws sqs get-queue-attributes --queue-url "$QNOPOL_URL" --attribute-names QueueArn --query Attributes.QueueArn --output text)"
+NSUB="$(aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$QNOPOL_ARN" --query SubscriptionArn --output text)"
+SUBS+=("$NSUB")
+[[ "$NSUB" == arn:aws:sns:* ]] || fail "nopol subscribe returned '$NSUB'"
+aws sns publish --topic-arn "$TOPIC_ARN" --message "nopol-${TS}" \
+	--message-attributes '{"kind":{"DataType":"String","StringValue":"keep"}}' >/dev/null
+B="$(recv "$QNOPOL_URL" "$QUIET")"
+[[ -z "$B" ]] || fail "authz: delivered to queue with no policy: '$B'"
+ok "queue with no policy: message NOT delivered"
+recv "$QOK_URL" "$WAIT" >/dev/null
+
+# 6. unsubscribe stops delivery
 aws sns unsubscribe --subscription-arn "$SUB"
-SUBS=("$DSUB")
+SUBS=("$DSUB" "$NSUB")
 aws sns publish --topic-arn "$TOPIC_ARN" --message "after-${TS}" \
 	--message-attributes '{"kind":{"DataType":"String","StringValue":"keep"}}' >/dev/null
 B="$(recv "$QOK_URL" "$QUIET")"

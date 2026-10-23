@@ -12,4 +12,5 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 |------|--------|
 | create / send / receive / delete | Working (smoke) |
 | Deny-user SendMessage | Working (`sqs-authz-smoke.sh`) |
+| SNS → SQS delivery respects queue policy (`aws:SourceArn`) | Working (`sns-sqs-fanout-smoke.sh`) |
 | Console | Not wired — Debt from #64 |
