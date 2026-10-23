@@ -203,3 +203,5 @@
 268	done	v1: ECS awsvpc task IP in subnet CIDR
 271	done	v1: awsvpc not on default docker bridge
 282	backlog	Debt: SG iptables install needs egress (from #271)
+266	done	v1: CreateEventSourceMapping checks Lambda role
+285	backlog	Debt: ESM post-create role revoke stops polling (from #266)
