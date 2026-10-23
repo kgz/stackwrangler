@@ -197,3 +197,4 @@
 237	backlog	Debt: VPC Lambda SG enforcement (from #205)
 258	done	v1: VPC Interface endpoint private DNS
 269	in-review	v1: ECS tasks reach injected emulator endpoint
+270	in-review	v1: egress block for non-root images
