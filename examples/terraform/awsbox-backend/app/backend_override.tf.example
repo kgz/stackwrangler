@@ -1,0 +1,25 @@
+# Copy to backend_override.tf and fill STATE_BUCKET / LOCK_TABLE / endpoint.
+# This file replaces backend.tf entirely (Terraform does not merge backends).
+terraform {
+  backend "s3" {
+    bucket         = "STATE_BUCKET"
+    key            = "awsbox-backend/app.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "LOCK_TABLE"
+    encrypt        = true
+
+    access_key = "awsbox"
+    secret_key = "awsboxawsbox"
+
+    endpoints = {
+      s3       = "http://127.0.0.1:4566"
+      dynamodb = "http://127.0.0.1:4566"
+      sts      = "http://127.0.0.1:4566"
+    }
+
+    use_path_style              = true
+    skip_credentials_validation = true
+    skip_metadata_api_check     = true
+    skip_requesting_account_id  = true
+  }
+}
