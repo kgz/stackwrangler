@@ -128,7 +128,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./bin/sqs-authz-smoke.sh` |
 | SQS → Lambda event source mapping invokes Lambda, message deleted | happy | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | SQS redrive (maxReceiveCount 2) to DLQ on Lambda failure | happy | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
-| Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | failing (emulator accepts mapping) | `./bin/sqs-lambda-dlq-smoke.sh` |
+| Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
