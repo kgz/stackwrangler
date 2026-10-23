@@ -93,7 +93,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Private ECS task reaches a public host only through an egress proxy (`HTTP_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
 | Same task with proxy env unset cannot reach the public host directly | sad/other | covered | `./bin/egress-proxy-smoke.sh` |
 | Egress proxy allowlist refuses another host (task sees 403) | sad/authz | covered | `./bin/egress-proxy-smoke.sh` |
-| Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered (currently fails) | `./bin/egress-proxy-smoke.sh` |
+| Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
 | Interface VPCE `PrivateDnsEnabled`: service hostname resolves in-VPC and call reaches awsbox (ecr/logs/ssm/sts/ecs) | happy | covered | `./bin/vpce-private-dns-smoke.sh` · [vpce-private-dns.md](vpce-private-dns.md) |
 | Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./bin/vpce-private-dns-smoke.sh` |
 | Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |

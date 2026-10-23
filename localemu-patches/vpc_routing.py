@@ -186,6 +186,16 @@ def _sync_container(
     docker_cidr = _safe_cidr(get_vpc_network_manager().get_docker_cidr_for_vpc(vpc_id))
     if docker_cidr and docker_cidr not in allow:
         allow.append(docker_cidr)
+    # #269: LocalEmu gateway IP (AWS_ENDPOINT_URL) is on the compose network,
+    # not the VPC CIDR. Allow /32 so private subnets can still call the emulator.
+    try:
+        from localemu.services.ec2.docker.vpc_endpoint import _localemu_gateway
+
+        gw_ip, _gw_net = _localemu_gateway()
+        if gw_ip:
+            allow.append(f"{gw_ip}/32")
+    except Exception:
+        LOG.debug("emulator gateway allow skipped", exc_info=True)
 
     default_kind: str | None = None
     nat_id: str | None = None
