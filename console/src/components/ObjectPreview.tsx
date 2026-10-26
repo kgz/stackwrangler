@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { formatBytes } from '../lib/format'
 import {
   formatS3Error,
   getObject,
@@ -148,10 +149,4 @@ export function ObjectPreview({
       </div>
     </div>
   )
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }

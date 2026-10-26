@@ -1,21 +1,30 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { UnavailableListPage } from '../components/S3Ui'
 
 type Kind = 'storage-lens' | 'batch-operations'
 
 const META: Record<
   Kind,
-  { title: string; heading: string; empty: string; createLabel: string }
+  {
+    title: string
+    heading: string
+    emptyTitle: string
+    empty: string
+    createLabel: string
+  }
 > = {
   'storage-lens': {
     title: 'Storage Lens',
-    heading: 'Storage Lens dashboards (0)',
+    heading: 'Storage Lens (0)',
+    emptyTitle: 'No Storage Lens dashboards',
     empty:
       'S3 Storage Lens is not available on this local stack. Use CLI and console object listings for local data.',
     createLabel: 'Create dashboard',
   },
   'batch-operations': {
     title: 'Batch Operations',
-    heading: 'Batch Operations jobs (0)',
+    heading: 'Batch Operations (0)',
+    emptyTitle: 'No Batch Operations jobs',
     empty: 'S3 Batch Operations are not available on this local stack.',
     createLabel: 'Create job',
   },
@@ -32,36 +41,13 @@ export function StorageInsightsPage() {
   const meta = META[kind]
 
   return (
-    <>
-      <div className="crumbs">
-        <Link to="/">Amazon S3</Link> &gt; {meta.title}
-      </div>
-      <h1 className="page-title">{meta.title}</h1>
-
-      <div className="panel">
-        <div className="toolbar">
-          <h3>{meta.heading}</h3>
-          <button type="button" className="btn" disabled title="Not supported locally">
-            Refresh
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled
-            title="Not supported on local stack"
-          >
-            {meta.createLabel}
-          </button>
-        </div>
-
-        <div className="empty" data-testid={`${kind}-empty`}>
-          <strong>Not available on local stack</strong>
-          {meta.empty}
-          <div style={{ marginTop: 16 }}>
-            <Link to="/">Go to General purpose buckets</Link>
-          </div>
-        </div>
-      </div>
-    </>
+    <UnavailableListPage
+      title={meta.title}
+      heading={meta.heading}
+      createLabel={meta.createLabel}
+      emptyTitle={meta.emptyTitle}
+      emptyText={meta.empty}
+      testId={`${kind}-empty`}
+    />
   )
 }

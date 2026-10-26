@@ -1,76 +1,100 @@
-import { Link, useLocation } from 'react-router-dom'
-
-type Kind = 'directory' | 'table' | 'vector'
-
-const META: Record<
-  Kind,
-  { title: string; heading: string; empty: string; createLabel: string }
-> = {
-  directory: {
-    title: 'Directory buckets',
-    heading: 'Directory buckets (0)',
-    empty:
-      'Directory buckets (S3 Express One Zone) are not available on this local stack. Use General purpose buckets.',
-    createLabel: 'Create directory bucket',
-  },
-  table: {
-    title: 'Table buckets',
-    heading: 'Table buckets (0)',
-    empty:
-      'S3 Tables are not available on this local stack. Use General purpose buckets.',
-    createLabel: 'Create table bucket',
-  },
-  vector: {
-    title: 'Vector buckets',
-    heading: 'Vector buckets (0)',
-    empty:
-      'S3 Vectors are not available on this local stack. Use General purpose buckets.',
-    createLabel: 'Create vector bucket',
-  },
-}
-
-function kindFromPath(pathname: string): Kind {
-  if (pathname.includes('table')) return 'table'
-  if (pathname.includes('vector')) return 'vector'
-  return 'directory'
-}
+import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import {
+  BucketTypeTabs,
+  DeadButton,
+  FilterHeader,
+  InfoButton,
+  RefreshButton,
+  TableTools,
+  UnavailableListPage,
+} from '../components/S3Ui'
+import { config } from '../lib/config'
 
 export function SpecialtyBucketsPage() {
   const { pathname } = useLocation()
-  const kind = kindFromPath(pathname)
-  const meta = META[kind]
+  const [find, setFind] = useState('')
+
+  if (pathname.includes('table')) {
+    return (
+      <UnavailableListPage
+        title="Table buckets"
+        heading="Table buckets (0)"
+        createLabel="Create table bucket"
+        emptyTitle="No table buckets"
+        emptyText="S3 Tables are not available on this local stack. Use General purpose buckets."
+        testId="table-buckets-empty"
+      />
+    )
+  }
+
+  if (pathname.includes('vector')) {
+    return (
+      <UnavailableListPage
+        title="Vector buckets"
+        heading="Vector buckets (0)"
+        createLabel="Create vector bucket"
+        emptyTitle="No vector buckets"
+        emptyText="S3 Vectors are not available on this local stack. Use General purpose buckets."
+        testId="vector-buckets-empty"
+      />
+    )
+  }
 
   return (
     <>
-      <div className="crumbs">
-        <Link to="/">Amazon S3</Link> &gt; {meta.title}
-      </div>
-      <h1 className="page-title">{meta.title}</h1>
-
-      <div className="panel">
-        <div className="toolbar">
-          <h3>{meta.heading}</h3>
-          <button type="button" className="btn" disabled title="Not supported locally">
-            Refresh
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled
-            title="Not supported on local stack"
-          >
-            {meta.createLabel}
-          </button>
-        </div>
-
-        <div className="empty" data-testid={`${kind}-buckets-empty`}>
-          <strong>Not available on local stack</strong>
-          {meta.empty}
-          <div style={{ marginTop: 16 }}>
-            <Link to="/">Go to General purpose buckets</Link>
+      <h1 className="aws-h1">Buckets</h1>
+      <section className="aws-card">
+        <BucketTypeTabs active="directory" />
+        <div className="aws-card-body">
+          <h2 className="aws-section-title">
+            Directory buckets (0) <InfoButton />
+          </h2>
+          <p className="aws-desc">
+            Directory buckets are optimized for use cases that require
+            consistent single-digit millisecond latency.
+          </p>
+          <div className="aws-toolbar">
+            <RefreshButton />
+            <DeadButton>Copy ARN</DeadButton>
+            <DeadButton>Empty</DeadButton>
+            <DeadButton>Delete</DeadButton>
+            <DeadButton>Import</DeadButton>
+            <div className="spacer" />
+            <DeadButton variant="primary">Create bucket</DeadButton>
+          </div>
+          <TableTools
+            placeholder="Find buckets by name"
+            value={find}
+            onChange={setFind}
+          />
+          <div className="aws-table-wrap">
+            <table className="aws-table" data-testid="directory-buckets-empty">
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <span className="th-inner">
+                      Name <span aria-hidden="true">↑</span>
+                    </span>
+                  </th>
+                  <FilterHeader>Bucket location type</FilterHeader>
+                  <FilterHeader>Bucket location name</FilterHeader>
+                  <FilterHeader>Creation date</FilterHeader>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="empty-cell" colSpan={4}>
+                    <strong>No buckets</strong>
+                    You don&apos;t have any directory buckets in the{' '}
+                    {config.regionLabel} {config.region} Region.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      </section>
     </>
   )
 }
