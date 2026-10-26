@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create function — Lambda</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="lambda-create-function" data-nav="lambda-functions" data-service="lambda" data-title="Create function" data-crumb="Create function">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create function</h1>
+      <p class="aws-desc">Configure a new function. Author from scratch uses a Hello world template or a .zip upload.</p>
+
+      <section class="aws-card" data-od-id="create-method">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Choose create options</h2>
+          <div class="aws-choice-row" role="group" aria-label="Create method" data-od-id="create-options">
+            <button type="button" class="aws-choice is-selected" aria-pressed="true" data-od-id="opt-author" id="opt-author">
+              <strong>Author from scratch</strong>
+              <span>Start with a basic Hello world example.</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-blueprint">
+              <strong>Use a blueprint</strong>
+              <span>Build from sample code and configuration.</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-container">
+              <strong>Container image</strong>
+              <span>Select a container image from a registry.</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="basic-info">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Basic information</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="fn-name">Function name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="fn-name" name="functionName" type="text" autocomplete="off" placeholder="my-function" value="demo-console-hello" data-od-id="field-function-name" />
+              <p class="aws-hint">1–64 characters. Use letters, numbers, hyphens, underscores, or periods.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="fn-desc">Description</label>
+              <input class="aws-input" id="fn-desc" name="description" type="text" placeholder="Optional" data-od-id="field-description" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="fn-runtime">Runtime <span class="req" aria-hidden="true">*</span></label>
+              <select class="aws-select" id="fn-runtime" name="runtime" data-od-id="field-runtime" style="max-width:480px;width:100%">
+                <option value="nodejs20.x" selected>Node.js 20.x</option>
+                <option value="nodejs18.x">Node.js 18.x</option>
+                <option value="python3.12">Python 3.12</option>
+                <option value="python3.11">Python 3.11</option>
+                <option value="java21">Java 21</option>
+                <option value="provided.al2023">Custom runtime on Amazon Linux 2023</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="fn-arch">Architecture</label>
+              <select class="aws-select" id="fn-arch" name="architecture" data-od-id="field-architecture" style="max-width:480px;width:100%">
+                <option value="x86_64" selected>x86_64</option>
+                <option value="arm64">arm64</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="permissions-section">
+            <h2 class="aws-section-title">Permissions</h2>
+            <p class="aws-desc" style="margin-bottom:12px">Choose an execution role so Lambda can write logs and access resources.</p>
+            <ul class="aws-radio-list" data-od-id="role-options">
+              <li>
+                <label>
+                  <input type="radio" name="roleMode" value="create" checked data-od-id="role-create" />
+                  <span>
+                    <strong>Create a new role with basic Lambda permissions</strong>
+                    <span class="sub">Creates <code class="aws-mono">awsbox-lambda-basic</code> if it does not exist.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="roleMode" value="existing" data-od-id="role-existing" />
+                  <span>
+                    <strong>Use an existing role</strong>
+                    <span class="sub">Select a role that trusts lambda.amazonaws.com.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="roleMode" value="policy" disabled aria-disabled="true" title="To implement" data-od-id="role-policy" />
+                  <span>
+                    <strong>Create a new role from AWS policy templates</strong>
+                    <span class="sub">Attach managed policy templates when creating the role.</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <div class="aws-field" id="existing-role-field" hidden style="margin-top:12px">
+              <label class="aws-label" for="fn-role">Existing role</label>
+              <select class="aws-select" id="fn-role" name="roleArn" data-od-id="field-existing-role" style="max-width:480px;width:100%">
+                <option value="awsbox-lambda-basic">awsbox-lambda-basic</option>
+                <option value="orders-ingest-role">orders-ingest-role</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="code-source-section">
+            <h2 class="aws-section-title">Code source</h2>
+            <ul class="aws-radio-list" data-od-id="code-source-options">
+              <li>
+                <label>
+                  <input type="radio" name="codeSource" value="hello" checked data-od-id="code-hello" />
+                  <span>
+                    <strong>Hello world function</strong>
+                    <span class="sub">Ship a minimal <code class="aws-mono">index.handler</code> for the selected runtime.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="codeSource" value="zip" data-od-id="code-zip" />
+                  <span>
+                    <strong>Upload from .zip file</strong>
+                    <span class="sub">Provide a deployment package under 50 MB (console upload).</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <div class="aws-field" id="zip-upload-field" hidden style="margin-top:12px">
+              <label class="aws-label" for="fn-zip">.zip file</label>
+              <input class="aws-input" id="fn-zip" name="zipFile" type="file" accept=".zip,application/zip" data-od-id="field-zip" />
+              <p class="aws-hint">Select a .zip deployment package. Upload is simulated in this mock.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-actions" data-od-id="create-actions">
+            <a class="btn btn-normal" href="lambda-functions.html" data-od-id="btn-cancel">Cancel</a>
+            <div class="spacer" style="flex:1"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-function">Create function</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      const roleExisting = document.querySelector('[data-od-id="role-existing"]');
+      const roleCreate = document.querySelector('[data-od-id="role-create"]');
+      const existingField = document.getElementById("existing-role-field");
+      const codeZip = document.querySelector('[data-od-id="code-zip"]');
+      const codeHello = document.querySelector('[data-od-id="code-hello"]');
+      const zipField = document.getElementById("zip-upload-field");
+      const createBtn = document.querySelector('[data-od-id="btn-create-function"]');
+
+      function syncRole() {
+        const useExisting = roleExisting && roleExisting.checked;
+        if (existingField) existingField.hidden = !useExisting;
+      }
+      function syncCode() {
+        const useZip = codeZip && codeZip.checked;
+        if (zipField) zipField.hidden = !useZip;
+      }
+
+      [roleCreate, roleExisting].forEach(function (el) {
+        if (el) el.addEventListener("change", syncRole);
+      });
+      [codeHello, codeZip].forEach(function (el) {
+        if (el) el.addEventListener("change", syncCode);
+      });
+      syncRole();
+      syncCode();
+
+      if (createBtn) {
+        createBtn.addEventListener("click", function () {
+          window.location.href = "lambda-function-detail.html";
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

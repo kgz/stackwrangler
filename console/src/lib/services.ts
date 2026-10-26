@@ -94,6 +94,7 @@ const CRUMBS: Record<string, string> = {
   '/marketplace': 'AWS Marketplace for S3',
   '/iam': 'Users',
   '/lambda': 'Functions',
+  '/lambda/create': 'Create function',
   '/logs': 'Log groups',
   '/apigateway': 'HTTP APIs',
   '/cloudformation': 'Stacks',

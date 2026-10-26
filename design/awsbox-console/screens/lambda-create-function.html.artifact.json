@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/lambda-create-function.html",
+  "entry": "screens/lambda-create-function.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-10-26T12:23:44.007Z",
+  "updatedAt": "2026-10-26T12:23:44.007Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

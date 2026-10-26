@@ -73,6 +73,8 @@
     { type: "Feature", label: "AWS Marketplace for S3", href: "marketplace-for-s3.html" },
     { type: "Feature", label: "IAM Users", href: "iam-users.html" },
     { type: "Feature", label: "Lambda Functions", href: "lambda-functions.html" },
+    { type: "Feature", label: "Create function", href: "lambda-create-function.html" },
+    { type: "Feature", label: "demo-console-hello", href: "lambda-function-detail.html" },
     { type: "Feature", label: "Log groups", href: "logs-log-groups.html" },
     { type: "Feature", label: "HTTP APIs", href: "apigateway-http-apis.html" },
     { type: "Feature", label: "Stacks", href: "cloudformation-stacks.html" },

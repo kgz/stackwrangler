@@ -816,3 +816,171 @@ a.resource-label-link:hover {
   color: var(--aws-link);
   background: var(--awsbox-selected);
 }
+
+/* —— Lambda create / code editor (#351) —— */
+.aws-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.aws-field {
+  margin: 0;
+}
+.aws-label {
+  display: block;
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--aws-text);
+}
+.aws-label .req {
+  color: var(--aws-danger);
+  margin-left: 2px;
+}
+.aws-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--aws-text-muted);
+}
+.aws-input,
+.aws-select.aws-input {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--aws-border);
+  border-radius: 8px;
+  background: var(--aws-panel);
+  color: var(--aws-text);
+  font: inherit;
+}
+.aws-input:focus {
+  outline: 0;
+  border-color: var(--aws-accent);
+  box-shadow: 0 0 0 1px var(--aws-accent);
+}
+.aws-choice-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.aws-choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--aws-border);
+  border-radius: 8px;
+  background: var(--aws-panel);
+  color: var(--aws-text-muted);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.aws-choice:hover:not(:disabled) {
+  border-color: var(--aws-link);
+}
+.aws-choice.is-selected {
+  border-color: var(--aws-accent);
+  background: var(--awsbox-selected);
+  color: var(--aws-text);
+  box-shadow: inset 3px 0 0 var(--aws-accent);
+}
+.aws-choice:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.aws-choice strong {
+  display: block;
+  color: var(--aws-text);
+  margin-bottom: 2px;
+}
+.aws-choice span span {
+  display: block;
+  font-size: 13px;
+  color: var(--aws-text-muted);
+}
+.aws-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.aws-radio-list label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--aws-text-muted);
+  cursor: pointer;
+}
+.aws-radio-list label:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.aws-radio-list strong {
+  display: block;
+  color: var(--aws-text);
+  font-weight: 600;
+}
+.aws-radio-list .sub {
+  display: block;
+  font-size: 13px;
+  color: var(--aws-text-muted);
+}
+.aws-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--aws-border);
+}
+.aws-form-section + .aws-form-section {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--aws-border);
+}
+.aws-code-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.aws-code-toolbar .file-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 4px 4px 0 0;
+  background: var(--awsbox-raised, #2e2e2e);
+  color: var(--aws-text);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  border: 1px solid var(--aws-border);
+  border-bottom: 0;
+}
+.aws-monaco {
+  border: 1px solid var(--aws-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1c1c1c;
+}
+.btn.btn-primary {
+  text-decoration: none;
+}
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+@media (max-width: 920px) {
+  .aws-choice-row {
+    grid-template-columns: 1fr;
+  }
+}
