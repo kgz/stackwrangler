@@ -81,7 +81,6 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 
 Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh` · `./bin/r53-private-smoke.sh` · `./bin/waf-smoke.sh` · `./bin/waf-authz-smoke.sh`
 | Route 53 hosted zones + records | **Partial** — public A/alias/CNAME + dig in-emulator · `./bin/route53-smoke.sh` · [docs/r53.md](docs/r53.md) · console [#245](https://github.com/kgz/awsl/issues/245) · host dig / API GW alias [#300](https://github.com/kgz/awsl/issues/300) |
-| Route 53 private zones | **Partial** — associated VPC only · `./bin/r53-private-smoke.sh` · [docs/r53-private.md](docs/r53-private.md) · console/Lambda [#245](https://github.com/kgz/awsl/issues/245) · API Gateway alias / host public zones [#300](https://github.com/kgz/awsl/issues/300) |
 | WAFv2 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |
 
