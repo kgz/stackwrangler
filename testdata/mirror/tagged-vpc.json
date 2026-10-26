@@ -1,0 +1,66 @@
+{
+  "schema": "awsl.mirror/v1",
+  "region": "us-east-1",
+  "resources": {
+    "vpcs": [
+      {
+        "id": "vpc-02560000000000001",
+        "cidr": "10.56.0.0/16",
+        "name": "tf-lookup-vpc",
+        "tags": {
+          "Environment": "local"
+        }
+      }
+    ],
+    "subnets": [
+      {
+        "id": "subnet-02560000000000001",
+        "vpcId": "vpc-02560000000000001",
+        "cidr": "10.56.1.0/24",
+        "availabilityZone": "us-east-1a",
+        "name": "tf-lookup-private-a",
+        "tags": {
+          "aws-cdk:subnet-name": "Private",
+          "aws-cdk:subnet-type": "Private"
+        }
+      },
+      {
+        "id": "subnet-02560000000000002",
+        "vpcId": "vpc-02560000000000001",
+        "cidr": "10.56.2.0/24",
+        "availabilityZone": "us-east-1b",
+        "name": "tf-lookup-private-b",
+        "tags": {
+          "aws-cdk:subnet-name": "Private",
+          "aws-cdk:subnet-type": "Private"
+        }
+      }
+    ],
+    "routeTables": [
+      {
+        "id": "rtb-02560000000000001",
+        "vpcId": "vpc-02560000000000001",
+        "subnetIds": [
+          "subnet-02560000000000001",
+          "subnet-02560000000000002"
+        ],
+        "name": "tf-lookup-private",
+        "tags": {
+          "Tier": "private"
+        }
+      }
+    ],
+    "securityGroups": [
+      {
+        "id": "sg-02560000000000001",
+        "vpcId": "vpc-02560000000000001",
+        "name": "tf-lookup",
+        "description": "tagged mirror fixture for terraform data sources",
+        "tags": {
+          "Name": "tf-lookup-sg",
+          "Tier": "private"
+        }
+      }
+    ]
+  }
+}

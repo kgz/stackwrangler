@@ -54,6 +54,7 @@ export async function listServers(): Promise<ListedServer[]> {
       const d = await describeServer(id)
       if (d.ServerId) {
         extras.push({
+          Arn: d.Arn,
           ServerId: d.ServerId,
           State: d.State,
           UserCount: d.UserCount,

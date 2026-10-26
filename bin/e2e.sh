@@ -18,6 +18,9 @@ echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
 echo "==> IAM AccessDenied"
 ./bin/iam-access-denied.sh
 
+echo "==> IAM OIDC + PassRole"
+./bin/oidc-smoke.sh
+
 echo "==> Lambda smoke"
 ./bin/lambda-smoke.sh
 
@@ -48,6 +51,15 @@ echo "==> ECS authz (sad: empty taskRole PutObject)"
 echo "==> ECS taskdef (secrets / host ports / failed-start)"
 ./bin/ecs-taskdef-smoke.sh
 
+echo "==> ECS host-network task-role creds (loopback, no DNAT)"
+./bin/ecs-host-creds-smoke.sh
+
+echo "==> ECS on EC2 (bridge NLB + CodeDeploy)"
+./bin/ecs-ec2-smoke.sh
+
+echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
+./bin/ecr-smoke.sh
+
 echo "==> Transfer authz (sad: empty role PutObject)"
 ./bin/transfer-authz-smoke.sh
 
@@ -76,6 +88,18 @@ echo "==> Logs / API GW / EC2 authz"
 
 echo "==> EC2 smoke"
 ./bin/ec2-smoke.sh
+
+echo "==> VPC routing"
+./bin/vpc-routing-smoke.sh
+
+echo "==> Security groups (allow SG A, refuse SG B, live reapply)"
+./bin/sg-enforcement-smoke.sh
+echo "==> ELBv2 data plane"
+if [[ "${AWSBOX_ELBV2_E2E:-0}" == "1" ]]; then
+	./bin/elbv2-smoke.sh
+else
+	echo "skip: set AWSBOX_ELBV2_E2E=1 (needs EC2 containers; blocked on beta by #299: https://github.com/kgz/awsl/issues/299)"
+fi
 
 echo "==> Prowler (isolated; skip if install blocked)"
 ./bin/prowler-smoke.sh

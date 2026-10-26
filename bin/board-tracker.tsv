@@ -44,22 +44,22 @@
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
 # v1 Data
-59	in-review	DynamoDB happy+authz
+59	done	DynamoDB happy+authz
 60	done	RDS / Aurora
 61	backlog	ElastiCache / MemoryDB / DAX
 62	backlog	EFS / FSx / EBS
 63	backlog	other DB stubs
 # v1 Messaging
 64	done	SQS
-65	in-review	SNS happy+authz
-66	in-review	EventBridge happy+authz
-67	in-review	Step Functions happy+authz
-68	in-review	Kinesis happy+authz
+65	done	SNS happy+authz
+66	done	EventBridge happy+authz
+67	done	Step Functions happy+authz
+68	done	Kinesis happy+authz
 69	backlog	MSK + MQ
 70	backlog	SES + AppSync
 # v1 Security
-71	in-review	KMS happy+authz
-72	in-review	Secrets Manager happy+authz
+71	done	KMS happy+authz
+72	done	Secrets Manager happy+authz
 73	backlog	Cognito
 74	backlog	ACM
 75	backlog	detection stubs
@@ -152,19 +152,67 @@
 176	backlog	Debt: Secrets console (from #72)
 177	backlog	Debt: KMS console (from #71)
 178	backlog	Debt: Kinesis console (from #68)
-169	in-review	Logs PutLogEvents AccessDenied
-170	in-review	API GW CreateApi AccessDenied
-171	in-review	EC2 RunInstances AccessDenied
+169	done	Logs PutLogEvents AccessDenied
+170	done	API GW CreateApi AccessDenied
+171	done	EC2 RunInstances AccessDenied
 180	backlog	Epic: settings/topology fidelity (hairpin etc)
 181	backlog	Debt: ECS same-host hairpin fidelity
+182	done	Real-AWS parity batch10 messaging/data
 184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
 185	backlog	Serverless v3 deploy smoke
 186	done	VPC Lambda → host services via mapped hostnames
 187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
 190	backlog	Debt: REST authorizer Deny 401 vs 403 (from #184)
-191	backlog	Debt: REST custom domain routing (from #184)
+191	done	Debt: REST custom domain routing (from #184)
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
-201	in-review	v1: ECS taskdef secrets / host ports / failed-start status
+201	done	v1: ECS taskdef secrets / host ports / failed-start status
+215	done	v1: Console labels for local display names
+211	done	v1: ECR push/pull + ECS task images
+214	done	v1: Same IDs as a real account / custom resource IDs
+193	done	v1: resource-based policy evaluation
+203	done	v1: ELBv2 data plane
+204	done	v1: VPC routing fidelity
+205	done	v1: Security group enforcement
+206	done	v1: Route 53 private hosted zones
+245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
+207	done	v1: ECS services on EC2
+208	done	v1: EC2 instance fidelity IMDS/SSM
+209	done	v1: IAM OIDC AssumeRoleWithWebIdentity
+210	done	v1: RDS MySQL / Aurora MySQL
+212	done	v1: CFN rollback + delete cleanup
+213	done	v1: multi-account cross-account AssumeRole
+216	done	v1: mirror real account fixture (scaffold)
+257	done	v1: Document Terraform against awsbox (backend/lock)
+220	backlog	Debt: real-account mirror read path (from #216)
+256	done	v1: mirror/fixture tags for TF data sources
+217	backlog	Debt: ECR console (from #211)
+218	backlog	Debt: docker push via repositoryUri hostname (from #211)
+219	backlog	Debt: Lambda image pull ECR authz (from #211)
+223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
+228	backlog	Debt: CFN lifecycle gaps (from #212)
+230	backlog	Debt: VPC gateway endpoints + Lambda egress (from #204)
+233	backlog	Debt: cross-account resource policy coverage (from #193)
+236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
+237	backlog	Debt: VPC Lambda SG enforcement (from #205)
+258	done	v1: VPC Interface endpoint private DNS
+269	done	v1: ECS tasks reach emulator endpoint
+270	done	v1: no-default-route for non-root containers
+265	done	v1: SNS→SQS respects queue resource policy
+267	done	v1: REST VPC_LINK via NLB
+268	done	v1: ECS awsvpc task IP in subnet CIDR
+271	done	v1: awsvpc not on default docker bridge
+282	backlog	Debt: SG iptables install needs egress (from #271)
+266	done	v1: CreateEventSourceMapping checks Lambda role
+285	backlog	Debt: ESM post-create role revoke stops polling (from #266)
+241	backlog	Debt: ELBv2 console (from #203)
+242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
+243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
+299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
+245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
+300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)
+247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
+302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)

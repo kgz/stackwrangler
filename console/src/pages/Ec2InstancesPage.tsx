@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ResourceLabel } from '../components/ResourceLabel'
 import { listInstances, type Instance } from '../lib/ec2'
 
 function nameTag(i: Instance): string {
@@ -69,7 +70,9 @@ export function Ec2InstancesPage() {
               {instances.map((i) => (
                 <tr key={i.InstanceId}>
                   <td>
-                    <code>{i.InstanceId ?? '—'}</code>
+                    <ResourceLabel ids={[i.InstanceId]}>
+                      <code>{i.InstanceId ?? '—'}</code>
+                    </ResourceLabel>
                   </td>
                   <td>{nameTag(i)}</td>
                   <td>{i.State?.Name ?? '—'}</td>

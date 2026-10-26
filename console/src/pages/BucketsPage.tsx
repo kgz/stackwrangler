@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ResourceLabel } from '../components/ResourceLabel'
 import { config } from '../lib/config'
 import {
   createBucket,
@@ -193,12 +194,14 @@ export function BucketsPage() {
                       />
                     </td>
                     <td>
-                      <Link
-                        to={`/buckets/${encodeURIComponent(name)}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {name}
-                      </Link>
+                      <ResourceLabel ids={[name, `arn:aws:s3:::${name}`]}>
+                        <Link
+                          to={`/buckets/${encodeURIComponent(name)}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {name}
+                        </Link>
+                      </ResourceLabel>
                     </td>
                     <td>{config.region}</td>
                     <td>

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # awsbox — local AWS stack lifecycle (SeaweedFS S3 + LocalStack IAM + console).
-# Usage: awsbox up | down | status | console | hosts …
+# Usage: awsbox up | down | status | console | hosts | mirror | apply …
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -154,6 +154,11 @@ cmd_status() {
 	else
 		echo "console:  not running (./bin/awsbox console)"
 	fi
+	if [[ -n "${AWSBOX_LABELS:-}" ]]; then
+		echo "labels:   ${AWSBOX_LABELS}"
+	else
+		echo "labels:   unset (docs/labels.md)"
+	fi
 }
 
 cmd_console() {
@@ -187,8 +192,11 @@ case "${1:-}" in
 		shift
 		exec "$ROOT/bin/awsbox-hosts" "$@"
 		;;
+	mirror|apply)
+		exec "$ROOT/bin/awsl-mirror.sh" "$@"
+		;;
 	*)
-		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | hosts …" >&2
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | hosts … | mirror … | apply <fixture>" >&2
 		exit 1
 		;;
 esac

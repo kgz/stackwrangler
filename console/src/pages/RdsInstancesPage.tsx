@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ResourceLabel } from '../components/ResourceLabel'
 import {
   deleteDbInstance,
   describeDbInstance,
@@ -15,15 +16,24 @@ function endpointLabel(db: DBInstance): string {
   return `${a}:${p}`
 }
 
+function isMysqlEngine(engine: string | undefined): boolean {
+  const name = (engine ?? '').toLowerCase()
+  return name === 'mysql' || name === 'mariadb' || name.startsWith('aurora-mysql')
+}
+
 function connectHint(db: DBInstance): string {
   const host = db.Endpoint?.Address ?? '127.0.0.1'
-  const port = db.Endpoint?.Port ?? 5432
   const user = db.MasterUsername ?? 'awsbox'
   const name = db.DBName ?? 'awsbox'
   const h =
     host.includes('rds.amazonaws.com') || host === 'localhost'
       ? '127.0.0.1'
       : host
+  const mysql = isMysqlEngine(db.Engine)
+  const port = db.Endpoint?.Port ?? (mysql ? 3306 : 5432)
+  if (mysql) {
+    return `mysql -h ${h} -P ${port} -u ${user} -p ${name}`
+  }
   return `psql -h ${h} -p ${port} -U ${user} -d ${name}`
 }
 
@@ -95,7 +105,7 @@ function InstancesList() {
             type="button"
             className="btn btn-primary"
             disabled
-            title="Use ./bin/rds-smoke.sh"
+            title="Use ./bin/rds-smoke.sh or ./bin/rds-mysql-smoke.sh"
           >
             Create database
           </button>
@@ -103,7 +113,7 @@ function InstancesList() {
       </div>
       <p className="page-lead">
         Docker-backed instances when <code>RDS_DOCKER_BACKEND=1</code>. Create
-        via <code>./bin/rds-smoke.sh</code>.
+        via <code>./bin/rds-smoke.sh</code> or <code>./bin/rds-mysql-smoke.sh</code>.
       </p>
       {error ? <div className="error-banner">{error}</div> : null}
       {toast ? (
@@ -117,8 +127,8 @@ function InstancesList() {
         ) : dbs.length === 0 ? (
           <div className="empty">
             <strong>No databases</strong>
-            Run <code>./bin/rds-smoke.sh</code> (keep with{' '}
-            <code>AWSBOX_RDS_KEEP=1</code> to inspect).
+            Run <code>./bin/rds-smoke.sh</code> or <code>./bin/rds-mysql-smoke.sh</code>{' '}
+            (keep with <code>AWSBOX_RDS_KEEP=1</code> to inspect).
           </div>
         ) : (
           <table className="data">
@@ -150,16 +160,18 @@ function InstancesList() {
                       />
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/rds/databases/${encodeURIComponent(id)}`)
-                        }}
-                      >
-                        {id}
-                      </button>
+                      <ResourceLabel ids={[id, db.DBInstanceArn]}>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/rds/databases/${encodeURIComponent(id)}`)
+                          }}
+                        >
+                          {id}
+                        </button>
+                      </ResourceLabel>
                     </td>
                     <td>{db.DBInstanceStatus ?? '—'}</td>
                     <td className="cfn-muted">
@@ -208,7 +220,11 @@ function InstanceDetail({ id }: { id: string }) {
         <span>{id}</span>
       </div>
       <div className="cfn-page-head">
-        <h1 className="page-title">{id}</h1>
+        <h1 className="page-title">
+          <ResourceLabel ids={[id, db?.DBInstanceArn]} detail>
+            {id}
+          </ResourceLabel>
+        </h1>
         <button type="button" className="btn" onClick={() => void refresh()}>
           Refresh
         </button>

@@ -13,7 +13,8 @@ Architecture (same pattern as EC2 Docker backend):
   1. Moto owns all state: clusters, task definitions, task records, ARNs.
   2. Docker provides execution: real containers from task definitions.
   3. Moto's RunTask requires a registered container instance (EC2 launch type).
-     We register a synthetic instance per cluster so Moto's check passes.
+     We register a synthetic instance lazily when the cluster has none,
+     so an ASG or RegisterContainerInstance target is used first (#207).
 """
 
 import logging
@@ -43,6 +44,138 @@ def _normalize_cluster_name(cluster: str) -> str:
     if "/" in cluster:
         return cluster.split("/")[-1]
     return cluster
+
+
+def _resolve_task_private_ipv4(task_info) -> str | None:
+    """Best ENI address for an awsvpc task (task-level, else first container)."""
+    ip = getattr(task_info, "private_ipv4", None)
+    if ip:
+        return ip
+    for ci in getattr(task_info, "containers", []) or []:
+        cip = getattr(ci, "private_ipv4", None)
+        if cip:
+            return cip
+    # Live Docker probe when recovered tasks lack a stored address
+    vpc_id = getattr(task_info, "vpc_id", None)
+    if not vpc_id:
+        return None
+    network = f"localemu-vpc-{vpc_id}"
+    try:
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+    except Exception:
+        return None
+    for ci in getattr(task_info, "containers", []) or []:
+        name = getattr(ci, "docker_name", None)
+        if not name:
+            continue
+        try:
+            found = DOCKER_CLIENT.get_container_ipv4_for_network(name, network)
+        except TypeError:
+            try:
+                found = DOCKER_CLIENT.get_container_ipv4_for_network(
+                    container_name_or_id=name,
+                    container_network=network,
+                )
+            except Exception:
+                found = None
+        except Exception:
+            found = None
+        if found and found not in ("localhost", "127.0.0.1"):
+            return str(found).split("/")[0]
+    return None
+
+
+def _set_attachment_detail(details: list, name: str, value: str) -> None:
+    for d in details:
+        if d.get("name") == name:
+            d["value"] = value
+            return
+    details.append({"name": name, "value": value})
+
+
+def _apply_awsvpc_eni_ip(task: dict, task_info, account_id: str, region: str) -> None:
+    """Overwrite moto's random privateIPv4Address with the container VPC IP (#268)."""
+    ip = _resolve_task_private_ipv4(task_info)
+    if not ip:
+        return
+
+    for att in task.get("attachments") or []:
+        if att.get("type") != "ElasticNetworkInterface":
+            continue
+        details = att.setdefault("details", [])
+        _set_attachment_detail(details, "privateIPv4Address", ip)
+        if getattr(task_info, "subnet_id", None):
+            _set_attachment_detail(details, "subnetId", task_info.subnet_id)
+
+    for mc in task.get("containers") or []:
+        c_ip = ip
+        for ci in getattr(task_info, "containers", []) or []:
+            if ci.container_name == mc.get("name") and getattr(ci, "private_ipv4", None):
+                c_ip = ci.private_ipv4
+                break
+        nis = mc.get("networkInterfaces")
+        if not nis:
+            mc["networkInterfaces"] = [{"privateIpv4Address": c_ip}]
+        else:
+            for ni in nis:
+                ni["privateIpv4Address"] = c_ip
+
+    _patch_moto_task_eni_ip(task.get("taskArn", ""), ip, account_id, region)
+
+
+def _patch_moto_task_eni_ip(
+    task_arn: str, ip: str, account_id: str, region: str,
+) -> None:
+    """Keep moto's Task.attachments / ENI in sync for later DescribeTasks."""
+    if not task_arn or not ip:
+        return
+    try:
+        backend = moto_backends.get_backend("ecs")[account_id][region]
+    except Exception:
+        return
+    moto_task = None
+    for cluster in getattr(backend, "clusters", {}).values():
+        tasks = getattr(cluster, "tasks", None) or {}
+        if task_arn in tasks:
+            moto_task = tasks[task_arn]
+            break
+        # short id key
+        short = task_arn.split("/")[-1]
+        if short in tasks:
+            moto_task = tasks[short]
+            break
+    if moto_task is None:
+        return
+
+    eni_id = None
+    for att in getattr(moto_task, "attachments", None) or []:
+        details = att.get("details") if isinstance(att, dict) else None
+        if not details:
+            continue
+        for d in details:
+            if d.get("name") == "privateIPv4Address":
+                d["value"] = ip
+            elif d.get("name") == "networkInterfaceId":
+                eni_id = d.get("value")
+
+    if not eni_id:
+        return
+    try:
+        ec2 = moto_backends.get_backend("ec2")[account_id][region]
+        eni = ec2.get_network_interface(eni_id) if hasattr(ec2, "get_network_interface") else None
+        if eni is None:
+            enis = getattr(ec2, "network_interfaces", None) or {}
+            eni = enis.get(eni_id)
+        if eni is None:
+            return
+        for attr in ("private_ip_address", "private_ip", "_private_ip"):
+            if hasattr(eni, attr):
+                try:
+                    setattr(eni, attr, ip)
+                except Exception:
+                    pass
+    except Exception:
+        LOG.debug("moto ENI IP patch failed for %s", eni_id, exc_info=True)
 
 
 def _init_task_manager():
@@ -325,6 +458,8 @@ def _handle_run_task(
                                 mc["networkBindings"] = bindings
                             break
 
+                _apply_awsvpc_eni_ip(task, ti, context.account_id, context.region)
+
                 LOG.info(
                     "ECS task %s %s with %d containers",
                     task_arn, ti.status, len(ti.containers),
@@ -580,20 +715,26 @@ def _handle_describe_tasks(
                         ]
                     break
 
+        _apply_awsvpc_eni_ip(
+            task, task_info, context.account_id, context.region,
+        )
+
     return result
 
 
 def _handle_create_cluster(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    """CreateCluster: let Moto handle it, then register a synthetic instance."""
+    """CreateCluster: leave placement to a real container instance.
+
+    A synthetic EC2 instance is registered lazily on RunTask / CreateService
+    only when the cluster still has none. Registering one here would win
+    placement over an ASG instance or RegisterContainerInstance that arrives
+    next (#207).
+    """
     result = call_moto(context)
     cluster_name = result.get("cluster", {}).get("clusterName", "")
     LOG.info("ECS cluster created: %s", cluster_name)
-
-    if _init_task_manager() and cluster_name:
-        _ensure_synthetic_instance(context, cluster_name)
-
     return result
 
 
@@ -666,99 +807,28 @@ _service_tasks_lock = threading.Lock()
 def _handle_create_service(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    """CreateService: let Moto create the service record, then launch desiredCount tasks."""
+    """CreateService: Moto record, then EC2 scheduling / target registration (#207)."""
     result = call_moto(context)
-
-    mgr = _init_task_manager()
     service_data = result.get("service")
-    if not mgr or not service_data:
+    if not service_data or not _init_task_manager():
         return result
+    from localemu.services.ecs.ec2_services import on_create_service
 
-    desired_count = service_data.get("desiredCount", 0)
-    task_def_arn = service_data.get("taskDefinition", "")
-    cluster_arn = service_data.get("clusterArn", "")
-    service_arn = service_data.get("serviceArn", "")
-    launch_type = service_data.get("launchType", "EC2")
-
-    if desired_count > 0 and task_def_arn:
-        # Pass the full cluster ARN to the task manager so
-        # the ``localemu.cluster`` Docker label matches what RunTask writes
-        # (the ARN). Using the short name here made label-scoped docker
-        # queries (e.g. by ops tooling) skip every service-started
-        # container, even though RunTask-launched containers were findable.
-        # Moto's ``run_task`` accepts either form; we still normalise to the
-        # short name for the ``_ensure_synthetic_instance`` lookup against
-        # moto's internal dict which is keyed by short name.
-        cluster_short = _normalize_cluster_name(cluster_arn) if cluster_arn else "default"
-        cluster_label = cluster_arn or cluster_short
-        _ensure_synthetic_instance(context, cluster_short, launch_type=launch_type)
-
-        task_arns = _run_service_tasks(
-            context, cluster_label, task_def_arn, desired_count, launch_type,
-            network_configuration=service_data.get("networkConfiguration"),
-        )
-        with _service_tasks_lock:
-            _service_tasks[service_arn] = task_arns
-
-        service_data["runningCount"] = len(task_arns)
-        service_data["status"] = "ACTIVE"
-        LOG.info(
-            "ECS service %s created with %d/%d tasks",
-            service_data.get("serviceName"), len(task_arns), desired_count,
-        )
-
+    on_create_service(context, request, service_data)
     return result
 
 
 def _handle_update_service(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    """UpdateService: let Moto update the record, then scale Docker tasks."""
+    """UpdateService: scale, or replace tasks when the task definition changes."""
     result = call_moto(context)
-
-    mgr = _init_task_manager()
     service_data = result.get("service")
-    if not mgr or not service_data:
+    if not service_data or not _init_task_manager():
         return result
+    from localemu.services.ecs.ec2_services import on_update_service
 
-    service_arn = service_data.get("serviceArn", "")
-    desired_count = service_data.get("desiredCount", 0)
-    task_def_arn = service_data.get("taskDefinition", "")
-    cluster_arn = service_data.get("clusterArn", "")
-    launch_type = service_data.get("launchType", "EC2")
-
-    with _service_tasks_lock:
-        current_task_arns = _service_tasks.get(service_arn, [])
-        current_count = len(current_task_arns)
-
-    if desired_count > current_count:
-        # Scale up: label tasks with the cluster ARN (not
-        # the short name) so they are discoverable via docker-label queries
-        # and match RunTask's labelling.
-        cluster_label = cluster_arn or _normalize_cluster_name(cluster_arn or "default")
-        new_arns = _run_service_tasks(
-            context, cluster_label, task_def_arn, desired_count - current_count, launch_type,
-            network_configuration=service_data.get("networkConfiguration"),
-        )
-        with _service_tasks_lock:
-            _service_tasks.setdefault(service_arn, []).extend(new_arns)
-        LOG.info("ECS service %s scaled up: %d -> %d tasks", service_arn, current_count, desired_count)
-
-    elif desired_count < current_count:
-        # Scale down - stop excess tasks
-        to_stop = current_count - desired_count
-        with _service_tasks_lock:
-            arns_to_stop = _service_tasks.get(service_arn, [])[-to_stop:]
-            _service_tasks[service_arn] = _service_tasks.get(service_arn, [])[:-to_stop]
-
-        for task_arn in arns_to_stop:
-            try:
-                mgr.stop_task(task_arn)
-            except Exception as e:
-                LOG.debug("Failed to stop task %s during scale-down: %s", task_arn, e)
-        LOG.info("ECS service %s scaled down: %d -> %d tasks", service_arn, current_count, desired_count)
-
-    service_data["runningCount"] = desired_count
+    on_update_service(context, request, service_data)
     return result
 
 
@@ -772,11 +842,15 @@ def _handle_delete_service(
 
     result = call_moto(context)
 
+    from localemu.services.ecs.ec2_services import on_delete_service
+
+    on_delete_service(cluster, service_name)
+
     mgr = _init_task_manager()
     if not mgr:
         return result
 
-    # Find matching service ARN
+    # Find matching service ARN (fallback if the scheduler never tracked it)
     service_arn = None
     with _service_tasks_lock:
         for arn in list(_service_tasks.keys()):
@@ -827,6 +901,7 @@ def _run_service_tasks(
     count: int,
     launch_type: str,
     network_configuration: dict | None = None,
+    group: str | None = None,
 ) -> list[str]:
     """Run N tasks for a service, returning the task ARNs created.
 
@@ -853,6 +928,7 @@ def _run_service_tasks(
                 tags=None,
                 launch_type=launch_type,
                 networking_configuration=network_configuration,
+                group=group,
             )
             if not moto_tasks:
                 continue
@@ -1104,6 +1180,12 @@ class EcsStateLifecycleHook(ServiceLifecycleHook):
 
     def on_before_state_reset(self) -> None:
         global _task_manager
+        try:
+            from localemu.services.ecs.ec2_services import reset_state
+
+            reset_state()
+        except Exception:
+            LOG.debug("ECS EC2 scheduler reset failed", exc_info=True)
         _task_def_cache.clear()
         _full_td_cache.clear()
         _synthetic_instances.clear()
@@ -1228,6 +1310,9 @@ def create_ecs_service() -> Service:
 
     _patch_moto_resource_requirements_none_safe()
     _patch_moto_eni_private_dns_name()
+    from localemu.services.ecs.ec2_services import install
+
+    install()
     service_model = load_service("ecs")
     dispatch_table = EcsDispatcher(service_model)
     skeleton = Skeleton(service_model, dispatch_table)

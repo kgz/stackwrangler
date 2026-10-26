@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FilteredLogEvent, LogGroup } from '@aws-sdk/client-cloudwatch-logs'
+import { ResourceLabel } from '../components/ResourceLabel'
 import { filterLogEvents, listLogGroups } from '../lib/logs'
 
 export function LogsPage() {
@@ -111,7 +112,9 @@ export function LogsPage() {
                     />
                   </td>
                   <td>
-                    <code>{name}</code>
+                    <ResourceLabel ids={[name, g.arn]} detail={selected === name}>
+                      <code>{name}</code>
+                    </ResourceLabel>
                   </td>
                   <td>{g.storedBytes ?? 0}</td>
                 </tr>
