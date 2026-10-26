@@ -80,11 +80,11 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 | VPC Interface endpoint private DNS | **Partial** · [docs/vpce-private-dns.md](docs/vpce-private-dns.md) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC / AZ polish | **Backlog** |
 | ALB / NLB / Classic ELB | **Partial** · [docs/elbv2.md](docs/elbv2.md) · console [#241](https://github.com/kgz/awsl/issues/241) · TLS ACM [#242](https://github.com/kgz/awsl/issues/242) · HTTP health [#243](https://github.com/kgz/awsl/issues/243) |
-| Route 53 private zones | **Partial** — associated VPC only · `./bin/r53-private-smoke.sh` · [docs/r53-private.md](docs/r53-private.md) · console/Lambda [#245](https://github.com/kgz/awsl/issues/245) |
+| Route 53 private zones | **Partial** — associated VPC only · `./bin/r53-private-smoke.sh` · [docs/r53-private.md](docs/r53-private.md) · console/Lambda [#245](https://github.com/kgz/awsl/issues/245) · API Gateway alias / public zones [#300](https://github.com/kgz/awsl/issues/300) |
 | WAFv2 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |
 
-Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh`
+Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh` · `./bin/r53-private-smoke.sh`
 
 ---
 

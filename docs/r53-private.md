@@ -37,4 +37,6 @@ Uses host port `24566` (`AWSBOX_R53_HOST_PORT`) so it does not take over a stack
 
 - Every load balancer in a VPC answers as this container's address on that VPC network, not a distinct ENI per LB ([#245](https://github.com/kgz/awsl/issues/245)).
 - Connect goes through the ELBv2 data plane ([elbv2.md](elbv2.md)).
+- Alias to API Gateway and public zones for the host: [#300](https://github.com/kgz/awsl/issues/300).
+- EC2 containers do not start on beta while `20-mirror-resource-ids.py` is loaded ([#299](https://github.com/kgz/awsl/issues/299)). The smoke accepts `AWSBOX_R53_COMPOSE_OVERRIDE=<file>` to blank that hook and `20-custom-ids.py`.
 - No Route 53 console, and the Lambda `VpcConfig` hook is not in the smoke ([#245](https://github.com/kgz/awsl/issues/245)).

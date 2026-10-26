@@ -14,6 +14,9 @@ SECRET="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
 TS="$(date +%s)"
 KEEP="${AWSBOX_R53_KEEP:-0}"
 RECREATE="${AWSBOX_R53_RECREATE:-1}"
+# Extra compose file, e.g. to blank start.d hooks while #299 breaks EC2 containers.
+COMPOSE=(-f "$ROOT/docker-compose.yml")
+[[ -n "${AWSBOX_R53_COMPOSE_OVERRIDE:-}" ]] && COMPOSE+=(-f "$AWSBOX_R53_COMPOSE_OVERRIDE")
 CREDS_PORT="${AWSBOX_R53_ECS_CREDS_PORT:-24571}"
 ZONE_NAME="awsbox-${TS}.internal"
 CLUSTER="r53-${TS}"
@@ -120,9 +123,9 @@ trap cleanup EXIT
 
 echo "endpoint ${EP}"
 if [[ "$RECREATE" == "1" ]]; then
-	docker compose -f "$ROOT/docker-compose.yml" up -d --force-recreate --no-deps localstack
+	docker compose "${COMPOSE[@]}" up -d --force-recreate --no-deps localstack
 else
-	docker compose -f "$ROOT/docker-compose.yml" up -d --no-deps localstack
+	docker compose "${COMPOSE[@]}" up -d --no-deps localstack
 fi
 for _ in $(seq 1 90); do
 	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "${EP}/" || true)"
@@ -132,7 +135,7 @@ done
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "${EP}/" || true)"
 [[ "$code" =~ ^[12345][0-9][0-9]$ ]] || fail "LocalEmu not ready at ${EP} (${code})"
 
-LS="$(docker compose -f "$ROOT/docker-compose.yml" ps -q localstack)"
+LS="$(docker compose "${COMPOSE[@]}" ps -q localstack)"
 [[ -n "$LS" ]] || fail "localstack container missing"
 for _ in $(seq 1 40); do
 	docker exec "$LS" grep -q "private DNS resolver starting" /tmp/vpce-resolver.log 2>/dev/null && break
