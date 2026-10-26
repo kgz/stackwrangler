@@ -6,7 +6,10 @@ import { ApiGatewayPage } from './pages/ApiGatewayPage'
 import { IamUsersPage } from './pages/IamUsersPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
+import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
+import { AccountSettingsPage } from './pages/AccountSettingsPage'
+import { FileSystemsPage } from './pages/FileSystemsPage'
+import { MarketplacePage } from './pages/MarketplacePage'
 import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
@@ -50,15 +53,15 @@ export default function App() {
           <Route path="directory-buckets" element={<SpecialtyBucketsPage />} />
           <Route path="table-buckets" element={<SpecialtyBucketsPage />} />
           <Route path="vector-buckets" element={<SpecialtyBucketsPage />} />
-          <Route path="file-systems" element={<PlaceholderPage />} />
+          <Route path="file-systems" element={<FileSystemsPage />} />
           <Route path="access-points" element={<AccessManagementPage />} />
           <Route path="access-points-fsx" element={<AccessManagementPage />} />
           <Route path="access-grants" element={<AccessManagementPage />} />
-          <Route path="access-analyzer" element={<PlaceholderPage />} />
+          <Route path="access-analyzer" element={<AccessAnalyzerPage />} />
           <Route path="storage-lens" element={<StorageInsightsPage />} />
           <Route path="batch-operations" element={<StorageInsightsPage />} />
-          <Route path="account-settings" element={<PlaceholderPage />} />
-          <Route path="marketplace" element={<PlaceholderPage />} />
+          <Route path="account-settings" element={<AccountSettingsPage />} />
+          <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

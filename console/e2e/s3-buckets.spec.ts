@@ -110,50 +110,122 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
   test('specialty bucket pages show empty local-stack states', async ({
     page,
   }) => {
-    const paths = [
-      '/directory-buckets',
-      '/table-buckets',
-      '/vector-buckets',
+    const cases = [
+      { path: '/directory-buckets', empty: 'No buckets', create: 'Create bucket' },
+      { path: '/table-buckets', empty: 'No table buckets', create: 'Create table bucket' },
+      { path: '/vector-buckets', empty: 'No vector buckets', create: 'Create vector bucket' },
     ]
-    for (const path of paths) {
-      await page.goto(path)
-      await expect(page.getByText('Not available on local stack')).toBeVisible()
-      await expect(
-        page.getByRole('button', { name: /Create .+ bucket/ }),
-      ).toBeDisabled()
-      await expect(
-        page.getByRole('link', { name: 'Go to General purpose buckets' }),
-      ).toBeVisible()
+    for (const c of cases) {
+      await page.goto(c.path)
+      await expect(page.getByText(c.empty, { exact: true })).toBeVisible()
+      const create = page.getByRole('button', { name: c.create })
+      await expect(create).toBeDisabled()
+      await expect(create).toHaveAttribute('title', 'To implement')
     }
   })
 
   test('access management pages show empty local-stack states', async ({
     page,
   }) => {
-    const paths = [
-      '/access-points',
-      '/access-points-fsx',
-      '/access-grants',
+    const cases = [
+      { path: '/access-points', empty: 'No access points', create: 'Create access point' },
+      { path: '/access-points-fsx', empty: 'No Access Points for FSx', create: 'Create access point' },
+      { path: '/access-grants', empty: 'No Access Grants', create: 'Create grant' },
     ]
-    for (const path of paths) {
-      await page.goto(path)
-      await expect(page.getByText('Not available on local stack')).toBeVisible()
-      await expect(
-        page.getByRole('button', { name: /Create (access point|grant)/ }),
-      ).toBeDisabled()
+    for (const c of cases) {
+      await page.goto(c.path)
+      await expect(page.getByText(c.empty, { exact: true })).toBeVisible()
+      await expect(page.getByRole('button', { name: c.create })).toBeDisabled()
     }
   })
 
   test('storage insights pages show empty local-stack states', async ({
     page,
   }) => {
-    const paths = ['/storage-lens', '/batch-operations']
+    const cases = [
+      { path: '/storage-lens', empty: 'No Storage Lens dashboards', create: 'Create dashboard' },
+      { path: '/batch-operations', empty: 'No Batch Operations jobs', create: 'Create job' },
+    ]
+    for (const c of cases) {
+      await page.goto(c.path)
+      await expect(page.getByText(c.empty, { exact: true })).toBeVisible()
+      await expect(page.getByRole('button', { name: c.create })).toBeDisabled()
+    }
+  })
+
+  test('other S3 panels render mock layouts with disabled actions', async ({
+    page,
+  }) => {
+    await page.goto('/file-systems')
+    await expect(page.getByText('No file systems')).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Create file system' }),
+    ).toBeDisabled()
+
+    await page.goto('/access-analyzer')
+    await expect(page.getByText('No findings to display')).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Download report' }),
+    ).toBeDisabled()
+
+    await page.goto('/account-settings')
+    await expect(
+      page.getByText('Block Public Access settings for this account'),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeDisabled()
+
+    await page.goto('/marketplace')
+    await expect(
+      page.getByRole('heading', {
+        name: 'Search all AWS Marketplace products for S3',
+      }),
+    ).toBeVisible()
+  })
+
+  test('shared chrome: services, search, region, account', async ({ page }) => {
+    await page.goto('/')
+
+    await page.getByRole('button', { name: 'Services' }).click()
+    await expect(
+      page.getByRole('navigation', { name: 'Services' }),
+    ).toBeVisible()
+    await page
+      .getByRole('navigation', { name: 'Services' })
+      .getByRole('link', { name: /IAM/ })
+      .click()
+    await expect(page).toHaveURL(/\/iam$/)
+
+    await page.getByLabel('Search', { exact: true }).fill('storage lens')
+    await page.getByRole('option', { name: /Storage Lens/ }).first().click()
+    await expect(page).toHaveURL(/\/storage-lens$/)
+
+    await page.getByRole('button', { name: /^US East|^Asia Pacific|^Europe/ }).first().click()
+    await expect(page.getByText('Regions', { exact: true })).toBeVisible()
+
+    await page.getByRole('button', { name: /Account ID:/ }).click()
+    await expect(page.getByText('Account name')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Sign out' })).toBeDisabled()
+  })
+
+  test('no enabled control carries the To implement marker', async ({ page }) => {
+    const paths = [
+      '/',
+      '/directory-buckets',
+      '/table-buckets',
+      '/vector-buckets',
+      '/file-systems',
+      '/access-points',
+      '/access-analyzer',
+      '/storage-lens',
+      '/account-settings',
+      '/marketplace',
+    ]
     for (const path of paths) {
       await page.goto(path)
-      await expect(page.getByText('Not available on local stack')).toBeVisible()
+      await expect(page.locator('main')).toBeVisible()
       await expect(
-        page.getByRole('button', { name: /Create (dashboard|job)/ }),
-      ).toBeDisabled()
+        page.locator('button[title="To implement"]:not([disabled])'),
+      ).toHaveCount(0)
     }
   })
 
@@ -222,7 +294,7 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
 
     await page.goto('/')
     await page.getByPlaceholder('Find buckets by name').fill(name)
-    await page.getByRole('checkbox', { name: `Select ${name}` }).check()
+    await page.getByRole('radio', { name: `Select ${name}` }).check()
     await expect(page.getByRole('button', { name: 'Empty' })).toBeEnabled()
     await page.getByRole('button', { name: 'Empty' }).click()
     await page.getByRole('button', { name: 'Empty', exact: true }).last().click()

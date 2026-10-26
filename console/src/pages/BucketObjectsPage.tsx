@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ObjectPreview } from '../components/ObjectPreview'
 import { ResourceLabel } from '../components/ResourceLabel'
+import {
+  DeadButton,
+  InfoButton,
+  RefreshButton,
+  TO_IMPLEMENT,
+  TableTools,
+} from '../components/S3Ui'
 import { config } from '../lib/config'
+import { formatBytes, formatConsoleDate } from '../lib/format'
 import {
   deleteObject,
   emptyAndDeleteBucket,
@@ -17,12 +25,6 @@ import {
 } from '../lib/s3'
 
 type ConfirmKind = 'empty-bucket' | 'delete-bucket' | 'delete-objects' | null
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
-}
 
 function objectType(key: string): string {
   const i = key.lastIndexOf('.')
@@ -45,6 +47,7 @@ export function BucketObjectsPage() {
   const [prefix, setPrefix] = useState('')
   const [tab, setTab] = useState<'objects' | 'properties'>('objects')
   const [previewKey, setPreviewKey] = useState<string | null>(null)
+  const [actionsOpen, setActionsOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const summary = useMemo(() => summarizeObjects(objects), [objects])
@@ -85,6 +88,17 @@ export function BucketObjectsPage() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    if (!actionsOpen) return
+    function close(e: MouseEvent) {
+      if (!(e.target instanceof Element) || !e.target.closest('.aws-pop')) {
+        setActionsOpen(false)
+      }
+    }
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [actionsOpen])
 
   useEffect(() => {
     if (!toast) return
@@ -152,6 +166,12 @@ export function BucketObjectsPage() {
     setToast('Copied S3 URI')
   }
 
+  const dead = (label: string) => (
+    <button type="button" disabled aria-disabled="true" title={TO_IMPLEMENT}>
+      {label}
+    </button>
+  )
+
   async function onConfirmAction() {
     if (!confirm) return
     setBusy(true)
@@ -195,246 +215,281 @@ export function BucketObjectsPage() {
 
   return (
     <>
-      <div className="crumbs">
-        <Link to="/">Amazon S3</Link> &gt; <Link to="/">Buckets</Link> &gt;{' '}
-        {bucket}
-      </div>
-      <h1 className="page-title">
+      <h1 className="aws-h1">
         <ResourceLabel ids={[bucket, `arn:aws:s3:::${bucket}`]} detail>
           {bucket}
-        </ResourceLabel>
+        </ResourceLabel>{' '}
+        <InfoButton />
       </h1>
-
-      <div className="tabs">
-        <button
-          type="button"
-          className={tab === 'objects' ? 'active' : undefined}
-          onClick={() => setTab('objects')}
-        >
-          Objects
-        </button>
-        <button
-          type="button"
-          className={tab === 'properties' ? 'active' : undefined}
-          onClick={() => setTab('properties')}
-        >
-          Properties
-        </button>
-        <button type="button" disabled>
-          Permissions
-        </button>
-        <button type="button" disabled>
-          Metrics
-        </button>
-        <button type="button" disabled>
-          Management
-        </button>
-        <button type="button" disabled>
-          Access Points
-        </button>
-      </div>
 
       {error ? <div className="error-banner">{error}</div> : null}
       {toast ? <div className="toast-banner">{toast}</div> : null}
 
-      {tab === 'properties' ? (
-        <div className="panel">
-          <div className="toolbar">
-            <h3>Properties</h3>
-          </div>
-          <div className="props-strip" style={{ border: 0, padding: 16 }}>
-            <div>
-              <span className="props-label">AWS Region</span>
-              <span>{config.region}</span>
-            </div>
-            <div>
-              <span className="props-label">Amazon Resource Name (ARN)</span>
-              <span>arn:aws:s3:::{bucket}</span>
-            </div>
-            <div>
-              <span className="props-label">Objects</span>
-              <span>{loading ? '…' : summary.count}</span>
-            </div>
-            <div>
-              <span className="props-label">Total size</span>
-              <span>{loading ? '…' : formatBytes(summary.totalBytes)}</span>
-            </div>
-            <div>
-              <span className="props-label">HeadBucket</span>
-              <span>{headOk ? 'OK' : '—'}</span>
-            </div>
-          </div>
-          <div className="toolbar" style={{ borderTop: '1px solid var(--aws-border)' }}>
-            <button
-              type="button"
-              className="btn"
-              disabled={loading || objects.length === 0 || busy}
-              onClick={() => setConfirm('empty-bucket')}
-            >
-              Empty bucket
-            </button>
-            <button
-              type="button"
-              className="btn"
-              disabled={loading || busy}
-              onClick={() => setConfirm('delete-bucket')}
-            >
-              Delete bucket
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="panel">
-          <div className="toolbar toolbar-stack">
-            <div>
-              <h3>
-                Objects ({loading ? '…' : `${filtered.length}/${objects.length}`})
-              </h3>
-              <p className="toolbar-help">
-                Objects are the fundamental entities stored in Amazon S3. For
-                others to access your objects, you&apos;ll need to explicitly
-                grant them permissions.
-              </p>
-            </div>
-            <div className="toolbar-actions">
+      <section className="aws-card">
+        <div className="aws-tabs">
+          <button
+            type="button"
+            aria-current={tab === 'objects' ? 'page' : undefined}
+            className={`aws-tab${tab === 'objects' ? ' active' : ''}`}
+            onClick={() => setTab('objects')}
+          >
+            Objects
+          </button>
+          <button
+            type="button"
+            aria-current={tab === 'properties' ? 'page' : undefined}
+            className={`aws-tab${tab === 'properties' ? ' active' : ''}`}
+            onClick={() => setTab('properties')}
+          >
+            Properties
+          </button>
+          {['Permissions', 'Metrics', 'Management', 'Access Points'].map(
+            (label) => (
               <button
+                key={label}
                 type="button"
-                className="btn"
-                onClick={() => void refresh()}
+                className="aws-tab"
+                disabled
+                aria-disabled="true"
+                title={TO_IMPLEMENT}
               >
-                Refresh
+                {label}
               </button>
-              <button
-                type="button"
-                className="btn"
-                disabled={selectedKeys.length !== 1}
-                onClick={() => void copyS3Uri()}
-              >
-                Copy S3 URI
-              </button>
-              <button
-                type="button"
-                className="btn"
-                disabled={selectedKeys.length === 0 || busy}
-                onClick={() => void onDownloadSelected()}
-              >
-                Download
-              </button>
-              <button
-                type="button"
-                className="btn"
-                disabled={selectedKeys.length !== 1 || busy}
-                onClick={() => setPreviewKey(selectedKeys[0] ?? null)}
-              >
-                Open
-              </button>
-              <button
-                type="button"
-                className="btn"
-                disabled={selectedKeys.length === 0 || busy}
-                onClick={() => setConfirm('delete-objects')}
-              >
-                Delete
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => fileRef.current?.click()}
-              >
-                Upload
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                multiple
-                hidden
-                onChange={(e) => {
-                  void onUpload(e.target.files)
-                  e.target.value = ''
-                }}
-              />
-            </div>
-          </div>
-          <div className="filters">
-            <input
-              value={prefix}
-              onChange={(e) => setPrefix(e.target.value)}
-              placeholder="Find objects by prefix"
-            />
-          </div>
-          {filtered.length === 0 && !loading ? (
-            <div className="empty">
-              <strong>No objects</strong>
-              This bucket is empty. Upload a file to get started.
-            </div>
-          ) : (
-            <table className="data">
-              <thead>
-                <tr>
-                  <th className="col-check">
-                    <input
-                      type="checkbox"
-                      checked={allVisibleSelected}
-                      aria-label="Select all objects"
-                      onChange={toggleAllVisible}
-                    />
-                  </th>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Last modified</th>
-                  <th>Size</th>
-                  <th>Storage class</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((o) => {
-                  const key = o.Key ?? ''
-                  const isSelected = selected.has(key)
-                  return (
-                    <tr
-                      key={key}
-                      className={isSelected ? 'row-selected' : undefined}
-                      onClick={() => toggleKey(key)}
-                    >
-                      <td
-                        className="col-check"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          aria-label={`Select ${key}`}
-                          onChange={() => toggleKey(key)}
-                        />
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="linkish"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setPreviewKey(key)
-                          }}
-                        >
-                          {key}
-                        </button>
-                      </td>
-                      <td>{objectType(key)}</td>
-                      <td>
-                        {o.LastModified
-                          ? o.LastModified.toLocaleString()
-                          : '—'}
-                      </td>
-                      <td>{formatBytes(o.Size ?? 0)}</td>
-                      <td>STANDARD</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            ),
           )}
         </div>
-      )}
+        <div className="aws-card-body">
+          {tab === 'properties' ? (
+            <>
+              <h2 className="aws-section-title">Bucket overview</h2>
+              <dl className="aws-kv">
+                <div>
+                  <dt>AWS Region</dt>
+                  <dd>{config.region}</dd>
+                </div>
+                <div>
+                  <dt>Amazon Resource Name (ARN)</dt>
+                  <dd className="aws-mono">arn:aws:s3:::{bucket}</dd>
+                </div>
+                <div>
+                  <dt>Objects</dt>
+                  <dd>{loading ? '…' : summary.count}</dd>
+                </div>
+                <div>
+                  <dt>Total size</dt>
+                  <dd>{loading ? '…' : formatBytes(summary.totalBytes)}</dd>
+                </div>
+                <div>
+                  <dt>HeadBucket</dt>
+                  <dd>{headOk ? 'OK' : '—'}</dd>
+                </div>
+              </dl>
+              <div className="aws-toolbar" style={{ marginTop: 16 }}>
+                <button
+                  type="button"
+                  className="btn btn-normal"
+                  disabled={loading || objects.length === 0 || busy}
+                  onClick={() => setConfirm('empty-bucket')}
+                >
+                  Empty bucket
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-normal"
+                  disabled={loading || busy}
+                  onClick={() => setConfirm('delete-bucket')}
+                >
+                  Delete bucket
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="aws-section-title">
+                Objects ({loading ? '…' : `${filtered.length}/${objects.length}`}){' '}
+                <InfoButton />
+              </h2>
+              <p className="aws-desc">
+                Objects are the fundamental entities stored in Amazon S3. For
+                others to access your objects, you&apos;ll need to explicitly
+                grant them permissions.{' '}
+                <a
+                  href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingObjects.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Learn more ↗
+                </a>
+              </p>
+              <div className="aws-toolbar">
+                <RefreshButton onClick={() => void refresh()} />
+                <button
+                  type="button"
+                  className="btn btn-normal"
+                  disabled={selectedKeys.length !== 1}
+                  onClick={() => void copyS3Uri()}
+                >
+                  Copy S3 URI
+                </button>
+                <DeadButton>Copy URL</DeadButton>
+                <button
+                  type="button"
+                  className="btn btn-normal"
+                  disabled={selectedKeys.length === 0 || busy}
+                  onClick={() => void onDownloadSelected()}
+                >
+                  Download
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-normal"
+                  disabled={selectedKeys.length !== 1 || busy}
+                  onClick={() => setPreviewKey(selectedKeys[0] ?? null)}
+                >
+                  Open ↗
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-normal"
+                  disabled={selectedKeys.length === 0 || busy}
+                  onClick={() => setConfirm('delete-objects')}
+                >
+                  Delete
+                </button>
+                <div className="aws-pop">
+                  <button
+                    type="button"
+                    className="btn btn-normal"
+                    aria-expanded={actionsOpen}
+                    aria-controls="menu-actions"
+                    onClick={() => setActionsOpen((v) => !v)}
+                  >
+                    Actions ▾
+                  </button>
+                  <div
+                    className={`aws-menu left${actionsOpen ? ' open' : ''}`}
+                    id="menu-actions"
+                  >
+                    {dead('Edit metadata')}
+                    {dead('Edit storage class')}
+                    {dead('Share with a presigned URL')}
+                    <div className="sep" />
+                    {dead('Rename object')}
+                  </div>
+                </div>
+                <div className="spacer" />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  ↑ Upload
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    void onUpload(e.target.files)
+                    e.target.value = ''
+                  }}
+                />
+              </div>
+              <TableTools
+                placeholder="Find objects by prefix"
+                value={prefix}
+                onChange={setPrefix}
+              />
+              <div className="aws-table-wrap">
+                <table className="aws-table">
+                  <thead>
+                    <tr>
+                      <th className="check" scope="col">
+                        <input
+                          type="checkbox"
+                          checked={allVisibleSelected}
+                          aria-label="Select all objects"
+                          onChange={toggleAllVisible}
+                        />
+                      </th>
+                      <th scope="col">
+                        <span className="th-inner">
+                          Name <span aria-hidden="true">↑</span>
+                        </span>
+                      </th>
+                      <th scope="col">Type</th>
+                      <th scope="col">Last modified</th>
+                      <th scope="col">Size</th>
+                      <th scope="col">Storage class</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td className="empty-cell" colSpan={6}>
+                          Loading objects…
+                        </td>
+                      </tr>
+                    ) : filtered.length === 0 ? (
+                      <tr>
+                        <td className="empty-cell" colSpan={6}>
+                          <strong>No objects</strong>
+                          This bucket is empty. Upload a file to get started.
+                        </td>
+                      </tr>
+                    ) : (
+                      filtered.map((o) => {
+                        const key = o.Key ?? ''
+                        const isSelected = selected.has(key)
+                        return (
+                          <tr
+                            key={key}
+                            className={`selectable${isSelected ? ' selected' : ''}`}
+                            onClick={() => toggleKey(key)}
+                          >
+                            <td
+                              className="check"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                aria-label={`Select ${key}`}
+                                onChange={() => toggleKey(key)}
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="aws-link-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setPreviewKey(key)
+                                }}
+                              >
+                                {key}
+                              </button>
+                            </td>
+                            <td>{objectType(key)}</td>
+                            <td>
+                              {o.LastModified
+                                ? formatConsoleDate(o.LastModified)
+                                : '—'}
+                            </td>
+                            <td>{formatBytes(o.Size ?? 0)}</td>
+                            <td>STANDARD</td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       {previewKey ? (
         <ObjectPreview
@@ -457,7 +512,7 @@ export function BucketObjectsPage() {
                   ? 'Empty bucket?'
                   : 'Delete bucket?'}
             </h3>
-            <p style={{ color: 'var(--aws-text-muted)', marginTop: 0 }}>
+            <p style={{ color: 'var(--awsbox-quiet)', marginTop: 0 }}>
               {confirm === 'delete-objects'
                 ? 'This action cannot be undone. Specifying permanent delete permanently deletes objects.'
                 : confirm === 'empty-bucket'
@@ -474,7 +529,7 @@ export function BucketObjectsPage() {
             <div className="modal-actions">
               <button
                 type="button"
-                className="btn"
+                className="btn btn-normal"
                 disabled={busy}
                 onClick={() => setConfirm(null)}
               >
