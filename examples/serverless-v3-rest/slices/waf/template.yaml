@@ -1,0 +1,72 @@
+# WAFv2 WebACL + association shape for awsbox (#55).
+# Smoke: ./bin/waf-smoke.sh applies this via CLI (CFN WAFv2 providers not in LocalEmu yet).
+# Rule evaluation is not real edge WAF — control-plane / association only.
+AWSTemplateFormatVersion: "2010-09-09"
+Description: awsbox WAFv2 slice — rate rule + managed-style block, associate to REST stage
+
+Parameters:
+  RestApiId:
+    Type: String
+  StageName:
+    Type: String
+    Default: prod
+  WebAclArnParamName:
+    Type: String
+    Default: /demo/waf/web-acl-arn
+
+Resources:
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub awsbox-waf-${AWS::StackName}
+      Scope: REGIONAL
+      Description: awsbox waf slice
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: awsboxWaf
+      Rules:
+        - Name: RateLimit
+          Priority: 0
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimit
+          Statement:
+            RateBasedStatement:
+              Limit: 100
+              AggregateKeyType: IP
+        - Name: ManagedStyleBlock
+          Priority: 1
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: ManagedStyleBlock
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+
+  WebAclArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Ref WebAclArnParamName
+      Type: String
+      Value: !GetAtt WebAcl.Arn
+      Description: WebACL ARN for association (ssm: style consumers)
+
+  WebAclAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${RestApiId}/stages/${StageName}
+      WebACLArn: !GetAtt WebAcl.Arn
+
+Outputs:
+  WebAclArn:
+    Value: !GetAtt WebAcl.Arn
