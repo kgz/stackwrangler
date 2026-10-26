@@ -32,7 +32,7 @@ ${main}
 function th(label, { sort, filter } = {}) {
   const sortMark = sort ? ` <span aria-hidden="true">↑</span>` : "";
   const filterBtn = filter
-    ? ` <button type="button" class="filter" aria-label="Filter ${label}">▾</button>`
+    ? ` <button type="button" class="filter" aria-label="Filter ${label}" title="To implement" disabled aria-disabled="true">▾</button>`
     : "";
   return `<th scope="col"><span class="th-inner">${label}${sortMark}${filterBtn}</span></th>`;
 }
@@ -698,7 +698,7 @@ pages.push({
       <div class="aws-toolbar" data-od-id="detail-toolbar">
         <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">awsbox-pg</h1>
         ${refreshBtn()}
-        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row">Actions ▾</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Actions ▾</button>
       </div>
       <div class="aws-subtitle-row">${status("success", "Available")}<span>PostgreSQL 16.3 · db.t4g.micro</span></div>
       <section class="aws-card" data-od-id="connectivity-card">
@@ -978,7 +978,7 @@ pages.push({
       <div class="aws-toolbar" data-od-id="detail-toolbar">
         <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">vpc-0a1b2c3d</h1>
         ${refreshBtn()}
-        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row">Actions ▾</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Actions ▾</button>
       </div>
       <div class="aws-subtitle-row">${status("success", "Available")}<span>lab-vpc</span></div>
       <section class="aws-card" data-od-id="overview-card" data-tabs>
