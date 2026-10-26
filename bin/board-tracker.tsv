@@ -63,7 +63,7 @@
 71	done	KMS happy+authz
 72	done	Secrets Manager happy+authz
 73	backlog	Cognito
-74	backlog	ACM
+74	in-review	ACM
 75	backlog	detection stubs
 # v1 Observability
 76	backlog	CW Metrics + Alarms
@@ -230,3 +230,5 @@
 324	backlog	Debt: WAFv2 console (from #55)
 325	backlog	Debt: CFN AWS::WAFv2 (from #55)
 326	backlog	Debt: WAFv2 rule evaluation (from #55)
+333	backlog	Debt: ACM console (from #74)
+339	backlog	Debt: ACM DNS validation automation (from #74)

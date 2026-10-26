@@ -149,6 +149,12 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./bin/elbv2-smoke.sh` |
 | ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |
+| ACM request DNS-validated cert + describe/list | happy | covered | `./bin/acm-smoke.sh` · [acm.md](acm.md) |
+| ACM import-certificate | happy | covered | `./bin/acm-smoke.sh` |
+| ACM ARN on API GW custom domain | happy | covered | `./bin/acm-smoke.sh` |
+| ACM ARN stored on ALB HTTPS listener | happy | covered | `./bin/acm-smoke.sh` |
+| **ACM deny-user RequestCertificate → AccessDenied** | sad/authz | covered | `./bin/acm-smoke.sh` |
+| ACM console | ui | missing | [#333](https://github.com/kgz/awsl/issues/333) |
 | ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
 | WAFv2 create WebACL + associate API GW stage; get/list association | happy | covered | `./bin/waf-smoke.sh` · [waf.md](waf.md) |
 | **WAFv2 deny-user CreateWebACL → AccessDenied** | sad/authz | covered | `./bin/waf-authz-smoke.sh` |

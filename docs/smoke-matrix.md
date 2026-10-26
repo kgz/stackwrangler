@@ -62,6 +62,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Route 53 public zones + records | yes (create, A / A-alias / CNAME, list, dig @127.0.0.1, private create, profile list) | **yes** (deny `route53:ListHostedZones`) | — | no → [#245](https://github.com/kgz/awsl/issues/245) | `route53-smoke.sh` |
 | Route 53 private zones | yes (associated VPC CNAME connect, alias, A/AAAA, upstream forward, EC2 with #299 override) | **yes** (deny `route53:ListHostedZones`) | unassociated VPC NXDOMAIN | no → [#245](https://github.com/kgz/awsl/issues/245) | `r53-private-smoke.sh` |
 | WAFv2 | yes (create + associate + get/list) | **yes** (`waf-authz-smoke.sh`) | rule eval not real → [#326](https://github.com/kgz/awsl/issues/326) | no → [#324](https://github.com/kgz/awsl/issues/324) | `waf-smoke.sh`, `waf-authz-smoke.sh` |
+| ACM | yes (request/import/describe/list + API domain + ALB HTTPS ARN) | **yes** (deny `acm:RequestCertificate`) | TLS handshake [#242](https://github.com/kgz/awsl/issues/242) | no → [#333](https://github.com/kgz/awsl/issues/333) | `acm-smoke.sh` |
 
 ## Rule
 
