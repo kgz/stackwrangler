@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/ecs-cluster-detail.html",
+  "entry": "screens/ecs-cluster-detail.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-10-26T07:36:36.465Z",
+  "updatedAt": "2026-10-26T07:36:36.465Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

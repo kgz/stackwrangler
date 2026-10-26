@@ -40,8 +40,6 @@
 53	backlog	NLB
 54	backlog	Classic ELB
 55	in-review	WAFv2
-56	backlog	Route 53 zones
-55	backlog	WAFv2
 56	in-review	Route 53 zones
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
@@ -245,3 +243,17 @@
 340	backlog	Debt: CodeDeploy Lambda canary alias weight (from #98)
 341	backlog	Debt: CodeDeploy authz smoke + console (from #98)
 230	in-review	Debt: VPC gateway endpoints + Lambda egress (from #204)
+304	done	Design: S3 console missing UI via Open Design web-clone
+319	done	Design: built console services via Open Design web-clone
+347	backlog	Implement S3 console from #304 OD mocks
+349	backlog	Implement built console services from #319 OD mocks
+350	backlog	Epic: console full UI create/detail
+351	backlog	Debt: Lambda Create function + detail
+352	backlog	Debt: Logs create + stream/detail
+353	backlog	Debt: IAM Create user + user detail
+354	backlog	Debt: HTTP API detail routes/stages
+294	in-review	API Gateway usage plans
+295	in-review	Transfer connectors
+296	in-review	DynamoDB depth
+297	in-review	EventBridge schedule
+

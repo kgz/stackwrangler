@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stacks — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-stacks" data-nav="cloudformation-stacks" data-service="cloudformation" data-title="Stacks" data-crumb="Stacks">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Stacks <span class="aws-quiet">(2)</span></h1>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-stack" title="Select a row">Delete</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-update-stack" title="Select a row">Update ▾</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-stack-actions" title="Select a row">Stack actions ▾</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-stack" title="To implement" disabled aria-disabled="true">Create stack ▾</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search by stack name" data-find-table="#data-table" aria-label="Search by stack name" data-od-id="find-stacks" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="cfn-stacks-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Stack name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Status <button type="button" class="filter" aria-label="Filter Status" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Created time <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Description <button type="button" class="filter" aria-label="Filter Description" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="awsbox-demo">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-demo" /></td>
+                  <td><a href="cloudformation-stack-detail.html" data-od-id="stack-awsbox-demo">awsbox-demo</a></td>
+                  <td><span class="aws-status aws-status-success">CREATE_COMPLETE</span></td>
+                  <td>2026-10-12 08:41:15</td>
+                  <td>Demo stack for local labs</td>
+                </tr>
+                <tr data-name="network-base">
+                  <td class="check"><input type="checkbox" aria-label="Select network-base" /></td>
+                  <td><a href="cloudformation-stack-detail.html" data-od-id="stack-network-base">network-base</a></td>
+                  <td><span class="aws-status aws-status-success">UPDATE_COMPLETE</span></td>
+                  <td>2026-09-03 14:02:55</td>
+                  <td>VPC and subnet baseline</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

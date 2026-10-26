@@ -86,7 +86,7 @@ if [[ -n "$NEW_CONV_TITLE" ]]; then
 fi
 
 if [[ -n "$ISSUE" ]]; then
-	"$ROOT/bin/board-status.sh" in-progress "$ISSUE"
+	"$ROOT/bin/board-status.sh" designing "$ISSUE"
 fi
 
 response="$(

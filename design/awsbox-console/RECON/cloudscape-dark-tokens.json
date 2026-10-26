@@ -1,0 +1,28 @@
+{
+  "source": "@cloudscape-design/design-tokens@3.0.116 visual-refresh",
+  "mode": "dark",
+  "tokens": {
+    "color-background-layout-main": "#161d26",
+    "color-background-container-content": "#161d26",
+    "color-text-body-default": "#c6c6cd",
+    "color-text-heading-default": "#ebebf0",
+    "color-text-link-default": "#42b4ff",
+    "color-text-side-navigation-item-active": "#42b4ff",
+    "color-border-divider-default": "#424650",
+    "color-border-button-normal-default": "#42b4ff",
+    "color-background-button-primary-default": "#42b4ff",
+    "color-background-item-selected": "#001129",
+    "color-border-item-selected": "#42b4ff",
+    "font-family-base": "'Open Sans', 'Helvetica Neue', Roboto, Arial, sans-serif",
+    "color-text-button-normal-default": "#42b4ff"
+  },
+  "refSamples": {
+    "topbar": "#161c26",
+    "pageBg": "#121920",
+    "border": "#303640",
+    "linkHistogram": "#58ace4",
+    "sidebarBg": "#161d26",
+    "textLight": "#dcdce0"
+  },
+  "awsConsolePrimaryOrangeNote": "Create/Upload buttons in refs are AWS orange (#ec7211/#ff9900), not Cloudscape primary blue"
+}

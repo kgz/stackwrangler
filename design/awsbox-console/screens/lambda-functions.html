@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Functions — Lambda</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="lambda-functions" data-nav="lambda-functions" data-service="lambda" data-title="Functions" data-crumb="Functions">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Functions</h1>
+      <p class="aws-desc">Lambda lets you run code without provisioning or managing servers.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="Select a row">Actions ▾</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-function" title="To implement" disabled aria-disabled="true">Create function</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter by function name or ARN" data-find-table="#data-table" aria-label="Filter by function name or ARN" data-od-id="find-functions" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="lambda-functions-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Function name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Description <button type="button" class="filter" aria-label="Filter Description" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Package type <button type="button" class="filter" aria-label="Filter Package type" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Runtime <button type="button" class="filter" aria-label="Filter Runtime" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Last modified <span aria-hidden="true">↑</span></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="awsbox-hello">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-hello" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="fn-hello">awsbox-hello</button></td>
+                  <td>Sample hello handler</td>
+                  <td>Zip</td>
+                  <td>nodejs20.x</td>
+                  <td>2026-10-20 09:14:02</td>
+                </tr>
+                <tr data-name="orders-ingest">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-ingest" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="fn-orders">orders-ingest</button></td>
+                  <td>—</td>
+                  <td>Zip</td>
+                  <td>python3.12</td>
+                  <td>2026-10-18 16:02:41</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IAM Access Analyzer — S3</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="iam-access-analyzer" data-nav="iam-access-analyzer" data-title="IAM Access Analyzer" data-crumb="IAM Access Analyzer for S3">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" style="align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title">IAM Access Analyzer for S3 <button type="button" class="info" disabled aria-disabled="true" title="To implement">Info</button></h1>
+          <p class="aws-desc" data-od-id="page-desc">When a bucket policy, Access Point policy, or ACL is added or modified, IAM Access Analyzer generates and updates findings based on the change within 30 minutes. Findings related to account-level Block public access settings or Multi-Region Access Point configurations may not be generated or updated for up to 6 hours after you change the settings. Findings in the following lists are aggregated by bucket. <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-analyzer.html" target="_blank" rel="noopener">Learn more ↗</a></p>
+        </div>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-download" title="To implement">Download report</button>
+      </div>
+      <section class="aws-card" data-od-id="findings-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title" data-od-id="findings-title">Findings</h2>
+          <div class="aws-empty-panel">
+            <strong>No findings to display</strong>
+            <p>When Access Analyzer finds buckets that allow public or cross-account access, they appear here.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

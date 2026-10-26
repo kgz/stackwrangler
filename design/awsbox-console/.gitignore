@@ -1,0 +1,4 @@
+node_modules/
+.od-skills/
+package-lock.json
+.DS_Store
