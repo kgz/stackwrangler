@@ -112,13 +112,8 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 | Kinesis | put/get records | — | **Working** (CLI) · console [#178](https://github.com/kgz/awsl/issues/178) |
 | MSK / SES / AppSync | — | — | **Backlog** |
 
-<<<<<<< HEAD
-Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` (+ `*-authz-smoke.sh`)
-Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` (+ `*-authz-smoke.sh`)
-=======
-Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` (+ `*-authz-smoke.sh`)
-Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` (+ `*-authz-smoke.sh`)
->>>>>>> origin/feature/297-events-schedule
+Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` (+ `*-authz-smoke.sh`)
+Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` (+ `*-authz-smoke.sh`)
 
 ---
 
