@@ -32,6 +32,7 @@ import logging
 import os
 import socket
 import threading
+import time
 from dataclasses import dataclass, field
 
 import moto.backends as moto_backends
@@ -81,6 +82,11 @@ class _Svc:
     network_configuration: dict | None
     load_balancers: list[_Lb]
     controller: str
+    # task_def_arn is what the running tasks use. A roll that could not start
+    # replacements keeps it and waits in pending_td until a retry succeeds.
+    pending_td: str = ""
+    next_try: float = 0.0
+    fails: int = 0
     tasks: dict[str, list[_Reg]] = field(default_factory=dict)
     busy: threading.Lock = field(default_factory=threading.Lock)
 
@@ -131,11 +137,10 @@ def on_update_service(context: object, request: dict, service_data: dict) -> Non
         on_create_service(context, request, service_data)
         return
     # CODE_DEPLOY services only change task definition through CreateDeployment.
-    if svc.controller == "CODE_DEPLOY":
-        new_td = svc.task_def_arn
+    if svc.controller != "CODE_DEPLOY" and request.get("taskDefinition"):
+        target = str(service_data.get("taskDefinition") or svc.task_def_arn)
     else:
-        new_td = str(service_data.get("taskDefinition") or svc.task_def_arn)
-    td_changed = new_td != svc.task_def_arn
+        target = svc.pending_td or svc.task_def_arn
     desired = _as_int(service_data.get("desiredCount"), svc.desired)
     net = service_data.get("networkConfiguration")
     if isinstance(net, dict):
@@ -150,13 +155,14 @@ def on_update_service(context: object, request: dict, service_data: dict) -> Non
         svc.load_balancers = lbs
     svc.busy.acquire()
     try:
-        svc.task_def_arn = new_td
         svc.desired = desired
+        svc.pending_td = "" if target == svc.task_def_arn else target
+        svc.next_try = 0.0
+        svc.fails = 0
         _ensure_capacity(svc, context)
-        if td_changed:
-            _replace(svc)
-        else:
-            _reconcile_body(svc)
+        _reconcile_body(svc)
+        if svc.pending_td:
+            _roll(svc)
         _sync_counts(svc, service_data)
         _remember(svc)
     finally:
@@ -200,6 +206,8 @@ def _loop() -> None:
                 try:
                     _ensure_capacity(svc, None)
                     _reconcile_body(svc)
+                    if svc.pending_td and time.monotonic() >= svc.next_try:
+                        _roll(svc)
                     _sync_counts(svc, None)
                     _remember(svc)
                 except Exception:
@@ -218,47 +226,78 @@ def _reconcile_body(svc: _Svc) -> None:
         if not _is_running(arn):
             LOG.info("ECS service %s replacing stopped task %s", svc.service_name, arn)
             _forget(svc, arn)
+    while len(svc.tasks) > svc.desired:
+        arn = next(reversed(list(svc.tasks)))
+        _forget(svc, arn)
+    if len(svc.tasks) >= svc.desired or time.monotonic() < svc.next_try:
+        return
     guard = 0
     while len(svc.tasks) < svc.desired and guard < svc.desired + 1:
         guard += 1
         if _launch(svc, 1, None) <= 0:
-            break
-    while len(svc.tasks) > svc.desired:
-        arn = next(reversed(list(svc.tasks)))
-        _forget(svc, arn)
+            _backoff(svc, "replacement task did not start")
+            return
+    svc.fails = 0
 
 
-def _replace(svc: _Svc) -> None:
+def _backoff(svc: _Svc, why: str) -> None:
+    svc.fails += 1
+    delay = min(2 ** svc.fails, 30)
+    svc.next_try = time.monotonic() + delay
+    LOG.warning("ECS service %s: %s; retry in %ds", svc.service_name, why, delay)
+
+
+def _roll(svc: _Svc) -> bool:
+    """Start desiredCount tasks on pending_td, then stop the old ones.
+
+    All or nothing: if any replacement fails to start, stop the new tasks,
+    keep the old ones and the old task definition, and retry later.
+    """
+    target = svc.pending_td
     old = list(svc.tasks)
-    added = _launch(svc, svc.desired, None)
-    if svc.desired > 0 and added <= 0:
-        LOG.warning("ECS service %s task definition replace launched nothing", svc.service_name)
-        return
+    added = _launch(svc, svc.desired, None, task_def=target)
+    if added < svc.desired:
+        for arn in list(svc.tasks):
+            if arn not in old:
+                _forget(svc, arn)
+        _backoff(svc, f"roll to {target} started {added}/{svc.desired} tasks, kept old tasks")
+        return False
     for arn in old:
         _forget(svc, arn)
+    svc.task_def_arn = target
+    svc.pending_td = ""
+    svc.fails = 0
+    svc.next_try = 0.0
     LOG.info(
         "ECS service %s rolled to %s (%d tasks)",
         svc.service_name,
-        svc.task_def_arn,
+        target,
         len(svc.tasks),
     )
+    return True
 
 
-def _launch(svc: _Svc, count: int, lbs: list[_Lb] | None) -> int:
+def _launch(
+    svc: _Svc, count: int, lbs: list[_Lb] | None, task_def: str | None = None
+) -> int:
     if count <= 0:
         return 0
     from localemu.services.ecs.provider import _run_service_tasks
 
     use = svc.load_balancers if lbs is None else lbs
-    arns = _run_service_tasks(
-        _Ctx(svc.account_id, svc.region),
-        svc.cluster_label,
-        svc.task_def_arn,
-        count,
-        svc.launch_type,
-        network_configuration=svc.network_configuration,
-        group=f"service:{svc.service_name}",
-    )
+    try:
+        arns = _run_service_tasks(
+            _Ctx(svc.account_id, svc.region),
+            svc.cluster_label,
+            task_def or svc.task_def_arn,
+            count,
+            svc.launch_type,
+            network_configuration=svc.network_configuration,
+            group=f"service:{svc.service_name}",
+        )
+    except Exception:
+        LOG.warning("ECS service %s RunTask failed", svc.service_name, exc_info=True)
+        return 0
     added = 0
     for arn in arns:
         if not _is_running(arn):
@@ -807,6 +846,7 @@ def _sync_counts(svc: _Svc, service_data: dict | None) -> None:
         service_data["runningCount"] = running
         service_data["pendingCount"] = pending
         service_data["desiredCount"] = svc.desired
+        service_data["taskDefinition"] = svc.task_def_arn
         service_data["status"] = "ACTIVE"
 
 

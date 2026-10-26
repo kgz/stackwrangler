@@ -3,7 +3,9 @@
 #   1) deny-user ecs:CreateService → AccessDenied
 #   2) ASG (launch template) instance becomes the container instance
 #   3) bridge service, desired 2, behind an internal NLB; kill one → replaced
-#   4) task definition update rolls the tasks
+#   4) task definition update rolls the tasks; an unstartable roll keeps the old
+#      tasks and task definition, replaces a killed task on the old definition,
+#      and a later good update recovers
 #   5) CodeDeploy revision for a missing task def → Failed, listener unchanged
 #   6) CODE_DEPLOY service starts blue tasks; blue/green launches v2 on green,
 #      swaps the listener, stops blue; a killed green task is replaced
@@ -185,17 +187,17 @@ LIS_BG="$(aws elbv2 create-listener --load-balancer-arn "$LB_BG" --protocol TCP 
 	--default-actions "Type=forward,TargetGroupArn=${TG_BLUE}" --query 'Listeners[0].ListenerArn' --output text)"
 
 write_taskdef() {
-	local family="$1" dest="$2" body="$3"
-	python3 - "$family" "$dest" "$body" <<'PY'
+	local family="$1" dest="$2" body="$3" image="${4:-nginx:1.27-alpine}"
+	python3 - "$family" "$dest" "$body" "$image" <<'PY'
 import json, sys
-family, dest, body = sys.argv[1:]
+family, dest, body, image = sys.argv[1:]
 doc = {
     "family": family,
     "networkMode": "bridge",
     "requiresCompatibilities": ["EC2"],
     "containerDefinitions": [{
         "name": "web",
-        "image": "nginx:1.27-alpine",
+        "image": image,
         "essential": True,
         "memory": 128,
         "portMappings": [{"containerPort": 80, "protocol": "tcp"}],
@@ -208,9 +210,12 @@ PY
 }
 
 WEB_CMD='echo -n "$HOSTNAME" > /usr/share/nginx/html/index.html && exec nginx -g "daemon off;"'
+V3_CMD='echo -n "v3-$HOSTNAME" > /usr/share/nginx/html/index.html && exec nginx -g "daemon off;"'
 V2_CMD='echo -n "v2-$HOSTNAME" > /usr/share/nginx/html/index.html && exec nginx -g "daemon off;"'
 write_taskdef "$FAMILY" "$TMPDIR/web.json" "$WEB_CMD"
 write_taskdef "$FAMILY" "$TMPDIR/web2.json" "$V2_CMD"
+write_taskdef "$FAMILY" "$TMPDIR/web3.json" "$V3_CMD"
+write_taskdef "$FAMILY" "$TMPDIR/webbad.json" "$V2_CMD" "awsbox.invalid/no-such-image:latest"
 write_taskdef "$BG_FAMILY" "$TMPDIR/bg.json" "$WEB_CMD"
 write_taskdef "$BG_FAMILY" "$TMPDIR/bg2.json" "$V2_CMD"
 TD1="$(aws ecs register-task-definition --cli-input-json "file://${TMPDIR}/web.json" --query 'taskDefinition.taskDefinitionArn' --output text)"
@@ -374,6 +379,63 @@ for _ in $(seq 1 40); do
 done
 [[ "$ROLLED" == "1" ]] || fail "roll did not land on v2 tasks (${NAMES3:-})"
 echo "OK: rolled to ${TD2}"
+
+echo "==> roll that cannot start keeps old tasks"
+TD_BAD="$(aws ecs register-task-definition --cli-input-json "file://${TMPDIR}/webbad.json" --query 'taskDefinition.taskDefinitionArn' --output text)"
+aws ecs update-service --cluster "$CLUSTER" --service "$SVC" --task-definition "$TD_BAD" >/dev/null
+svc_field() {
+	aws ecs describe-services --cluster "$CLUSTER" --services "$SVC" --query "services[0].$1" --output text
+}
+[[ "$(svc_field taskDefinition)" == "$TD2" ]] || fail "failed roll reports $(svc_field taskDefinition), want ${TD2}"
+[[ "$(svc_field runningCount)" == "2" ]] || fail "failed roll runningCount is $(svc_field runningCount)"
+[[ "$(health_n "$TG")" == "2" ]] || fail "failed roll disturbed the target group"
+NAMES_BAD="$(nlb_names "$NLB_PORT")"
+[[ "$(echo "$NAMES_BAD" | grep -c '^v2-')" -eq 12 ]] || fail "failed roll changed what the NLB serves (${NAMES_BAD})"
+echo "OK: failed roll kept v2 tasks and ${TD2}"
+
+echo "==> kill a task while the roll is pending"
+VICTIM2="$(echo "$NAMES_BAD" | head -1 | sed 's/^v2-//')"
+CID2="$(cid_for_name "$VICTIM2")" || fail "no container for ${VICTIM2}"
+docker kill "$CID2" >/dev/null
+PEND_OK=0
+for _ in $(seq 1 45); do
+	HN="$(health_n "$TG")"
+	echo "health pending-roll healthy=${HN}"
+	if [[ "$HN" == "2" ]]; then
+		NAMES_P="$(nlb_names "$NLB_PORT" || true)"
+		if [[ "$(echo "$NAMES_P" | grep -c '^v2-')" -eq 12 ]] \
+			&& ! echo "$NAMES_P" | grep -qx "v2-${VICTIM2}" \
+			&& [[ "$(echo "$NAMES_P" | sort -u | grep -c .)" -eq 2 ]]; then
+			PEND_OK=1
+			break
+		fi
+	fi
+	sleep 2
+done
+[[ "$PEND_OK" == "1" ]] || fail "killed task was not replaced on the active task definition (${NAMES_P:-})"
+[[ "$(svc_field taskDefinition)" == "$TD2" ]] || fail "service reports $(svc_field taskDefinition) after replacement"
+echo "OK: replacement used ${TD2}, not the unstartable definition"
+
+echo "==> good update recovers"
+TD3="$(aws ecs register-task-definition --cli-input-json "file://${TMPDIR}/web3.json" --query 'taskDefinition.taskDefinitionArn' --output text)"
+aws ecs update-service --cluster "$CLUSTER" --service "$SVC" --task-definition "$TD3" >/dev/null
+RECOVERED=0
+NAMES_R=""
+for _ in $(seq 1 40); do
+	HN="$(health_n "$TG")"
+	echo "health recover healthy=${HN}"
+	if [[ "$HN" == "2" ]]; then
+		NAMES_R="$(nlb_names "$NLB_PORT" || true)"
+		if [[ "$(echo "$NAMES_R" | grep -c '^v3-')" -eq 12 && "$(echo "$NAMES_R" | sort -u | grep -c .)" -eq 2 ]]; then
+			RECOVERED=1
+			break
+		fi
+	fi
+	sleep 2
+done
+[[ "$RECOVERED" == "1" ]] || fail "service did not recover to v3 (${NAMES_R:-})"
+[[ "$(svc_field taskDefinition)" == "$TD3" ]] || fail "service reports $(svc_field taskDefinition), want ${TD3}"
+echo "OK: recovered on ${TD3}"
 
 echo "==> CodeDeploy missing task definition"
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"codedeploy.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
