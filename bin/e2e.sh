@@ -81,6 +81,9 @@ echo "==> SNS / EventBridge / DynamoDB / SFN / Secrets / KMS / Kinesis"
 ./bin/kms-smoke.sh && ./bin/kms-authz-smoke.sh
 ./bin/kinesis-smoke.sh && ./bin/kinesis-authz-smoke.sh
 
+echo "==> ACM request/import + API domain + ALB HTTPS ARN"
+./bin/acm-smoke.sh
+
 echo "==> Logs / API GW / EC2 authz"
 ./bin/logs-authz-smoke.sh
 ./bin/apigw-authz-smoke.sh

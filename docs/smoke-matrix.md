@@ -53,6 +53,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Custom resource IDs | yes | n/a (same create APIs as service smokes) | bad `_custom_id_` | n/a | `custom-id-smoke.sh` |
 | Console labels | yes (VPC id + NLB ARN glob) | — | missing file → no labels | list/detail | `labels-smoke.sh` |
 | Route 53 private zones | yes (associated VPC CNAME connect, alias, A/AAAA, upstream forward, EC2 with #299 override) | **yes** (deny `route53:ListHostedZones`) | unassociated VPC NXDOMAIN | no → [#245](https://github.com/kgz/awsl/issues/245) | `r53-private-smoke.sh` |
+| ACM | yes (request/import/describe/list + API domain + ALB HTTPS ARN) | **yes** (deny `acm:RequestCertificate`) | TLS handshake [#242](https://github.com/kgz/awsl/issues/242) | no → [#333](https://github.com/kgz/awsl/issues/333) | `acm-smoke.sh` |
 
 ## Rule
 

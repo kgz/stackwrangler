@@ -61,7 +61,7 @@
 71	done	KMS happy+authz
 72	done	Secrets Manager happy+authz
 73	backlog	Cognito
-74	backlog	ACM
+74	in-progress	ACM
 75	backlog	detection stubs
 # v1 Observability
 76	backlog	CW Metrics + Alarms
@@ -216,3 +216,4 @@
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+333	backlog	Debt: ACM console (from #74)
