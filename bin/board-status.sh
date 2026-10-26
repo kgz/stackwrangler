@@ -39,11 +39,12 @@ STATUS_NAME="$1"
 shift
 
 case "$STATUS_NAME" in
-  backlog|todo) OPT="0970a811" ;;
-  ready) OPT="a0088790" ;;
-  in-progress|in_progress) OPT="929fb11b" ;;
-  in-review|in_review) OPT="7366a833" ;;
-  done) OPT="b56921ee" ;;
+  backlog|todo) OPT="dfa84092" ;;
+  ready) OPT="ae0781e5" ;;
+  designing) OPT="6199a95a" ;;
+  in-progress|in_progress) OPT="99efdfee" ;;
+  in-review|in_review) OPT="649b2f32" ;;
+  done) OPT="023eb12d" ;;
   *)
     echo "Unknown status: $STATUS_NAME" >&2
     exit 1
