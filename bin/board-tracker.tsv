@@ -88,7 +88,7 @@
 # Developer tools
 96	backlog	CodePipeline
 97	backlog	CodeBuild
-98	in-progress	CodeDeploy
+98	in-review	CodeDeploy
 99	backlog	CodeArtifact (+ CodeCommit)
 # Data movement
 100	done	Transfer Family (SFTP)
