@@ -770,7 +770,7 @@ def _pick_target(account_id: str, region: str, listener_arn: str) -> object | No
     if not tg_arn:
         return None
     try:
-        from localemu.services.elbv2.listener_router import get_router
+        from localemu.services.elbv2.listener_router import _tcp_ping, get_router
     except Exception:
         return None
     tg = get_router().target_groups.get(tg_arn)
@@ -783,16 +783,8 @@ def _pick_target(account_id: str, region: str, listener_arn: str) -> object | No
         if not getattr(target, "host", ""):
             target.host = host
         port = int(getattr(target, "port", 0) or 0)
-        target.health = "healthy" if port and _tcp_open(target.host, port, 0.4) else "unhealthy"
+        target.health = "healthy" if port and _tcp_ping(target.host, port, 0.4) else "unhealthy"
     return tg.pick_target()
-
-
-def _tcp_open(host: str, port: int, timeout: float) -> bool:
-    try:
-        with socket.create_connection((host, port), timeout):
-            return True
-    except Exception:
-        return False
 
 
 def _docker_host() -> str:
