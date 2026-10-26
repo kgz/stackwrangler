@@ -253,5 +253,4 @@
 296	done	DynamoDB depth
 297	done	EventBridge schedule
 
-360	in-progress	ECS awsvpc detach bridge staticmethod
 360	done	ECS awsvpc detach bridge staticmethod
