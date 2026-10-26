@@ -34,6 +34,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |
 | SNS → SQS fan-out | yes (envelope, raw, filter) | **yes** (wrong/missing queue policy; unsubscribe) | — | — | `sns-sqs-fanout-smoke.sh` |
 | EventBridge | yes | **yes** | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-smoke.sh`, `events-authz-smoke.sh` |
+| EventBridge schedule → Lambda | yes (`rate(1 minute)` ≥2 invocations; none after disable-rule) | **yes** (rule without `lambda:InvokeFunction` for `events.amazonaws.com` never invokes) | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-schedule-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
 | Step Functions | yes | **yes** | — | no → [#175](https://github.com/kgz/awsl/issues/175) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` |
 | Secrets Manager | yes | **yes** | — | no → [#176](https://github.com/kgz/awsl/issues/176) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` |
