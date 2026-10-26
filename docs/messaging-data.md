@@ -23,7 +23,8 @@ docker compose up -d --force-recreate localstack
 
 Console for each is Debt (#167, #172–#178).
 
-Real-AWS parity: `./bin/aws-parity-batch10.sh` · [aws-parity-batch10.md](aws-parity-batch10.md).
+Real-AWS parity: `./bin/aws-parity-batch10.sh` · [aws-parity-batch10.md](aws-parity-batch10.md).  
+HF cheap (DDB depth + schedule + REST/keys + S3 GW VPCE): `./bin/aws-parity-hf-cheap.sh` · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md).
 
 ## DynamoDB depth (#296)
 
