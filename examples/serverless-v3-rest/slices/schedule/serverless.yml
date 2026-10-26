@@ -1,0 +1,33 @@
+service: awsbox-schedule-slice
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    TABLE_NAME: !Ref SessionsTable
+
+functions:
+  cleanup:
+    handler: src/index.handler
+    name: awsbox-schedule-cleanup
+    events:
+      - schedule:
+          name: awsbox-schedule-cleanup-rule
+          rate: rate(1 minute)
+          enabled: true
+
+resources:
+  Resources:
+    SessionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH

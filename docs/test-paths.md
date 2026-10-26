@@ -167,6 +167,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./bin/events-smoke.sh` |
 | EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
+| EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./bin/events-schedule-smoke.sh` |
+| EventBridge `disable-rule` stops scheduled invocations | happy | covered | `./bin/events-schedule-smoke.sh` |
+| EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./bin/events-schedule-smoke.sh` |
+| EventBridge `cron(* * * * ? *)` rule invokes Lambda target (other cron/rate forms: [#317](https://github.com/kgz/awsl/issues/317)) | happy | covered | `./bin/events-schedule-smoke.sh` |
 | DynamoDB put/get | happy | covered | `./bin/dynamodb-smoke.sh` |
 | DynamoDB deny PutItem | sad/authz | covered | `./bin/dynamodb-authz-smoke.sh` |
 | DynamoDB table with GSI + TTL deployed via CloudFormation (serverless slice) | happy | covered | `./bin/dynamodb-depth-smoke.sh` |

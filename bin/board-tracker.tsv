@@ -222,3 +222,4 @@
 315	backlog	Debt: Transfer connectors need paramiko installed at boot (from #295)
 306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
 307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
+317	backlog	Debt: EventBridge schedule cadence beyond rate(1 minute) and non-wildcard cron (from #297)

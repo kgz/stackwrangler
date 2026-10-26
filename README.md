@@ -107,13 +107,18 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 |---------|------------|---------|--------|
 | SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [docs/sqs.md](docs/sqs.md) |
 | SNS | publish · SQS fan-out (queue policy / `SourceArn`) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./bin/sns-sqs-fanout-smoke.sh` |
-| EventBridge | put-events + rule | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) |
+| EventBridge | put-events + rule · scheduled `rate()` rule → Lambda (disable stops it; no invoke permission = no fire) | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) · [slice](examples/serverless-v3-rest/slices/schedule/README.md) · cadence [#317](https://github.com/kgz/awsl/issues/317) |
 | Step Functions | Pass state machine | — | **Working** (CLI) · console [#175](https://github.com/kgz/awsl/issues/175) |
 | Kinesis | put/get records | — | **Working** (CLI) · console [#178](https://github.com/kgz/awsl/issues/178) |
 | MSK / SES / AppSync | — | — | **Backlog** |
 
+<<<<<<< HEAD
 Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` (+ `*-authz-smoke.sh`)
 Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` (+ `*-authz-smoke.sh`)
+=======
+Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` (+ `*-authz-smoke.sh`)
+Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` (+ `*-authz-smoke.sh`)
+>>>>>>> origin/feature/297-events-schedule
 
 ---
 
