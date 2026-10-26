@@ -2,7 +2,7 @@
 
 REST APIs imported from an OpenAPI 3 document with `x-amazon-apigateway-*` extensions, the shape spec-first stacks (Serverless `resources`, CloudFormation `AWS::ApiGateway::RestApi` `Body`) deploy.
 
-Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-rest-smoke.sh`
+Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/serverless-v3-rest/slices/apigw-authz/) · Smoke: `./bin/apigw-rest-smoke.sh`
 
 ## What works
 

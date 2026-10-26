@@ -1,11 +1,9 @@
 # REST API (v1) from an OpenAPI document
 
-A REST API imported from `openapi.template.json` with:
+Replication slice (authorizer Allow / Deny / missing header + OpenAPI template):
+[examples/serverless-v3-rest/slices/apigw-authz](../serverless-v3-rest/slices/apigw-authz/).
 
-- `GET /public/callback`: no authorizer (e.g. an OAuth redirect target), `aws_proxy` to `handler.js`
-- `GET /v1/items`: REQUEST Lambda authorizer (`authorizer.js`, allows `Authorization: Bearer good`; missing header → 401, Deny → 403), `aws_proxy` to `handler.js`
-
-`${AUTHORIZER_URI}` and `${HANDLER_URI}` are filled in by the smoke with Lambda invocation URIs.
+This directory keeps the same handler / authorizer / OpenAPI stubs for older links.
 
 ```bash
 ./bin/apigw-rest-smoke.sh

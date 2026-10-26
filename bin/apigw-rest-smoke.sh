@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # REST API (v1) imported from OpenAPI: aws_proxy + REQUEST Lambda authorizer
-# (examples/apigw-rest, docs/apigw-rest.md).
+# (examples/serverless-v3-rest/slices/apigw-authz, docs/apigw-rest.md).
 # Happy: public route 200 with query passthrough; good token 200 with authorizer context.
 # Happy: custom domain root mapping and a named base path (Host / local DNS).
 # Sad: no token 401; denied token 403; unknown route 403;
@@ -15,7 +15,7 @@ EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 REGION="${AWSBOX_REGION:-us-east-1}"
 ACCOUNT="000000000000"
 TS="$(date +%s)"
-EX="$ROOT/examples/apigw-rest"
+EX="$ROOT/examples/serverless-v3-rest/slices/apigw-authz"
 WORK="$ROOT/.awsbox/apigw-rest-${TS}"
 HANDLER="awsbox-rest-handler-${TS}"
 AUTHZ="awsbox-rest-authz-${TS}"
