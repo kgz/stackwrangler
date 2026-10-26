@@ -1022,6 +1022,7 @@ class DockerTaskManager:
 
                     # Connect to the VPC network derived
                     # from the task's awsvpcConfiguration.subnets.
+                    # Bridge tasks use the container-instance subnet (#230).
                     private_ipv4 = None
                     if network_mode == "awsvpc":
                         awsvpc_cfg = (network_configuration or {}).get(
@@ -1042,6 +1043,21 @@ class DockerTaskManager:
                         self._attach_awsvpc_sg(
                             docker_name, subnet_ids, sg_ids, account_id, region,
                         )
+                    elif network_mode == "bridge":
+                        bridge_subnets = self._bridge_subnet_ids(
+                            cluster_name,
+                            network_configuration,
+                            account_id,
+                            region,
+                        )
+                        if bridge_subnets:
+                            private_ipv4 = self._connect_bridge_to_vpc(
+                                docker_name,
+                                subnet_ids=bridge_subnets,
+                                account_id=account_id,
+                                region=region,
+                                task_info=task_info,
+                            )
 
                     # #79: Install DNAT so 169.254.170.2:80 inside this
                     # container is redirected to our host-bound task-
@@ -1357,6 +1373,117 @@ class DockerTaskManager:
             )
 
 
+    def _bridge_subnet_ids(
+        self,
+        cluster_name: str,
+        network_configuration: dict | None,
+        account_id: str,
+        region: str,
+    ) -> list[str]:
+        """Subnet for bridge tasks: awsvpc config, else container-instance ENI."""
+        awsvpc_cfg = (network_configuration or {}).get("awsvpcConfiguration") or {}
+        configured = list(awsvpc_cfg.get("subnets") or [])
+        if configured:
+            return configured
+        try:
+            from localemu.services.ec2.docker.instance_routes import (
+                _ec2_backend,
+                _get_instance,
+            )
+            import moto.backends as moto_backends
+
+            ecs_root = moto_backends.get_backend("ecs")
+            cluster_key = cluster_name.split("/")[-1] if cluster_name else "default"
+            ec2_id = None
+            if isinstance(ecs_root, dict):
+                regions = ecs_root.get(account_id) or {}
+                backend = regions.get(region) if isinstance(regions, dict) else None
+                if backend is not None:
+                    cis = (getattr(backend, "container_instances", {}) or {}).get(
+                        cluster_key
+                    ) or {}
+                    for ci in cis.values():
+                        ec2_id = getattr(ci, "ec2_instance_id", None)
+                        if ec2_id:
+                            break
+            if not ec2_id:
+                return []
+            ec2 = _ec2_backend(account_id, region)
+            if ec2 is None:
+                return []
+            inst = _get_instance(ec2, str(ec2_id))
+            subnet_id = getattr(inst, "subnet_id", None) if inst is not None else None
+            return [str(subnet_id)] if subnet_id else []
+        except Exception:
+            LOG.debug(
+                "bridge subnet resolve failed for cluster %s",
+                cluster_name,
+                exc_info=True,
+            )
+            return []
+
+    def _connect_bridge_to_vpc(
+        self,
+        docker_name: str,
+        subnet_ids: list[str] | None,
+        account_id: str,
+        region: str,
+        task_info: EcsTaskInfo | None = None,
+    ) -> str | None:
+        """Attach a bridge-mode task to the subnet VPC without leaving docker0.
+
+        Host port publish stays on the default bridge; route enforcement
+        uses the VPC attachment the same way awsvpc does (#230).
+        """
+        if not subnet_ids:
+            return None
+        try:
+            from localemu.services.ec2.docker.vpc_network import (
+                get_vpc_network_manager,
+            )
+
+            vpcm = get_vpc_network_manager()
+            vpc_id = None
+            subnet_id = None
+            for sid in subnet_ids:
+                try:
+                    resolved = vpcm.get_vpc_id_for_subnet(sid, account_id, region)
+                except Exception:
+                    resolved = None
+                if resolved:
+                    vpc_id = resolved
+                    subnet_id = sid
+                    break
+            if not vpc_id or not subnet_id:
+                return None
+            if task_info is not None:
+                task_info.vpc_id = vpc_id
+                task_info.subnet_id = subnet_id
+            try:
+                ensured = vpcm.ensure_network_for_vpc(vpc_id)
+            except Exception:
+                ensured = None
+            vpc_network = ensured or f"localemu-vpc-{vpc_id}"
+            try:
+                DOCKER_CLIENT.inspect_network(vpc_network)
+            except Exception:
+                LOG.debug("bridge VPC network %s missing", vpc_network, exc_info=True)
+                return None
+            networks = []
+            try:
+                networks = DOCKER_CLIENT.get_networks(docker_name)
+            except Exception:
+                networks = []
+            if vpc_network not in networks:
+                DOCKER_CLIENT.connect_container_to_network(vpc_network, docker_name)
+            self._sync_subnet_routes(docker_name, [subnet_id], account_id, region)
+            return self._container_ip_on_network(docker_name, vpc_network)
+        except Exception:
+            LOG.debug(
+                "bridge VPC attach failed for %s", docker_name, exc_info=True,
+            )
+            return None
+
     def _connect_to_vpc_network(
         self,
         docker_name: str,
@@ -1598,6 +1725,18 @@ class DockerTaskManager:
                 release_container(docker_name)
             except Exception:
                 LOG.debug("awsvpc SG release skipped for %s", docker_name, exc_info=True)
+            try:
+                from localemu.services.ec2.docker.vpc_routing import (
+                    unregister_workload,
+                )
+
+                unregister_workload(docker_name)
+            except Exception:
+                LOG.debug(
+                    "vpc workload unregister skipped for %s",
+                    docker_name,
+                    exc_info=True,
+                )
             try:
                 DOCKER_CLIENT.stop_container(docker_name, timeout=10)
             except Exception:

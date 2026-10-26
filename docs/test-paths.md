@@ -106,6 +106,8 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Private subnet reaches a public host via an HTTP proxy over peering | happy | covered | `./bin/vpc-routing-smoke.sh` |
 | VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` |
 | NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| VPC Lambda private subnet: public host blocked; S3 only via GW endpoint; peer OK; IGW restores; routes replay after restart | happy + sad/other | covered | `./bin/vpc-egress-smoke.sh` · [vpc-routing.md](vpc-routing.md) · slice `examples/serverless-v3-rest/slices/egress/` |
+| ECS `bridge` task joins subnet VPC (`localemu-vpc-*`) and keeps default bridge | happy | covered | `./bin/vpc-egress-bridge-check.sh` (from `vpc-egress-smoke.sh`) · [#230](https://github.com/kgz/awsl/issues/230) |
 | Private ECS task reaches a public host only through an egress proxy (`HTTP_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
 | Same task with proxy env unset cannot reach the public host directly | sad/other | covered | `./bin/egress-proxy-smoke.sh` |
 | Egress proxy allowlist refuses another host (task sees 403) | sad/authz | covered | `./bin/egress-proxy-smoke.sh` |
@@ -116,7 +118,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered (currently fails) | `./bin/egress-proxy-smoke.sh` · [#269](https://github.com/kgz/awsl/issues/269) |
 | Interface VPCE `PrivateDnsEnabled`: service hostname resolves in-VPC and call reaches awsbox (ecr/logs/ssm/sts/ecs) | happy | covered | `./bin/vpce-private-dns-smoke.sh` · [vpce-private-dns.md](vpce-private-dns.md) |
 | Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./bin/vpce-private-dns-smoke.sh` |
-| Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |
+| Gateway endpoint prefix-list route | sad/other | covered | `./bin/vpc-egress-smoke.sh` · [#230](https://github.com/kgz/awsl/issues/230) |
 | SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./bin/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
 | SG rule revoke/authorize updates a running target | sad/other | covered | `./bin/sg-enforcement-smoke.sh` |
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./bin/sg-enforcement-smoke.sh` |

@@ -193,7 +193,7 @@
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
-230	backlog	Debt: VPC gateway endpoints + Lambda egress (from #204)
+230	in-review	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	backlog	Debt: VPC Lambda SG enforcement (from #205)
