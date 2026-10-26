@@ -18,6 +18,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Lambda invoke/deploy | yes | **yes** (`lambda-authz-smoke.sh`) | state wait | thin | `lambda-smoke.sh`, `lambda-deploy-smoke.sh`, `lambda-authz-smoke.sh` |
 | Logs | yes | **yes** (`logs-authz-smoke.sh`) | — | thin | `logs-smoke.sh`, `logs-authz-smoke.sh` |
 | API GW REST (v1) | yes | yes (no token / Deny / unknown route) | unmapped domain prefix; Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) | no → [#189](https://github.com/kgz/awsl/issues/189) | `apigw-rest-smoke.sh` |
+| API GW REST API keys + usage plans | yes (Lambda-minted key 200; AUTHORIZER key source) | yes (no/unknown/disabled/revoked key 403; throttle + quota 429; role without `apigateway:POST` on `/apikeys` denied) | usage reporting / per-stage throttle [#309](https://github.com/kgz/awsl/issues/309); IAM breadth [#311](https://github.com/kgz/awsl/issues/311) | no → [#310](https://github.com/kgz/awsl/issues/310) | `apigw-usage-plan-smoke.sh` |
 | API GW REST -> VPC link -> NLB -> ECS | **yes** (phase A VPC_LINK + NLB DNS; phase B; awsvpc ENI in subnet) | **yes** (no token / Deny / backend sees nothing / unhealthy target 5xx) | Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) | no | `apigw-nlb-ecs-smoke.sh` |
 | API GW | yes | **yes** (`apigw-authz-smoke.sh`) | — | thin | `apigw-smoke.sh`, `apigw-authz-smoke.sh` |
 | CFN / CDK / SAM | yes | **yes** (parity authz) | **yes** (rollback, failed update) | list/detail | `cfn\|cdk\|sam-smoke.sh`, `cfn-lifecycle-smoke.sh`, `aws-parity-cfn-authz.sh` |
