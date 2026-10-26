@@ -297,7 +297,7 @@ def _patch_sts() -> None:
 
 def _is_role_field(key: str) -> bool:
     leaf = str(key).replace("_", "").split(".")[-1].lower()
-    return leaf == "role" or leaf.endswith("rolearn")
+    return leaf in ("role", "accessrole", "loggingrole") or leaf.endswith("rolearn")
 
 
 def _collect_passed_roles(node, found: list[str]) -> None:

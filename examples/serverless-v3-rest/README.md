@@ -2,6 +2,9 @@
 
 Dummy Serverless Framework v3 REST stack used to replicate a real serverless layout. Only the AWS shape matters; handlers are stubs. The full project is [#185](https://github.com/kgz/awsl/issues/185). Each slice is standalone under `slices/<name>/`, so a ticket's smoke runs without the rest.
 
-| Slice | Covers | Smoke |
+| Slice | Ticket | Smoke |
 |-------|--------|-------|
-| [api-keys](slices/api-keys/) | `apiKeyRequired` routes, usage plan (throttle + quota), runtime CreateApiKey / CreateUsagePlanKey / GetUsagePlans / DeleteApiKey | `./bin/apigw-usage-plan-smoke.sh` |
+| [api-keys](slices/api-keys/) | [#294](https://github.com/kgz/awsl/issues/294) | `./bin/apigw-usage-plan-smoke.sh` |
+| [transfer-out](slices/transfer-out/) | [#295](https://github.com/kgz/awsl/issues/295) | `./bin/transfer-connector-smoke.sh` |
+| [ddb](slices/ddb/) | [#296](https://github.com/kgz/awsl/issues/296) | `./bin/dynamodb-depth-smoke.sh` |
+| [schedule](slices/schedule/) | [#297](https://github.com/kgz/awsl/issues/297) | `./bin/events-schedule-smoke.sh` |

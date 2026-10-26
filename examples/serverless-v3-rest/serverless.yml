@@ -1,0 +1,8 @@
+# Parent service (stub). Slices are separate services under slices/<name>/ so each can deploy alone.
+service: awsbox-rest
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
