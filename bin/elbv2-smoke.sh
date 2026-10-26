@@ -38,6 +38,16 @@ LB_ALB=""
 LB_TLS=""
 DENY_USER=""
 DENY_KEY=""
+TG_EDGE=""
+TG_INT=""
+TG_A=""
+TG_B=""
+TG_TLS=""
+CERT=""
+UD_A=""
+UD_B=""
+UD_C=""
+PEER=""
 HOSTS_ADDED=0
 COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
 
@@ -63,6 +73,14 @@ cleanup() {
 	for arn in "$LB_EDGE" "$LB_INT" "$LB_ALB" "$LB_TLS"; do
 		[[ -z "$arn" ]] && continue
 		aws elbv2 delete-load-balancer --load-balancer-arn "$arn" >/dev/null 2>&1 || true
+	done
+	for arn in "$TG_EDGE" "$TG_INT" "$TG_A" "$TG_B" "$TG_TLS"; do
+		[[ -z "$arn" ]] && continue
+		aws elbv2 delete-target-group --target-group-arn "$arn" >/dev/null 2>&1 || true
+	done
+	[[ -n "$CERT" ]] && aws acm delete-certificate --certificate-arn "$CERT" >/dev/null 2>&1 || true
+	for f in "$UD_A" "$UD_B" "$UD_C" "$PEER"; do
+		[[ -n "$f" ]] && rm -f "$f"
 	done
 	for id in "$IA" "$IB" "$IC"; do
 		[[ -z "$id" ]] && continue
