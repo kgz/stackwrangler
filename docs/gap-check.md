@@ -44,3 +44,4 @@ Link from docs and/or README status row
 - Workload IAM → [#144](https://github.com/kgz/awsl/issues/144)
 - RDS create/Aurora → [#145](https://github.com/kgz/awsl/issues/145)
 - ECS/EC2 UI depth → [#146](https://github.com/kgz/awsl/issues/146)
+- Console Create/detail program → [#350](https://github.com/kgz/awsl/issues/350) (Lambda [#351](https://github.com/kgz/awsl/issues/351), Logs [#352](https://github.com/kgz/awsl/issues/352), IAM users [#353](https://github.com/kgz/awsl/issues/353), HTTP API detail [#354](https://github.com/kgz/awsl/issues/354))

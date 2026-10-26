@@ -49,7 +49,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 |---------|------------|---------|--------|
 | S3 general purpose | SeaweedFS objects + parity script | Buckets / objects / preview | **Working** (UI) · **Partial** (vs LocalEmu S3 for events) |
 | S3 specialty / Access Points / Lens | — | Empty states | **Console chrome** |
-| Transfer Family | API + SFTP sidecar → S3 bridge | Servers list/detail | **Partial** + **Sidecar** (`docs/transfer.md`) · native keys: [#141](https://github.com/kgz/awsl/issues/141) |
+| Transfer Family | API + SFTP sidecar → S3 bridge | Servers list/detail | **Partial** + **Sidecar** (`docs/transfer.md`) · native keys: [#141](https://github.com/kgz/awsl/issues/141) · create user UI [#321](https://github.com/kgz/awsl/issues/321) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
 Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`
@@ -60,7 +60,7 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| Lambda | Docker invoke · VPC → host services ([docs/lambda-vpc.md](docs/lambda-vpc.md)) | Functions | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) · VPC isolation **Partial** ([#187](https://github.com/kgz/awsl/issues/187)) |
+| Lambda | Docker invoke · VPC → host services ([docs/lambda-vpc.md](docs/lambda-vpc.md)) | Functions (hello create) | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) · VPC isolation **Partial** ([#187](https://github.com/kgz/awsl/issues/187)) · Create/detail UI [#351](https://github.com/kgz/awsl/issues/351) |
 | EC2 | Docker instances · IMDSv2 instance-profile creds · user data · SSM `SendCommand` | Instances list | **Partial** · console depth [#146](https://github.com/kgz/awsl/issues/146) |
 | ECS | Docker tasks · secrets/`valueFrom` · host ports · EC2 container instances · desiredCount replacement · bridge ports → target groups · CodeDeploy blue/green · pull from ECR URI | Clusters / services / tasks | **Partial** · awsvpc ENI [#268](https://github.com/kgz/awsl/issues/268) · EC2 services [#207](https://github.com/kgz/awsl/issues/207) · bridge targets vs instance-IP health [#247](https://github.com/kgz/awsl/issues/247) · VPC NLB listeners [#203](https://github.com/kgz/awsl/issues/203) · depth [#146](https://github.com/kgz/awsl/issues/146) |
 | ECR | create-repository · `get-login-password` · push/pull `127.0.0.1:5000/<repo>` · ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` (needs `ecr:BatchGetImage`) | — | **Partial** · push the repositoryUri hostname [#218](https://github.com/kgz/awsl/issues/218) · Lambda image authz [#219](https://github.com/kgz/awsl/issues/219) · console [#217](https://github.com/kgz/awsl/issues/217) |
@@ -121,7 +121,7 @@ Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smo
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** · resource policies `./bin/resource-policy-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** · resource policies `./bin/resource-policy-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) · Create/detail UI [#353](https://github.com/kgz/awsl/issues/353) · roles [#251](https://github.com/kgz/awsl/issues/251) |
 | IAM OIDC / web identity | `AssumeRoleWithWebIdentity` checks a local JWKS; trust `StringEquals`/`StringLike` on `<issuer>:sub` and `:aud`. `repo:org/*` matches every repo in the org (risky). `iam:PassRole` is limited by `iam:PassedToService` | — | **CLI + smoke** · [docs/oidc.md](docs/oidc.md) · service-origin `kms:ViaService` / `aws:SourceArn` [#223](https://github.com/kgz/awsl/issues/223) |
 | STS | Enabled | — | **Control plane** (polish backlog) |
 | KMS | encrypt/decrypt · key policy on Encrypt/Decrypt/GenerateDataKey | — | **Partial** · key policy `./bin/resource-policy-smoke.sh` · console [#177](https://github.com/kgz/awsl/issues/177) |
@@ -140,8 +140,8 @@ CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · s
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| CloudWatch Logs | Log groups | Log groups | **Working** (basic) · sad [#169](https://github.com/kgz/awsl/issues/169) |
-| API Gateway HTTP | APIs | HTTP APIs | **Partial** · sad [#170](https://github.com/kgz/awsl/issues/170) |
+| CloudWatch Logs | Log groups | Log groups | **Working** (basic) · sad [#169](https://github.com/kgz/awsl/issues/169) · create/detail UI [#352](https://github.com/kgz/awsl/issues/352) |
+| API Gateway HTTP | APIs | HTTP APIs | **Partial** · sad [#170](https://github.com/kgz/awsl/issues/170) · detail UI [#354](https://github.com/kgz/awsl/issues/354) |
 | API Gateway REST (v1) | OpenAPI import · `aws_proxy` · REQUEST authorizers · custom domain Host + base path · VPC_LINK → NLB ([docs/apigw-rest.md](docs/apigw-rest.md)) | — ([#189](https://github.com/kgz/awsl/issues/189)) | **Partial** · Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) · ENI IP [#268](https://github.com/kgz/awsl/issues/268) |
 | Metrics / Alarms / SSM / CloudTrail / Orgs (empty reads) | Enabled for scanners (Prowler) | — | **Partial** (read-empty) · [#198](https://github.com/kgz/awsl/issues/198) · [docs/prowler.md](docs/prowler.md) |
 | X-Ray / deeper observability | — | — | **Backlog** |
@@ -221,4 +221,4 @@ Gap rubric: [docs/gap-check.md](docs/gap-check.md) ·
 Closing a ticket that leaves a bridge, disabled console action, or happy-only smoke must open a **Debt:** follow-up the same day.
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
-Console mocks: `design/awsbox-console/` · theme `design/awsbox/` · `./bin/od-design-run.sh --issue <n> "…"` (web-clone for real AWS screens)
+Console mocks: `design/awsbox-console/` · theme `design/awsbox/` · `./bin/od-design-run.sh --issue <n> "…"` (web-clone for real AWS screens). Full Create/detail UI tracker: [#350](https://github.com/kgz/awsl/issues/350).
