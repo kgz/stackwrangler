@@ -49,7 +49,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST API import from OpenAPI + `aws_proxy` public route | happy | covered | `./bin/apigw-rest-smoke.sh` · [apigw-rest.md](apigw-rest.md) |
 | REST REQUEST authorizer Allow → handler gets context | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
-| REST authorizer Deny → 401 (AWS 403) | sad/authz | thin | `./bin/apigw-rest-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
+| REST authorizer Deny → 403 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
 | REST unknown route → 403 | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
 | REST custom domain + base-path mapping | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST request via custom domain (root mapping, local DNS) | happy | covered | `./bin/apigw-rest-smoke.sh` |
@@ -59,7 +59,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST VPC_LINK to NLB with stopped/unhealthy target → 5xx | sad | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A |
 | ECS awsvpc `describe-tasks` privateIPv4Address inside subnet CIDR and equals container VPC IP; that address reachable on the VPC | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` · [#268](https://github.com/kgz/awsl/issues/268) |
 | REST `HTTP_PROXY` straight to an ECS awsvpc task, path param + injected service token reach backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
-| REST no token / Deny authorizer: backend receives nothing | sad/authz | thin | `./bin/apigw-nlb-ecs-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
+| REST no token / Deny authorizer: backend receives nothing | sad/authz | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
 | REST backend task stopped → API 5xx (AWS 504/503, emulator 500) | sad/other | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./bin/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./bin/lambda-vpc-smoke.sh` |

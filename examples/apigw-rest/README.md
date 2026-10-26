@@ -3,7 +3,7 @@
 A REST API imported from `openapi.template.json` with:
 
 - `GET /public/callback`: no authorizer (e.g. an OAuth redirect target), `aws_proxy` to `handler.js`
-- `GET /v1/items`: REQUEST Lambda authorizer (`authorizer.js`, allows `Authorization: Bearer good`), `aws_proxy` to `handler.js`
+- `GET /v1/items`: REQUEST Lambda authorizer (`authorizer.js`, allows `Authorization: Bearer good`; missing header → 401, Deny → 403), `aws_proxy` to `handler.js`
 
 `${AUTHORIZER_URI}` and `${HANDLER_URI}` are filled in by the smoke with Lambda invocation URIs.
 

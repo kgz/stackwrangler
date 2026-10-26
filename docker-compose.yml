@@ -62,7 +62,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs.
-      # start.d also routes REST custom domains (#191).
+      # start.d also routes REST custom domains (#191) and Deny→403 (#190).
       # Multi-account (#213): localemu-patches/init/start.d/21-multi-account.py
       # Custom resource ids (#214): localemu-patches/init/start.d/20-custom-ids.py
       - ./localemu-patches/s3control_provider.py:/opt/code/localemu/src/localemu/services/s3control/provider.py:ro

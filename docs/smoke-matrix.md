@@ -17,8 +17,8 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Lambda → Secrets Manager → OAuth token → external API | yes (+ per-stage secret isolation, env-var base URL) | **yes** (role without `GetSecretValue`: mock sees no requests) | wrong client secret → 401, no document posted | — | `lambda-secret-oauth-smoke.sh` |
 | Lambda invoke/deploy | yes | **yes** (`lambda-authz-smoke.sh`) | state wait | thin | `lambda-smoke.sh`, `lambda-deploy-smoke.sh`, `lambda-authz-smoke.sh` |
 | Logs | yes | **yes** (`logs-authz-smoke.sh`) | — | thin | `logs-smoke.sh`, `logs-authz-smoke.sh` |
-| API GW REST (v1) | yes | yes (no token / Deny / unknown route) | unmapped domain prefix; Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) | no → [#189](https://github.com/kgz/awsl/issues/189) | `apigw-rest-smoke.sh` |
-| API GW REST -> VPC link -> NLB -> ECS | **yes** (phase A VPC_LINK + NLB DNS; phase B; awsvpc ENI in subnet) | **yes** (no token / Deny / backend sees nothing / unhealthy target 5xx) | Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) | no | `apigw-nlb-ecs-smoke.sh` |
+| API GW REST (v1) | yes | yes (no token 401 / Deny 403 / unknown route) | unmapped domain prefix | no → [#189](https://github.com/kgz/awsl/issues/189) | `apigw-rest-smoke.sh` |
+| API GW REST -> VPC link -> NLB -> ECS | **yes** (phase A VPC_LINK + NLB DNS; phase B; awsvpc ENI in subnet) | **yes** (no token / Deny 403 / backend sees nothing / unhealthy target 5xx) | — | no | `apigw-nlb-ecs-smoke.sh` |
 | API GW | yes | **yes** (`apigw-authz-smoke.sh`) | — | thin | `apigw-smoke.sh`, `apigw-authz-smoke.sh` |
 | CFN / CDK / SAM | yes | **yes** (parity authz) | **yes** (rollback, failed update) | list/detail | `cfn\|cdk\|sam-smoke.sh`, `cfn-lifecycle-smoke.sh`, `aws-parity-cfn-authz.sh` |
 | ECS | yes | **yes** (`ecs-authz-smoke.sh`, CreateService deny in `ecs-ec2-smoke.sh`, secrets deny in `ecs-taskdef-smoke.sh`) | task unreachable · bad CodeDeploy revision | list | `ecs-smoke.sh`, `ecs-authz-smoke.sh`, `ecs-taskdef-smoke.sh`, `ecs-host-creds-smoke.sh`, `ecs-ec2-smoke.sh` |
