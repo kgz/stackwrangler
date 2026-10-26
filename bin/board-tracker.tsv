@@ -39,8 +39,8 @@
 52	backlog	ALB
 53	backlog	NLB
 54	backlog	Classic ELB
-55	in-review	WAFv2
-56	in-review	Route 53 zones
+55	done	WAFv2
+56	done	Route 53 zones
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
 # v1 Data
@@ -61,7 +61,7 @@
 71	done	KMS happy+authz
 72	done	Secrets Manager happy+authz
 73	backlog	Cognito
-74	in-review	ACM
+74	done	ACM
 75	backlog	detection stubs
 # v1 Observability
 76	backlog	CW Metrics + Alarms
@@ -72,7 +72,7 @@
 # v1 Containers
 81	backlog	ECR
 82	backlog	EKS
-83	in-review	Batch / Beanstalk / App Runner / ASG
+83	done	Batch / Beanstalk / App Runner / ASG
 # v1 Analytics
 84	backlog	OpenSearch
 85	backlog	Athena + Glue + Lake Formation
@@ -88,7 +88,7 @@
 # Developer tools
 96	backlog	CodePipeline
 97	backlog	CodeBuild
-98	in-review	CodeDeploy
+98	done	CodeDeploy
 99	backlog	CodeArtifact (+ CodeCommit)
 # Data movement
 100	done	Transfer Family (SFTP)
@@ -130,7 +130,7 @@
 133	done	Vision fully-working / LocalStack lesson
 137	done	Console Transfer servers UI
 138	done	Console RDS databases UI
-141	in-review	Transfer native SFTP auth — drop sidecar
+141	done	Transfer native SFTP auth — drop sidecar
 143	done	Debt: unify dual S3 backends
 144	done	Debt: workload IAM authz smokes
 145	backlog	Debt: RDS create UI + Aurora fidelity
@@ -159,11 +159,11 @@
 181	backlog	Debt: ECS same-host hairpin fidelity
 182	done	Real-AWS parity batch10 messaging/data
 184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
-185	in-review	Serverless v3 deploy smoke
+185	done	Serverless v3 deploy smoke
 186	done	VPC Lambda → host services via mapped hostnames
 187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
-190	in-review	Debt: REST authorizer Deny 401 vs 403 (from #184)
+190	done	Debt: REST authorizer Deny 401 vs 403 (from #184)
 191	done	Debt: REST custom domain routing (from #184)
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
@@ -193,7 +193,7 @@
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
-230	in-review	Debt: VPC gateway endpoints + Lambda egress (from #204)
+230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	backlog	Debt: VPC Lambda SG enforcement (from #205)
@@ -233,16 +233,12 @@
 334	backlog	Debt: Batch/Beanstalk/App Runner/ASG authz (from #83)
 335	backlog	Debt: Batch/Beanstalk/App Runner dataplane (from #83)
 337	backlog	Debt: Batch/Beanstalk/App Runner/ASG console (from #83)
-83	in-review	Batch / Beanstalk / App Runner / ASG
-185	in-review	Serverless v3 deploy smoke
-98	in-review	CodeDeploy
 328	backlog	Debt: Serverless http authorizer CFN PutMethod (from #185)
 329	backlog	Debt: serverless-domain-manager (from #185)
 330	backlog	Debt: Serverless v3 smoke sad path (from #185)
 344	backlog	Debt: Serverless endpoint override without editing serverless.yml (from #185)
 340	backlog	Debt: CodeDeploy Lambda canary alias weight (from #98)
 341	backlog	Debt: CodeDeploy authz smoke + console (from #98)
-230	in-review	Debt: VPC gateway endpoints + Lambda egress (from #204)
 304	done	Design: S3 console missing UI via Open Design web-clone
 319	done	Design: built console services via Open Design web-clone
 347	backlog	Implement S3 console from #304 OD mocks
@@ -252,8 +248,8 @@
 352	backlog	Debt: Logs create + stream/detail
 353	backlog	Debt: IAM Create user + user detail
 354	backlog	Debt: HTTP API detail routes/stages
-294	in-review	API Gateway usage plans
-295	in-review	Transfer connectors
-296	in-review	DynamoDB depth
-297	in-review	EventBridge schedule
+294	done	API Gateway usage plans
+295	done	Transfer connectors
+296	done	DynamoDB depth
+297	done	EventBridge schedule
 
