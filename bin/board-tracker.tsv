@@ -216,7 +216,7 @@
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
 304	done	Design: S3 console missing UI via Open Design web-clone
 319	done	Design: built console services via Open Design web-clone
-347	in-progress	Implement S3 console from #304 OD mocks
+347	in-review	Implement S3 console from #304 OD mocks
 349	backlog	Implement built console services from #319 OD mocks
 350	backlog	Epic: console full UI create/detail
 351	backlog	Debt: Lambda Create function + detail
