@@ -20,4 +20,6 @@ docker compose up -d --force-recreate localstack
 | Kinesis | `kinesis-smoke.sh` | `kinesis-authz-smoke.sh` |
 | Logs / API GW / EC2 | existing happy | `logs-authz-smoke.sh`, `apigw-authz-smoke.sh`, `ec2-authz-smoke.sh` |
 
-Console for each is Debt (#167, #172–#178). Real-AWS parity for this batch is a follow-up.
+Console for each is Debt (#167, #172–#178).
+
+Real-AWS parity: `./bin/aws-parity-batch10.sh` · [aws-parity-batch10.md](aws-parity-batch10.md).
