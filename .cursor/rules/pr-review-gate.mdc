@@ -1,0 +1,12 @@
+---
+description: PRs need orchestrator review before merge/batch
+alwaysApply: true
+---
+
+# PR review before merge
+
+Do not merge to `main` / `beta/*` or tell the user a ticket-batch PR is merge-ready until acceptance review is clean (`must-fix: none`) and the PR has label **`orchestrator-reviewed`** (ticket-batch orchestrator applies it). Prefer `gh pr review --approve` when the token is not the PR author.
+
+If review finds new must-fix items, remove `orchestrator-reviewed` until the next clean round.
+
+Details: [docs/pr-review-gate.md](docs/pr-review-gate.md). Hard GitHub branch protection needs Pro or a public repo on private plans.
