@@ -173,12 +173,12 @@
 211	done	v1: ECR push/pull + ECS task images
 214	done	v1: Same IDs as a real account / custom resource IDs
 193	done	v1: resource-based policy evaluation
-203	in-review	v1: ELBv2 data plane
+203	done	v1: ELBv2 data plane
 204	done	v1: VPC routing fidelity
 205	done	v1: Security group enforcement
-206	in-review	v1: Route 53 private hosted zones
+206	done	v1: Route 53 private hosted zones
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
-207	in-review	v1: ECS services on EC2
+207	done	v1: ECS services on EC2
 208	done	v1: EC2 instance fidelity IMDS/SSM
 209	done	v1: IAM OIDC AssumeRoleWithWebIdentity
 210	done	v1: RDS MySQL / Aurora MySQL
@@ -215,3 +215,4 @@
 300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
+302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
