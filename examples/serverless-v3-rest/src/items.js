@@ -7,7 +7,7 @@ export async function handler(event) {
       path: event.path || event.rawPath || '',
       stage: process.env.STAGE || '',
       app: process.env.APP_NAME || '',
+      redeploy: process.env.REDEPLOY_MARK || '',
     }),
   }
 }
-// redeploy 1793001133

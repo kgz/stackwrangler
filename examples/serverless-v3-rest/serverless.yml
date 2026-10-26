@@ -24,6 +24,9 @@ provider:
     # LocalEmu reserves /awsbox* SSM names. Path includes suffix so parallel smokes do not clobber.
     APP_NAME: ${ssm:/demo/rest/${env:AWSBOX_SLSE_SUFFIX, 'dev'}/app-name}
     TABLE_NAME: !Ref TokensTable
+    # Bumped by smoke on redeploy so CFN must update (not a no-op package).
+    REDEPLOY_MARK: ${env:AWSBOX_SLSE_REDEPLOY_MARK, '0'}
+
   iam:
     role:
       statements:
@@ -118,7 +121,8 @@ functions:
 
 
 
-# Raw CFN + OpenAPI RestApi Body (JS). VPC Link / ECS stay in slices / later tickets.
+# Raw CFN + OpenAPI RestApi Body (JS) + VPC Link→NLB→ECS shape stub.
 resources:
   - ${file(resources/cfn.yml)}
   - ${file(resources/rest-api.js)}
+  - ${file(resources/vpc-link-ecs.yml)}

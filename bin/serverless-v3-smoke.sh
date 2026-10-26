@@ -137,24 +137,44 @@ grep -q 'awsbox-rest-smoke' "$OUT/health.json"
 OPENAPI_ID="$(aws cloudformation describe-stack-resources --stack-name "$STACK" \
 	--query "StackResources[?LogicalResourceId=='OpenApiRestApi'].PhysicalResourceId" \
 	--output text 2>/dev/null || true)"
-if [[ -n "$OPENAPI_ID" && "$OPENAPI_ID" != "None" ]]; then
-	echo "ok   OpenApiRestApi Body resource: ${OPENAPI_ID}"
-else
-	echo "warn: OpenApiRestApi not in stack (Body resource missing)" >&2
-fi
+[[ -n "$OPENAPI_ID" && "$OPENAPI_ID" != "None" ]] || {
+	echo "error: OpenApiRestApi Body resource missing from stack ${STACK}" >&2
+	aws cloudformation describe-stack-resources --stack-name "$STACK" --output table >&2 || true
+	exit 1
+}
+echo "ok   OpenApiRestApi Body resource: ${OPENAPI_ID}"
+
+VPCLINK_ID="$(aws cloudformation describe-stack-resources --stack-name "$STACK" \
+	--query "StackResources[?LogicalResourceId=='StubVpcLink'].PhysicalResourceId" \
+	--output text 2>/dev/null || true)"
+[[ -n "$VPCLINK_ID" && "$VPCLINK_ID" != "None" ]] || {
+	echo "error: StubVpcLink missing from stack ${STACK} (VPC Link→NLB→ECS shape)" >&2
+	exit 1
+}
+echo "ok   StubVpcLink: ${VPCLINK_ID}"
 
 echo "==> serverless deploy (2 / redeploy)"
-# --force: package hash can match after a tiny source touch; still exercise update path.
-sls_run 'Service deployed|Updating CloudFormation stack|No changes to deploy' \
+# Change provider env so CFN must update (not a no-op / "No changes to deploy").
+export AWSBOX_SLSE_REDEPLOY_MARK="redeploy-${TS}"
+sls_run 'Updating CloudFormation stack|UPDATE_IN_PROGRESS|UPDATE_COMPLETE' \
 	"$OUT/deploy2.log" deploy --verbose --force
-grep -qiE 'Service deployed|Updating CloudFormation stack' "$OUT/deploy2.log" || {
-	echo "error: redeploy did not update the stack (only skipped?)" >&2
+if grep -qiE 'No changes to deploy' "$OUT/deploy2.log"; then
+	echo "error: redeploy was a no-op (No changes to deploy)" >&2
+	exit 1
+fi
+grep -qiE 'Updating CloudFormation stack|UPDATE_IN_PROGRESS' "$OUT/deploy2.log" || {
+	echo "error: redeploy did not update CloudFormation (no UPDATE_* / Updating evidence)" >&2
 	exit 1
 }
 
 code="$(curl -s -o "$OUT/health2.json" -w '%{http_code}' "${BASE}/public/health")"
 [[ "$code" == "200" ]] || {
 	echo "error: post-redeploy health got ${code}" >&2
+	exit 1
+}
+grep -q "redeploy-${TS}" "$OUT/health2.json" || {
+	echo "error: post-redeploy body missing REDEPLOY_MARK=redeploy-${TS}" >&2
+	cat "$OUT/health2.json" >&2
 	exit 1
 }
 

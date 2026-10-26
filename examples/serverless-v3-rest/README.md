@@ -5,8 +5,10 @@ Dummy [Serverless Framework v3](https://www.serverless.com/) project that mimics
 | Piece | Role |
 |-------|------|
 | `serverless.yml` | `deploymentMethod: direct`, named deploy bucket, esbuild, per-function IAM, `${ssm:…}`, http + schedule + S3 events |
-| `resources/cfn.yml` | DynamoDB, KMS, Secrets Manager, uploads bucket |
+| `resources/cfn.yml` | DynamoDB, KMS, Secrets Manager |
 | `resources/rest-api.js` | `AWS::ApiGateway::RestApi` with OpenAPI `Body` |
+| `resources/vpc-link-ecs.yml` | VPC Link → internal NLB → ECS shape stub (`DesiredCount: 0`) |
+| S3 uploads bucket | Created by the `onObject` `s3` event (not in `cfn.yml`) |
 | `slices/<name>/` | Standalone services from later tickets (each has its own smoke) |
 
 `serverless-domain-manager` is **not** wired here ([#329](https://github.com/kgz/awsl/issues/329); custom domain via CLI: `./bin/apigw-rest-smoke.sh`). REQUEST authorizer on Serverless `http` events is deferred ([#328](https://github.com/kgz/awsl/issues/328)); the authorizer Lambda is still deployed for shape.
