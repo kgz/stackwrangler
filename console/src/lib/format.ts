@@ -9,6 +9,14 @@ function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+/** e.g. 2026-10-12 08:41:15 — service list/detail timestamps from the OD mocks. */
+export function formatServiceDate(value: Date | string | undefined): string {
+  if (!value) return '—'
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return typeof value === 'string' ? value : '—'
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 /** e.g. October 18, 2026, 14:03:42 (UTC+10:00) */
 export function formatConsoleDate(d: Date): string {
   const date = d.toLocaleDateString('en-US', {

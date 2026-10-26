@@ -1,6 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
+import { DeadButton, RefreshButton } from '../components/S3Ui'
+import {
+  EmptyRow,
+  FilterHeader,
+  Kv,
+  ListCard,
+  Mono,
+  Notices,
+  PlainHeader,
+  SelectCell,
+  SelectHeader,
+  SortHeader,
+  StatusBadge,
+  TabBar,
+} from '../components/ServiceUi'
+import { formatServiceDate } from '../lib/format'
 import {
   deleteStack,
   describeStack,
@@ -16,41 +32,7 @@ import {
   type StackSummary,
 } from '../lib/cfn'
 
-type DetailTab =
-  | 'info'
-  | 'events'
-  | 'resources'
-  | 'outputs'
-  | 'parameters'
-  | 'template'
-
-type StatusKind = 'success' | 'error' | 'progress' | 'neutral'
-
-function formatWhen(d: Date | undefined): string {
-  if (!d) return '—'
-  return d.toLocaleString()
-}
-
-function statusKind(status: string | undefined): StatusKind {
-  if (!status) return 'neutral'
-  if (status.includes('COMPLETE') && !status.includes('ROLLBACK') && !status.includes('FAILED')) {
-    if (status.startsWith('DELETE')) return 'neutral'
-    return 'success'
-  }
-  if (status.includes('FAILED') || status.includes('ROLLBACK')) return 'error'
-  if (status.includes('IN_PROGRESS') || status.includes('PENDING')) return 'progress'
-  return 'neutral'
-}
-
-function StatusBadge({ status }: { status: string | undefined }) {
-  const kind = statusKind(status)
-  return (
-    <span className={`cfn-status cfn-status-${kind}`}>
-      <span className="cfn-status-mark" aria-hidden />
-      {status ?? '—'}
-    </span>
-  )
-}
+type DetailTab = (typeof DETAIL_TABS)[number][0]
 
 function StacksList() {
   const [stacks, setStacks] = useState<StackSummary[]>([])
@@ -88,6 +70,10 @@ function StacksList() {
     return stacks.filter((s) => (s.StackName ?? '').toLowerCase().includes(q))
   }, [stacks, filter])
 
+  function toggle(id: string) {
+    setSelected((cur) => (cur === id ? null : id))
+  }
+
   async function onDelete() {
     if (!selected) return
     setBusy(true)
@@ -106,71 +92,32 @@ function StacksList() {
   }
 
   return (
-    <>
-      <div className="crumbs">
-        <span>CloudFormation</span>
-        <span className="crumbs-sep">/</span>
-        <span>Stacks</span>
-      </div>
-
-      <div className="cfn-page-head">
-        <h1 className="page-title">
-          Stacks ({loading ? '…' : filtered.length})
-        </h1>
-        <div className="cfn-page-actions">
+    <ListCard
+      title={
+        <>
+          Stacks{' '}
+          <span className="aws-quiet">({loading ? '…' : filtered.length})</span>
+        </>
+      }
+      notices={<Notices error={error} toast={toast} />}
+      toolbar={
+        <>
+          <RefreshButton onClick={() => void refresh()} />
           <button
             type="button"
-            className="btn btn-icon"
-            aria-label="Refresh"
-            title="Refresh"
-            onClick={() => void refresh()}
-          >
-            ↻
-          </button>
-          <button
-            type="button"
-            className="btn"
+            className="btn btn-normal"
             disabled={!selected || busy}
+            title={selected ? undefined : 'Select a row'}
             onClick={() => void onDelete()}
           >
-            Delete stack
+            Delete
           </button>
-          <button type="button" className="btn" disabled title="Not wired yet">
-            Update stack ▾
-          </button>
-          <button type="button" className="btn" disabled title="Not wired yet">
-            Stack actions ▾
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled
-            title="Use ./bin/cfn-smoke.sh"
-          >
-            Create stack ▾
-          </button>
-        </div>
-      </div>
-
-      {error ? <div className="error-banner">{error}</div> : null}
-      {toast ? (
-        <div className="toast-banner" role="status">
-          {toast}
-        </div>
-      ) : null}
-
-      <div className="panel">
-        <div className="filters cfn-filters">
-          <input
-            type="search"
-            placeholder="Search by stack name"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            aria-label="Search by stack name"
-          />
-          <label className="cfn-filter-status">
+          <DeadButton>Update ▾</DeadButton>
+          <DeadButton>Stack actions ▾</DeadButton>
+          <label className="field-inline">
             Filter status
             <select
+              className="aws-select"
               value={includeDeleted ? 'all' : 'active'}
               onChange={(e) => setIncludeDeleted(e.target.value === 'all')}
             >
@@ -178,75 +125,82 @@ function StacksList() {
               <option value="all">Active + deleted</option>
             </select>
           </label>
-        </div>
-
-        {loading ? (
-          <div className="cfn-loading">Loading stacks…</div>
-        ) : filtered.length === 0 ? (
-          <div className="empty">
-            <strong>No stacks</strong>
-            No stacks to display.
-            <div className="empty-hint">
-              Create one with <code>./bin/cfn-smoke.sh</code>
-            </div>
-          </div>
-        ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th className="col-check" aria-label="Select" />
-                <th>Stack name</th>
-                <th>Status</th>
-                <th>Created time</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => {
-                const name = s.StackName ?? ''
-                return (
-                  <tr
-                    key={s.StackId ?? name}
-                    className={selected === name ? 'row-selected' : undefined}
-                    onClick={() => setSelected(name)}
-                  >
-                    <td className="col-check" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="radio"
-                        name="stack"
-                        checked={selected === name}
-                        aria-label={`Select ${name}`}
-                        onChange={() => setSelected(name)}
-                      />
-                    </td>
-                    <td>
-                      <ResourceLabel ids={[name, s.StackId]}>
-                        <Link
-                          className="cfn-stack-link"
-                          to={`/cloudformation/stacks/${encodeURIComponent(name)}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {name}
-                        </Link>
-                      </ResourceLabel>
-                    </td>
-                    <td>
-                      <StatusBadge status={s.StackStatus} />
-                    </td>
-                    <td className="cfn-muted">{formatWhen(s.CreationTime)}</td>
-                    <td className="cfn-muted">
-                      {s.TemplateDescription ?? '—'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </>
+          <div className="spacer" />
+          <DeadButton variant="primary">Create stack ▾</DeadButton>
+        </>
+      }
+      placeholder="Search by stack name"
+      filter={filter}
+      onFilter={setFilter}
+    >
+      <table className="aws-table" data-testid="cfn-stacks-table">
+        <thead>
+          <tr>
+            <SelectHeader />
+            <SortHeader>Stack name</SortHeader>
+            <FilterHeader>Status</FilterHeader>
+            <SortHeader>Created time</SortHeader>
+            <FilterHeader>Description</FilterHeader>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.length === 0 ? (
+            <EmptyRow
+              colSpan={5}
+              loading={loading}
+              loadingText="Loading stacks…"
+              title="No stacks"
+              text="No stacks to display."
+            />
+          ) : (
+            filtered.map((s) => {
+              const name = s.StackName ?? ''
+              const isSelected = selected === name
+              return (
+                <tr
+                  key={s.StackId ?? name}
+                  className={`selectable${isSelected ? ' selected' : ''}`}
+                  onClick={() => toggle(name)}
+                >
+                  <SelectCell
+                    name="selected-stack"
+                    id={name}
+                    selected={isSelected}
+                    onToggle={toggle}
+                  />
+                  <td>
+                    <ResourceLabel ids={[name, s.StackId]}>
+                      <Link
+                        to={`/cloudformation/stacks/${encodeURIComponent(name)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {name}
+                      </Link>
+                    </ResourceLabel>
+                  </td>
+                  <td>
+                    <StatusBadge status={s.StackStatus} />
+                  </td>
+                  <td>{formatServiceDate(s.CreationTime)}</td>
+                  <td>{s.TemplateDescription ?? '—'}</td>
+                </tr>
+              )
+            })
+          )}
+        </tbody>
+      </table>
+    </ListCard>
   )
 }
+
+const DETAIL_TABS = [
+  ['info', 'Stack info'],
+  ['events', 'Events'],
+  ['resources', 'Resources'],
+  ['outputs', 'Outputs'],
+  ['parameters', 'Parameters'],
+  ['template', 'Template'],
+] as const
 
 function StackDetail({ name }: { name: string }) {
   const navigate = useNavigate()
@@ -308,29 +262,15 @@ function StackDetail({ name }: { name: string }) {
   const tags = stack?.Tags ?? []
 
   return (
-    <>
-      <div className="crumbs">
-        <Link to="/cloudformation">CloudFormation</Link>
-        <span className="crumbs-sep">/</span>
-        <Link to="/cloudformation">Stacks</Link>
-        <span className="crumbs-sep">/</span>
-        <span>{name}</span>
-      </div>
-
-      <div className="cfn-split">
-        <aside className="cfn-rail panel">
-          <div className="cfn-rail-head">
+    <div className="aws-detail-split">
+      <aside className="aws-card">
+        <div className="aws-card-body">
+          <div className="aws-toolbar" style={{ marginBottom: 8 }}>
             <strong>Stacks ({siblings.length})</strong>
-            <button
-              type="button"
-              className="btn btn-icon"
-              aria-label="Refresh list"
-              onClick={() => void refresh()}
-            >
-              ↻
-            </button>
+            <div className="spacer" />
+            <RefreshButton onClick={() => void refresh()} />
           </div>
-          <ul className="cfn-rail-list">
+          <ul className="aws-rail-list">
             {siblings.map((s) => {
               const n = s.StackName ?? ''
               return (
@@ -339,131 +279,84 @@ function StackDetail({ name }: { name: string }) {
                     to={`/cloudformation/stacks/${encodeURIComponent(n)}`}
                     className={n === name ? 'active' : undefined}
                   >
-                    <span className="cfn-rail-name">{n}</span>
+                    <span className="rail-name">{n}</span>
                     <StatusBadge status={s.StackStatus} />
                   </Link>
                 </li>
               )
             })}
           </ul>
-        </aside>
+        </div>
+      </aside>
 
-        <div className="cfn-detail">
-          <div className="cfn-page-head">
-            <div>
-              <h1 className="page-title">
-                <ResourceLabel ids={[name, stack?.StackId]} detail>
-                  {name}
-                </ResourceLabel>
-              </h1>
-              {stack ? (
-                <div className="cfn-subtitle">
-                  <StatusBadge status={stack.StackStatus} />
-                  <span className="cfn-muted">
-                    {formatWhen(stack.CreationTime)}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-            <div className="cfn-page-actions">
-              <button
-                type="button"
-                className="btn"
-                disabled={busy}
-                onClick={() => void onDelete()}
-              >
-                Delete stack
-              </button>
-              <button type="button" className="btn" disabled>
-                Update stack ▾
-              </button>
-              <button type="button" className="btn" disabled>
-                Stack actions ▾
-              </button>
-              <button type="button" className="btn btn-primary" disabled>
-                Create stack ▾
-              </button>
-            </div>
+      <div>
+        <div className="aws-toolbar">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 className="aws-h1" style={{ margin: 0 }}>
+              <ResourceLabel ids={[name, stack?.StackId]} detail>
+                {name}
+              </ResourceLabel>
+            </h1>
+            {stack ? (
+              <div className="aws-subtitle-row">
+                <StatusBadge status={stack.StackStatus} />
+                <span>Created {formatServiceDate(stack.CreationTime)}</span>
+              </div>
+            ) : null}
           </div>
+          <button
+            type="button"
+            className="btn btn-normal"
+            disabled={busy}
+            onClick={() => void onDelete()}
+          >
+            Delete
+          </button>
+          <DeadButton>Update ▾</DeadButton>
+          <DeadButton variant="primary">Create stack ▾</DeadButton>
+        </div>
 
-          {error ? <div className="error-banner">{error}</div> : null}
-          {toast ? (
-            <div className="toast-banner" role="status">
-              {toast}
-            </div>
-          ) : null}
+        <Notices error={error} toast={toast} />
 
-          <div className="tabs cfn-tabs">
-            {(
-              [
-                ['info', 'Stack info'],
-                ['events', 'Events'],
-                ['resources', 'Resources'],
-                ['outputs', 'Outputs'],
-                ['parameters', 'Parameters'],
-                ['template', 'Template'],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={tab === id ? 'active' : undefined}
-                onClick={() => setTab(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="panel cfn-detail-panel">
+        <section className="aws-card">
+          <TabBar<DetailTab> tabs={DETAIL_TABS} active={tab} onChange={setTab} />
+          <div className="aws-card-body">
             {loading ? (
-              <div className="cfn-loading">Loading…</div>
+              <p className="aws-desc">Loading…</p>
             ) : tab === 'info' ? (
-              <div className="cfn-overview">
-                <section>
-                  <h2 className="cfn-section-title">Overview</h2>
-                  <dl className="cfn-kv">
-                    <div>
-                      <dt>Stack ID</dt>
-                      <dd>
-                        <code className="cfn-arn">{stack?.StackId ?? '—'}</code>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Description</dt>
-                      <dd>{stack?.Description ?? '—'}</dd>
-                    </div>
-                    <div>
-                      <dt>Created time</dt>
-                      <dd>{formatWhen(stack?.CreationTime)}</dd>
-                    </div>
-                    <div>
-                      <dt>Last updated time</dt>
-                      <dd>{formatWhen(stack?.LastUpdatedTime)}</dd>
-                    </div>
-                    <div>
-                      <dt>Status</dt>
-                      <dd>
-                        <StatusBadge status={stack?.StackStatus} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Disable rollback</dt>
-                      <dd>{stack?.DisableRollback ? 'true' : 'false'}</dd>
-                    </div>
-                  </dl>
-                </section>
-
-                <section>
-                  <h2 className="cfn-section-title">Tags</h2>
-                  {tags.length === 0 ? (
-                    <p className="cfn-muted">No tags</p>
-                  ) : (
-                    <table className="data">
+              <>
+                <h2 className="aws-section-title">Overview</h2>
+                <Kv
+                  rows={[
+                    ['Stack ID', <Mono key="id">{stack?.StackId ?? '—'}</Mono>],
+                    ['Description', stack?.Description ?? '—'],
+                    ['Created time', formatServiceDate(stack?.CreationTime)],
+                    [
+                      'Last updated time',
+                      formatServiceDate(stack?.LastUpdatedTime),
+                    ],
+                    [
+                      'Status',
+                      <StatusBadge key="st" status={stack?.StackStatus} />,
+                    ],
+                    [
+                      'Disable rollback',
+                      stack?.DisableRollback ? 'true' : 'false',
+                    ],
+                  ]}
+                />
+                <h2 className="aws-section-title" style={{ marginTop: 20 }}>
+                  Tags
+                </h2>
+                {tags.length === 0 ? (
+                  <p className="aws-desc">No tags</p>
+                ) : (
+                  <div className="aws-table-wrap">
+                    <table className="aws-table">
                       <thead>
                         <tr>
-                          <th>Key</th>
-                          <th>Value</th>
+                          <PlainHeader>Key</PlainHeader>
+                          <PlainHeader>Value</PlainHeader>
                         </tr>
                       </thead>
                       <tbody>
@@ -475,143 +368,162 @@ function StackDetail({ name }: { name: string }) {
                         ))}
                       </tbody>
                     </table>
-                  )}
-                </section>
-              </div>
+                  </div>
+                )}
+              </>
             ) : tab === 'events' ? (
-              <table className="data">
-                <thead>
-                  <tr>
-                    <th>Timestamp</th>
-                    <th>Logical ID</th>
-                    <th>Status</th>
-                    <th>Status reason</th>
-                    <th>Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.length === 0 ? (
+              <div className="aws-table-wrap">
+                <table className="aws-table" data-testid="events-table">
+                  <thead>
                     <tr>
-                      <td colSpan={5} className="cfn-muted">
-                        No events
-                      </td>
+                      <PlainHeader>Timestamp</PlainHeader>
+                      <PlainHeader>Logical ID</PlainHeader>
+                      <PlainHeader>Status</PlainHeader>
+                      <PlainHeader>Status reason</PlainHeader>
+                      <PlainHeader>Type</PlainHeader>
                     </tr>
-                  ) : (
-                    events.map((e) => (
-                      <tr
-                        key={
-                          e.EventId ??
-                          `${e.LogicalResourceId}-${e.Timestamp?.getTime()}`
-                        }
-                      >
-                        <td className="cfn-muted">{formatWhen(e.Timestamp)}</td>
-                        <td>{e.LogicalResourceId ?? '—'}</td>
-                        <td>
-                          <StatusBadge status={e.ResourceStatus} />
-                        </td>
-                        <td className="cfn-muted">
-                          {e.ResourceStatusReason ?? '—'}
-                        </td>
-                        <td className="cfn-muted">{e.ResourceType ?? '—'}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {events.length === 0 ? (
+                      <EmptyRow
+                        colSpan={5}
+                        loading={false}
+                        loadingText=""
+                        title="No events"
+                      />
+                    ) : (
+                      events.map((e) => (
+                        <tr
+                          key={
+                            e.EventId ??
+                            `${e.LogicalResourceId}-${e.Timestamp?.getTime()}`
+                          }
+                        >
+                          <td>{formatServiceDate(e.Timestamp)}</td>
+                          <td>{e.LogicalResourceId ?? '—'}</td>
+                          <td>
+                            <StatusBadge status={e.ResourceStatus} />
+                          </td>
+                          <td>{e.ResourceStatusReason ?? '—'}</td>
+                          <td>{e.ResourceType ?? '—'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             ) : tab === 'resources' ? (
-              <table className="data">
-                <thead>
-                  <tr>
-                    <th>Logical ID</th>
-                    <th>Physical ID</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resources.length === 0 ? (
+              <div className="aws-table-wrap">
+                <table className="aws-table" data-testid="resources-table">
+                  <thead>
                     <tr>
-                      <td colSpan={4} className="cfn-muted">
-                        No resources
-                      </td>
+                      <PlainHeader>Logical ID</PlainHeader>
+                      <PlainHeader>Physical ID</PlainHeader>
+                      <PlainHeader>Type</PlainHeader>
+                      <PlainHeader>Status</PlainHeader>
                     </tr>
-                  ) : (
-                    resources.map((r) => (
-                      <tr key={r.LogicalResourceId}>
-                        <td>{r.LogicalResourceId ?? '—'}</td>
-                        <td>
-                          <ResourceLabel ids={[r.PhysicalResourceId]}>
-                            <code>{r.PhysicalResourceId ?? '—'}</code>
-                          </ResourceLabel>
-                        </td>
-                        <td className="cfn-muted">{r.ResourceType ?? '—'}</td>
-                        <td>
-                          <StatusBadge status={r.ResourceStatus} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {resources.length === 0 ? (
+                      <EmptyRow
+                        colSpan={4}
+                        loading={false}
+                        loadingText=""
+                        title="No resources"
+                      />
+                    ) : (
+                      resources.map((r) => (
+                        <tr key={r.LogicalResourceId}>
+                          <td>{r.LogicalResourceId ?? '—'}</td>
+                          <td>
+                            <ResourceLabel ids={[r.PhysicalResourceId]}>
+                              <Mono>{r.PhysicalResourceId ?? '—'}</Mono>
+                            </ResourceLabel>
+                          </td>
+                          <td>{r.ResourceType ?? '—'}</td>
+                          <td>
+                            <StatusBadge status={r.ResourceStatus} />
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             ) : tab === 'outputs' ? (
-              outputs.length === 0 ? (
-                <div className="empty">
-                  <strong>No outputs</strong>
-                </div>
-              ) : (
-                <table className="data">
+              <div className="aws-table-wrap">
+                <table className="aws-table" data-testid="outputs-table">
                   <thead>
                     <tr>
-                      <th>Key</th>
-                      <th>Value</th>
-                      <th>Description</th>
+                      <PlainHeader>Key</PlainHeader>
+                      <PlainHeader>Value</PlainHeader>
+                      <PlainHeader>Description</PlainHeader>
                     </tr>
                   </thead>
                   <tbody>
-                    {outputs.map((o) => (
-                      <tr key={o.OutputKey}>
-                        <td>{o.OutputKey ?? '—'}</td>
-                        <td>
-                          <code>{o.OutputValue ?? '—'}</code>
-                        </td>
-                        <td className="cfn-muted">{o.Description ?? '—'}</td>
-                      </tr>
-                    ))}
+                    {outputs.length === 0 ? (
+                      <EmptyRow
+                        colSpan={3}
+                        loading={false}
+                        loadingText=""
+                        title="No outputs"
+                      />
+                    ) : (
+                      outputs.map((o) => (
+                        <tr key={o.OutputKey}>
+                          <td>{o.OutputKey ?? '—'}</td>
+                          <td>
+                            <Mono>{o.OutputValue ?? '—'}</Mono>
+                          </td>
+                          <td>{o.Description ?? '—'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
-              )
+              </div>
             ) : tab === 'parameters' ? (
-              parameters.length === 0 ? (
-                <div className="empty">
-                  <strong>No parameters</strong>
-                </div>
-              ) : (
-                <table className="data">
+              <div className="aws-table-wrap">
+                <table className="aws-table" data-testid="parameters-table">
                   <thead>
                     <tr>
-                      <th>Key</th>
-                      <th>Value</th>
+                      <PlainHeader>Key</PlainHeader>
+                      <PlainHeader>Value</PlainHeader>
                     </tr>
                   </thead>
                   <tbody>
-                    {parameters.map((p) => (
-                      <tr key={p.ParameterKey}>
-                        <td>{p.ParameterKey ?? '—'}</td>
-                        <td>
-                          <code>{p.ParameterValue ?? '—'}</code>
-                        </td>
-                      </tr>
-                    ))}
+                    {parameters.length === 0 ? (
+                      <EmptyRow
+                        colSpan={2}
+                        loading={false}
+                        loadingText=""
+                        title="No parameters"
+                      />
+                    ) : (
+                      parameters.map((p) => (
+                        <tr key={p.ParameterKey}>
+                          <td>{p.ParameterKey ?? '—'}</td>
+                          <td>
+                            <Mono>{p.ParameterValue ?? '—'}</Mono>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
-              )
+              </div>
             ) : (
-              <pre className="cfn-template">{template || '(empty template)'}</pre>
+              <pre
+                className="aws-mono"
+                style={{ whiteSpace: 'pre-wrap', margin: 0 }}
+              >
+                {template || '(empty template)'}
+              </pre>
             )}
           </div>
-        </div>
+        </section>
       </div>
-    </>
+    </div>
   )
 }
 

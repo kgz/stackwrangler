@@ -182,6 +182,8 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | API GW deny CreateApi | sad/authz | covered | `./bin/apigw-authz-smoke.sh` |
 | EC2 deny RunInstances | sad/authz | covered | `./bin/ec2-authz-smoke.sh` |
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
+| Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
+| Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
 | CFN Create/Update in console | ui | missing | [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Transfer create-server / create-user API | happy | covered | `./bin/transfer-smoke.sh` |
 | SFTP put via sidecar → LocalEmu S3 | happy | covered | `./bin/transfer-dataplane-smoke.sh` |

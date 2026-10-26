@@ -1,14 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ResourceLabel } from '../components/ResourceLabel'
-import { listInstances, type Instance } from '../lib/ec2'
-
-function nameTag(i: Instance): string {
-  const tag = (i.Tags ?? []).find((t) => t.Key === 'Name')
-  return tag?.Value ?? '—'
-}
+import { DeadButton, RefreshButton } from '../components/S3Ui'
+import {
+  EmptyRow,
+  FilterHeader,
+  ListCard,
+  Mono,
+  Notices,
+  SelectCell,
+  SelectHeader,
+  SortHeader,
+  StatusBadge,
+  titleCase,
+} from '../components/ServiceUi'
+import { listInstances, nameTag, type Instance } from '../lib/ec2'
 
 export function Ec2InstancesPage() {
   const [instances, setInstances] = useState<Instance[]>([])
+  const [filter, setFilter] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,65 +38,108 @@ export function Ec2InstancesPage() {
     void refresh()
   }, [refresh])
 
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase()
+    if (!q) return instances
+    return instances.filter((i) =>
+      [
+        nameTag(i.Tags),
+        i.InstanceId,
+        i.PrivateIpAddress,
+        i.PublicDnsName,
+        i.PublicIpAddress,
+      ].some((v) => (v ?? '').toLowerCase().includes(q)),
+    )
+  }, [instances, filter])
+
+  function toggle(id: string) {
+    setSelected((cur) => (cur === id ? null : id))
+  }
+
   return (
-    <>
-      <div className="crumbs">
-        <span>EC2</span>
-        <span className="crumbs-sep">/</span>
-        <span>Instances</span>
-      </div>
-      <div className="cfn-page-head">
-        <h1 className="page-title">
-          Instances ({loading ? '…' : instances.length})
-        </h1>
-        <button type="button" className="btn" onClick={() => void refresh()}>
-          Refresh
-        </button>
-      </div>
-      <p className="page-lead">
-        Docker-backed via LocalEmu. Create with <code>./bin/ec2-smoke.sh</code>.
-      </p>
-      {error ? <div className="error-banner">{error}</div> : null}
-      <div className="panel">
-        {loading ? (
-          <div className="cfn-loading">Loading…</div>
-        ) : instances.length === 0 ? (
-          <div className="empty">
-            <strong>No instances</strong>
-          </div>
-        ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th>Instance ID</th>
-                <th>Name</th>
-                <th>State</th>
-                <th>Type</th>
-                <th>Private IP</th>
-                <th>AZ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {instances.map((i) => (
-                <tr key={i.InstanceId}>
+    <ListCard
+      title="Instances"
+      desc={
+        <>
+          Virtual servers in the cloud. Docker-backed via LocalEmu; create with{' '}
+          <code>./bin/ec2-smoke.sh</code>.
+        </>
+      }
+      notices={<Notices error={error} />}
+      toolbar={
+        <>
+          <RefreshButton onClick={() => void refresh()} />
+          <DeadButton>Instance state ▾</DeadButton>
+          <DeadButton>Actions ▾</DeadButton>
+          <div className="spacer" />
+          <DeadButton variant="primary">Launch instance</DeadButton>
+        </>
+      }
+      placeholder="Search by name, ID, or IP"
+      filter={filter}
+      onFilter={setFilter}
+    >
+      <table className="aws-table" data-testid="ec2-instances-table">
+        <thead>
+          <tr>
+            <SelectHeader />
+            <SortHeader>Name</SortHeader>
+            <SortHeader>Instance ID</SortHeader>
+            <FilterHeader>Instance state</FilterHeader>
+            <FilterHeader>Instance type</FilterHeader>
+            <FilterHeader>Availability Zone</FilterHeader>
+            <FilterHeader>Public IPv4 DNS</FilterHeader>
+            <FilterHeader>Private IPv4</FilterHeader>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.length === 0 ? (
+            <EmptyRow
+              colSpan={8}
+              loading={loading}
+              loadingText="Loading instances…"
+              title="No instances"
+            />
+          ) : (
+            filtered.map((i) => {
+              const id = i.InstanceId ?? ''
+              const isSelected = selected === id
+              return (
+                <tr
+                  key={id}
+                  className={`selectable${isSelected ? ' selected' : ''}`}
+                  onClick={() => toggle(id)}
+                >
+                  <SelectCell
+                    name="selected-instance"
+                    id={id}
+                    selected={isSelected}
+                    onToggle={toggle}
+                  />
+                  <td>{nameTag(i.Tags)}</td>
                   <td>
                     <ResourceLabel ids={[i.InstanceId]}>
-                      <code>{i.InstanceId ?? '—'}</code>
+                      <Mono>{id || '—'}</Mono>
                     </ResourceLabel>
                   </td>
-                  <td>{nameTag(i)}</td>
-                  <td>{i.State?.Name ?? '—'}</td>
-                  <td className="cfn-muted">{i.InstanceType ?? '—'}</td>
-                  <td className="cfn-muted">{i.PrivateIpAddress ?? '—'}</td>
-                  <td className="cfn-muted">
-                    {i.Placement?.AvailabilityZone ?? '—'}
+                  <td>
+                    <StatusBadge
+                      status={i.State?.Name}
+                      label={titleCase(i.State?.Name)}
+                    />
                   </td>
+                  <td>{i.InstanceType ?? '—'}</td>
+                  <td>{i.Placement?.AvailabilityZone ?? '—'}</td>
+                  <td>
+                    {i.PublicDnsName ? <Mono>{i.PublicDnsName}</Mono> : '—'}
+                  </td>
+                  <td>{i.PrivateIpAddress ?? '—'}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </>
+              )
+            })
+          )}
+        </tbody>
+      </table>
+    </ListCard>
   )
 }

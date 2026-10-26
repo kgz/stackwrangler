@@ -80,6 +80,24 @@ export async function describeServer(
   return out.Server
 }
 
+/** Listed servers plus Protocols (only DescribeServer returns them). */
+export async function listServersDetailed(): Promise<
+  Array<ListedServer & { Protocols?: string[] }>
+> {
+  const listed = await listServers()
+  return Promise.all(
+    listed.map(async (s) => {
+      if (!s.ServerId) return s
+      try {
+        const d = await describeServer(s.ServerId)
+        return { ...s, Protocols: d.Protocols }
+      } catch {
+        return s
+      }
+    }),
+  )
+}
+
 export async function createSftpServer(): Promise<string> {
   const out = await client().send(
     new CreateServerCommand({
