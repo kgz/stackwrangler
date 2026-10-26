@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Objects — S3</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="bucket-objects" data-nav="directory-buckets" data-title="Objects" data-crumb="test--apse2-az1--x-s3">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">test--apse2-az1--x-s3 <button type="button" class="info" disabled aria-disabled="true" title="To implement" style="font-size:14px;font-weight:400">Info</button></h1>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-tabs" role="tablist" data-od-id="bucket-tabs">
+          <a class="aws-tab active" href="bucket-objects.html" aria-current="page">Objects</a>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement">Properties</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement" data-od-id="tab-permissions">Permissions</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement" data-od-id="tab-metrics">Metrics</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement" data-od-id="tab-management">Management</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement" data-od-id="tab-access-points">Access Points</button>
+        </div>
+        <div class="aws-card-body">
+          <h2 class="aws-section-title" data-od-id="section-title">Objects (1/1) <button type="button" class="info" disabled aria-disabled="true" title="To implement">Info</button></h2>
+          <p class="aws-desc">Objects are the fundamental entities stored in Amazon S3. For others to access your objects, you’ll need to explicitly grant them permissions. <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingObjects.html" target="_blank" rel="noopener" data-od-id="learn-more">Learn more ↗</a></p>
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" data-od-id="btn-copy-uri" title="To implement" disabled aria-disabled="true">Copy S3 URI</button>
+            <button type="button" class="btn btn-normal" data-od-id="btn-copy-url" title="To implement" disabled aria-disabled="true">Copy URL</button>
+            <button type="button" class="btn btn-normal" title="To implement" disabled aria-disabled="true">Download</button>
+            <button type="button" class="btn btn-normal" title="To implement" disabled aria-disabled="true">Open ↗</button>
+            <button type="button" class="btn btn-normal" title="To implement" disabled aria-disabled="true">Delete</button>
+            <div class="aws-pop">
+              <button type="button" class="btn btn-normal" id="btn-actions" aria-expanded="false" aria-controls="menu-actions" data-od-id="btn-actions">Actions ▾</button>
+              <div class="aws-menu left" id="menu-actions" data-menu>
+                <button type="button" title="To implement" disabled aria-disabled="true">Edit metadata</button>
+                <button type="button" title="To implement" disabled aria-disabled="true">Edit storage class</button>
+                <button type="button" title="To implement" disabled aria-disabled="true">Share with a presigned URL</button>
+                <div class="sep"></div>
+                <button type="button" title="To implement" disabled aria-disabled="true">Rename object</button>
+              </div>
+            </div>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-upload" title="To implement" disabled aria-disabled="true">↑ Upload</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Find objects by prefix" data-find-table="#data-table" aria-label="Find objects by prefix" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="objects-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" checked aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Last modified</th>
+                  <th scope="col">Size</th>
+                  <th scope="col">Storage class</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="selected" data-name="aGX9P7JB_700w_0.jpg">
+                  <td class="check"><input type="checkbox" checked aria-label="Select object" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement">aGX9P7JB_700w_0.jpg</button></td>
+                  <td>jpg</td>
+                  <td>October 18, 2026, 14:03:42 (UTC+10:00)</td>
+                  <td>163.7 KB</td>
+                  <td>S3 Express One Zone</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var btn = document.getElementById("btn-actions");
+          var menu = document.getElementById("menu-actions");
+          if (btn && menu) {
+            btn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              var open = !menu.classList.contains("open");
+              menu.classList.toggle("open", open);
+              btn.setAttribute("aria-expanded", open ? "true" : "false");
+            });
+          }
+        });
+      </script>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

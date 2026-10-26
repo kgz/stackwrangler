@@ -1,41 +1,34 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>awsbox console — design stub</title>
-    <style>
-      :root {
-        --bg: #0f1419;
-        --fg: #e7ecf1;
-        --muted: #8b9aab;
-        --accent: #ff9900;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Amazon Ember", "Segoe UI", system-ui, sans-serif;
-        background: var(--bg);
-        color: var(--fg);
-        display: grid;
-        place-items: center;
-        padding: 2rem;
-      }
-      main { max-width: 36rem; }
-      h1 { font-weight: 600; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
-      p { color: var(--muted); line-height: 1.5; margin: 0; }
-      .accent { color: var(--accent); }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1><span class="accent">awsbox</span> console</h1>
-      <p>
-        Design stub. Open Design writes console mocks into this folder
-        (<code>design/awsbox-console</code>). Replace via OD runs — do not treat
-        this page as the product UI.
-      </p>
-    </main>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awsbox console · S3</title>
+  <link rel="stylesheet" href="assets/fonts.css" />
+  <link rel="stylesheet" href="assets/console.css" />
+</head>
+<body>
+  <main class="launcher" data-od-id="launcher">
+    <h1 data-od-id="launcher-title">awsbox console</h1>
+    <p>Issue #304 · S3 missing UI mocks · grey-rose chrome · shared assets.</p>
+
+    <h2 class="aws-section-title" style="margin:24px 0 12px">S3 (#304)</h2>
+    <div class="launcher-grid">
+      <a href="screens/directory-buckets.html">Directory buckets<span class="meta">GP + Directory tabs · Create disabled</span></a>
+      <a href="screens/general-purpose-buckets.html">General purpose buckets<span class="meta">Copy ARN · Import · Directory tab</span></a>
+      <a href="screens/bucket-objects.html">Bucket objects<span class="meta">Tabs · Copy URL · Actions</span></a>
+      <a href="screens/table-buckets.html">Table buckets<span class="meta">Empty panel</span></a>
+      <a href="screens/vector-buckets.html">Vector buckets<span class="meta">Empty panel</span></a>
+      <a href="screens/file-systems.html">File systems<span class="meta">Nav placeholder</span></a>
+      <a href="screens/access-points.html">Access Points<span class="meta">Empty panel</span></a>
+      <a href="screens/access-points-fsx.html">Access Points for FSx<span class="meta">Empty panel</span></a>
+      <a href="screens/access-grants.html">Access Grants<span class="meta">Empty panel</span></a>
+      <a href="screens/iam-access-analyzer.html">IAM Access Analyzer<span class="meta">Findings empty</span></a>
+      <a href="screens/storage-lens.html">Storage Lens<span class="meta">Empty panel</span></a>
+      <a href="screens/batch-operations.html">Batch Operations<span class="meta">Empty panel</span></a>
+      <a href="screens/account-organization-settings.html">Account and organization settings<span class="meta">BPA + Org Storage Lens</span></a>
+      <a href="screens/marketplace-for-s3.html">AWS Marketplace for S3<span class="meta">Sidebar categories</span></a>
+    </div>
+  </main>
+</body>
 </html>

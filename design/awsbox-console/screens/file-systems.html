@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>File systems — S3</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="file-systems" data-nav="file-systems" data-title="File systems" data-crumb="File systems">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">File systems <button type="button" class="info" disabled aria-disabled="true" title="To implement">Info</button></h1>
+      <p class="aws-desc" data-od-id="page-desc">Amazon S3 Files is a high-performance shared file system to access S3 data from any AWS compute service.</p>
+      <div class="aws-toolbar" data-od-id="action-toolbar">
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-view" title="To implement">View details</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete" title="To implement">Delete</button>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-create" title="To implement" disabled aria-disabled="true">Create file system</button>
+        <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+      </div>
+      <details class="aws-getting-started" open data-od-id="getting-started">
+        <summary>Getting started with S3 Files</summary>
+        <p class="aws-desc" style="margin:12px 0 0">Create a file system, attach it to a general purpose bucket, and mount it from your compute environment.</p>
+      </details>
+      <div class="aws-table-wrap" style="margin-top:16px">
+        <table class="aws-table" id="data-table" data-od-id="file-systems-table">
+          <thead>
+            <tr>
+              <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+              <th scope="col"><span class="th-inner">File system ID <button type="button" class="filter" aria-label="Filter File system ID">▾</button></span></th>
+              <th scope="col"><span class="th-inner">Name <button type="button" class="filter" aria-label="Filter Name">▾</button></span></th>
+              <th scope="col"><span class="th-inner">General purpose bucket <button type="button" class="filter" aria-label="Filter General purpose bucket">▾</button></span></th>
+              <th scope="col"><span class="th-inner">Status <button type="button" class="filter" aria-label="Filter Status">▾</button></span></th>
+              <th scope="col"><span class="th-inner">Creation date <button type="button" class="filter" aria-label="Filter Creation date">▾</button></span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="empty-cell" colspan="6">
+                <strong>No file systems</strong>
+                You don't have any file systems in this Region.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

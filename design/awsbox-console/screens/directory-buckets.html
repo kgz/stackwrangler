@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Directory buckets — S3</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="directory-buckets" data-nav="directory-buckets" data-title="Directory buckets" data-crumb="Buckets">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Buckets</h1>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-tabs" role="tablist" data-od-id="bucket-type-tabs">
+          <a class="aws-tab" href="general-purpose-buckets.html" data-od-id="tab-general-purpose">General purpose buckets <span class="aws-badge">All AWS Regions</span></a>
+          <a class="aws-tab active" href="directory-buckets.html" aria-current="page" data-od-id="tab-directory">Directory buckets</a>
+        </div>
+        <div class="aws-card-body">
+          <h2 class="aws-section-title" data-od-id="section-title">Directory buckets (0) <button type="button" class="info" disabled aria-disabled="true" title="To implement">Info</button></h2>
+          <p class="aws-desc">Directory buckets are optimized for use cases that require consistent single-digit millisecond latency.</p>
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-copy-arn" title="Select a row">Copy ARN</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-empty" title="Select a row">Empty</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete" title="Select a row">Delete</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-import" title="To implement">Import</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" title="To implement" data-od-id="btn-create-bucket">Create bucket</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Find buckets by name" data-find-table="#data-table" aria-label="Find buckets by name" data-od-id="find-buckets" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="directory-buckets-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Bucket location type <button type="button" class="filter" aria-label="Filter Bucket location type">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Bucket location name <button type="button" class="filter" aria-label="Filter Bucket location name">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Creation date <button type="button" class="filter" aria-label="Filter Creation date">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="empty-cell" colspan="4">
+                    <strong>No buckets</strong>
+                    You don't have any directory buckets in the Asia Pacific (Sydney) ap-southeast-2 Region.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
