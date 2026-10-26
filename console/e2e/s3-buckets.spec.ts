@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const profile = process.env.AWSBOX_PROFILE || 'local'
 
@@ -285,6 +285,53 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
 
     const listed = aws(['s3', 'ls'])
     expect(listed).not.toContain(name)
+  })
+
+  test.describe('clipboard actions', () => {
+    test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+
+    async function clipboard(page: Page) {
+      return page.evaluate(() => navigator.clipboard.readText())
+    }
+
+    test('Copy ARN on the bucket list copies the bucket ARN', async ({ page }) => {
+      const name = `e2e-arn-${Date.now()}`
+      aws(['s3', 'mb', `s3://${name}`])
+
+      await page.goto('/')
+      await page.getByPlaceholder('Find buckets by name').fill(name)
+      const copy = page.getByRole('button', { name: 'Copy ARN' })
+      await expect(copy).toBeDisabled()
+      await page.getByRole('radio', { name: `Select ${name}` }).check()
+      await copy.click()
+      await expect.poll(() => clipboard(page)).toBe(`arn:aws:s3:::${name}`)
+
+      aws(['s3', 'rb', `s3://${name}`, '--force'])
+    })
+
+    test('Copy S3 URI on the objects page copies the object URI', async ({ page }) => {
+      const name = `e2e-uri-${Date.now()}`
+      aws(['s3', 'mb', `s3://${name}`])
+      putText(name, 'uri.txt', 'u')
+
+      await page.goto(`/buckets/${encodeURIComponent(name)}`)
+      const copy = page.getByRole('button', { name: 'Copy S3 URI' })
+      await expect(copy).toBeDisabled()
+      await page.getByRole('checkbox', { name: 'Select uri.txt' }).check()
+      await copy.click()
+      await expect.poll(() => clipboard(page)).toBe(`s3://${name}/uri.txt`)
+
+      aws(['s3', 'rb', `s3://${name}`, '--force'])
+    })
+
+    test('Copy account ID in the account menu copies the raw account ID', async ({
+      page,
+    }) => {
+      await page.goto('/')
+      await page.getByRole('button', { name: /Account ID:/ }).click()
+      await page.getByRole('button', { name: 'Copy account ID' }).click()
+      await expect.poll(() => clipboard(page)).toMatch(/^\d{12}$/)
+    })
   })
 
   test('selects a row on the list and empties via toolbar', async ({ page }) => {
