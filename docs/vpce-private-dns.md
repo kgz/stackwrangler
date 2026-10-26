@@ -21,6 +21,8 @@ The A record is the Interface endpoint proxy IP on the VPC Docker network. That 
 
 EC2, ECS `awsvpc`, and Lambda `VpcConfig` get the resolver via `--dns` (ECS also rewrites `/etc/resolv.conf` after attach).
 
+The resolver process also answers [Route 53 private hosted zones](r53-private.md); shared code is `localemu-patches/dns_common.py`.
+
 ## Smoke
 
 ```bash
@@ -31,6 +33,6 @@ Uses host port `24568` (`AWSBOX_VPCE_HOST_PORT`) so it does not take over a stac
 
 ## Limits
 
-- Private DNS is answered by the awsbox resolver, not a real Route 53 private hosted zone API object ([#206](https://github.com/kgz/awsl/issues/206) covers PHZ).
+- Endpoint names are answered by the awsbox resolver, not a Route 53 private hosted zone API object. User-created private zones are in [r53-private.md](r53-private.md).
 - Gateway endpoints stay with [#230](https://github.com/kgz/awsl/issues/230).
 - Console VPC endpoints stay with [#146](https://github.com/kgz/awsl/issues/146).

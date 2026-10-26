@@ -176,7 +176,8 @@
 203	in-review	v1: ELBv2 data plane
 204	done	v1: VPC routing fidelity
 205	done	v1: Security group enforcement
-206	in-progress	v1: Route 53 private hosted zones
+206	in-review	v1: Route 53 private hosted zones
+245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
 207	in-progress	v1: ECS services on EC2
 208	done	v1: EC2 instance fidelity IMDS/SSM
 209	done	v1: IAM OIDC AssumeRoleWithWebIdentity
@@ -210,3 +211,5 @@
 242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
+245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
+300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)

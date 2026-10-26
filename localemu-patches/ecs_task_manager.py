@@ -1329,6 +1329,16 @@ class DockerTaskManager:
             return None, None
 
     @staticmethod
+    def _docker_network_gateway(network: str) -> str | None:
+        try:
+            attrs = DOCKER_CLIENT.inspect_network(network)
+        except Exception:
+            return None
+        for cfg in (attrs.get("IPAM") or {}).get("Config") or []:
+            gateway = cfg.get("Gateway")
+            if gateway:
+                return str(gateway)
+        return None
 
     def _detach_default_bridge(self, docker_name: str) -> None:
         """Drop the default docker bridge if still attached (#271)."""
