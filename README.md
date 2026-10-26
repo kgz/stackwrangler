@@ -145,7 +145,7 @@ HF cheap parity (#296/#297/#190/#294/#230 VPCE; skipped WAF/R53/Transfer/…): `
 | Metrics / Alarms / SSM / CloudTrail / Orgs (empty reads) | Enabled for scanners (Prowler) | — | **Partial** (read-empty) · [#198](https://github.com/kgz/awsl/issues/198) · [docs/prowler.md](docs/prowler.md) |
 | X-Ray / deeper observability | — | — | **Backlog** |
 
-Smokes: `./bin/apigw-smoke.sh` · `./bin/apigw-authz-smoke.sh` · `./bin/apigw-rest-smoke.sh` · `./bin/apigw-nlb-ecs-smoke.sh` · `./bin/apigw-usage-plan-smoke.sh`
+Smokes: `./bin/apigw-smoke.sh` · `./bin/apigw-authz-smoke.sh` · `./bin/apigw-rest-smoke.sh` · `./bin/apigw-nlb-ecs-smoke.sh` · `./bin/apigw-usage-plan-smoke.sh` · `./bin/apigw-proxy-body-smoke.sh`
 
 
 ## IaC & deploy
