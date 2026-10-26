@@ -57,7 +57,6 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST custom domain unmapped prefix → 403 Forbidden | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
 | REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A · [apigw-rest.md](apigw-rest.md) |
 | REST VPC_LINK to NLB with stopped/unhealthy target → 5xx | sad | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A |
-| REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | missing | `./bin/apigw-nlb-ecs-smoke.sh` (phase A soft → [#267](https://github.com/kgz/awsl/issues/267)) |
 | ECS awsvpc `describe-tasks` privateIPv4Address inside subnet CIDR and equals container VPC IP; that address reachable on the VPC | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` · [#268](https://github.com/kgz/awsl/issues/268) |
 | REST `HTTP_PROXY` straight to an ECS awsvpc task, path param + injected service token reach backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
 | REST no token / Deny authorizer: backend receives nothing | sad/authz | thin | `./bin/apigw-nlb-ecs-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
