@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/apigateway-http-apis.html",
+  "entry": "screens/apigateway-http-apis.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-10-26T07:36:36.463Z",
+  "updatedAt": "2026-10-26T07:36:36.463Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

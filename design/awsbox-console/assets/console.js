@@ -49,6 +49,15 @@
 
   const SEARCH_INDEX = [
     { type: "Service", label: "S3", href: "general-purpose-buckets.html" },
+    { type: "Service", label: "IAM", href: "iam-users.html" },
+    { type: "Service", label: "Lambda", href: "lambda-functions.html" },
+    { type: "Service", label: "CloudWatch", href: "logs-log-groups.html" },
+    { type: "Service", label: "API Gateway", href: "apigateway-http-apis.html" },
+    { type: "Service", label: "CloudFormation", href: "cloudformation-stacks.html" },
+    { type: "Service", label: "Transfer Family", href: "transfer-servers.html" },
+    { type: "Service", label: "RDS", href: "rds-databases.html" },
+    { type: "Service", label: "ECS", href: "ecs-clusters.html" },
+    { type: "Service", label: "EC2", href: "ec2-instances.html" },
     { type: "Feature", label: "General purpose buckets", href: "general-purpose-buckets.html" },
     { type: "Feature", label: "Directory buckets", href: "directory-buckets.html" },
     { type: "Feature", label: "Table buckets", href: "table-buckets.html" },
@@ -62,6 +71,17 @@
     { type: "Feature", label: "File systems", href: "file-systems.html" },
     { type: "Feature", label: "Account and organization settings", href: "account-organization-settings.html" },
     { type: "Feature", label: "AWS Marketplace for S3", href: "marketplace-for-s3.html" },
+    { type: "Feature", label: "IAM Users", href: "iam-users.html" },
+    { type: "Feature", label: "Lambda Functions", href: "lambda-functions.html" },
+    { type: "Feature", label: "Log groups", href: "logs-log-groups.html" },
+    { type: "Feature", label: "HTTP APIs", href: "apigateway-http-apis.html" },
+    { type: "Feature", label: "Stacks", href: "cloudformation-stacks.html" },
+    { type: "Feature", label: "Transfer servers", href: "transfer-servers.html" },
+    { type: "Feature", label: "Databases", href: "rds-databases.html" },
+    { type: "Feature", label: "Clusters", href: "ecs-clusters.html" },
+    { type: "Feature", label: "Instances", href: "ec2-instances.html" },
+    { type: "Feature", label: "VPCs", href: "ec2-vpcs.html" },
+    { type: "Feature", label: "Load balancers", href: "ec2-load-balancers.html" },
     { type: "Bucket", label: "test--apse2-az1--x-s3", href: "bucket-objects.html" },
   ];
 
@@ -417,10 +437,10 @@
 <nav class="aws-services-panel" id="services-panel" data-od-id="services-menu" hidden></nav>
 <nav class="aws-favorites" data-od-id="favorites-bar" aria-label="Favorites">
   ${[
-    ["EC2", "EC2", null],
-    ["ECS", "Elastic Container Service", null],
-    ["IAM", "IAM", null],
-    ["λ", "Lambda", null],
+    ["EC2", "EC2", "ec2-instances.html"],
+    ["ECS", "Elastic Container Service", "ecs-clusters.html"],
+    ["IAM", "IAM", "iam-users.html"],
+    ["λ", "Lambda", "lambda-functions.html"],
     ["S3", "S3", "general-purpose-buckets.html"],
   ]
     .map(([abbr, name, href]) =>
@@ -499,11 +519,11 @@
     ).join("");
     const recent = [
       ["S3", "S3", "Scalable Storage in the Cloud", "general-purpose-buckets.html"],
-      ["IAM", "IAM", "Manage access to awsbox resources", null],
-      ["λ", "Lambda", "Run code without thinking about servers", null],
-      ["CFN", "CloudFormation", "Model and provision resources", null],
-      ["EC2", "EC2", "Virtual servers in the cloud", null],
-      ["RDS", "RDS", "Managed relational databases", null],
+      ["IAM", "IAM", "Manage access to awsbox resources", "iam-users.html"],
+      ["λ", "Lambda", "Run code without thinking about servers", "lambda-functions.html"],
+      ["CFN", "CloudFormation", "Model and provision resources", "cloudformation-stacks.html"],
+      ["EC2", "EC2", "Virtual servers in the cloud", "ec2-instances.html"],
+      ["RDS", "RDS", "Managed relational databases", "rds-databases.html"],
     ]
       .map(([abbr, name, desc, href], i) =>
         href

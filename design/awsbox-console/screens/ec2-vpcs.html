@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your VPCs — EC2</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ec2-vpcs" data-nav="ec2-vpcs" data-service="ec2" data-title="Your VPCs" data-crumb="Your VPCs">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Your VPCs</h1>
+      <p class="aws-desc">A virtual private cloud (VPC) is a virtual network dedicated to your account.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="Select a row">Actions ▾</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-vpc" title="To implement" disabled aria-disabled="true">Create VPC</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search VPCs" data-find-table="#data-table" aria-label="Search VPCs" data-od-id="find-vpcs" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="ec2-vpcs-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">VPC ID <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">State <button type="button" class="filter" aria-label="Filter State">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">IPv4 CIDR <button type="button" class="filter" aria-label="Filter IPv4 CIDR">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">IPv6 CIDR <button type="button" class="filter" aria-label="Filter IPv6 CIDR">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">DHCP option set <button type="button" class="filter" aria-label="Filter DHCP option set">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Default VPC <button type="button" class="filter" aria-label="Filter Default VPC">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Owner ID <button type="button" class="filter" aria-label="Filter Owner ID">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="lab-vpc">
+                  <td class="check"><input type="checkbox" aria-label="Select lab-vpc" /></td>
+                  <td>lab-vpc</td>
+                  <td><a href="ec2-vpc-detail.html" data-od-id="vpc-0a1b2c3d">vpc-0a1b2c3d</a></td>
+                  <td><span class="aws-status aws-status-success">Available</span></td>
+                  <td>10.0.0.0/16</td>
+                  <td>—</td>
+                  <td><code class="aws-mono">dopt-0123abcd</code></td>
+                  <td>No</td>
+                  <td>445772506418</td>
+                </tr>
+                <tr data-name="default">
+                  <td class="check"><input type="checkbox" aria-label="Select default VPC" /></td>
+                  <td>—</td>
+                  <td><a href="ec2-vpc-detail.html" data-od-id="vpc-default">vpc-0deadbeef</a></td>
+                  <td><span class="aws-status aws-status-success">Available</span></td>
+                  <td>172.31.0.0/16</td>
+                  <td>—</td>
+                  <td><code class="aws-mono">dopt-0default</code></td>
+                  <td>Yes</td>
+                  <td>445772506418</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

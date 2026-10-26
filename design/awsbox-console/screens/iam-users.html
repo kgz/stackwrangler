@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Users — IAM</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="iam-users" data-nav="iam-users" data-service="iam" data-title="Users" data-crumb="Users">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Users</h1>
+      <p class="aws-desc">An IAM user is an identity with long-term credentials used to interact with awsbox.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-user" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-user" title="To implement" disabled aria-disabled="true">Create user</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search users" data-find-table="#data-table" aria-label="Search users" data-od-id="find-users" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="iam-users-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">User name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Groups <button type="button" class="filter" aria-label="Filter Groups">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Last activity <button type="button" class="filter" aria-label="Filter Last activity">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Password age <button type="button" class="filter" aria-label="Filter Password age">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">MFA <button type="button" class="filter" aria-label="Filter MFA">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Access key age <button type="button" class="filter" aria-label="Filter Access key age">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Console last sign-in <button type="button" class="filter" aria-label="Filter Console last sign-in">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="alice">
+                  <td class="check"><input type="checkbox" aria-label="Select alice" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="user-alice">alice</button></td>
+                  <td>admins</td>
+                  <td>2 days ago</td>
+                  <td>90 days</td>
+                  <td>Assigned</td>
+                  <td>12 days</td>
+                  <td>2 days ago</td>
+                </tr>
+                <tr data-name="deploy-bot">
+                  <td class="check"><input type="checkbox" aria-label="Select deploy-bot" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="user-deploy-bot">deploy-bot</button></td>
+                  <td>ci</td>
+                  <td>Never</td>
+                  <td>None</td>
+                  <td>Not assigned</td>
+                  <td>3 days</td>
+                  <td>None</td>
+                </tr>
+                <tr data-name="lab-reader">
+                  <td class="check"><input type="checkbox" aria-label="Select lab-reader" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="user-lab-reader">lab-reader</button></td>
+                  <td>—</td>
+                  <td>14 days ago</td>
+                  <td>30 days</td>
+                  <td>Not assigned</td>
+                  <td>None</td>
+                  <td>14 days ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

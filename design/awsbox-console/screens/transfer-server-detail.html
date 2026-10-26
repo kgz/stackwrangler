@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>s-abc12def34 — AWS Transfer Family</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="transfer-server-detail" data-nav="transfer-server-detail" data-service="transfer" data-title="s-abc12def34" data-crumb="s-abc12def34">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">s-abc12def34</h1>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+      </div>
+      <div class="aws-subtitle-row"><span class="aws-status aws-status-success">Online</span><span>SFTP · Public endpoint</span></div>
+      <section class="aws-card" data-od-id="overview-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Overview</h2>
+          <dl class="aws-kv" data-od-id="server-overview">
+            <div><dt>State</dt><dd><span class="aws-status aws-status-success">Online</span></dd></div>
+            <div><dt>Protocols</dt><dd>SFTP</dd></div>
+            <div><dt>Identity provider</dt><dd>Service managed</dd></div>
+            <div><dt>Endpoint type</dt><dd>Public</dd></div>
+            <div><dt>User count</dt><dd>2</dd></div>
+            <div><dt>ARN</dt><dd><code class="aws-mono">arn:aws:transfer:ap-southeast-2:445772506418:server/s-abc12def34</code></dd></div>
+          </dl>
+        </div>
+      </section>
+      <section class="aws-card" style="margin-top:16px" data-od-id="users-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Users</h2>
+          <div class="aws-table-wrap">
+            <table class="aws-table" data-od-id="transfer-users-table">
+              <thead><tr><th scope="col"><span class="th-inner">User name <span aria-hidden="true">↑</span></span></th><th scope="col"><span class="th-inner">Home directory</span></th><th scope="col"><span class="th-inner">Role</span></th></tr></thead>
+              <tbody>
+                <tr><td>awsbox</td><td><code class="aws-mono">/awsbox-home</code></td><td><code class="aws-mono">arn:aws:iam::445772506418:role/TransferAccess</code></td></tr>
+                <tr><td>partner</td><td><code class="aws-mono">/partner-drop</code></td><td><code class="aws-mono">arn:aws:iam::445772506418:role/TransferAccess</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <section class="aws-card" style="margin-top:16px" data-od-id="dataplane-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Data plane</h2>
+          <dl class="aws-kv" data-od-id="transfer-dataplane">
+            <div><dt>Endpoint</dt><dd><code class="aws-mono">s-abc12def34.server.transfer.ap-southeast-2.amazonaws.com</code></dd></div>
+            <div><dt>Port</dt><dd>22</dd></div>
+            <div><dt>Protocol</dt><dd>SFTP</dd></div>
+            <div><dt>Host key fingerprint</dt><dd><code class="aws-mono">SHA256:AbCdEf…</code></dd></div>
+            <div><dt>Connect</dt><dd><code class="aws-mono">sftp awsbox@s-abc12def34.server.transfer.ap-southeast-2.amazonaws.com</code></dd></div>
+          </dl>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

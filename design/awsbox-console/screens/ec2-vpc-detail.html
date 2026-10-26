@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>vpc-0a1b2c3d — EC2</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ec2-vpc-detail" data-nav="ec2-vpc-detail" data-service="ec2" data-title="vpc-0a1b2c3d" data-crumb="vpc-0a1b2c3d">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">vpc-0a1b2c3d</h1>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row">Actions ▾</button>
+      </div>
+      <div class="aws-subtitle-row"><span class="aws-status aws-status-success">Available</span><span>lab-vpc</span></div>
+      <section class="aws-card" data-od-id="overview-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="vpc-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="details" aria-current="page">Details</button>
+          <button type="button" class="aws-tab" data-tab="cidrs">CIDR blocks</button>
+          <button type="button" class="aws-tab" data-tab="subnets">Subnets</button>
+          <button type="button" class="aws-tab" data-tab="tags">Tags</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="details" data-od-id="panel-details">
+            <h2 class="aws-section-title">Details</h2>
+            <dl class="aws-kv" data-od-id="vpc-overview">
+              <div><dt>VPC ID</dt><dd><code class="aws-mono">vpc-0a1b2c3d</code></dd></div>
+              <div><dt>State</dt><dd><span class="aws-status aws-status-success">Available</span></dd></div>
+              <div><dt>IPv4 CIDR</dt><dd>10.0.0.0/16</dd></div>
+              <div><dt>IPv6 CIDR</dt><dd>—</dd></div>
+              <div><dt>DHCP option set</dt><dd><code class="aws-mono">dopt-0123abcd</code></dd></div>
+              <div><dt>Tenancy</dt><dd>Default</dd></div>
+              <div><dt>Default VPC</dt><dd>No</dd></div>
+              <div><dt>Owner ID</dt><dd>445772506418</dd></div>
+            </dl>
+          </div>
+          <div data-tab-panel="cidrs" hidden data-od-id="panel-cidrs">
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="vpc-cidrs-table">
+                <thead><tr><th scope="col"><span class="th-inner">CIDR</span></th><th scope="col"><span class="th-inner">State</span></th><th scope="col"><span class="th-inner">Association ID</span></th></tr></thead>
+                <tbody>
+                  <tr><td>10.0.0.0/16</td><td><span class="aws-status aws-status-success">Associated</span></td><td><code class="aws-mono">vpc-cidr-assoc-0abc</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div data-tab-panel="subnets" hidden data-od-id="panel-subnets">
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="vpc-subnets-table">
+                <thead><tr><th scope="col"><span class="th-inner">Name</span></th><th scope="col"><span class="th-inner">Subnet ID</span></th><th scope="col"><span class="th-inner">CIDR</span></th><th scope="col"><span class="th-inner">AZ</span></th><th scope="col"><span class="th-inner">State</span></th></tr></thead>
+                <tbody>
+                  <tr><td>lab-public-a</td><td><code class="aws-mono">subnet-0aaa1111</code></td><td>10.0.1.0/24</td><td>ap-southeast-2a</td><td><span class="aws-status aws-status-success">Available</span></td></tr>
+                  <tr><td>lab-private-b</td><td><code class="aws-mono">subnet-0bbb2222</code></td><td>10.0.2.0/24</td><td>ap-southeast-2b</td><td><span class="aws-status aws-status-success">Available</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div data-tab-panel="tags" hidden data-od-id="panel-tags">
+            <p class="aws-desc">No tags</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

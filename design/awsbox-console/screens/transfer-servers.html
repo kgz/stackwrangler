@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Servers — AWS Transfer Family</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="transfer-servers" data-nav="transfer-servers" data-service="transfer" data-title="Servers" data-crumb="Servers">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Servers</h1>
+      <p class="aws-desc">Transfer Family provides fully managed support for transferring files over SFTP, FTPS, and FTP.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-server" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-server" title="To implement" disabled aria-disabled="true">Create server</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search servers" data-find-table="#data-table" aria-label="Search servers" data-od-id="find-servers" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="transfer-servers-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Server ID <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Protocol <button type="button" class="filter" aria-label="Filter Protocol">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Endpoint type <button type="button" class="filter" aria-label="Filter Endpoint type">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Identity provider <button type="button" class="filter" aria-label="Filter Identity provider">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">State <button type="button" class="filter" aria-label="Filter State">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Users <span aria-hidden="true">↑</span></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="s-abc12def34">
+                  <td class="check"><input type="checkbox" aria-label="Select s-abc12def34" /></td>
+                  <td><a href="transfer-server-detail.html" data-od-id="xfer-s-abc12def34">s-abc12def34</a></td>
+                  <td>SFTP</td>
+                  <td>Public</td>
+                  <td>Service managed</td>
+                  <td><span class="aws-status aws-status-success">Online</span></td>
+                  <td>2</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
