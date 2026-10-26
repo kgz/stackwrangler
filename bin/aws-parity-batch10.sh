@@ -164,7 +164,8 @@ if [[ "${AWSBOX_PARITY_SKIP_REAL:-0}" != "1" ]]; then
 	sleep 8
 	DEF='{"StartAt":"Hi","States":{"Hi":{"Type":"Pass","Result":{"ok":true},"End":true}}}'
 	SM_ARN="$(aws_r stepfunctions create-state-machine --name "$NAME" --definition "$DEF" --role-arn "$ROLE_ARN" --query stateMachineArn --output text)"
-	on_cleanup "aws_r stepfunctions delete-state-machine --state-machine-arn '$SM_ARN'"
+	# delete-state-machine is async; wait so the IAM role delete that follows does not race.
+	on_cleanup "aws_r stepfunctions delete-state-machine --state-machine-arn '$SM_ARN'; for _ in \$(seq 1 30); do aws_r stepfunctions describe-state-machine --state-machine-arn '$SM_ARN' >/dev/null 2>&1 || break; sleep 1; done"
 	EXEC="$(aws_r stepfunctions start-execution --state-machine-arn "$SM_ARN" --name "run-${TS}" --query executionArn --output text)"
 	st=""
 	for _ in $(seq 1 30); do
