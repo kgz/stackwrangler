@@ -4,6 +4,8 @@ LocalEmu `elbv2` on `:4566` (`SERVICES` includes `elbv2`). Listeners are real so
 
 ```bash
 ./bin/awsbox up --force    # remounts localemu-patches/elbv2_*.py
+AWSBOX_ELBV2_E2E=1 ./bin/e2e.sh  # runs elbv2-smoke in e2e (off by default, #299)
+./bin/elbv2-smoke.sh           # NLB/ALB forward, client IP, health, DNS, authz
 ./bin/apigw-nlb-ecs-smoke.sh   # VPC_LINK → internal NLB → ECS ip target
 ```
 
@@ -31,3 +33,4 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 - Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
 - Classic ELB is not this path.
+- `elbv2-smoke.sh` needs EC2 containers; the mirror resource-id start.d patch breaks them on beta ([#299](https://github.com/kgz/awsl/issues/299)).

@@ -13,9 +13,9 @@
 
 ## 3. ELBv2 data plane (#203)
 
-- [ ] 3.1 NLB TCP forward + health → `describe-target-health`
-- [ ] 3.2 ALB default + host/path rules
-- [ ] 3.3 LB DNS resolvable; smokes; docs; PR → beta
+- [x] 3.1 NLB TCP forward + health → `describe-target-health`
+- [x] 3.2 ALB default + host/path rules
+- [x] 3.3 LB DNS resolvable; smokes; docs; PR → beta
 
 ## 4. Private DNS (#206)
 

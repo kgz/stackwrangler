@@ -91,6 +91,13 @@ echo "==> VPC routing"
 
 echo "==> Security groups (allow SG A, refuse SG B, live reapply)"
 ./bin/sg-enforcement-smoke.sh
+echo "==> ELBv2 data plane"
+if [[ "${AWSBOX_ELBV2_E2E:-0}" == "1" ]]; then
+	./bin/elbv2-smoke.sh
+else
+	echo "skip: set AWSBOX_ELBV2_E2E=1 (needs EC2 containers; blocked on beta by #299: https://github.com/kgz/awsl/issues/299)"
+fi
+
 echo "==> Prowler (isolated; skip if install blocked)"
 ./bin/prowler-smoke.sh
 

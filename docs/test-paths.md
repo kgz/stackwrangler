@@ -112,6 +112,17 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./bin/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./bin/labels-smoke.sh` |
 | Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./bin/labels-smoke.sh` |
+| NLB TCP :443 → two instance targets | happy | covered | `./bin/elbv2-smoke.sh` · [elbv2.md](elbv2.md) |
+| Internal NLB :10080 → two target ports; closed on the edge address | happy | covered | `./bin/elbv2-smoke.sh` |
+| NLB target sees the client source IP | happy | covered | `./bin/elbv2-smoke.sh` |
+| NLB TLS listener forwards after termination | happy | covered | `./bin/elbv2-smoke.sh` |
+| ALB host + path → TG-A, other requests → default TG | happy | covered | `./bin/elbv2-smoke.sh` |
+| LB DNS from a VPC instance and from the host | happy | covered | `./bin/elbv2-smoke.sh` |
+| Unhealthy NLB target receives no new connections | sad/other | covered | `./bin/elbv2-smoke.sh` |
+| **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./bin/elbv2-smoke.sh` |
+| ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
+| ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |
+| ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |
