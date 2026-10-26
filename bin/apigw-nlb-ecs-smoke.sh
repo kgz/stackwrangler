@@ -215,13 +215,18 @@ CTR_VPC_IP="$(docker inspect "$CTR" --format '{{json .NetworkSettings.Networks}}
 import json, sys
 nets = json.load(sys.stdin) or {}
 want = f"localemu-vpc-{sys.argv[1]}"
+fallback = ""
 for key, val in nets.items():
+    ip = (val or {}).get("IPAddress") or ""
+    if not ip:
+        continue
     if key == want:
-        ip = (val or {}).get("IPAddress") or ""
-        if ip:
-            print(ip)
-            raise SystemExit
-    if key.startswith("localemu-vpc-"):
+        print(ip)
+        raise SystemExit
+    if key.startswith("localemu-vpc-") and not fallback:
+        fallback = ip
+if fallback:
+    print(fallback)
 ' "$VPC")"
 check "task ENI equals container address on VPC network" "$CTR_VPC_IP" "$TASK_IP"
 
