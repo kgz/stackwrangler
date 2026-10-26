@@ -51,6 +51,10 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | EFS / FSx / EBS | — | — | **Backlog** |
 
 Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`, `./bin/transfer-connector-smoke.sh`
+| Transfer Family | API + native SFTP (SSH keys) → S3 | Servers list/detail | **Partial** (`docs/transfer.md`) · console user/key [#321](https://github.com/kgz/awsl/issues/321) · LOGICAL/IdP/authz [#322](https://github.com/kgz/awsl/issues/322) |
+| EFS / FSx / EBS | — | — | **Backlog** |
+
+Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-key-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`
 
 
 ## Compute & containers
@@ -152,7 +156,7 @@ VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS — epic [#90](https://g
 
 | Hop | Today |
 |-----|--------|
-| Transfer bytes | **Sidecar** SFTP → LocalEmu S3 |
+| Transfer bytes | **Partial** native SSH-key SFTP → LocalEmu S3 |
 | Lambda / S3 / ECS / RDS | **Partial**–**Working** pieces exist |
 | Full E2E one smoke | **Backlog** |
 
@@ -170,7 +174,7 @@ aws --profile local s3 ls
 | What | Where |
 | S3 (console buckets) | `http://127.0.0.1:8333` SeaweedFS |
 | LocalEmu (IAM, Lambda, CFN, Transfer, RDS, …) | `http://127.0.0.1:4566` |
-| SFTP sidecar | `127.0.0.1:2222` (user `awsbox` / pass `awsboxpass`) |
+| Transfer SFTP (native) | `127.0.0.1:2222` (SSH public keys; `docs/transfer.md`) |
 | Console | `http://127.0.0.1:3000` |
 | Profile | `local` |
 

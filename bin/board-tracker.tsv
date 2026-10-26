@@ -130,7 +130,7 @@
 133	done	Vision fully-working / LocalStack lesson
 137	done	Console Transfer servers UI
 138	done	Console RDS databases UI
-141	backlog	Transfer native SFTP auth — drop sidecar
+141	in-review	Transfer native SFTP auth — drop sidecar
 143	done	Debt: unify dual S3 backends
 144	done	Debt: workload IAM authz smokes
 145	backlog	Debt: RDS create UI + Aurora fidelity
@@ -223,3 +223,5 @@
 306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
 307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 317	backlog	Debt: EventBridge schedule cadence beyond rate(1 minute) and non-wildcard cron (from #297)
+321	backlog	Debt: Transfer console user+key (from #141)
+322	backlog	Debt: Transfer LOGICAL/IdP/SFTP-byte authz (from #141)

@@ -9,3 +9,4 @@ Dummy Serverless Framework v3 REST stack used to replicate a real serverless lay
 | [ddb](slices/ddb/) | [#296](https://github.com/kgz/awsl/issues/296) | `./bin/dynamodb-depth-smoke.sh` |
 | [schedule](slices/schedule/) | [#297](https://github.com/kgz/awsl/issues/297) | `./bin/events-schedule-smoke.sh` |
 | [apigw-authz](slices/apigw-authz/) | [#190](https://github.com/kgz/awsl/issues/190) | `./bin/apigw-rest-smoke.sh` |
+| [transfer-in](slices/transfer-in/) | [#141](https://github.com/kgz/awsl/issues/141) | `./bin/transfer-key-smoke.sh` |
