@@ -1,0 +1,75 @@
+# Transfer Family inbound slice (#141): SFTP server (service-managed) + user +
+# SSH public key + S3 home; ObjectCreated Lambda on inbox/.
+# Smoke creates Transfer + Lambda via AWS CLI (moto CFN has no Transfer types yet).
+# This file documents the AWS shape for a real stack.
+service: awsbox-rest-transfer-in
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  environment:
+    MARKER_BUCKET: !Ref UploadsBucket
+    MARKER_KEY: markers/transfer-in.txt
+
+functions:
+  onUpload:
+    handler: handler.main
+    events:
+      - s3:
+          bucket: !Ref UploadsBucket
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: inbox/
+          existing: true
+
+resources:
+  Resources:
+    UploadsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${sls:stage}-uploads
+
+    TransferAccessRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ${self:service}-transfer-access
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: { Service: transfer.amazonaws.com }
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: s3-home
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:ListBucket
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
+                  Resource:
+                    - !GetAtt UploadsBucket.Arn
+                    - !Sub "${UploadsBucket.Arn}/*"
+
+    TransferServer:
+      Type: AWS::Transfer::Server
+      Properties:
+        Protocols: [SFTP]
+        IdentityProviderType: SERVICE_MANAGED
+        Domain: S3
+
+    TransferUser:
+      Type: AWS::Transfer::User
+      Properties:
+        ServerId: !GetAtt TransferServer.ServerId
+        UserName: sftpuser
+        Role: !GetAtt TransferAccessRole.Arn
+        HomeDirectoryType: PATH
+        HomeDirectory: !Sub "/${UploadsBucket}"
+        SshPublicKeys:
+          - ${env:AWSBOX_TRANSFER_IN_SSH_PUB, 'ssh-ed25519 AAAA REPLACE_ME'}

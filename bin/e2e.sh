@@ -57,6 +57,9 @@ echo "==> ECS host-network task-role creds (loopback, no DNAT)"
 echo "==> ECS on EC2 (bridge NLB + CodeDeploy)"
 ./bin/ecs-ec2-smoke.sh
 
+echo "==> CodeDeploy (Lambda canary DG + ECS blue/green)"
+./bin/codedeploy-smoke.sh
+
 echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
 ./bin/ecr-smoke.sh
 
@@ -80,6 +83,9 @@ echo "==> SNS / EventBridge / DynamoDB / SFN / Secrets / KMS / Kinesis"
 ./bin/secrets-smoke.sh && ./bin/secrets-authz-smoke.sh
 ./bin/kms-smoke.sh && ./bin/kms-authz-smoke.sh
 ./bin/kinesis-smoke.sh && ./bin/kinesis-authz-smoke.sh
+
+echo "==> ACM request/import + API domain + ALB HTTPS ARN"
+./bin/acm-smoke.sh
 
 echo "==> Logs / API GW / EC2 authz"
 ./bin/logs-authz-smoke.sh

@@ -1,0 +1,73 @@
+# CodeDeploy slice shapes (#98). Applied conceptually by ./bin/codedeploy-smoke.sh
+# (CLI create-*); kept here so the serverless-v3-rest fixture can absorb them later (#185).
+AWSTemplateFormatVersion: "2010-09-09"
+Description: awsbox CodeDeploy ECS blue/green + Lambda canary deployment groups
+
+Parameters:
+  ServiceRoleArn:
+    Type: String
+  EcsClusterName:
+    Type: String
+  EcsServiceName:
+    Type: String
+  ProdListenerArn:
+    Type: String
+  BlueTargetGroupName:
+    Type: String
+  GreenTargetGroupName:
+    Type: String
+  LambdaFunctionName:
+    Type: String
+    Default: ""
+
+Resources:
+  EcsApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Sub "${AWS::StackName}-ecs"
+      ComputePlatform: ECS
+
+  EcsDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref EcsApplication
+      DeploymentGroupName: !Sub "${AWS::StackName}-ecs"
+      ServiceRoleArn: !Ref ServiceRoleArn
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      BlueGreenDeploymentConfiguration:
+        TerminateBlueInstancesOnDeploymentSuccess:
+          Action: TERMINATE
+          TerminationWaitTimeInMinutes: 0
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+          WaitTimeInMinutes: 0
+      ECSServices:
+        - ClusterName: !Ref EcsClusterName
+          ServiceName: !Ref EcsServiceName
+      LoadBalancerInfo:
+        TargetGroupPairInfoList:
+          - ProdTrafficRoute:
+              ListenerArns:
+                - !Ref ProdListenerArn
+            TargetGroups:
+              - Name: !Ref BlueTargetGroupName
+              - Name: !Ref GreenTargetGroupName
+
+  LambdaApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Sub "${AWS::StackName}-lambda"
+      ComputePlatform: Lambda
+
+  LambdaDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref LambdaApplication
+      DeploymentGroupName: !Sub "${AWS::StackName}-lambda"
+      ServiceRoleArn: !Ref ServiceRoleArn
+      DeploymentConfigName: CodeDeployDefault.LambdaCanary10Percent5Minutes
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL

@@ -49,17 +49,25 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST API import from OpenAPI + `aws_proxy` public route | happy | covered | `./bin/apigw-rest-smoke.sh` · [apigw-rest.md](apigw-rest.md) |
 | REST REQUEST authorizer Allow → handler gets context | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
-| REST authorizer Deny → 401 (AWS 403) | sad/authz | thin | `./bin/apigw-rest-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
+| REST authorizer Deny → 403 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
 | REST unknown route → 403 | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
 | REST custom domain + base-path mapping | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST request via custom domain (root mapping, local DNS) | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST request via custom domain named base path | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST custom domain unmapped prefix → 403 Forbidden | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
+| REST `x-api-key` valid key (minted by Lambda: CreateApiKey + CreateUsagePlanKey + GetUsagePlans) → 200 | happy | covered | `./bin/apigw-usage-plan-smoke.sh` · [apigw-rest.md](apigw-rest.md#api-keys-and-usage-plans) |
+| REST `apiKeySource` AUTHORIZER (`usageIdentifierKey`) | happy | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST `apiKeyRequired` with no key / unknown key / disabled key → 403 | sad/authz | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST revoked key (DeleteApiKey) → 403 | sad/authz | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST usage plan throttle (rate/burst) → 429 | sad/other | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST usage plan quota → 429 | sad/other | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| `apigateway:POST` on `/apikeys` denied for a role (CreateApiKey) | sad/authz | covered | `./bin/apigw-usage-plan-smoke.sh` · [#311](https://github.com/kgz/awsl/issues/311) |
+| REST usage plan `get-usage` / per-stage throttle | happy | missing | [#309](https://github.com/kgz/awsl/issues/309) |
 | REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A · [apigw-rest.md](apigw-rest.md) |
 | REST VPC_LINK to NLB with stopped/unhealthy target → 5xx | sad | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A |
 | ECS awsvpc `describe-tasks` privateIPv4Address inside subnet CIDR and equals container VPC IP; that address reachable on the VPC | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` · [#268](https://github.com/kgz/awsl/issues/268) |
 | REST `HTTP_PROXY` straight to an ECS awsvpc task, path param + injected service token reach backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
-| REST no token / Deny authorizer: backend receives nothing | sad/authz | thin | `./bin/apigw-nlb-ecs-smoke.sh` · [#190](https://github.com/kgz/awsl/issues/190) |
+| REST no token / Deny authorizer: backend receives nothing | sad/authz | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
 | REST backend task stopped → API 5xx (AWS 504/503, emulator 500) | sad/other | covered | `./bin/apigw-nlb-ecs-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./bin/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./bin/lambda-vpc-smoke.sh` |
@@ -83,6 +91,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull authz | sad/authz | missing | [#219](https://github.com/kgz/awsl/issues/219) |
 | ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
+| Public hosted zone + UPSERT A / A-alias / CNAME; `list-resource-record-sets` | happy | covered | `./bin/route53-smoke.sh` · [r53.md](r53.md) |
+| Public zone names resolve via `dig @127.0.0.1` inside LocalEmu | happy | covered | `./bin/route53-smoke.sh` |
+| Profile `local` `route53 list-hosted-zones` includes the public zone | happy | covered | `./bin/route53-smoke.sh` |
+| Private zone create still works alongside public | happy | covered | `./bin/route53-smoke.sh` |
+| **`route53:ListHostedZones` explicit deny** (public smoke) | sad/authz | covered | `./bin/route53-smoke.sh` |
 | Private zone CNAME → internal NLB resolves and connects from ECS in the associated VPC | happy | covered | `./bin/r53-private-smoke.sh` · [r53-private.md](r53-private.md) |
 | Private zone alias to ALB returns the ALB addresses | happy | covered | `./bin/r53-private-smoke.sh` |
 | Private zone A and AAAA from the associated VPC | happy | covered | `./bin/r53-private-smoke.sh` |
@@ -93,9 +106,21 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | ECS EC2 bridge service behind an internal NLB (2 tasks) | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS task killed → replaced and re-registered in the target group | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS container instance from an ASG + launch template | happy | covered | `./bin/ecs-ec2-smoke.sh` |
+| ASG create + set-desired-capacity 2 + describe shows 2 instances | happy | covered | `./bin/autoscaling-smoke.sh` · [batch-stubs.md](batch-stubs.md) |
+| Application Auto Scaling register/describe DynamoDB RCU target | happy | covered | `./bin/application-autoscaling-smoke.sh` |
+| Batch compute environment + job queue create/describe | happy | covered | `./bin/batch-smoke.sh` |
+| Elastic Beanstalk create/describe application | happy | covered | `./bin/elasticbeanstalk-smoke.sh` |
+| App Runner list-services / list-connections (empty stub) | happy | covered | `./bin/apprunner-smoke.sh` |
+| Batch / Beanstalk / App Runner / ASG authz deny | sad/authz | missing | [#334](https://github.com/kgz/awsl/issues/334) |
+| App Runner CreateService + traffic | happy | missing | [#335](https://github.com/kgz/awsl/issues/335) |
+| Batch SubmitJob dataplane | happy | missing | [#335](https://github.com/kgz/awsl/issues/335) |
+| Elastic Beanstalk environment provision | happy | missing | [#335](https://github.com/kgz/awsl/issues/335) |
 | ECS `CODE_DEPLOY` service starts blue tasks behind the listener | happy | covered | `./bin/ecs-ec2-smoke.sh` |
-| ECS CodeDeploy blue/green: v2 on green, listener swap, blue stopped | happy | covered | `./bin/ecs-ec2-smoke.sh` |
-| ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./bin/ecs-ec2-smoke.sh` |
+| ECS CodeDeploy blue/green: v2 on green, listener swap, blue stopped | happy | covered | `./bin/ecs-ec2-smoke.sh`, `./bin/codedeploy-smoke.sh` |
+| ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./bin/ecs-ec2-smoke.sh`, `./bin/codedeploy-smoke.sh` |
+| CodeDeploy Lambda app + canary deployment config + create-deployment Succeeded | happy | covered (control plane) | `./bin/codedeploy-smoke.sh` |
+| CodeDeploy Lambda canary alias weight shift | happy | missing | [#340](https://github.com/kgz/awsl/issues/340) |
+| CodeDeploy deny create-deployment / create-application | sad/authz | missing | [#341](https://github.com/kgz/awsl/issues/341) |
 | **ECS deny `ecs:CreateService` → AccessDenied** | sad/authz | covered | `./bin/ecs-ec2-smoke.sh` |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
 | EC2 IMDSv2 instance-profile reads secret | happy | covered | `./bin/ec2-imds-smoke.sh` |
@@ -104,8 +129,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | SSM SendCommand without ssm:SendCommand → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |
 | Private subnet with no `0.0.0.0/0` cannot reach a public host | sad/other | covered | `./bin/vpc-routing-smoke.sh` · [vpc-routing.md](vpc-routing.md) |
 | Private subnet reaches a public host via an HTTP proxy over peering | happy | covered | `./bin/vpc-routing-smoke.sh` |
-| VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` |
+| VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` · Lambda: `./bin/vpc-egress-smoke.sh` |
 | NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
+| VPC Lambda private subnet: public host blocked; S3 only via GW endpoint; peer OK; IGW restores; routes replay after restart | happy + sad/other | covered | `./bin/vpc-egress-smoke.sh` · [vpc-routing.md](vpc-routing.md) · slice `examples/serverless-v3-rest/slices/egress/` |
+| ECS `bridge` task joins subnet VPC (`localemu-vpc-*`) and keeps default bridge | happy | covered | `./bin/vpc-egress-bridge-check.sh` (from `vpc-egress-smoke.sh`) · [#230](https://github.com/kgz/awsl/issues/230) |
 | Private ECS task reaches a public host only through an egress proxy (`HTTP_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
 | Same task with proxy env unset cannot reach the public host directly | sad/other | covered | `./bin/egress-proxy-smoke.sh` |
 | Egress proxy allowlist refuses another host (task sees 403) | sad/authz | covered | `./bin/egress-proxy-smoke.sh` |
@@ -116,7 +143,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Private ECS task reaches the emulator endpoint without the proxy (`NO_PROXY`) | happy | covered (currently fails) | `./bin/egress-proxy-smoke.sh` · [#269](https://github.com/kgz/awsl/issues/269) |
 | Interface VPCE `PrivateDnsEnabled`: service hostname resolves in-VPC and call reaches awsbox (ecr/logs/ssm/sts/ecs) | happy | covered | `./bin/vpce-private-dns-smoke.sh` · [vpce-private-dns.md](vpce-private-dns.md) |
 | Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./bin/vpce-private-dns-smoke.sh` |
-| Gateway endpoint prefix-list route | sad/other | missing | [#230](https://github.com/kgz/awsl/issues/230) |
+| Gateway endpoint prefix-list route | sad/other | covered | `./bin/vpc-egress-smoke.sh` · [#230](https://github.com/kgz/awsl/issues/230) |
 | SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./bin/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
 | SG rule revoke/authorize updates a running target | sad/other | covered | `./bin/sg-enforcement-smoke.sh` |
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./bin/sg-enforcement-smoke.sh` |
@@ -136,8 +163,23 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./bin/elbv2-smoke.sh` |
 | ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |
+| ACM request DNS-validated cert + describe/list | happy | covered | `./bin/acm-smoke.sh` · [acm.md](acm.md) |
+| ACM import-certificate | happy | covered | `./bin/acm-smoke.sh` |
+| ACM ARN on API GW custom domain | happy | covered | `./bin/acm-smoke.sh` |
+| ACM ARN stored on ALB HTTPS listener | happy | covered | `./bin/acm-smoke.sh` |
+| **ACM deny-user RequestCertificate → AccessDenied** | sad/authz | covered | `./bin/acm-smoke.sh` |
+| ACM console | ui | missing | [#333](https://github.com/kgz/awsl/issues/333) |
 | ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
+| WAFv2 create WebACL + associate API GW stage; get/list association | happy | covered | `./bin/waf-smoke.sh` · [waf.md](waf.md) |
+| **WAFv2 deny-user CreateWebACL → AccessDenied** | sad/authz | covered | `./bin/waf-authz-smoke.sh` |
+| WAFv2 rule evaluation blocks/allows HTTP | happy | missing | [#326](https://github.com/kgz/awsl/issues/326) · [waf.md](waf.md) |
+| WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |
+| CFN `AWS::WAFv2::WebACL` / Association deploy | happy | missing | [#325](https://github.com/kgz/awsl/issues/325) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
+| Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./bin/serverless-v3-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
+| Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./bin/serverless-v3-smoke.sh` |
+| Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
+| Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN failed update → `UPDATE_ROLLBACK_COMPLETE` (not `UPDATE_COMPLETE`) | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
@@ -145,6 +187,8 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./bin/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./bin/aws-parity-cfn-authz.sh` |
+| Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./bin/aws-parity-hf-cheap.sh` (~$0–cents; ask before real) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
+| Real AWS HF skipped: WAF, R53 zone, ACM without DNS, Transfer, CodeDeploy target stack, Batch/ASG compute | — | skipped (cost) | [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) skipped gaps |
 | Prowler aws scan (isolated, scoped unused-services) | happy | covered | `./bin/prowler-smoke.sh` · [prowler.md](prowler.md) |
 | Prowler failing-API count ≤ baseline (ratchet) | sad/other | covered | `./bin/prowler-smoke.sh` |
 | S3 Control GetPublicAccessBlock / ListAccessPoints (account) | happy | covered | `./bin/prowler-smoke.sh` spot-check |
@@ -159,8 +203,22 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./bin/events-smoke.sh` |
 | EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
+| EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./bin/events-schedule-smoke.sh` |
+| EventBridge `disable-rule` stops scheduled invocations | happy | covered | `./bin/events-schedule-smoke.sh` |
+| EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./bin/events-schedule-smoke.sh` |
+| EventBridge `cron(* * * * ? *)` rule invokes Lambda target (other cron/rate forms: [#317](https://github.com/kgz/awsl/issues/317)) | happy | covered | `./bin/events-schedule-smoke.sh` |
 | DynamoDB put/get | happy | covered | `./bin/dynamodb-smoke.sh` |
 | DynamoDB deny PutItem | sad/authz | covered | `./bin/dynamodb-authz-smoke.sh` |
+| DynamoDB table with GSI + TTL deployed via CloudFormation (serverless slice) | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB GSI query, table query, scan with filter | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB UpdateItem expression (`SET`, `if_not_exists`, `REMOVE`) | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB TransactWriteItems commit | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB TTL expiry removes item from table and GSI | happy | covered | `./bin/dynamodb-depth-smoke.sh` (sweep via `DELETE /_aws/dynamodb/expired`, LocalEmu-only) |
+| DynamoDB duplicate conditional put / failed update condition → `ConditionalCheckFailedException` | sad/other | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB cancelled transaction → `TransactionCanceledException`, no partial write | sad/other | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB Allow on index ARN only / table ARN only / Deny on index ARN | sad/authz | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB Batch*/Transact* under table-scoped policy | sad/authz | missing | [#306](https://github.com/kgz/awsl/issues/306) |
+| DynamoDB `aws:ResourceTag` on index ARN | sad/authz | missing | [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions Pass execution | happy | covered | `./bin/sfn-smoke.sh` |
 | Step Functions deny StartExecution | sad/authz | covered | `./bin/sfn-authz-smoke.sh` |
 | Secrets create/get | happy | covered | `./bin/secrets-smoke.sh` |
@@ -186,10 +244,21 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
 | CFN Create/Update in console | ui | missing | [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Transfer create-server / create-user API | happy | covered | `./bin/transfer-smoke.sh` |
-| SFTP put via sidecar → LocalEmu S3 | happy | covered | `./bin/transfer-dataplane-smoke.sh` |
-| Transfer user SSH key auth (native) | happy | missing | [#141](https://github.com/kgz/awsl/issues/141) |
+| SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./bin/transfer-key-smoke.sh` |
+| SFTP key put → S3 (short dataplane) | happy | covered | `./bin/transfer-dataplane-smoke.sh` |
+| **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./bin/transfer-key-smoke.sh` |
 | **Transfer empty role → simulate PutObject deny** | sad/authz | covered | `./bin/transfer-authz-smoke.sh` |
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) |
+| Transfer create/describe/update/delete-connector, test-connection | happy | covered | `./bin/transfer-connector-smoke.sh` |
+| Transfer start-file-transfer: S3 object → remote SFTP (Lambda-created tenant connector) | happy | covered | `./bin/transfer-connector-smoke.sh` |
+| Transfer connector events in CloudWatch Logs | happy | covered | `./bin/transfer-connector-smoke.sh` |
+| **Transfer connector access role without `s3:GetObject`** | sad/authz | covered | `./bin/transfer-connector-smoke.sh` |
+| **Transfer connector access role without secret read / `kms:Decrypt`** | sad/authz | covered | `./bin/transfer-connector-smoke.sh` |
+| **Transfer connector access role trust scoped to another account** | sad/authz | covered | `./bin/transfer-connector-smoke.sh` |
+| **Transfer create-connector without `iam:PassRole`** | sad/authz | covered | `./bin/transfer-connector-smoke.sh` |
+| Transfer connector wrong trusted host key | sad | covered | `./bin/transfer-connector-smoke.sh` |
+| Transfer connector retrieve / AS2 | happy | missing | [#314](https://github.com/kgz/awsl/issues/314) |
+| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./bin/rds-smoke.sh` |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./bin/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
@@ -223,7 +292,9 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ./bin/lambda-smoke.sh           # happy
 ./bin/lambda-authz-smoke.sh     # sad/authz
 ./bin/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
+./bin/transfer-key-smoke.sh
 ./bin/transfer-dataplane-smoke.sh
+./bin/transfer-connector-smoke.sh
 ./bin/rds-smoke.sh              # needs psql
 ./bin/rds-mysql-smoke.sh        # needs mysql
 # …add others as you touch a surface

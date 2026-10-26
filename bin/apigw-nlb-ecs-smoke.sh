@@ -215,13 +215,18 @@ CTR_VPC_IP="$(docker inspect "$CTR" --format '{{json .NetworkSettings.Networks}}
 import json, sys
 nets = json.load(sys.stdin) or {}
 want = f"localemu-vpc-{sys.argv[1]}"
+fallback = ""
 for key, val in nets.items():
+    ip = (val or {}).get("IPAddress") or ""
+    if not ip:
+        continue
     if key == want:
-        ip = (val or {}).get("IPAddress") or ""
-        if ip:
-            print(ip)
-            raise SystemExit
-    if key.startswith("localemu-vpc-"):
+        print(ip)
+        raise SystemExit
+    if key.startswith("localemu-vpc-") and not fallback:
+        fallback = ip
+if fallback:
+    print(fallback)
 ' "$VPC")"
 check "task ENI equals container address on VPC network" "$CTR_VPC_IP" "$TASK_IP"
 
@@ -354,15 +359,7 @@ h1="$(hits)"
 code="$(req -X PATCH "${B}/invoices/42/paid")"
 check "B sad no token" 401 "$code"
 code="$(req -X POST -H 'Authorization: Bearer bad' "${B}/invoices/42/credit-note")"
-# Emulator returns 401 on Deny today; AWS returns 403 (#190).
-check_re "B sad Deny authorizer (emulator 401; AWS 403 → #190)" '^(401|403)$' "$code"
-# AWS returns 403 on Deny; emulator returns 401 today → [#190]
-if [[ "$code" == "403" ]]; then
-	check "B sad Deny authorizer (AWS: 403)" 403 "$code"
-else
-	echo "skip B Deny status (got ${code}, want 403; tracked #190)" >&2
-	check_re "B sad Deny authorizer blocks (4xx)" '^4[0-9][0-9]$' "$code"
-fi
+check "B sad Deny authorizer" 403 "$code"
 check "B blocked requests never reached the backend" 0 "$(($(hits) - h1))"
 
 aws ecs stop-task --cluster "$CLUSTER" --task "$TASK" >/dev/null

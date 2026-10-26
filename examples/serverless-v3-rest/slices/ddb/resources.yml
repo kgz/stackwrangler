@@ -1,0 +1,31 @@
+Parameters:
+  TableName:
+    Type: String
+    Default: awsbox-tokens
+
+Resources:
+  TokensTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+        - { AttributeName: tokenHash, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: tokenHash-index
+          KeySchema:
+            - { AttributeName: tokenHash, KeyType: HASH }
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+Outputs:
+  TableArn:
+    Value: !GetAtt TokensTable.Arn

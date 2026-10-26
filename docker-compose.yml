@@ -24,11 +24,15 @@ services:
     image: localemu/localemu@sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f46d7aa8123551cee10b
     user: root
     environment:
-      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
+      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,elasticbeanstalk,apprunner,dax,wafv2,waf
       # Host docker daemon pulls this address (published below). #211
       AWSBOX_ECR_REGISTRY: 127.0.0.1:${AWSBOX_ECR_HOST_PORT:-5000}
       # ECS task-role credentials for host-network tasks (start.d/05-ecs-creds-port.py)
       AWSBOX_ECS_CREDS_PORT: ${AWSBOX_ECS_CREDS_PORT:-4571}
+      # Transfer Family inbound SFTP (start.d/20-transfer-sftp.py) — SSH keys, not password.
+      AWSBOX_TRANSFER_SFTP_PORT: ${AWSBOX_TRANSFER_SFTP_PORT:-2222}
+      AWSBOX_SFTP_HOST_PORT: ${AWSBOX_SFTP_HOST_PORT:-2222}
+      AWSBOX_TRANSFER_SFTP_HOST: ${AWSBOX_TRANSFER_SFTP_HOST:-127.0.0.1}
       # Resolver subprocess reads this; the gateway process does not use AWS_* creds.
       R53_RESOLVER_SECRET: ${AWSBOX_SECRET_KEY:-awsboxawsbox}
       IAM_ENFORCEMENT: "1"
@@ -55,6 +59,8 @@ services:
     ports:
       - "127.0.0.1:${AWSBOX_LOCALEMU_HOST_PORT:-4566}:4566"
       - "127.0.0.1:${AWSBOX_ECS_CREDS_PORT:-4571}:${AWSBOX_ECS_CREDS_PORT:-4571}"
+      # Native Transfer SFTP (SSH public keys). See docs/transfer.md.
+      - "127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}:${AWSBOX_TRANSFER_SFTP_PORT:-2222}"
     extra_hosts:
       # Bridge-mode task ports are published on the Docker host. Health checks
       # and the loopback NLB forwarder dial them from inside LocalEmu (#207).
@@ -62,7 +68,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs.
-      # start.d also routes REST custom domains (#191).
+      # start.d also routes REST custom domains (#191) and Deny→403 (#190).
       # Multi-account (#213): localemu-patches/init/start.d/21-multi-account.py
       # Custom resource ids (#214): localemu-patches/init/start.d/20-custom-ids.py
       - ./localemu-patches/s3control_provider.py:/opt/code/localemu/src/localemu/services/s3control/provider.py:ro
@@ -78,6 +84,8 @@ services:
       # Loopback NLB forwarder lives in this module: #203's listener dials the EC2 VPC IP,
       # which does not publish bridge host ports (#247).
       - ./localemu-patches/ecs_ec2_services.py:/opt/code/localemu/src/localemu/services/ecs/ec2_services.py:ro
+      # DynamoDB index ARNs (#296): Query/Scan IndexName -> table/<t>/index/<i>
+      - ./localemu-patches/iam_arn_builder.py:/opt/code/localemu/src/localemu/services/iam_enforcement/arn_builder.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro
       # CFN lifecycle (#212): failed-create rollback, delete-stack cleanup, honest status
@@ -109,12 +117,14 @@ services:
       retries: 40
       start_period: 20s
 
-  # Real SFTP listen — LocalEmu Transfer is control-plane only today.
-  # Smoke bridges uploads into LocalEmu S3 (see docs/transfer.md).
+  # Optional password SFTP target for outbound connector tests / legacy probes.
+  # Inbound Transfer uses LocalEmu native SFTP (SSH keys) on AWSBOX_SFTP_HOST_PORT.
+  # Opt in: docker compose --profile legacy-sftp up -d sftp
   sftp:
+    profiles: ["legacy-sftp"]
     image: atmoz/sftp:alpine
     ports:
-      - "127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}:22"
+      - "127.0.0.1:${AWSBOX_LEGACY_SFTP_HOST_PORT:-2223}:22"
     command: awsbox:awsboxpass:1001:1001:upload
 
   # Docker distribution registry. Push/pull 127.0.0.1:5000/<repo>:<tag>.

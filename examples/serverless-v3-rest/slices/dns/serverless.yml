@@ -1,0 +1,53 @@
+service: awsbox-dns-slice
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: ${opt:stage, 'local'}
+
+custom:
+  domainName: example.test
+  apiRecord: api.example.test
+
+resources:
+  Resources:
+    PublicHostedZone:
+      Type: AWS::Route53::HostedZone
+      Properties:
+        Name: ${self:custom.domainName}
+        HostedZoneConfig:
+          Comment: awsbox dns slice public zone
+
+    ApiTargetA:
+      Type: AWS::Route53::RecordSet
+      Properties:
+        HostedZoneId: !Ref PublicHostedZone
+        Name: target.${self:custom.domainName}
+        Type: A
+        TTL: 60
+        ResourceRecords:
+          - 203.0.113.50
+
+    ApiAliasA:
+      Type: AWS::Route53::RecordSet
+      Properties:
+        HostedZoneId: !Ref PublicHostedZone
+        Name: ${self:custom.apiRecord}
+        Type: A
+        AliasTarget:
+          HostedZoneId: !Ref PublicHostedZone
+          DNSName: target.${self:custom.domainName}
+          EvaluateTargetHealth: false
+
+    WwwCname:
+      Type: AWS::Route53::RecordSet
+      Properties:
+        HostedZoneId: !Ref PublicHostedZone
+        Name: www.${self:custom.domainName}
+        Type: CNAME
+        TTL: 60
+        ResourceRecords:
+          - ${self:custom.apiRecord}

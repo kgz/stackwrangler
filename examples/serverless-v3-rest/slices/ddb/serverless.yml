@@ -1,0 +1,13 @@
+service: awsbox-ddb-slice
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+
+functions:
+  tokenAdmin:
+    handler: handler.main
+
+resources: ${file(./resources.yml)}

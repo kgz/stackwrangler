@@ -38,6 +38,7 @@ fi
 STATUS_NAME="$1"
 shift
 
+# Project #8 Status option IDs (refresh if board-status updates fail).
 case "$STATUS_NAME" in
   backlog|todo) OPT="dfa84092" ;;
   ready) OPT="ae0781e5" ;;
