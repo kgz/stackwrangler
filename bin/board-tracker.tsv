@@ -216,3 +216,6 @@
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+313	backlog	Debt: Transfer connectors console UI (from #295)
+314	backlog	Debt: Transfer connectors: RetrieveFilePaths and AS2 (from #295)
+315	backlog	Debt: Transfer connectors need paramiko installed at boot (from #295)
