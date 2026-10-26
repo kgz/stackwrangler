@@ -61,7 +61,7 @@
 71	done	KMS happy+authz
 72	done	Secrets Manager happy+authz
 73	backlog	Cognito
-74	in-progress	ACM
+74	in-review	ACM
 75	backlog	detection stubs
 # v1 Observability
 76	backlog	CW Metrics + Alarms
