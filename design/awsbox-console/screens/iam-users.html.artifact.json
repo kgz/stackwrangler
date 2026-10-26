@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/iam-users.html",
+  "entry": "screens/iam-users.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-10-26T07:36:36.458Z",
+  "updatedAt": "2026-10-26T07:36:36.458Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

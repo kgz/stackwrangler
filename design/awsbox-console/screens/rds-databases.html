@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Databases — RDS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="rds-databases" data-nav="rds-databases" data-service="rds" data-title="Databases" data-crumb="Databases">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Databases</h1>
+      <p class="aws-desc">Amazon RDS makes it easier to set up, operate, and scale a relational database.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="Select a row">Actions ▾</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-db" title="To implement" disabled aria-disabled="true">Create database</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter databases" data-find-table="#data-table" aria-label="Filter databases" data-od-id="find-dbs" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="rds-databases-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">DB identifier <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Status <button type="button" class="filter" aria-label="Filter Status" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Role <button type="button" class="filter" aria-label="Filter Role" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Engine <button type="button" class="filter" aria-label="Filter Engine" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Region & AZ <button type="button" class="filter" aria-label="Filter Region & AZ" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Size <button type="button" class="filter" aria-label="Filter Size" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">VPC <button type="button" class="filter" aria-label="Filter VPC" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="awsbox-pg">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-pg" /></td>
+                  <td><a href="rds-instance-detail.html" data-od-id="db-awsbox-pg">awsbox-pg</a></td>
+                  <td><span class="aws-status aws-status-success">Available</span></td>
+                  <td>Instance</td>
+                  <td>PostgreSQL 16.3</td>
+                  <td>ap-southeast-2a</td>
+                  <td>db.t4g.micro</td>
+                  <td><code class="aws-mono">vpc-0a1b2c3d</code></td>
+                </tr>
+                <tr data-name="awsbox-mysql">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-mysql" /></td>
+                  <td><a href="rds-instance-detail.html" data-od-id="db-awsbox-mysql">awsbox-mysql</a></td>
+                  <td><span class="aws-status aws-status-success">Available</span></td>
+                  <td>Instance</td>
+                  <td>MySQL 8.0.39</td>
+                  <td>ap-southeast-2b</td>
+                  <td>db.t4g.micro</td>
+                  <td><code class="aws-mono">vpc-0a1b2c3d</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

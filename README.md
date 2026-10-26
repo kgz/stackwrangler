@@ -2,7 +2,7 @@
 
 One **local AWS account** — real APIs, console on localhost, IaC against profile `local`. Learn and stage without a cloud bill.
 
-North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1)
+North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`)
 
 ```bash
 ./bin/awsbox up
@@ -207,16 +207,18 @@ Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or en
 ## Board & workflow
 
 ```bash
+./bin/board-status.sh designing <n>     # web UI — Open Design first
 ./bin/board-status.sh in-progress <n>
 ./bin/gap-check.sh <n>    # before done — Partial/UI stubs → Debt tickets
 ./bin/board-audit.sh
 ./bin/setup-github-board.sh
 ```
 
+Lifecycle: **Backlog** → **Ready** → **Designing** → **In progress** → **In review** → **Done**.
+
 Gap rubric: [docs/gap-check.md](docs/gap-check.md) ·  
 **Is this path tested?** → [docs/test-paths.md](docs/test-paths.md) · grid: [docs/smoke-matrix.md](docs/smoke-matrix.md).  
 Closing a ticket that leaves a bridge, disabled console action, or happy-only smoke must open a **Debt:** follow-up the same day.
 
-
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
-Console mocks: `design/awsbox-console/` · `./bin/od-design-run.sh --issue <n> "…"`
+Console mocks: `design/awsbox-console/` · theme `design/awsbox/` · `./bin/od-design-run.sh --issue <n> "…"` (web-clone for real AWS screens)

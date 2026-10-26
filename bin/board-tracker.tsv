@@ -217,3 +217,4 @@
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
 304	in-review	Design: S3 console missing UI via Open Design web-clone
+319	in-review	Design: built console services via Open Design web-clone

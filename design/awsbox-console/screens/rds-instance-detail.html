@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awsbox-pg — RDS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="rds-instance-detail" data-nav="rds-instance-detail" data-service="rds" data-title="awsbox-pg" data-crumb="awsbox-pg">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">awsbox-pg</h1>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Actions ▾</button>
+      </div>
+      <div class="aws-subtitle-row"><span class="aws-status aws-status-success">Available</span><span>PostgreSQL 16.3 · db.t4g.micro</span></div>
+      <section class="aws-card" data-od-id="connectivity-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Connectivity & security</h2>
+          <dl class="aws-kv" data-od-id="rds-connectivity">
+            <div><dt>Endpoint</dt><dd><code class="aws-mono">awsbox-pg.abc123.ap-southeast-2.rds.amazonaws.com:5432</code></dd></div>
+            <div><dt>Port</dt><dd>5432</dd></div>
+            <div><dt>Master username</dt><dd>awsbox</dd></div>
+            <div><dt>DB name</dt><dd>awsbox</dd></div>
+            <div><dt>VPC</dt><dd><code class="aws-mono">vpc-0a1b2c3d</code></dd></div>
+            <div><dt>Publicly accessible</dt><dd>No</dd></div>
+            <div><dt>Connect</dt><dd><code class="aws-mono">psql -h 127.0.0.1 -p 5432 -U awsbox -d awsbox</code></dd></div>
+          </dl>
+        </div>
+      </section>
+      <section class="aws-card" style="margin-top:16px" data-od-id="config-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Configuration</h2>
+          <dl class="aws-kv">
+            <div><dt>DB instance class</dt><dd>db.t4g.micro</dd></div>
+            <div><dt>Engine version</dt><dd>16.3</dd></div>
+            <div><dt>Storage type</dt><dd>General Purpose SSD (gp3)</dd></div>
+            <div><dt>Allocated storage</dt><dd>20 GiB</dd></div>
+          </dl>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

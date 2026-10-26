@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Instances — EC2</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ec2-instances" data-nav="ec2-instances" data-service="ec2" data-title="Instances" data-crumb="Instances">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Instances</h1>
+      <p class="aws-desc">Virtual servers in the cloud. Launch, connect, and manage instances here.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-instance-state" title="Select a row">Instance state ▾</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="Select a row">Actions ▾</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-launch" title="To implement" disabled aria-disabled="true">Launch instance</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search by name, ID, or IP" data-find-table="#data-table" aria-label="Search by name, ID, or IP" data-od-id="find-instances" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="ec2-instances-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Instance ID <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Instance state <button type="button" class="filter" aria-label="Filter Instance state" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Instance type <button type="button" class="filter" aria-label="Filter Instance type" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Availability Zone <button type="button" class="filter" aria-label="Filter Availability Zone" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Public IPv4 DNS <button type="button" class="filter" aria-label="Filter Public IPv4 DNS" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Private IPv4 <button type="button" class="filter" aria-label="Filter Private IPv4" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="lab-web">
+                  <td class="check"><input type="checkbox" aria-label="Select lab-web" /></td>
+                  <td>lab-web</td>
+                  <td><code class="aws-mono">i-0abc123def456</code></td>
+                  <td><span class="aws-status aws-status-success">Running</span></td>
+                  <td>t3.micro</td>
+                  <td>ap-southeast-2a</td>
+                  <td><code class="aws-mono">ec2-13-…ap-southeast-2.compute.amazonaws.com</code></td>
+                  <td>10.0.1.24</td>
+                </tr>
+                <tr data-name="lab-worker">
+                  <td class="check"><input type="checkbox" aria-label="Select lab-worker" /></td>
+                  <td>lab-worker</td>
+                  <td><code class="aws-mono">i-0fed654cba321</code></td>
+                  <td><span class="aws-status aws-status-success">Running</span></td>
+                  <td>t3.small</td>
+                  <td>ap-southeast-2b</td>
+                  <td>—</td>
+                  <td>10.0.2.18</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

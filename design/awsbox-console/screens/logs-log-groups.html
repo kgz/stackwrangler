@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log groups — CloudWatch</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="logs-log-groups" data-nav="logs-log-groups" data-service="logs" data-title="Log groups" data-crumb="Log groups">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Log groups</h1>
+      <p class="aws-desc">A log group is a group of log streams that share the same retention, monitoring, and access control settings.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="Select a row">Actions ▾</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-log-group" title="To implement" disabled aria-disabled="true">Create log group</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter log groups" data-find-table="#data-table" aria-label="Filter log groups" data-od-id="find-log-groups" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="log-groups-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Log group <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Retention <button type="button" class="filter" aria-label="Filter Retention" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Stored bytes <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Metric filters <button type="button" class="filter" aria-label="Filter Metric filters" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="/aws/lambda/awsbox-hello">
+                  <td class="check"><input type="checkbox" aria-label="Select /aws/lambda/awsbox-hello" /></td>
+                  <td><code class="aws-mono"><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="lg-hello">/aws/lambda/awsbox-hello</button></code></td>
+                  <td>Never expire</td>
+                  <td>128.4 KB</td>
+                  <td>0</td>
+                </tr>
+                <tr data-name="/aws/lambda/orders-ingest">
+                  <td class="check"><input type="checkbox" aria-label="Select /aws/lambda/orders-ingest" /></td>
+                  <td><code class="aws-mono"><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="lg-orders">/aws/lambda/orders-ingest</button></code></td>
+                  <td>14 days</td>
+                  <td>2.1 MB</td>
+                  <td>1</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
