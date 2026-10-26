@@ -86,6 +86,8 @@ services:
       - ./localemu-patches/elbv2_listener_router.py:/opt/code/localemu/src/localemu/services/elbv2/listener_router.py:ro
       - ./localemu-patches/elbv2_provider.py:/opt/code/localemu/src/localemu/services/elbv2/provider.py:ro
       - ./.awsbox:/var/lib/awsbox
+      # Shared DNS codec/servers for VPCE + private zones (#206)
+      - ./localemu-patches/dns_common.py:/opt/awsbox/dns/awsbox_dns_common.py:ro
       # Private hosted zones (#206): answered by the same process as VPCE DNS (vpce_private_dns serve)
       - ./localemu-patches/r53_private_resolver.py:/opt/code/localemu/src/localemu/services/route53/private_resolver.py:ro
     healthcheck:

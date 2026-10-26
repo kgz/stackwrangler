@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 # Private hosted zone: associated VPC resolves and connects; the other VPC does not.
+# A public name must also resolve through the resolver (upstream forwarding).
+#
+# EC2 part: on unmodified beta, EC2 containers do not start while
+# start.d/20-mirror-resource-ids.py is loaded (#299). Run with
+#   AWSBOX_R53_COMPOSE_OVERRIDE=<compose file blanking 20-mirror-resource-ids.py
+#   and 20-custom-ids.py> ./bin/r53-private-smoke.sh
+# or set AWSBOX_R53_SKIP_EC2=1 to skip the EC2 step. Not part of bin/e2e.sh.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,6 +21,8 @@ SECRET="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
 TS="$(date +%s)"
 KEEP="${AWSBOX_R53_KEEP:-0}"
 RECREATE="${AWSBOX_R53_RECREATE:-1}"
+SKIP_EC2="${AWSBOX_R53_SKIP_EC2:-0}"
+UPSTREAM_NAME="${AWSBOX_R53_UPSTREAM_NAME:-example.com}"
 # Extra compose file, e.g. to blank start.d hooks while #299 breaks EC2 containers.
 COMPOSE=(-f "$ROOT/docker-compose.yml")
 [[ -n "${AWSBOX_R53_COMPOSE_OVERRIDE:-}" ]] && COMPOSE+=(-f "$AWSBOX_R53_COMPOSE_OVERRIDE")
@@ -292,6 +301,7 @@ mode = os.environ["MODE"]
 zone = os.environ["ZONE"]
 nlb = os.environ["NLB"]
 alb = os.environ["ALB"]
+upstream = os.environ["UPSTREAM"]
 
 def ips(name, family):
     return sorted({item[4][0] for item in socket.getaddrinfo(name, 80, family)})
@@ -304,9 +314,16 @@ def must_fail(name):
         return
     sys.exit(f"resolved {name} from unassociated VPC")
 
+def must_resolve_upstream():
+    found = ips(upstream, socket.AF_INET)
+    if not found or any(ipaddress.ip_address(item).is_private for item in found):
+        sys.exit(f"upstream {upstream} did not resolve publicly: {found}")
+    print(f"upstream {upstream} {found[0]}")
+
 if mode == "deny":
     for name in (f"app.{zone}", f"alb.{zone}", f"a.{zone}", f"v6.{zone}", nlb):
         must_fail(name)
+    must_resolve_upstream()
     sys.exit(0)
 
 app = ips(f"app.{zone}", socket.AF_INET)
@@ -323,6 +340,7 @@ if a != ["203.0.113.10"]:
 v6 = [ipaddress.ip_address(item).compressed for item in ips(f"v6.{zone}", socket.AF_INET6)]
 if "2001:db8::206" not in v6:
     sys.exit(f"AAAA {v6}")
+must_resolve_upstream()
 body = urllib.request.urlopen(f"http://app.{zone}/", timeout=10).read()
 if b"nginx" not in body.lower() and b"welcome" not in body.lower():
     sys.exit("connect body was not nginx")
@@ -333,7 +351,7 @@ docker cp "$CHECK" "${CID_NO}:/tmp/r53-check.py"
 
 ok_out=""
 for _ in $(seq 1 25); do
-	if ok_out="$(docker exec -e MODE=ok -e ZONE="$ZONE_NAME" -e NLB="$NLB_DNS" -e ALB="$ALB_DNS" "$CID_OK" python /tmp/r53-check.py 2>&1)"; then
+	if ok_out="$(docker exec -e MODE=ok -e ZONE="$ZONE_NAME" -e NLB="$NLB_DNS" -e ALB="$ALB_DNS" -e UPSTREAM="$UPSTREAM_NAME" "$CID_OK" python /tmp/r53-check.py 2>&1)"; then
 		break
 	fi
 	echo "retry associated: ${ok_out}"
@@ -343,44 +361,48 @@ done
 [[ -n "$ok_out" ]] || fail "associated VPC did not resolve and connect"
 echo "associated ${ok_out}"
 
-docker exec -e MODE=deny -e ZONE="$ZONE_NAME" -e NLB="$NLB_DNS" -e ALB="$ALB_DNS" "$CID_NO" python /tmp/r53-check.py \
+docker exec -e MODE=deny -e ZONE="$ZONE_NAME" -e NLB="$NLB_DNS" -e ALB="$ALB_DNS" -e UPSTREAM="$UPSTREAM_NAME" "$CID_NO" python /tmp/r53-check.py \
 	|| fail "unassociated VPC resolved a private name"
 
 echo "OK: private zone from ${VPC_A}; denied from ${VPC_B}"
 
-IID="$(aws ec2 run-instances \
-	--image-id ami-ubuntu-22.04 \
-	--instance-type t2.micro \
-	--subnet-id "$SUB_A1" \
-	--security-group-ids "$SG_A" \
-	--query 'Instances[0].InstanceId' --output text)"
-echo "ec2 ${IID}"
-EC2_STATE=""
-for _ in $(seq 1 45); do
-	EC2_STATE="$(aws ec2 describe-instances --instance-ids "$IID" --query 'Reservations[0].Instances[0].State.Name' --output text)"
-	[[ "$EC2_STATE" == "running" ]] && break
-	sleep 2
-done
-[[ "$EC2_STATE" == "running" ]] || fail "ec2 ${EC2_STATE}"
-EC2_CID=""
-for _ in $(seq 1 30); do
-	EC2_CID="$(docker ps -q --filter "label=localemu.instance-id=${IID}" | head -1)"
-	[[ -n "$EC2_CID" ]] && break
-	sleep 2
-done
-[[ -n "$EC2_CID" ]] || fail "ec2 container missing"
-docker cp "$CHECK" "${EC2_CID}:/tmp/r53-check.py"
-ec2_out=""
-for _ in $(seq 1 20); do
-	if ec2_out="$(docker exec -e MODE=ok -e ZONE="$ZONE_NAME" -e NLB="$NLB_DNS" -e ALB="$ALB_DNS" "$EC2_CID" python3 /tmp/r53-check.py 2>&1)"; then
-		break
-	fi
-	echo "retry ec2: ${ec2_out}"
+if [[ "$SKIP_EC2" == "1" ]]; then
+	echo "SKIP: EC2 step (AWSBOX_R53_SKIP_EC2=1, see #299)"
+else
+	IID="$(aws ec2 run-instances \
+		--image-id ami-ubuntu-22.04 \
+		--instance-type t2.micro \
+		--subnet-id "$SUB_A1" \
+		--security-group-ids "$SG_A" \
+		--query 'Instances[0].InstanceId' --output text)"
+	echo "ec2 ${IID}"
+	EC2_STATE=""
+	for _ in $(seq 1 45); do
+		EC2_STATE="$(aws ec2 describe-instances --instance-ids "$IID" --query 'Reservations[0].Instances[0].State.Name' --output text)"
+		[[ "$EC2_STATE" == "running" ]] && break
+		sleep 2
+	done
+	[[ "$EC2_STATE" == "running" ]] || fail "ec2 ${EC2_STATE}"
+	EC2_CID=""
+	for _ in $(seq 1 30); do
+		EC2_CID="$(docker ps -q --filter "label=localemu.instance-id=${IID}" | head -1)"
+		[[ -n "$EC2_CID" ]] && break
+		sleep 2
+	done
+	[[ -n "$EC2_CID" ]] || fail "ec2 container missing"
+	docker cp "$CHECK" "${EC2_CID}:/tmp/r53-check.py"
 	ec2_out=""
-	sleep 2
-done
-[[ -n "$ec2_out" ]] || fail "EC2 in the associated VPC did not resolve"
-echo "ec2 ${ec2_out}"
+	for _ in $(seq 1 20); do
+		if ec2_out="$(docker exec -e MODE=ok -e ZONE="$ZONE_NAME" -e NLB="$NLB_DNS" -e ALB="$ALB_DNS" -e UPSTREAM="$UPSTREAM_NAME" "$EC2_CID" python3 /tmp/r53-check.py 2>&1)"; then
+			break
+		fi
+		echo "retry ec2: ${ec2_out}"
+		ec2_out=""
+		sleep 2
+	done
+	[[ -n "$ec2_out" ]] || fail "EC2 in the associated VPC did not resolve"
+	echo "ec2 ${ec2_out}"
+fi
 
 DENY_USER="r53-deny-${TS}"
 aws iam create-user --user-name "$DENY_USER" >/dev/null

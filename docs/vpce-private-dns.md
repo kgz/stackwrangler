@@ -21,6 +21,8 @@ The A record is the Interface endpoint proxy IP on the VPC Docker network. That 
 
 EC2, ECS `awsvpc`, and Lambda `VpcConfig` get the resolver via `--dns` (ECS also rewrites `/etc/resolv.conf` after attach).
 
+The resolver process also answers [Route 53 private hosted zones](r53-private.md); shared code is `localemu-patches/dns_common.py`.
+
 ## Smoke
 
 ```bash
