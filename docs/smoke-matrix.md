@@ -30,6 +30,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | EC2 | yes | **yes** (`ec2-authz-smoke.sh`, instance-profile + `ssm:SendCommand` in `ec2-imds-smoke.sh`) | user-data | list | `ec2-smoke.sh`, `ec2-imds-smoke.sh`, `ec2-authz-smoke.sh` |
 | ECR | yes | **yes** (execution role without `ecr:BatchGetImage`) | — | no → [#217](https://github.com/kgz/awsl/issues/217) | `ecr-smoke.sh` |
 | VPC routes (private / peering / NAT) | yes | no | no default route; route removed | — | `vpc-routing-smoke.sh` |
+| VPC egress (Lambda + S3 GW endpoint + bridge attach) | yes (S3 via prefix list, peer, IGW restore, restart replay, ECS bridge on VPC net) | n/a (route fidelity) | public host blocked; S3 without GW endpoint | — | `vpc-egress-smoke.sh` |
 | Egress via proxy (private ECS task, no default route) | yes (fetch via `HTTP_PROXY`, proxy log); emulator via `NO_PROXY` | **yes** (proxy allowlist refusal 403) | no direct route without proxy env | — | `egress-proxy-smoke.sh` |
 | Egress via proxy (private ECS task, no default route) | yes (fetch via `HTTP_PROXY`, proxy log) | **yes** (proxy allowlist refusal 403) | no direct route without proxy env; non-root image blocked; emulator via `NO_PROXY` (fails: gap) | — | `egress-proxy-smoke.sh` |
 | Egress via proxy (private ECS task, no default route) | yes (fetch via `HTTP_PROXY`, proxy log) | **yes** (proxy allowlist refusal 403) | no direct route without proxy; no default docker bridge (#271); emulator via `NO_PROXY` (fails: [#269](https://github.com/kgz/awsl/issues/269)) | — | `egress-proxy-smoke.sh` |

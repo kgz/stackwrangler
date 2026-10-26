@@ -64,3 +64,4 @@ Slice status (parent + any `slices/*` present):
 | [acm](slices/acm/) | [#74](https://github.com/kgz/awsl/issues/74) | `./bin/acm-smoke.sh` |
 | [asg](slices/asg/) | [#83](https://github.com/kgz/awsl/issues/83) | `./bin/autoscaling-smoke.sh` |
 | [codedeploy](slices/codedeploy/) | [#98](https://github.com/kgz/awsl/issues/98) | `./bin/codedeploy-smoke.sh` |
+| [egress](slices/egress/) | [#230](https://github.com/kgz/awsl/issues/230) | `./bin/vpc-egress-smoke.sh` |

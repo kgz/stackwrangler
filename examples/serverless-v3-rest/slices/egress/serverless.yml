@@ -1,0 +1,19 @@
+service: awsbox-egress-slice
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: us-east-1
+
+functions:
+  egress:
+    handler: handler.handler
+    name: awsbox-egress-probe
+    timeout: 15
+    vpc:
+      securityGroupIds:
+        - sg-placeholder
+      subnetIds:
+        - subnet-placeholder

@@ -65,7 +65,7 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 | Auto Scaling / Application Auto Scaling | ASG create/set-desired/describe · register scalable target | — | **CLI + smoke** · real ECS hosts [#207](https://github.com/kgz/awsl/issues/207) · authz [#334](https://github.com/kgz/awsl/issues/334) · console [#337](https://github.com/kgz/awsl/issues/337) · [docs/batch-stubs.md](docs/batch-stubs.md) |
 | EKS | — | — | **Backlog** |
 
-Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ecs-host-creds-smoke.sh` · `./bin/ecs-ec2-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ec2-imds-smoke.sh` · `./bin/ec2-authz-smoke.sh` · `./bin/ecr-smoke.sh` · `./bin/vpc-routing-smoke.sh` · `./bin/sg-enforcement-smoke.sh` · `./bin/vpce-private-dns-smoke.sh` · `./bin/elbv2-smoke.sh` · `./bin/autoscaling-smoke.sh` · `./bin/application-autoscaling-smoke.sh` · `./bin/batch-smoke.sh` · `./bin/elasticbeanstalk-smoke.sh` · `./bin/apprunner-smoke.sh`
+Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ecs-host-creds-smoke.sh` · `./bin/ecs-ec2-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ec2-imds-smoke.sh` · `./bin/ec2-authz-smoke.sh` · `./bin/ecr-smoke.sh` · `./bin/vpc-routing-smoke.sh` · `./bin/vpc-egress-smoke.sh` · `./bin/sg-enforcement-smoke.sh` · `./bin/vpce-private-dns-smoke.sh` · `./bin/elbv2-smoke.sh` · `./bin/autoscaling-smoke.sh` · `./bin/application-autoscaling-smoke.sh` · `./bin/batch-smoke.sh` · `./bin/elasticbeanstalk-smoke.sh` · `./bin/apprunner-smoke.sh`
 
 
 ## Networking
@@ -73,7 +73,7 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 | Service | Status |
 |---------|--------|
 | Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/RT/SG + fixture tags · [docs/mirror.md](docs/mirror.md) · `./bin/mirror-tags-smoke.sh` · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
-| VPC routes / peering / NAT | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · gateway endpoints / Lambda egress [#230](https://github.com/kgz/awsl/issues/230) · console [#146](https://github.com/kgz/awsl/issues/146) |
+| VPC routes / peering / NAT / gateway endpoints | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · `./bin/vpc-egress-smoke.sh` · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC security groups | **Partial** · [docs/sg-enforcement.md](docs/sg-enforcement.md) · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · VPC Lambda [#237](https://github.com/kgz/awsl/issues/237) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC Interface endpoint private DNS | **Partial** · [docs/vpce-private-dns.md](docs/vpce-private-dns.md) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC / AZ polish | **Backlog** |
