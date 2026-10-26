@@ -169,6 +169,16 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
 | DynamoDB put/get | happy | covered | `./bin/dynamodb-smoke.sh` |
 | DynamoDB deny PutItem | sad/authz | covered | `./bin/dynamodb-authz-smoke.sh` |
+| DynamoDB table with GSI + TTL deployed via CloudFormation (serverless slice) | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB GSI query, table query, scan with filter | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB UpdateItem expression (`SET`, `if_not_exists`, `REMOVE`) | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB TransactWriteItems commit | happy | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB TTL expiry removes item from table and GSI | happy | covered | `./bin/dynamodb-depth-smoke.sh` (sweep via `DELETE /_aws/dynamodb/expired`, LocalEmu-only) |
+| DynamoDB duplicate conditional put / failed update condition → `ConditionalCheckFailedException` | sad/other | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB cancelled transaction → `TransactionCanceledException`, no partial write | sad/other | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB Allow on index ARN only / table ARN only / Deny on index ARN | sad/authz | covered | `./bin/dynamodb-depth-smoke.sh` |
+| DynamoDB Batch*/Transact* under table-scoped policy | sad/authz | missing | [#306](https://github.com/kgz/awsl/issues/306) |
+| DynamoDB `aws:ResourceTag` on index ARN | sad/authz | missing | [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions Pass execution | happy | covered | `./bin/sfn-smoke.sh` |
 | Step Functions deny StartExecution | sad/authz | covered | `./bin/sfn-authz-smoke.sh` |
 | Secrets create/get | happy | covered | `./bin/secrets-smoke.sh` |

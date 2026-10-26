@@ -36,6 +36,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | SNS → SQS fan-out | yes (envelope, raw, filter) | **yes** (wrong/missing queue policy; unsubscribe) | — | — | `sns-sqs-fanout-smoke.sh` |
 | EventBridge | yes | **yes** | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-smoke.sh`, `events-authz-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
+| DynamoDB depth (GSI, conditions, UpdateItem, transactions, TTL) | yes (CFN slice `serverless-v3-rest/slices/ddb`) | **yes** (Allow on index ARN / table ARN only, Deny on index; Batch/Transact table-scoped [#306](https://github.com/kgz/awsl/issues/306)) | duplicate put, failed update condition, cancelled transaction; index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) | — | `dynamodb-depth-smoke.sh` |
 | Step Functions | yes | **yes** | — | no → [#175](https://github.com/kgz/awsl/issues/175) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` |
 | Secrets Manager | yes | **yes** | — | no → [#176](https://github.com/kgz/awsl/issues/176) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` |
 | KMS | yes | **yes** | — | no → [#177](https://github.com/kgz/awsl/issues/177) | `kms-smoke.sh`, `kms-authz-smoke.sh` |
