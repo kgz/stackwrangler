@@ -125,13 +125,15 @@ export function BucketObjectsPage() {
   }
 
   async function onUpload(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return
+    // FileList is live — snapshot before the input is cleared in onChange.
+    const files = fileList ? Array.from(fileList) : []
+    if (files.length === 0) return
     setError(null)
     try {
-      for (const file of Array.from(fileList)) {
+      for (const file of files) {
         await putObject(bucket, file.name, file)
       }
-      setToast(`Uploaded ${fileList.length} object(s).`)
+      setToast(`Uploaded ${files.length} object(s).`)
       await refresh()
     } catch (err) {
       setError(formatS3Error(err))

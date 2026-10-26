@@ -77,6 +77,7 @@ test.describe('S3 general purpose buckets (UI + CLI)', () => {
       buffer: Buffer.from('hello from playwright'),
     })
 
+    await expect(page.getByText('Uploaded 1 object(s).')).toBeVisible()
     await expect(page.getByText('e2e-hello.txt')).toBeVisible()
 
     const body = aws([
