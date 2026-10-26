@@ -94,8 +94,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | ECS task killed → replaced and re-registered in the target group | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS container instance from an ASG + launch template | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS `CODE_DEPLOY` service starts blue tasks behind the listener | happy | covered | `./bin/ecs-ec2-smoke.sh` |
-| ECS CodeDeploy blue/green: v2 on green, listener swap, blue stopped | happy | covered | `./bin/ecs-ec2-smoke.sh` |
-| ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./bin/ecs-ec2-smoke.sh` |
+| ECS CodeDeploy blue/green: v2 on green, listener swap, blue stopped | happy | covered | `./bin/ecs-ec2-smoke.sh`, `./bin/codedeploy-smoke.sh` |
+| ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./bin/ecs-ec2-smoke.sh`, `./bin/codedeploy-smoke.sh` |
+| CodeDeploy Lambda app + canary deployment config + create-deployment Succeeded | happy | covered (control plane) | `./bin/codedeploy-smoke.sh` |
+| CodeDeploy Lambda canary alias weight shift | happy | missing | [#340](https://github.com/kgz/awsl/issues/340) |
+| CodeDeploy deny create-deployment / create-application | sad/authz | missing | [#341](https://github.com/kgz/awsl/issues/341) |
 | **ECS deny `ecs:CreateService` → AccessDenied** | sad/authz | covered | `./bin/ecs-ec2-smoke.sh` |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
 | EC2 IMDSv2 instance-profile reads secret | happy | covered | `./bin/ec2-imds-smoke.sh` |

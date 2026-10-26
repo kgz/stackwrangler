@@ -157,9 +157,10 @@ CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · s
 | CloudFormation | **Partial** — failed create rolls back and delete-stack removes resources ([#212](https://github.com/kgz/awsl/issues/212)); in-place rollback / Snapshot [#228](https://github.com/kgz/awsl/issues/228); stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Pulumi / Ansible examples | **Backlog** |
-| CodePipeline / Build / Deploy / Artifact | **Backlog** |
+| CodeDeploy | **CLI + smoke** — ECS blue/green + Lambda canary DG (control plane) · `./bin/codedeploy-smoke.sh` · slice `examples/serverless-v3-rest/slices/codedeploy/` · alias weight [#340](https://github.com/kgz/awsl/issues/340) · authz/console [#341](https://github.com/kgz/awsl/issues/341) |
+| CodePipeline / Build / Artifact | **Backlog** |
 
-Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`
+Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`, `./bin/codedeploy-smoke.sh`
 
 ---
 

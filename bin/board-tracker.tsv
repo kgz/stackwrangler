@@ -88,7 +88,7 @@
 # Developer tools
 96	backlog	CodePipeline
 97	backlog	CodeBuild
-98	backlog	CodeDeploy
+98	in-progress	CodeDeploy
 99	backlog	CodeArtifact (+ CodeCommit)
 # Data movement
 100	done	Transfer Family (SFTP)
@@ -216,3 +216,5 @@
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+340	backlog	Debt: CodeDeploy Lambda canary alias weight (from #98)
+341	backlog	Debt: CodeDeploy authz smoke + console (from #98)

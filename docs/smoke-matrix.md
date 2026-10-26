@@ -22,6 +22,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | API GW | yes | **yes** (`apigw-authz-smoke.sh`) | — | thin | `apigw-smoke.sh`, `apigw-authz-smoke.sh` |
 | CFN / CDK / SAM | yes | **yes** (parity authz) | **yes** (rollback, failed update) | list/detail | `cfn\|cdk\|sam-smoke.sh`, `cfn-lifecycle-smoke.sh`, `aws-parity-cfn-authz.sh` |
 | ECS | yes | **yes** (`ecs-authz-smoke.sh`, CreateService deny in `ecs-ec2-smoke.sh`, secrets deny in `ecs-taskdef-smoke.sh`) | task unreachable · bad CodeDeploy revision | list | `ecs-smoke.sh`, `ecs-authz-smoke.sh`, `ecs-taskdef-smoke.sh`, `ecs-host-creds-smoke.sh`, `ecs-ec2-smoke.sh` |
+| CodeDeploy | yes (ECS BG + Lambda canary DG) | no → [#341](https://github.com/kgz/awsl/issues/341) | bad ECS revision → Failed · Lambda alias weight [#340](https://github.com/kgz/awsl/issues/340) | no → [#341](https://github.com/kgz/awsl/issues/341) | `codedeploy-smoke.sh` |
 | EC2 | yes | **yes** (`ec2-authz-smoke.sh`, instance-profile + `ssm:SendCommand` in `ec2-imds-smoke.sh`) | user-data | list | `ec2-smoke.sh`, `ec2-imds-smoke.sh`, `ec2-authz-smoke.sh` |
 | ECR | yes | **yes** (execution role without `ecr:BatchGetImage`) | — | no → [#217](https://github.com/kgz/awsl/issues/217) | `ecr-smoke.sh` |
 | VPC routes (private / peering / NAT) | yes | no | no default route; route removed | — | `vpc-routing-smoke.sh` |

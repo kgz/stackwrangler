@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update GitHub Project #8 (awsl) card status for issues.
-# Usage: ./bin/board-status.sh <backlog|ready|in-progress|in-review|done> <issue-num> [issue-num...]
+# Usage: ./bin/board-status.sh <backlog|ready|designing|in-progress|in-review|done> <issue-num> [issue-num...]
 set -euo pipefail
 
 gh_stored_token() {
@@ -31,19 +31,21 @@ resolve_github_token() {
 resolve_github_token
 
 if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <backlog|ready|in-progress|in-review|done> <issue-num> [issue-num...]" >&2
+  echo "Usage: $0 <backlog|ready|designing|in-progress|in-review|done> <issue-num> [issue-num...]" >&2
   exit 1
 fi
 
 STATUS_NAME="$1"
 shift
 
+# Project #8 Status option IDs (refresh if board-status updates fail).
 case "$STATUS_NAME" in
-  backlog|todo) OPT="0970a811" ;;
-  ready) OPT="a0088790" ;;
-  in-progress|in_progress) OPT="929fb11b" ;;
-  in-review|in_review) OPT="7366a833" ;;
-  done) OPT="b56921ee" ;;
+  backlog|todo) OPT="dfa84092" ;;
+  ready) OPT="ae0781e5" ;;
+  designing) OPT="6199a95a" ;;
+  in-progress|in_progress) OPT="99efdfee" ;;
+  in-review|in_review) OPT="649b2f32" ;;
+  done) OPT="023eb12d" ;;
   *)
     echo "Unknown status: $STATUS_NAME" >&2
     exit 1
