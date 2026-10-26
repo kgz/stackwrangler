@@ -12,7 +12,6 @@ import { Link } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton } from '../components/S3Ui'
 import {
-  DeadLink,
   EmptyRow,
   FilterHeader,
   ListCard,
@@ -161,7 +160,9 @@ export function LambdaFunctionsPage() {
               {busy ? 'Working…' : 'Create hello function'}
             </button>
             <div className="spacer" />
-            <DeadButton variant="primary">Create function</DeadButton>
+            <Link className="btn btn-primary" to="/lambda/create">
+              Create function
+            </Link>
           </>
         }
         placeholder="Filter by function name or ARN"
@@ -206,7 +207,12 @@ export function LambdaFunctionsPage() {
                     />
                     <td>
                       <ResourceLabel ids={[name, fn.FunctionArn]}>
-                        <DeadLink>{name}</DeadLink>
+                        <Link
+                          to={`/lambda/functions/${encodeURIComponent(name)}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {name}
+                        </Link>
                       </ResourceLabel>
                     </td>
                     <td>{fn.Description || '—'}</td>

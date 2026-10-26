@@ -70,11 +70,13 @@ export async function putObject(
     (typeof Blob !== 'undefined' && body instanceof Blob && body.type
       ? body.type
       : guessContentType(key))
+  const payload =
+    body instanceof ArrayBuffer ? new Uint8Array(body) : body
   await s3.send(
     new PutObjectCommand({
       Bucket: bucket,
       Key: key,
-      Body: body,
+      Body: payload,
       ContentType: type || undefined,
     }),
   )

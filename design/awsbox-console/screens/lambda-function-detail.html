@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>demo-console-hello — Lambda</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="lambda-function-detail" data-nav="lambda-functions" data-service="lambda" data-title="demo-console-hello" data-crumb="demo-console-hello">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">demo-console-hello</h1>
+          <div class="aws-subtitle-row">
+            <span class="aws-status aws-status-success">Active</span>
+            <span>nodejs20.x · Zip · x86_64</span>
+            <span>Last modified 2026-10-26 11:42:08</span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-invoke">Test</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Actions ▾</button>
+      </div>
+
+      <section class="aws-card" data-od-id="content-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="lambda-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="overview" aria-current="page" data-od-id="tab-overview">Overview</button>
+          <button type="button" class="aws-tab" data-tab="code" data-od-id="tab-code">Code</button>
+          <button type="button" class="aws-tab" data-tab="permissions" disabled aria-disabled="true" title="To implement" data-od-id="tab-permissions">Permissions</button>
+          <button type="button" class="aws-tab" data-tab="monitor" disabled aria-disabled="true" title="To implement" data-od-id="tab-monitor">Monitor</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="overview" data-od-id="panel-overview">
+            <h2 class="aws-section-title">Function overview</h2>
+            <dl class="aws-kv" data-od-id="function-overview">
+              <div>
+                <dt>Function ARN</dt>
+                <dd><code class="aws-mono">arn:aws:lambda:ap-southeast-2:445772506418:function:demo-console-hello</code></dd>
+              </div>
+              <div>
+                <dt>Runtime</dt>
+                <dd>nodejs20.x</dd>
+              </div>
+              <div>
+                <dt>Handler</dt>
+                <dd><code class="aws-mono">index.handler</code></dd>
+              </div>
+              <div>
+                <dt>Architecture</dt>
+                <dd>x86_64</dd>
+              </div>
+              <div>
+                <dt>Package type</dt>
+                <dd>Zip</dd>
+              </div>
+              <div>
+                <dt>Execution role</dt>
+                <dd><code class="aws-mono">awsbox-lambda-basic</code></dd>
+              </div>
+              <div>
+                <dt>Memory</dt>
+                <dd>128 MB</dd>
+              </div>
+              <div>
+                <dt>Timeout</dt>
+                <dd>3 sec</dd>
+              </div>
+              <div>
+                <dt>Description</dt>
+                <dd>Sample hello handler from console create</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div data-tab-panel="code" hidden data-od-id="panel-code">
+            <div class="aws-code-toolbar" data-od-id="code-toolbar">
+              <span class="file-tab" data-od-id="file-tab-index">index.js</span>
+              <div class="spacer" style="flex:1"></div>
+              <button type="button" class="btn btn-normal" data-od-id="btn-save">Save</button>
+              <button type="button" class="btn btn-primary" data-od-id="btn-deploy">Deploy</button>
+              <button type="button" class="btn btn-normal" data-od-id="btn-test-invoke">Test</button>
+            </div>
+            <div class="aws-code-editor" data-od-id="code-editor" role="region" aria-label="index.js source">
+              <div class="aws-code-gutter" aria-hidden="true">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11</div>
+              <pre class="aws-code-source" data-od-id="code-source"><span class="tok-comment">// demo-console-hello — Hello world template</span>
+<span class="tok-kw">exports</span>.<span class="tok-prop">handler</span> = <span class="tok-kw">async</span> (<span class="tok-prop">event</span>) =&gt; {
+  <span class="tok-kw">const</span> <span class="tok-prop">message</span> = <span class="tok-str">"Hello from awsbox"</span>;
+  <span class="tok-kw">return</span> {
+    <span class="tok-prop">statusCode</span>: <span class="tok-num">200</span>,
+    <span class="tok-prop">headers</span>: { <span class="tok-str">"content-type"</span>: <span class="tok-str">"application/json"</span> },
+    <span class="tok-prop">body</span>: <span class="tok-fn">JSON</span>.<span class="tok-fn">stringify</span>({ message, <span class="tok-prop">event</span> }),
+  };
+};
+</pre>
+            </div>
+            <p class="aws-hint" style="margin-top:10px">Runtime settings · Handler <code class="aws-mono">index.handler</code> · Layer attachments are out of scope for this mock.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

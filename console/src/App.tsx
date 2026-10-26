@@ -4,6 +4,8 @@ import { BucketObjectsPage } from './pages/BucketObjectsPage'
 import { BucketsPage } from './pages/BucketsPage'
 import { ApiGatewayPage } from './pages/ApiGatewayPage'
 import { IamUsersPage } from './pages/IamUsersPage'
+import { LambdaCreateFunctionPage } from './pages/LambdaCreateFunctionPage'
+import { LambdaFunctionDetailPage } from './pages/LambdaFunctionDetailPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
@@ -30,6 +32,11 @@ export default function App() {
           <Route path="buckets/:name" element={<BucketObjectsPage />} />
           <Route path="iam" element={<IamUsersPage />} />
           <Route path="lambda" element={<LambdaFunctionsPage />} />
+          <Route path="lambda/create" element={<LambdaCreateFunctionPage />} />
+          <Route
+            path="lambda/functions/:name"
+            element={<LambdaFunctionDetailPage />}
+          />
           <Route path="logs" element={<LogsPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route path="cloudformation" element={<CloudFormationStacksPage />} />
