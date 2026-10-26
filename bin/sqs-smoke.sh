@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Happy path: create queue → send → receive → delete message → delete queue.
+# Sad: MessageRetentionPeriod > 14d refused (InvalidAttributeValue) (#363).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -22,6 +23,8 @@ export AWS_DEFAULT_REGION="$REGION"
 aws() {
 	command aws --endpoint-url "$EP" --region "$REGION" "$@"
 }
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
 
 cleanup() {
 	[[ "$KEEP" == "1" ]] && return 0
@@ -59,4 +62,14 @@ print(ms[0]["ReceiptHandle"])
 ')"
 aws sqs delete-message --queue-url "$QUEUE_URL" --receipt-handle "$HANDLE" >/dev/null
 
-echo "OK: sqs send/receive/delete (${QNAME})"
+# retention above 14 days (1209600) must be refused
+set +e
+OUT="$(aws sqs create-queue --queue-name "${QNAME}-ret" \
+	--attributes MessageRetentionPeriod=1209601 2>&1)"
+RC=$?
+set -e
+[[ "$RC" -ne 0 ]] || fail "CreateQueue accepted MessageRetentionPeriod=1209601; real AWS rejects"
+echo "$OUT" | grep -q 'InvalidAttributeValue' || fail "expected InvalidAttributeValue, got: $OUT"
+echo "$OUT" | grep -qi 'MessageRetentionPeriod' || fail "error does not mention MessageRetentionPeriod: $OUT"
+
+echo "OK: sqs send/receive/delete + retention reject (${QNAME})"

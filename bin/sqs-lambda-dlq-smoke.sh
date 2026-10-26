@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # SQS -> Lambda event source mapping: success path (Lambda writes S3 object, message deleted),
-# redrive to DLQ (maxReceiveCount 2, Lambda always throws), and sad/authz path
-# (execution role without SQS read perms -> CreateEventSourceMapping refused, as in real AWS).
+# redrive to DLQ (maxReceiveCount 2, Lambda always throws), sad/authz path
+# (execution role without SQS read perms -> CreateEventSourceMapping refused), and
+# AWS-parity rejects: visibility < function timeout, MaximumConcurrency < 2 (#363).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -82,9 +83,10 @@ mkqueue() { # name [attrs-json]
 	echo "$u"
 }
 qarn() { aws sqs get-queue-attributes --queue-url "$1" --attribute-names QueueArn --query Attributes.QueueArn --output text; }
-mkfn() { # name zip role-arn [env-json]
+mkfn() { # name zip role-arn [timeout]
+	local timeout="${4:-20}"
 	aws lambda create-function --function-name "$1" --runtime nodejs18.x --role "$3" \
-		--handler index.handler --zip-file "fileb://$2" --timeout 20 \
+		--handler index.handler --zip-file "fileb://$2" --timeout "$timeout" \
 		--environment "Variables={BUCKET=${BUCKET}}" >/dev/null
 	FNS+=("$1")
 	local s=""
@@ -146,16 +148,18 @@ ok "message deleted from source queue after success"
 # ---- 2. redrive: always-throwing Lambda, maxReceiveCount 2 -> DLQ ----
 DLQ="$(mkqueue "${P}-dlq")"
 DARN="$(qarn "$DLQ")"
-RP="$(python3 -c 'import json,sys; print(json.dumps({"RedrivePolicy":json.dumps({"deadLetterTargetArn":sys.argv[1],"maxReceiveCount":2}),"VisibilityTimeout":"2"}))' "$DARN")"
+# VT must be >= function timeout (AWS + local). Boom uses timeout 5 / VT 10 so two
+# failed receives finish within the DLQ poll window without racing the invoke.
+RP="$(python3 -c 'import json,sys; print(json.dumps({"RedrivePolicy":json.dumps({"deadLetterTargetArn":sys.argv[1],"maxReceiveCount":2}),"VisibilityTimeout":"10"}))' "$DARN")"
 Q2="$(mkqueue "${P}-redrive" "$RP")"
-mkfn "${P}-boom" "$TMP/boom.zip" "$RARN"
+mkfn "${P}-boom" "$TMP/boom.zip" "$RARN" 5
 U2="$(aws lambda create-event-source-mapping --function-name "${P}-boom" \
 	--event-source-arn "$(qarn "$Q2")" --batch-size 1 --query UUID --output text)"
 UUIDS+=("$U2")
 wait_esm_enabled "$U2"
 aws sqs send-message --queue-url "$Q2" --message-body "poison-${TS}" >/dev/null
 body=""
-for _ in $(seq 1 45); do
+for _ in $(seq 1 60); do
 	body="$(aws sqs receive-message --queue-url "$DLQ" --wait-time-seconds 1 --query 'Messages[0].Body' --output text 2>/dev/null || true)"
 	[[ "$body" == "poison-${TS}" ]] && break
 	sleep 2
@@ -182,4 +186,63 @@ echo "$OUT" | grep -q 'InvalidParameterValueException' || fail "expected Invalid
 echo "$OUT" | grep -qi 'ReceiveMessage\|execution role' || fail "error does not mention execution role/ReceiveMessage: $OUT"
 ok "role without SQS perms: CreateEventSourceMapping refused (InvalidParameterValueException)"
 
-echo "OK: SQS->Lambda mapping, DLQ redrive, authz refusal (${P})"
+# ---- 4. visibility timeout < function timeout -> mapping refused ----
+Q4="$(mkqueue "${P}-vt" '{"VisibilityTimeout":"4"}')"
+set +e
+OUT="$(aws lambda create-event-source-mapping --function-name "${P}-ok" \
+	--event-source-arn "$(qarn "$Q4")" --batch-size 1 2>&1)"
+RC=$?
+set -e
+if [[ "$RC" -eq 0 ]]; then
+	u="$(echo "$OUT" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("UUID",""))' 2>/dev/null || true)"
+	[[ -n "$u" ]] && UUIDS+=("$u")
+	fail "CreateEventSourceMapping succeeded with VisibilityTimeout=4 < function timeout=20"
+fi
+echo "$OUT" | grep -q 'InvalidParameterValueException' || fail "expected InvalidParameterValueException for VT, got: $OUT"
+echo "$OUT" | grep -qi 'visibility' || fail "error does not mention visibility: $OUT"
+ok "VisibilityTimeout < function timeout: CreateEventSourceMapping refused"
+
+# ---- 5. MaximumConcurrency < 2 -> mapping refused (server; bypass CLI shape min) ----
+Q5="$(mkqueue "${P}-mc" '{"VisibilityTimeout":"30"}')"
+QA5="$(qarn "$Q5")"
+set +e
+OUT="$(
+	EP="$EP" REGION="$REGION" FN="${P}-ok" QA="$QA5" python3 - <<'PY' 2>&1
+import os, sys
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
+
+c = boto3.client(
+    "lambda",
+    endpoint_url=os.environ["EP"],
+    region_name=os.environ["REGION"],
+    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+    config=Config(parameter_validation=False),
+)
+try:
+    r = c.create_event_source_mapping(
+        FunctionName=os.environ["FN"],
+        EventSourceArn=os.environ["QA"],
+        BatchSize=1,
+        ScalingConfig={"MaximumConcurrency": 1},
+    )
+except ClientError as e:
+    print(e.response.get("Error", {}).get("Code", ""), e.response.get("Error", {}).get("Message", ""))
+    sys.exit(1)
+print(r.get("UUID", ""))
+sys.exit(0)
+PY
+)"
+RC=$?
+set -e
+if [[ "$RC" -eq 0 ]]; then
+	[[ -n "$OUT" ]] && UUIDS+=("$OUT")
+	fail "CreateEventSourceMapping succeeded with MaximumConcurrency=1; real AWS minimum is 2"
+fi
+echo "$OUT" | grep -q 'InvalidParameterValueException' || fail "expected InvalidParameterValueException for MC, got: $OUT"
+echo "$OUT" | grep -qi 'MaximumConcurrency\|maximumConcurrency\|concurrency' || fail "error does not mention MaximumConcurrency: $OUT"
+ok "MaximumConcurrency=1: CreateEventSourceMapping refused"
+
+echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC refusal (${P})"

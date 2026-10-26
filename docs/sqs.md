@@ -12,7 +12,8 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | Area | Status |
 |------|--------|
 | create / send / receive / delete | Working (smoke) |
+| MessageRetentionPeriod outside 60–1209600 | Working — `InvalidAttributeValue` (`sqs-smoke.sh`) |
 | Deny-user SendMessage | Working (`sqs-authz-smoke.sh`) |
 | SNS → SQS delivery respects queue policy (`aws:SourceArn`) | Working (`sns-sqs-fanout-smoke.sh`) |
-| SQS → Lambda ESM + DLQ | Working (`sqs-lambda-dlq-smoke.sh`; create refuses role without ReceiveMessage/DeleteMessage/GetQueueAttributes when `IAM_ENFORCEMENT=1`) · post-create revoke [#285](https://github.com/kgz/awsl/issues/285) |
-| Console | Not wired — Debt from #64 |
+| SQS → Lambda ESM + DLQ | Working (`sqs-lambda-dlq-smoke.sh`; create refuses role without ReceiveMessage/DeleteMessage/GetQueueAttributes when `IAM_ENFORCEMENT=1`; VisibilityTimeout < function timeout; MaximumConcurrency < 2) · post-create revoke [#285](https://github.com/kgz/awsl/issues/285) |
+| Console | Not wired — Debt from #64 → [#167](https://github.com/kgz/awsl/issues/167) |
