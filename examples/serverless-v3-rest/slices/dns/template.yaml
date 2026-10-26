@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: awsbox dns slice — public hosted zone + A / A-alias / CNAME (#56)
+
+Parameters:
+  ZoneName:
+    Type: String
+    Default: example.test
+  TargetAddress:
+    Type: String
+    Default: "203.0.113.50"
+
+Resources:
+  PublicHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref ZoneName
+      HostedZoneConfig:
+        Comment: awsbox dns slice public zone
+
+  ApiTargetA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref PublicHostedZone
+      Name: !Sub "target.${ZoneName}"
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !Ref TargetAddress
+
+  ApiAliasA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref PublicHostedZone
+      Name: !Sub "api.${ZoneName}"
+      Type: A
+      AliasTarget:
+        HostedZoneId: !Ref PublicHostedZone
+        DNSName: !Sub "target.${ZoneName}"
+        EvaluateTargetHealth: false
+
+  WwwCname:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref PublicHostedZone
+      Name: !Sub "www.${ZoneName}"
+      Type: CNAME
+      TTL: 60
+      ResourceRecords:
+        - !Sub "api.${ZoneName}"
+
+Outputs:
+  HostedZoneId:
+    Value: !Ref PublicHostedZone
+  ApiName:
+    Value: !Sub "api.${ZoneName}"

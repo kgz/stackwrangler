@@ -1,10 +1,12 @@
-"""Private hosted-zone resolver for VPC workloads.
+"""Route 53 hosted-zone resolver for VPC workloads (and loopback dig).
 
 Runs as its own process (root, UDP/TCP 53) so it can bind port 53 after
 the gateway drops capabilities. Answers are scoped by the destination
 IP: each VPC's Docker network has this container's address, and workloads
 are started with ``--dns`` set to that address. A query arriving on
-VPC A's address only sees zones associated with VPC A.
+VPC A's address only sees **private** zones associated with VPC A.
+**Public** hosted zones answer on every VPC address and on loopback
+(``127.0.0.1``) so ``dig @127.0.0.1`` from inside the emulator works.
 
 A/AAAA/CNAME come from Route 53. Alias and ``*.elb.amazonaws.com`` names
 synthesize an A record for this container's address on that VPC network,
@@ -142,19 +144,20 @@ def _refresh_api(force: bool = False) -> None:
             ]
             for zone in listed:
                 private = bool((zone.get("Config") or {}).get("PrivateZone"))
-                if not private:
-                    continue
                 detail = r53.get_hosted_zone(Id=zone["Id"])
-                vpcs = {
-                    str(item.get("VPCId"))
-                    for item in (detail.get("VPCs") or [])
-                    if item.get("VPCId")
-                }
-                if not vpcs:
-                    vpcs = _vpcs_via_list(r53, zone["Id"])
+                vpcs: set[str] = set()
+                if private:
+                    vpcs = {
+                        str(item.get("VPCId"))
+                        for item in (detail.get("VPCs") or [])
+                        if item.get("VPCId")
+                    }
+                    if not vpcs:
+                        vpcs = _vpcs_via_list(r53, zone["Id"])
                 zones.append(
                     {
                         "name": _norm(str(zone.get("Name") or "")),
+                        "private": private,
                         "vpcs": vpcs,
                         "records": _list_records(r53, zone["Id"]),
                     }
@@ -170,7 +173,10 @@ def _refresh_api(force: bool = False) -> None:
             _API_OK = True
             sig = repr(
                 (
-                    [(z["name"], sorted(z["vpcs"])) for z in zones],
+                    [
+                        (z["name"], z.get("private"), sorted(z["vpcs"]))
+                        for z in zones
+                    ],
                     [str(lb.get("DNSName") or "") for lb in lbs],
                 )
             )
@@ -178,7 +184,10 @@ def _refresh_api(force: bool = False) -> None:
                 _API_SIG = sig
                 LOG.info(
                     "route53 zones=%s lbs=%s",
-                    [(z["name"], sorted(z["vpcs"])) for z in zones],
+                    [
+                        (z["name"], "private" if z.get("private") else "public", sorted(z["vpcs"]))
+                        for z in zones
+                    ],
                     [str(lb.get("DNSName") or "") for lb in lbs],
                 )
         except Exception as exc:
@@ -315,34 +324,61 @@ def _vpce_answer(name: str, qtype: int, vpc_id: str | None) -> _Answer | None:
     return _Answer(answer[0], answer[1])
 
 
+def _zones_for_query(matching: list[dict], vpc_id: str | None) -> list[dict]:
+    """Private zones need VPC association; public zones answer everywhere."""
+    private_ok = [
+        zone
+        for zone in matching
+        if zone.get("private") and vpc_id and vpc_id in zone["vpcs"]
+    ]
+    public = [zone for zone in matching if not zone.get("private")]
+    # Prefer the longest associated private zone, then public.
+    chosen = private_ok or public
+    chosen.sort(key=lambda zone: len(zone["name"]), reverse=True)
+    return chosen
+
+
+def _answer_from_zone(
+    zone: dict,
+    name: str,
+    qtype: int,
+    vpc_id: str | None,
+    local_ip: str | None,
+    depth: int,
+) -> _Answer | None:
+    named = [rec for rec in zone["records"] if _norm(str(rec.get("Name") or "")) == name]
+    if not named:
+        return None
+    for rec in named:
+        if rec.get("AliasTarget"):
+            answer = _record_answer(rec, name, qtype, vpc_id, local_ip, depth)
+            if answer is not None:
+                return answer
+    for rec in named:
+        if str(rec.get("Type") or "") == "CNAME":
+            answer = _record_answer(rec, name, qtype, vpc_id, local_ip, depth)
+            if answer is not None:
+                return answer
+    for rec in named:
+        answer = _record_answer(rec, name, qtype, vpc_id, local_ip, depth)
+        if answer is not None:
+            return answer
+    return _Answer(0, [])
+
+
 def _lookup(qname: str, qtype: int, vpc_id: str | None, local_ip: str | None, depth: int = 0) -> _Answer | None:
     _refresh_api()
     name = _norm(qname)
     matching = [zone for zone in _ZONES if _name_in_zone(name, zone["name"])]
     if matching:
-        associated = [zone for zone in matching if vpc_id and vpc_id in zone["vpcs"]]
-        if not associated:
+        chosen = _zones_for_query(matching, vpc_id)
+        if not chosen:
+            # Only private zones matched, none associated with this VPC.
             return _Answer(_NXDOMAIN, [])
-        associated.sort(key=lambda zone: len(zone["name"]), reverse=True)
-        for zone in associated:
-            named = [rec for rec in zone["records"] if _norm(str(rec.get("Name") or "")) == name]
-            if not named:
-                continue
-            for rec in named:
-                if rec.get("AliasTarget"):
-                    answer = _record_answer(rec, name, qtype, vpc_id, local_ip, depth)
-                    if answer is not None:
-                        return answer
-            for rec in named:
-                if str(rec.get("Type") or "") == "CNAME":
-                    answer = _record_answer(rec, name, qtype, vpc_id, local_ip, depth)
-                    if answer is not None:
-                        return answer
-            for rec in named:
-                answer = _record_answer(rec, name, qtype, vpc_id, local_ip, depth)
-                if answer is not None:
-                    return answer
-            return _Answer(0, [])
+        for zone in chosen:
+            answer = _answer_from_zone(zone, name, qtype, vpc_id, local_ip, depth)
+            if answer is not None:
+                return answer
         return _Answer(_NXDOMAIN, [])
     lb = _lb_by_name(name)
     if lb is not None:
