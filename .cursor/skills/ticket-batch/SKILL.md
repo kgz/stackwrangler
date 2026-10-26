@@ -137,14 +137,19 @@ When the latest review round has **`must-fix: none`** and you have triaged poten
 # Prefer a real APPROVED review when the token is not the PR author (GitHub blocks self-approve):
 gh pr review <pr> --repo <owner>/<repo> --approve --body "Orchestrator: acceptance review clean (must-fix: none)."
 
-# Always apply the CI gate label (works when the orchestrator is also the author):
-gh api -X POST "repos/<owner>/<repo>/issues/<pr>/labels" -f "labels[]=orchestrator-reviewed"
+# Always apply the CI gate label (required when the orchestrator is also the author).
+# Use JSON input so shells do not eat `labels[]`:
+printf '%s\n' '{"labels":["orchestrator-reviewed"]}' | gh api "repos/<owner>/<repo>/issues/<pr>/labels" --input -
 
 gh pr comment <pr> --repo <owner>/<repo> --body "## Orchestrator — reviewed
 Acceptance review clean (\`must-fix: none\`). Label \`orchestrator-reviewed\` applied. Eligible for \`batch/…\` / merge when the user asks."
 ```
 
-If a later must-fix round re-opens, **remove** the label (`gh api -X DELETE repos/.../issues/<pr>/labels/orchestrator-reviewed`) and do not treat the PR as merge-ready until a clean round again.
+If a later must-fix round re-opens, **remove** the label and do not treat the PR as merge-ready until a clean round again:
+
+```bash
+gh api -X DELETE "repos/<owner>/<repo>/issues/<pr>/labels/orchestrator-reviewed"
+```
 
 Do **not** merge the default branch from this skill. See `docs/pr-review-gate.md`.
 
