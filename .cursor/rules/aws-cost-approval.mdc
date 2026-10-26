@@ -17,8 +17,25 @@ This includes “cheap” or free-tier-ish things (SSM Parameter, empty S3 bucke
 ## Before any real-AWS write
 
 1. State exactly what will be created (resource types + region)
-2. Estimate cost / free-tier note
+2. Estimate cost — **including residuals after teardown** (see below)
 3. Say how it will be deleted afterward
 4. **Wait for explicit yes** (“go ahead”, “approved”, etc.)
 
 If unsure whether an account is real vs local — treat as real and ask.
+
+## Cost estimate must include residuals
+
+“Runs for 5 minutes then delete” is not enough. Call out anything that **keeps billing after the script exits**:
+
+| Check | Examples |
+|-------|----------|
+| **Min deletion / pending window** | KMS CMK `schedule-key-deletion` **7-day minimum** (prorated ~$1/mo until gone) |
+| **Retention / cooldown locks** | Secrets recovery window; RDS final snapshot; OpenSearch / ElastiCache cooldown |
+| **Min billable period** | Some offerings bill a day/month even if deleted early — verify before create |
+| **Versioning / incomplete multipart** | S3 version stacks, MPU parts if abort fails |
+| **Log / metric retention** | CW Logs groups with retention >0; unused alarms |
+| **Idle provisioned capacity** | Kinesis shards, NAT GW, EIP, Load Balancers until delete completes |
+
+State the **worst-case residual**: resource type, how long it can keep costing, and approx $. If the only clean exit still leaves a multi-day charge (KMS 7d, etc.), say that **before** asking for yes — don’t discover it after a green run.
+
+Prefer designs that avoid sticky costs when a free/ephemeral alternative exists (e.g. skip a dedicated CMK if an AWS-managed key suffices for the assertion).
