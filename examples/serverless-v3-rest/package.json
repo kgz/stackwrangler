@@ -1,0 +1,15 @@
+{
+  "name": "awsbox-serverless-v3-rest",
+  "private": true,
+  "description": "Serverless Framework v3 REST fixture for awsbox (#185)",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "serverless": "^3.40.0",
+    "serverless-esbuild": "^1.54.0",
+    "serverless-iam-roles-per-function": "^3.2.0",
+    "serverless-localstack": "^1.3.1"
+  }
+}

@@ -159,7 +159,7 @@
 181	backlog	Debt: ECS same-host hairpin fidelity
 182	done	Real-AWS parity batch10 messaging/data
 184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
-185	backlog	Serverless v3 deploy smoke
+185	in-progress	Serverless v3 deploy smoke
 186	done	VPC Lambda → host services via mapped hostnames
 187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
@@ -216,3 +216,6 @@
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+328	backlog	Debt: Serverless http authorizer CFN PutMethod (from #185)
+329	backlog	Debt: serverless-domain-manager (from #185)
+330	backlog	Debt: Serverless v3 smoke sad path (from #185)

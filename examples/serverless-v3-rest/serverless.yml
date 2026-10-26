@@ -1,0 +1,124 @@
+# Parent Serverless Framework v3 fixture for awsbox (#185).
+# Slices under slices/<name>/ are standalone services owned by other tickets.
+service: ${env:AWSBOX_SLSE_SERVICE, 'awsbox-rest'}
+frameworkVersion: "3"
+
+plugins:
+  - serverless-esbuild
+  - serverless-iam-roles-per-function
+  - serverless-localstack
+  # serverless-domain-manager: skipped — needs custom domain / ACM wiring (#184 follow-ups)
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'local'}
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
+  deploymentMethod: direct
+  deploymentBucket:
+    name: ${env:AWSBOX_SLSE_DEPLOY_BUCKET, 'awsbox-sls-deploy'}
+  memorySize: 128
+  timeout: 10
+  environment:
+    STAGE: ${self:provider.stage}
+    # LocalEmu reserves /awsbox* SSM names. Path includes suffix so parallel smokes do not clobber.
+    APP_NAME: ${ssm:/demo/rest/${env:AWSBOX_SLSE_SUFFIX, 'dev'}/app-name}
+    TABLE_NAME: !Ref TokensTable
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+          Resource:
+            - !GetAtt TokensTable.Arn
+            - !Sub "${TokensTable.Arn}/index/*"
+
+custom:
+  uploadsBucket: ${self:service}-${self:provider.stage}-uploads-${env:AWSBOX_SLSE_SUFFIX, 'dev'}
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: false
+    target: node20
+    platform: node
+    concurrency: 3
+  # Endpoint: set AWS_ENDPOINT_URL (smoke / docs). Plugin host is fallback only.
+  localstack:
+    stages:
+      - local
+    host: http://127.0.0.1
+    edgePort: 4566
+    autostart: false
+
+
+functions:
+  items:
+    handler: src/items.handler
+    description: Public REST GET /public/health
+    events:
+      - http:
+          path: public/health
+          method: get
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+        Resource: !Ref AppSecret
+
+  # Authorizer Lambda is deployed for shape; CFN PutMethod + AuthorizerId is unreliable
+  # on LocalEmu (BadRequestException). Wire via OpenAPI import in apigw-rest / slices.
+  authorizer:
+    handler: src/authorizer.handler
+    description: REQUEST authorizer stub (Bearer good|bad) — not attached via http event
+
+  tokenAdmin:
+    handler: src/token-admin.handler
+    description: Token admin stub
+    events:
+      - http:
+          path: v1/tokens
+          method: post
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+        Resource: !GetAtt TokensTable.Arn
+      - Effect: Allow
+        Action:
+          - kms:Decrypt
+          - kms:DescribeKey
+        Resource: !GetAtt AppKey.Arn
+
+  cleanup:
+    handler: src/cleanup.handler
+    description: Scheduled cleanup stub
+    events:
+      - schedule: rate(1 hour)
+    iamRoleStatementsName: ${self:service}-${self:provider.stage}-cleanup-role
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+          - dynamodb:DeleteItem
+        Resource: !GetAtt TokensTable.Arn
+
+  onObject:
+    handler: src/s3-event.handler
+    description: S3 ObjectCreated stub
+    events:
+      - s3:
+          bucket: ${self:custom.uploadsBucket}
+          event: s3:ObjectCreated:*
+
+
+
+# Raw CFN + OpenAPI RestApi Body (JS). VPC Link / ECS stay in slices / later tickets.
+resources:
+  - ${file(resources/cfn.yml)}
+  - ${file(resources/rest-api.js)}
