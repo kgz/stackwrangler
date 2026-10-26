@@ -1,0 +1,45 @@
+# Slice: ASG for ECS container instances (#83).
+# Deploy alone against LocalEmu CFN, or merge into the shared serverless-v3-rest fixture (#185).
+AWSTemplateFormatVersion: "2010-09-09"
+Description: awsbox ASG stub slice — launch template + AutoScalingGroup (min 1, max 3)
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: awsbox-asg
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+
+Resources:
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub "${NamePrefix}-lt"
+      LaunchTemplateData:
+        ImageId: ami-localemu
+        InstanceType: t3.micro
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: !Sub "${NamePrefix}-asg"
+      MinSize: "1"
+      MaxSize: "3"
+      DesiredCapacity: "1"
+      VPCZoneIdentifier:
+        - !Ref SubnetId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      Tags:
+        - Key: awsbox.slice
+          Value: asg
+          PropagateAtLaunch: true
+
+Outputs:
+  AutoScalingGroupName:
+    Value: !Ref AutoScalingGroup
+  LaunchTemplateId:
+    Value: !Ref LaunchTemplate

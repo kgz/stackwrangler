@@ -53,6 +53,11 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Custom resource IDs | yes | n/a (same create APIs as service smokes) | bad `_custom_id_` | n/a | `custom-id-smoke.sh` |
 | Console labels | yes (VPC id + NLB ARN glob) | — | missing file → no labels | list/detail | `labels-smoke.sh` |
 | Route 53 private zones | yes (associated VPC CNAME connect, alias, A/AAAA, upstream forward, EC2 with #299 override) | **yes** (deny `route53:ListHostedZones`) | unassociated VPC NXDOMAIN | no → [#245](https://github.com/kgz/awsl/issues/245) | `r53-private-smoke.sh` |
+| Auto Scaling (ASG) | yes (create / set-desired 2 / describe) | no → [#334](https://github.com/kgz/awsl/issues/334) | real ECS host launch [#207](https://github.com/kgz/awsl/issues/207) | no → [#337](https://github.com/kgz/awsl/issues/337) | `autoscaling-smoke.sh` |
+| Application Auto Scaling | yes (register/describe target) | no → [#334](https://github.com/kgz/awsl/issues/334) | — | no → [#337](https://github.com/kgz/awsl/issues/337) | `application-autoscaling-smoke.sh` |
+| Batch | yes (CE + queue create/describe) | no → [#334](https://github.com/kgz/awsl/issues/334) | no job run → [#335](https://github.com/kgz/awsl/issues/335) | no → [#337](https://github.com/kgz/awsl/issues/337) | `batch-smoke.sh` |
+| Elastic Beanstalk | yes (create/describe app) | no → [#334](https://github.com/kgz/awsl/issues/334) | no environment → [#335](https://github.com/kgz/awsl/issues/335) | no → [#337](https://github.com/kgz/awsl/issues/337) | `elasticbeanstalk-smoke.sh` |
+| App Runner | yes (list-* empty stub) | no → [#334](https://github.com/kgz/awsl/issues/334) | CreateService → [#335](https://github.com/kgz/awsl/issues/335) | no → [#337](https://github.com/kgz/awsl/issues/337) | `apprunner-smoke.sh` |
 
 ## Rule
 
