@@ -1,9 +1,11 @@
 import {
   DescribeInstancesCommand,
+  DescribeSubnetsCommand,
   DescribeVpcsCommand,
   EC2Client,
   type Instance,
   type Reservation,
+  type Subnet,
   type Vpc,
 } from '@aws-sdk/client-ec2'
 import { emuCreds } from './emu'
@@ -34,4 +36,19 @@ export async function describeVpc(vpcId: string): Promise<Vpc | null> {
   return out.Vpcs?.[0] ?? null
 }
 
-export type { Instance, Vpc }
+export async function listSubnets(vpcId: string): Promise<Subnet[]> {
+  const out = await client().send(
+    new DescribeSubnetsCommand({
+      Filters: [{ Name: 'vpc-id', Values: [vpcId] }],
+    }),
+  )
+  return out.Subnets ?? []
+}
+
+export function nameTag(
+  tags: Array<{ Key?: string; Value?: string }> | undefined,
+): string {
+  return tags?.find((t) => t.Key === 'Name')?.Value ?? '—'
+}
+
+export type { Instance, Subnet, Vpc }

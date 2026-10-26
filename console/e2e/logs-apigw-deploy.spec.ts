@@ -29,7 +29,7 @@ test.describe('Logs + API GW + zip deploy', () => {
     await expect(
       page.getByRole('heading', { name: 'Log groups', exact: true }),
     ).toBeVisible()
-    await page.getByRole('button', { name: 'Refresh groups' }).click()
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
     await expect(
       page.getByRole('cell').filter({ hasText: '/aws/lambda/' }).first(),
     ).toBeVisible({ timeout: 60_000 })
@@ -59,7 +59,7 @@ test.describe('Logs + API GW + zip deploy', () => {
     })
     await page.goto('/apigateway')
     await expect(
-      page.getByRole('heading', { name: 'HTTP APIs', exact: true }),
+      page.getByRole('heading', { name: 'APIs', exact: true }),
     ).toBeVisible()
     await page.getByRole('button', { name: 'Create HTTP API → Lambda' }).click()
     await expect(

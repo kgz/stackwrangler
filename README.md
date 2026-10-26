@@ -33,7 +33,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | Area | Status | Notes |
 |------|--------|--------|
 | `./bin/awsbox up` + profile `local` | **Working** | Compose + managed AWS profile |
-| Console shell (AWS-look) | **Working** | Dark console frame |
+| Console shell (awsbox grey rose) | **Working** | Chrome from `design/awsbox-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
 | Console labels | **Working** | `AWSBOX_LABELS` file kept outside the repo · [docs/labels.md](docs/labels.md) · `./bin/labels-smoke.sh` |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
 | IAM enforcement | **Partial** | resource policies `./bin/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
@@ -46,7 +46,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
 | S3 general purpose | SeaweedFS objects + parity script | Buckets / objects / preview | **Working** (UI) · **Partial** (vs LocalEmu S3 for events) |
-| S3 specialty / Access Points / Lens | — | Empty states | **Console chrome** |
+| S3 specialty / Access Points / Lens | — | Empty states | **Console chrome** · disabled controls [#355](https://github.com/kgz/awsl/issues/355) |
 | Transfer Family | API + native SFTP (SSH keys) → S3; outbound connectors (`StartFileTransfer` → remote SFTP) | Servers list/detail · connectors: [#313](https://github.com/kgz/awsl/issues/313) | **Partial** (`docs/transfer.md`) · console user/key [#321](https://github.com/kgz/awsl/issues/321) · LOGICAL/IdP/authz [#322](https://github.com/kgz/awsl/issues/322) · retrieve/AS2 [#314](https://github.com/kgz/awsl/issues/314) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 

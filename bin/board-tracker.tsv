@@ -241,16 +241,17 @@
 341	backlog	Debt: CodeDeploy authz smoke + console (from #98)
 304	done	Design: S3 console missing UI via Open Design web-clone
 319	done	Design: built console services via Open Design web-clone
-347	backlog	Implement S3 console from #304 OD mocks
-349	backlog	Implement built console services from #319 OD mocks
+347	done	Implement S3 console from #304 OD mocks
+349	done	Implement built console services from #319 OD mocks
 350	backlog	Epic: console full UI create/detail
-351	backlog	Debt: Lambda Create function + detail
+351	backlog	Debt: Lambda Create + detail + Monaco code
 352	backlog	Debt: Logs create + stream/detail
 353	backlog	Debt: IAM Create user + user detail
 354	backlog	Debt: HTTP API detail routes/stages
+355	backlog	Debt: S3 console disabled controls (from #347)
+357	backlog	Debt: service console disabled controls (from #349)
 294	done	API Gateway usage plans
 295	done	Transfer connectors
 296	done	DynamoDB depth
 297	done	EventBridge schedule
-
 360	done	ECS awsvpc detach bridge staticmethod

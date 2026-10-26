@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import {
   createHelloFunction,
@@ -8,9 +8,20 @@ import {
   readFileAsBytes,
   type InvokeResult,
 } from '../lib/lambda'
-import { lambdaLogGroupName } from '../lib/logs'
 import { Link } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
+import { DeadButton, RefreshButton } from '../components/S3Ui'
+import {
+  DeadLink,
+  EmptyRow,
+  FilterHeader,
+  ListCard,
+  Notices,
+  SelectCell,
+  SelectHeader,
+  SortHeader,
+} from '../components/ServiceUi'
+import { formatServiceDate } from '../lib/format'
 
 export function LambdaFunctionsPage() {
   const [fns, setFns] = useState<FunctionConfiguration[]>([])
@@ -21,6 +32,7 @@ export function LambdaFunctionsPage() {
   const [invokeOut, setInvokeOut] = useState<InvokeResult | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [deployName, setDeployName] = useState('')
+  const [filter, setFilter] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   const refresh = useCallback(async () => {
@@ -29,7 +41,9 @@ export function LambdaFunctionsPage() {
     try {
       const list = await listFunctions()
       setFns(list)
-      setSelected((prev) => prev ?? list[0]?.FunctionName ?? null)
+      setSelected((prev) =>
+        prev && list.some((f) => f.FunctionName === prev) ? prev : null,
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -40,6 +54,20 @@ export function LambdaFunctionsPage() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase()
+    if (!q) return fns
+    return fns.filter(
+      (f) =>
+        (f.FunctionName ?? '').toLowerCase().includes(q) ||
+        (f.FunctionArn ?? '').toLowerCase().includes(q),
+    )
+  }, [fns, filter])
+
+  function toggle(id: string) {
+    setSelected((cur) => (cur === id ? null : id))
+  }
 
   async function onCreateHello() {
     setBusy(true)
@@ -101,132 +129,141 @@ export function LambdaFunctionsPage() {
   }
 
   return (
-    <div>
-      <h1>Functions</h1>
-      <p className="page-lead">
-        Lambda on the local emulator. Create hello, deploy a zip (
-        <code>index.handler</code>), or invoke. Logs:{' '}
-        <Link to="/logs">CloudWatch Logs</Link>.
-      </p>
-
-      {error ? <div className="error-banner">{error}</div> : null}
-      {toast ? (
-        <div className="toast-banner" role="status">
-          {toast}
-        </div>
-      ) : null}
-
-      <div className="toolbar toolbar-stack">
-        <h3>Functions ({fns.length})</h3>
-        <div className="toolbar-actions">
-          <button type="button" className="btn" onClick={() => void refresh()}>
-            Refresh
-          </button>
-          <button
-            type="button"
-            className="btn"
-            disabled={busy || !selected}
-            onClick={() => void onInvoke()}
-          >
-            Invoke
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={busy}
-            onClick={() => void onCreateHello()}
-          >
-            {busy ? 'Working…' : 'Create hello function'}
-          </button>
-        </div>
-      </div>
-
-      <div className="deploy-panel">
-        <h3>Deploy from zip</h3>
-        <p className="page-lead">
-          Node zip with <code>index.js</code> exporting <code>handler</code>.
-          Uses selected name, or the name field, or creates a new one.
-        </p>
-        <div className="toolbar-actions">
-          <label className="field-inline">
-            Function name
-            <input
-              type="text"
-              value={deployName}
-              placeholder={selected ?? 'awsbox-deploy-…'}
-              onChange={(e) => setDeployName(e.target.value)}
-            />
-          </label>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".zip,application/zip"
-            aria-label="Lambda zip file"
-            disabled={busy}
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) void onDeployZip(file)
-            }}
-          />
-        </div>
-      </div>
-
-      {loading ? (
-        <p>Loading…</p>
-      ) : fns.length === 0 ? (
-        <p className="empty-state">No functions</p>
-      ) : (
-        <table className="data-table">
+    <>
+      <ListCard
+        title="Functions"
+        desc={
+          <>
+            Lambda lets you run code without provisioning or managing servers.
+            Logs: <Link to="/logs">CloudWatch Logs</Link>.
+          </>
+        }
+        notices={<Notices error={error} toast={toast} />}
+        toolbar={
+          <>
+            <RefreshButton onClick={() => void refresh()} />
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={busy || !selected}
+              title={selected ? undefined : 'Select a row'}
+              onClick={() => void onInvoke()}
+            >
+              Invoke
+            </button>
+            <DeadButton>Actions ▾</DeadButton>
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={busy}
+              onClick={() => void onCreateHello()}
+            >
+              {busy ? 'Working…' : 'Create hello function'}
+            </button>
+            <div className="spacer" />
+            <DeadButton variant="primary">Create function</DeadButton>
+          </>
+        }
+        placeholder="Filter by function name or ARN"
+        filter={filter}
+        onFilter={setFilter}
+      >
+        <table className="aws-table" data-testid="lambda-functions-table">
           <thead>
             <tr>
-              <th />
-              <th>Function name</th>
-              <th>Runtime</th>
-              <th>Handler</th>
-              <th>Logs</th>
+              <SelectHeader />
+              <SortHeader>Function name</SortHeader>
+              <FilterHeader>Description</FilterHeader>
+              <FilterHeader>Package type</FilterHeader>
+              <FilterHeader>Runtime</FilterHeader>
+              <SortHeader>Last modified</SortHeader>
             </tr>
           </thead>
           <tbody>
-            {fns.map((fn) => {
-              const name = fn.FunctionName ?? ''
-              return (
-                <tr
-                  key={fn.FunctionArn ?? name}
-                  className={selected === name ? 'row-selected' : undefined}
-                >
-                  <td>
-                    <input
-                      type="radio"
-                      name="fn"
-                      checked={selected === name}
-                      aria-label={`Select ${name}`}
-                      onChange={() => setSelected(name)}
+            {filtered.length === 0 ? (
+              <EmptyRow
+                colSpan={6}
+                loading={loading}
+                loadingText="Loading functions…"
+                title="No functions"
+                text="You do not have any Lambda functions in this region."
+              />
+            ) : (
+              filtered.map((fn) => {
+                const name = fn.FunctionName ?? ''
+                const isSelected = selected === name
+                return (
+                  <tr
+                    key={fn.FunctionArn ?? name}
+                    className={`selectable${isSelected ? ' selected' : ''}`}
+                    onClick={() => toggle(name)}
+                  >
+                    <SelectCell
+                      name="selected-fn"
+                      id={name}
+                      selected={isSelected}
+                      onToggle={toggle}
                     />
-                  </td>
-                  <td>
-                    <ResourceLabel ids={[name, fn.FunctionArn]}>{name}</ResourceLabel>
-                  </td>
-                  <td>{fn.Runtime ?? '—'}</td>
-                  <td>{fn.Handler ?? '—'}</td>
-                  <td>
-                    <Link to="/logs">{lambdaLogGroupName(name)}</Link>
-                  </td>
-                </tr>
-              )
-            })}
+                    <td>
+                      <ResourceLabel ids={[name, fn.FunctionArn]}>
+                        <DeadLink>{name}</DeadLink>
+                      </ResourceLabel>
+                    </td>
+                    <td>{fn.Description || '—'}</td>
+                    <td>{fn.PackageType ?? '—'}</td>
+                    <td>{fn.Runtime ?? '—'}</td>
+                    <td>{formatServiceDate(fn.LastModified)}</td>
+                  </tr>
+                )
+              })
+            )}
           </tbody>
         </table>
-      )}
+      </ListCard>
+
+      <section className="aws-card" style={{ marginTop: 16 }}>
+        <div className="aws-card-body">
+          <h2 className="aws-section-title">Deploy from zip</h2>
+          <p className="aws-desc">
+            Node zip with <code>index.js</code> exporting <code>handler</code>.
+            Uses selected name, or the name field, or creates a new one.
+          </p>
+          <div className="aws-toolbar">
+            <label className="field-inline">
+              Function name
+              <input
+                type="text"
+                value={deployName}
+                placeholder={selected ?? 'awsbox-deploy-…'}
+                onChange={(e) => setDeployName(e.target.value)}
+              />
+            </label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".zip,application/zip"
+              aria-label="Lambda zip file"
+              disabled={busy}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void onDeployZip(file)
+              }}
+            />
+          </div>
+        </div>
+      </section>
 
       {invokeOut ? (
-        <div className="invoke-panel">
-          <h3>Invoke result</h3>
-          <p>
-            StatusCode: <code>{invokeOut.statusCode}</code>
-          </p>
-          <pre className="lab-detail">{invokeOut.payloadText}</pre>
-        </div>
+        <section className="aws-card" style={{ marginTop: 16 }}>
+          <div className="aws-card-body">
+            <h2 className="aws-section-title">Invoke result</h2>
+            <p>
+              StatusCode: <code>{invokeOut.statusCode}</code>
+            </p>
+            <pre className="lab-detail">{invokeOut.payloadText}</pre>
+          </div>
+        </section>
       ) : null}
-    </div>
+    </>
   )
 }
