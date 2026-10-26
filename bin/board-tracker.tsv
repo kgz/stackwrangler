@@ -214,6 +214,35 @@
 300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)
+310	backlog	Debt: Console for API Gateway API keys and usage plans (from #294)
+311	backlog	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
+313	backlog	Debt: Transfer connectors console UI (from #295)
+314	backlog	Debt: Transfer connectors: RetrieveFilePaths and AS2 (from #295)
+315	backlog	Debt: Transfer connectors need paramiko installed at boot (from #295)
+306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
+307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
+317	backlog	Debt: EventBridge schedule cadence beyond rate(1 minute) and non-wildcard cron (from #297)
+321	backlog	Debt: Transfer console user+key (from #141)
+322	backlog	Debt: Transfer LOGICAL/IdP/SFTP-byte authz (from #141)
+324	backlog	Debt: WAFv2 console (from #55)
+325	backlog	Debt: CFN AWS::WAFv2 (from #55)
+326	backlog	Debt: WAFv2 rule evaluation (from #55)
+333	backlog	Debt: ACM console (from #74)
+339	backlog	Debt: ACM DNS validation automation (from #74)
+334	backlog	Debt: Batch/Beanstalk/App Runner/ASG authz (from #83)
+335	backlog	Debt: Batch/Beanstalk/App Runner dataplane (from #83)
+337	backlog	Debt: Batch/Beanstalk/App Runner/ASG console (from #83)
+83	in-review	Batch / Beanstalk / App Runner / ASG
+185	in-review	Serverless v3 deploy smoke
+98	in-review	CodeDeploy
+328	backlog	Debt: Serverless http authorizer CFN PutMethod (from #185)
+329	backlog	Debt: serverless-domain-manager (from #185)
+330	backlog	Debt: Serverless v3 smoke sad path (from #185)
+344	backlog	Debt: Serverless endpoint override without editing serverless.yml (from #185)
+340	backlog	Debt: CodeDeploy Lambda canary alias weight (from #98)
+341	backlog	Debt: CodeDeploy authz smoke + console (from #98)
+230	in-review	Debt: VPC gateway endpoints + Lambda egress (from #204)
 304	done	Design: S3 console missing UI via Open Design web-clone
 319	done	Design: built console services via Open Design web-clone
 347	backlog	Implement S3 console from #304 OD mocks
@@ -223,3 +252,8 @@
 352	backlog	Debt: Logs create + stream/detail
 353	backlog	Debt: IAM Create user + user detail
 354	backlog	Debt: HTTP API detail routes/stages
+294	in-review	API Gateway usage plans
+295	in-review	Transfer connectors
+296	in-review	DynamoDB depth
+297	in-review	EventBridge schedule
+

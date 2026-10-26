@@ -2,7 +2,7 @@
 
 REST APIs imported from an OpenAPI 3 document with `x-amazon-apigateway-*` extensions, the shape spec-first stacks (Serverless `resources`, CloudFormation `AWS::ApiGateway::RestApi` `Body`) deploy.
 
-Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-rest-smoke.sh`
+Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/serverless-v3-rest/slices/apigw-authz/) · Smoke: `./bin/apigw-rest-smoke.sh` · Real (Deny 403 + API keys, cents): `./bin/aws-parity-hf-cheap.sh` ([aws-parity-hf-cheap.md](aws-parity-hf-cheap.md))
 
 ## What works
 
@@ -14,10 +14,11 @@ Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-r
 | REQUEST Lambda authorizers (`x-amazon-apigateway-authorizer`), identity source enforced, `context` + `principalId` in `requestContext.authorizer` | Working |
 | Missing identity source → 401 | Working (matches AWS) |
 | Unknown route → 403 `Missing Authentication Token` | Working (matches AWS) |
-| Authorizer **Deny** | **401**; AWS returns 403 → [#190](https://github.com/kgz/awsl/issues/190) |
+| Authorizer **Deny** | Working (403 `User is not authorized to access this resource`, matches AWS) |
 | Custom domain + base-path mapping | Working. `Host` (or DNS pointed at the edge) reaches the mapped API/stage. Needs `route53,acm` in SERVICES to create the domain. |
 | `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./bin/apigw-nlb-ecs-smoke.sh` phase A. |
-| Console | HTTP APIs only → [#189](https://github.com/kgz/awsl/issues/189) |
+| API keys + usage plans | Working: `x-api-key` (`apiKeySource` HEADER) or authorizer `usageIdentifierKey` (AUTHORIZER); missing / unknown / disabled / revoked key → 403; plan throttle and quota → 429. [Details](#api-keys-and-usage-plans) |
+| Console | HTTP APIs only → [#189](https://github.com/kgz/awsl/issues/189) · API keys / usage plans [#310](https://github.com/kgz/awsl/issues/310) |
 
 ## Calling a stage
 
@@ -52,6 +53,28 @@ Stopped or unhealthy targets return 5xx on invoke (AWS: 504 / 503).
 
 `describe-tasks` ENI IPs that sit outside the subnet CIDR are [#268](https://github.com/kgz/awsl/issues/268);
 the smoke registers the container's VPC-bridge address in that case so phase A still covers the NLB path.
+
+## API keys and usage plans
+
+Example: [examples/serverless-v3-rest/slices/api-keys](../examples/serverless-v3-rest/slices/api-keys/) · Smoke: `./bin/apigw-usage-plan-smoke.sh`
+
+Per-client keys minted at runtime by a Lambda (`CreateApiKey` + `CreateUsagePlanKey`, plan found by name with `GetUsagePlans`, revoked with `DeleteApiKey`) work as in AWS:
+
+| Request | Result |
+|---------|--------|
+| Method with `apiKeyRequired`, valid enabled key in a plan for the stage | 200 |
+| No key, unknown key, disabled key, key not in a plan for the stage | 403 `Forbidden` |
+| Key deleted with `DeleteApiKey` (also removed from its plans) | 403 |
+| Past the plan `throttle` (token bucket per key: `rateLimit`, `burstLimit`) | 429 `Too Many Requests` |
+| Past the plan `quota` (`limit` per UTC `DAY`, `WEEK` starting Sunday, or `MONTH` starting on the 1st; `offset` is subtracted from the limit in the first period) | 429 `Limit Exceeded` |
+
+Throttled requests do not count against the quota. With `apiKeySource` AUTHORIZER the key is the authorizer's `usageIdentifierKey`; `x-api-key` is ignored.
+
+IAM follows AWS: every API Gateway management call (v1 and v2) is `apigateway:<HTTP verb>` on `arn:aws:apigateway:<region>::/<path>` (for example `POST` on `/apikeys`, `GET` on `/usageplans/<id>/keys`, `DELETE` on `/apikeys/<id>`). `apigateway:CreateApiKey`-style action names no longer match. Smoked for keys and usage plans only → [#311](https://github.com/kgz/awsl/issues/311).
+
+Limitations: limits come from the plan only (no per-stage / per-method `apiStages[].throttle`), counters are in memory and reset on restart, and `get-usage` / `update-usage` are not wired to them → [#309](https://github.com/kgz/awsl/issues/309). No console → [#310](https://github.com/kgz/awsl/issues/310).
+
+Enforcement lives in `localemu-patches/init/start.d/20-apigw-usage-plans.py` and `20-apigw-iam.py`.
 
 ## Gotchas
 

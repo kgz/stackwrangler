@@ -1,0 +1,47 @@
+# Transfer Family outbound slice: one SFTP connector per tenant, created at runtime by a Lambda.
+service: awsbox-rest-transfer-out
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - transfer:CreateConnector
+            - transfer:UpdateConnector
+            - transfer:TestConnection
+            - transfer:StartFileTransfer
+            - transfer:ListFileTransferResults
+          Resource: "*"
+        - Effect: Allow
+          Action: iam:PassRole
+          Resource: arn:aws:iam::*:role/${self:service}-connector-*
+          Condition:
+            StringEquals:
+              iam:PassedToService: transfer.amazonaws.com
+
+functions:
+  connector:
+    handler: handler.main
+    timeout: 60
+
+resources:
+  Resources:
+    ConnectorAccessRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ${self:service}-connector-access
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: { Service: transfer.amazonaws.com }
+              Action: sts:AssumeRole
+              Condition:
+                StringEquals: { "aws:SourceAccount": { Ref: AWS::AccountId } }
+                ArnLike:
+                  "aws:SourceArn": { "Fn::Sub": "arn:aws:transfer:${AWS::Region}:${AWS::AccountId}:connector/*" }

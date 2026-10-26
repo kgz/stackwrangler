@@ -647,11 +647,26 @@ def _merged_context(caller, conditions: dict | None) -> dict:
     return merged
 
 
+def _canonical_condition_keys(statement: dict, ctx: dict) -> dict:
+    """Condition keys are case-insensitive; Lambda stores ``AWS:SourceArn``."""
+    condition = statement.get("Condition")
+    if not isinstance(condition, dict):
+        return statement
+    by_lower = {str(k).lower(): k for k in ctx}
+    renamed = {}
+    for operator, pairs in condition.items():
+        if isinstance(pairs, dict):
+            pairs = {by_lower.get(str(k).lower(), k): v for k, v in pairs.items()}
+        renamed[operator] = pairs
+    return {**statement, "Condition": renamed}
+
+
 def _statement_matches_action_resource(statement: dict, action: str, resource: str, ctx: dict) -> bool:
     from localemu.services.iam_enforcement.action_matcher import matches_action
     from localemu.services.iam_enforcement.condition_evaluator import matches_conditions
     from localemu.services.iam_enforcement.resource_matcher import matches_resource
 
+    statement = _canonical_condition_keys(statement, ctx)
     if not matches_action(statement, action):
         return False
     if not matches_resource(statement, resource, ctx):

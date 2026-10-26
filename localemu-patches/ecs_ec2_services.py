@@ -996,6 +996,15 @@ def _patch_codedeploy() -> None:
     CodeDeployBackend._awsbox_ecs_bg = True
 
 
+def _mark_succeeded(dep: object) -> None:
+    dep.status = "Succeeded"
+    overview = getattr(dep, "deployment_overview", None)
+    if isinstance(overview, dict):
+        overview["Succeeded"] = 1
+        overview["Failed"] = 0
+        overview["InProgress"] = 0
+
+
 def _finish_deployment(backend: object, dep_id: str) -> None:
     deployments = getattr(backend, "deployments", {})
     dep = deployments.get(dep_id) if isinstance(deployments, dict) else None
@@ -1004,6 +1013,12 @@ def _finish_deployment(backend: object, dep_id: str) -> None:
     group = getattr(dep, "deployment_group", None)
     ecs_services = getattr(group, "ecs_services", None) or []
     if not ecs_services:
+        # Lambda/Server: control-plane Succeeded only (no alias weight shift).
+        platform = str(
+            getattr(getattr(dep, "application", None), "compute_platform", "") or ""
+        ).upper()
+        if platform == "LAMBDA":
+            _mark_succeeded(dep)
         return
     try:
         _blue_green(backend, dep, ecs_services)
@@ -1019,12 +1034,7 @@ def _finish_deployment(backend: object, dep_id: str) -> None:
             overview["Failed"] = 1
             overview["Succeeded"] = 0
         return
-    dep.status = "Succeeded"
-    overview = getattr(dep, "deployment_overview", None)
-    if isinstance(overview, dict):
-        overview["Succeeded"] = 1
-        overview["Failed"] = 0
-        overview["InProgress"] = 0
+    _mark_succeeded(dep)
 
 
 def _blue_green(backend: object, dep: object, ecs_services: list) -> None:
