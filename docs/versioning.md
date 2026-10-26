@@ -7,39 +7,43 @@ Two axes. Do not collapse them.
 | **Service catalogue** | GitHub **milestone** `v1 — Networking`, `v1 — Data stores`, … | Workstream / depth for that area. Keep these names. |
 | **Product release** | Issue **label** matching semver (`v0.0.1`) + git **tag** / GitHub Release | Which product cut the ticket belongs to. |
 
-Current open cut: see [CURRENT_RELEASE](CURRENT_RELEASE) (today `v0.0.2`).
+Current open cut: see [CURRENT_RELEASE](CURRENT_RELEASE).
 
-Historical mapping: **closed** work at the first tag is **`v0.0.1`**. Milestone titles stay `v1 — …`; the product version is the label + tag.
+**Full roadmap (what each cut includes):** [version-plan.md](version-plan.md) — IT/CRM hosting footprint → `v1.0.0`.
 
-| Cut | Meaning |
-|-----|---------|
-| **v0.0.1** | First tagged baseline (`git tag v0.0.1`). Closed issues stay here. Shipped baseline; open cut is `v0.0.2`. |
-| **v0.0.2** | **Console / UI** for shipped services (create/detail/wizards) **plus bugs** (incorrect AWS behaviour, authz holes, broken data-plane). Not for new service catalogue or fidelity epics. |
-| **v0.0.3** | Later catalogue only (FinOps, AI, analytics, enterprise net, niche stubs, Code*, exotic DBs) and real-account mirror/parity. Do not label beyond this — unlabelled backlog stays unplanned. |
+| Cut | Theme |
+|-----|--------|
+| **v0.0.1** | Baseline account (historical / closeout). |
+| **v0.0.2** | Console UI for shipped services **+ bugs**. |
+| **v0.0.3** | Hosting day-1 gaps (ElastiCache, SES, Cognito, Metrics/Alarms, SSM, edge/DNS/ACM polish). |
+| **v0.1.0** | CRM org path (Transfer→…→RDS), dev-mode, S3 unify, Backup. |
+| **v0.1.1** | Delivery + enterprise attach (Code*, CloudTrail, OpenSearch, DMS, TGW/VPN stubs). |
+| **v0.1.2** | Account ops + real-account mirror / least-privilege tooling. |
+| **v1.0.0** | Hosting-company ready declaration (in-scope Working/Partial + honest stubs). |
+
+Out-of-footprint work (AI, niche, exotic DB, …) stays **unlabelled** — see version-plan.md.
 
 ## New tickets
 
 1. Assign the right **milestone** (`v1 — <area>`).
-2. Add the label from `docs/CURRENT_RELEASE` (e.g. `v0.0.1`).
+2. Add the label from `docs/CURRENT_RELEASE` (or the planning cut from version-plan.md if backlog).
 3. Board + tracker as usual (`./bin/board-status.sh`, `bin/board-tracker.tsv`).
 
-Debt tickets inherit the parent's milestone **and** the current release label (or the parent's release label if filing from an older cut).
+Debt tickets inherit the parent's milestone **and** the parent's release label (or current release if filing from an older cut into active work).
 
-**In progress / in review** always use `docs/CURRENT_RELEASE` (strip other `v0.0.x` labels). Planning labels `v0.0.2` / `v0.0.3` are for backlog / ready only until the card moves into active work.
+**In progress / in review** always use `docs/CURRENT_RELEASE` (strip other `v0.0.x` / `v0.1.x` labels). Planning labels are for backlog / ready only until the card is active.
 
 ## Cut a release
 
 ```bash
-./bin/release-tag.sh v0.0.2
+./bin/release-tag.sh v0.0.3
 ```
 
 That script:
 
-1. Tags `origin/main` (or `RELEASE_SHA`) as `v0.0.2`
+1. Tags `origin/main` (or `RELEASE_SHA`) as the version
 2. Creates a GitHub Release
-3. Ensures label `v0.0.2` exists
-4. Writes `docs/CURRENT_RELEASE` → `v0.0.2`
+3. Ensures the label exists
+4. Writes `docs/CURRENT_RELEASE`
 
-New tickets after that cut get `v0.0.2`. Older tickets keep their existing release label unless you deliberately retarget them.
-
-Filter the board / issue list by label `v0.0.1` to see everything in that product bucket.
+Filter the board / issue list by label to see everything in that product bucket.
