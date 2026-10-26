@@ -24,7 +24,7 @@ services:
     image: localemu/localemu@sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f46d7aa8123551cee10b
     user: root
     environment:
-      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
+      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax
       # Host docker daemon pulls this address (published below). #211
       AWSBOX_ECR_REGISTRY: 127.0.0.1:${AWSBOX_ECR_HOST_PORT:-5000}
       # ECS task-role credentials for host-network tasks (start.d/05-ecs-creds-port.py)
@@ -55,6 +55,10 @@ services:
     ports:
       - "127.0.0.1:${AWSBOX_LOCALEMU_HOST_PORT:-4566}:4566"
       - "127.0.0.1:${AWSBOX_ECS_CREDS_PORT:-4571}:${AWSBOX_ECS_CREDS_PORT:-4571}"
+    extra_hosts:
+      # Bridge-mode task ports are published on the Docker host. Health checks
+      # and the loopback NLB forwarder dial them from inside LocalEmu (#207).
+      - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs.
@@ -70,6 +74,10 @@ services:
       # ECR image pull authz (#211) lives in the same task manager mount
       - ./localemu-patches/ecs_task_manager.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_manager.py:ro
       - ./localemu-patches/ecs_provider.py:/opt/code/localemu/src/localemu/services/ecs/provider.py:ro
+      # ECS on EC2 (#207): container instances, desiredCount, TG registration, CodeDeploy.
+      # Loopback NLB forwarder lives in this module: #203's listener dials the EC2 VPC IP,
+      # which does not publish bridge host ports (#247).
+      - ./localemu-patches/ecs_ec2_services.py:/opt/code/localemu/src/localemu/services/ecs/ec2_services.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro
       # CFN lifecycle (#212): failed-create rollback, delete-stack cleanup, honest status

@@ -54,6 +54,9 @@ echo "==> ECS taskdef (secrets / host ports / failed-start)"
 echo "==> ECS host-network task-role creds (loopback, no DNAT)"
 ./bin/ecs-host-creds-smoke.sh
 
+echo "==> ECS on EC2 (bridge NLB + CodeDeploy)"
+./bin/ecs-ec2-smoke.sh
+
 echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
 ./bin/ecr-smoke.sh
 

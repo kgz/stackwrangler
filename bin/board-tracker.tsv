@@ -178,7 +178,7 @@
 205	done	v1: Security group enforcement
 206	in-review	v1: Route 53 private hosted zones
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
-207	in-progress	v1: ECS services on EC2
+207	in-review	v1: ECS services on EC2
 208	done	v1: EC2 instance fidelity IMDS/SSM
 209	done	v1: IAM OIDC AssumeRoleWithWebIdentity
 210	done	v1: RDS MySQL / Aurora MySQL
@@ -213,3 +213,5 @@
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
 300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)
+247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)

@@ -90,6 +90,13 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Private names from an unassociated VPC | sad/other | covered | `./bin/r53-private-smoke.sh` |
 | **`route53:ListHostedZones` explicit deny** | sad/authz | covered | `./bin/r53-private-smoke.sh` |
 | Lambda `VpcConfig` private DNS | happy | missing | [#245](https://github.com/kgz/awsl/issues/245) |
+| ECS EC2 bridge service behind an internal NLB (2 tasks) | happy | covered | `./bin/ecs-ec2-smoke.sh` |
+| ECS task killed → replaced and re-registered in the target group | happy | covered | `./bin/ecs-ec2-smoke.sh` |
+| ECS container instance from an ASG + launch template | happy | covered | `./bin/ecs-ec2-smoke.sh` |
+| ECS `CODE_DEPLOY` service starts blue tasks behind the listener | happy | covered | `./bin/ecs-ec2-smoke.sh` |
+| ECS CodeDeploy blue/green: v2 on green, listener swap, blue stopped | happy | covered | `./bin/ecs-ec2-smoke.sh` |
+| ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./bin/ecs-ec2-smoke.sh` |
+| **ECS deny `ecs:CreateService` → AccessDenied** | sad/authz | covered | `./bin/ecs-ec2-smoke.sh` |
 | EC2 running + user-data file | happy | covered | `./bin/ec2-smoke.sh` |
 | EC2 IMDSv2 instance-profile reads secret | happy | covered | `./bin/ec2-imds-smoke.sh` |
 | EC2 instance-profile missing GetSecretValue → AccessDenied | sad/authz | covered | `./bin/ec2-imds-smoke.sh` |

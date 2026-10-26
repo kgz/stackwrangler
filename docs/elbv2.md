@@ -32,5 +32,6 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 - TLS does not load the ACM certificate attached to the listener ([#242](https://github.com/kgz/awsl/issues/242)).
 - Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
+- ECS bridge-mode tasks behind an instance target group: the listener dials the EC2 container address, but bridge host ports are published on the Docker host. `./bin/ecs-ec2-smoke.sh` uses a loopback forwarder instead ([#247](https://github.com/kgz/awsl/issues/247)).
 - Classic ELB is not this path.
 - `elbv2-smoke.sh` needs EC2 containers; the mirror resource-id start.d patch breaks them on beta ([#299](https://github.com/kgz/awsl/issues/299)).
