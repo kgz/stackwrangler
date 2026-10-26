@@ -49,7 +49,6 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | S3 specialty / Access Points / Lens | — | Empty states | **Console chrome** |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
-Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`, `./bin/transfer-connector-smoke.sh`
 | Transfer Family | API + native SFTP (SSH keys) → S3 | Servers list/detail | **Partial** (`docs/transfer.md`) · console user/key [#321](https://github.com/kgz/awsl/issues/321) · LOGICAL/IdP/authz [#322](https://github.com/kgz/awsl/issues/322) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
