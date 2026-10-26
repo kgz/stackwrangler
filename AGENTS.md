@@ -77,8 +77,10 @@ This includes “cheap” or free-tier-ish things (SSM Parameter, empty S3 bucke
 ## Before any real-AWS write
 
 1. State exactly what will be created (resource types + region)
-2. Estimate cost / free-tier note
+2. Estimate cost — **including residuals after teardown** (min deletion windows, retention locks, idle provisioned capacity)
 3. Say how it will be deleted afterward
 4. **Wait for explicit yes** (“go ahead”, “approved”, etc.)
+
+**Residuals count.** “Delete after 5 minutes” is not enough if AWS forces a cooldown (e.g. KMS CMK **7-day** pending deletion ≈ cents–dollars until gone). State worst-case leftover bill duration + $ **before** asking for yes. Prefer designs that avoid sticky costs when a free/ephemeral alternative works.
 
 If unsure whether an account is real vs local — treat as real and ask.
