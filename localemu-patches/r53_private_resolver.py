@@ -90,14 +90,20 @@ def _vpcs_via_list(r53, zone_id: str) -> set[str]:
     region = os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
     found: set[str] = set()
     for vpc_id in _docker_vpc_ids():
-        try:
-            resp = r53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=region)
-        except Exception:
-            LOG.debug("list-hosted-zones-by-vpc failed for %s", vpc_id, exc_info=True)
-            continue
-        for summary in resp.get("HostedZoneSummaries") or []:
-            if _zone_id_token(str(summary.get("HostedZoneId") or "")) == want:
-                found.add(vpc_id)
+        kwargs: dict = {"VPCId": vpc_id, "VPCRegion": region}
+        while True:
+            try:
+                resp = r53.list_hosted_zones_by_vpc(**kwargs)
+            except Exception:
+                LOG.debug("list-hosted-zones-by-vpc failed for %s", vpc_id, exc_info=True)
+                break
+            for summary in resp.get("HostedZoneSummaries") or []:
+                if _zone_id_token(str(summary.get("HostedZoneId") or "")) == want:
+                    found.add(vpc_id)
+            token = resp.get("NextToken")
+            if not token:
+                break
+            kwargs["NextToken"] = token
     return found
 
 

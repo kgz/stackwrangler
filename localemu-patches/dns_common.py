@@ -278,12 +278,11 @@ def forward(payload: bytes) -> bytes | None:
     """Send the query to the upstream resolver(s); first answer wins."""
     for server in _upstreams():
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.settimeout(2)
-            sock.sendto(payload, (server, 53))
-            data, _addr = sock.recvfrom(4096)
-            sock.close()
-            return data
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(2)
+                sock.sendto(payload, (server, 53))
+                data, _addr = sock.recvfrom(4096)
+                return data
         except OSError:
             continue
     return None

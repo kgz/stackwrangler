@@ -295,7 +295,7 @@ done
 
 CHECK="/tmp/r53-check-${TS}.py"
 cat >"$CHECK" <<'PY'
-import ipaddress, os, socket, sys, urllib.request
+import ipaddress, os, socket, struct, sys, urllib.request
 
 mode = os.environ["MODE"]
 zone = os.environ["ZONE"]
@@ -306,7 +306,29 @@ upstream = os.environ["UPSTREAM"]
 def ips(name, family):
     return sorted({item[4][0] for item in socket.getaddrinfo(name, 80, family)})
 
+def nameserver():
+    for line in open("/etc/resolv.conf"):
+        parts = line.split()
+        if len(parts) == 2 and parts[0] == "nameserver":
+            return parts[1]
+    sys.exit("no nameserver in /etc/resolv.conf")
+
+def rcode_for(name):
+    qname = b"".join(bytes([len(label)]) + label.encode() for label in name.rstrip(".").split(".")) + b"\x00"
+    query = struct.pack("!HHHHHH", 0x206, 0x0100, 1, 0, 0, 0) + qname + struct.pack("!HH", 1, 1)
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.settimeout(5)
+        sock.sendto(query, (nameserver(), 53))
+        try:
+            data, _addr = sock.recvfrom(4096)
+        except OSError as exc:
+            sys.exit(f"no DNS reply for {name}: {exc}")
+    return struct.unpack("!H", data[2:4])[0] & 0xF
+
 def must_fail(name):
+    rcode = rcode_for(name)
+    if rcode != 3:
+        sys.exit(f"{name}: want NXDOMAIN (3) from unassociated VPC, got rcode {rcode}")
     try:
         socket.getaddrinfo(name, 80)
     except socket.gaierror:
@@ -435,5 +457,9 @@ fi
 echo "$DENY_OUT" | grep -qiE 'AccessDenied|not authorized|ExplicitDeny|Unauthorized' \
 	|| fail "expected AccessDenied, got: ${DENY_OUT}"
 echo "OK: route53 ListHostedZones denied"
+
+FDS="$(docker exec "$LS" sh -c 'for p in /proc/[0-9]*; do if tr "\0" " " <"$p/cmdline" 2>/dev/null | grep -q "^[^ ]*python[^ ]* [^ ]*vpce_private_dns.py serve"; then ls "$p/fd" | wc -l; break; fi; done')"
+echo "resolver open fds: ${FDS:-unknown}"
+[[ -n "$FDS" && "$FDS" -lt 100 ]] || fail "resolver fd count ${FDS:-unknown} (leak?)"
 
 echo "OK: r53 private zones (${ZONE_NAME})"
