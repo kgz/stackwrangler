@@ -41,6 +41,8 @@
 54	backlog	Classic ELB
 55	in-review	WAFv2
 56	backlog	Route 53 zones
+55	backlog	WAFv2
+56	in-review	Route 53 zones
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
 # v1 Data

@@ -11,3 +11,4 @@ Dummy Serverless Framework v3 REST stack used to replicate a real serverless lay
 | [apigw-authz](slices/apigw-authz/) | [#190](https://github.com/kgz/awsl/issues/190) | `./bin/apigw-rest-smoke.sh` |
 | [transfer-in](slices/transfer-in/) | [#141](https://github.com/kgz/awsl/issues/141) | `./bin/transfer-key-smoke.sh` |
 | [waf](slices/waf/) | [#55](https://github.com/kgz/awsl/issues/55) | `./bin/waf-smoke.sh` |
+| [dns](slices/dns/) | [#56](https://github.com/kgz/awsl/issues/56) | `./bin/route53-smoke.sh` |

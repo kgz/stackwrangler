@@ -91,6 +91,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull authz | sad/authz | missing | [#219](https://github.com/kgz/awsl/issues/219) |
 | ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
+| Public hosted zone + UPSERT A / A-alias / CNAME; `list-resource-record-sets` | happy | covered | `./bin/route53-smoke.sh` · [r53.md](r53.md) |
+| Public zone names resolve via `dig @127.0.0.1` inside LocalEmu | happy | covered | `./bin/route53-smoke.sh` |
+| Profile `local` `route53 list-hosted-zones` includes the public zone | happy | covered | `./bin/route53-smoke.sh` |
+| Private zone create still works alongside public | happy | covered | `./bin/route53-smoke.sh` |
+| **`route53:ListHostedZones` explicit deny** (public smoke) | sad/authz | covered | `./bin/route53-smoke.sh` |
 | Private zone CNAME → internal NLB resolves and connects from ECS in the associated VPC | happy | covered | `./bin/r53-private-smoke.sh` · [r53-private.md](r53-private.md) |
 | Private zone alias to ALB returns the ALB addresses | happy | covered | `./bin/r53-private-smoke.sh` |
 | Private zone A and AAAA from the associated VPC | happy | covered | `./bin/r53-private-smoke.sh` |

@@ -1,5 +1,7 @@
 # Route 53 private hosted zones
 
+Public zones + CLI records smoke: [r53.md](r53.md) · `./bin/route53-smoke.sh`.
+
 Workloads on a VPC Docker network resolve that VPC's private hosted zones. A second VPC does not.
 
 `./bin/awsbox up --force` after pulling so the resolver process and the ECS/EC2/Lambda `--dns` hooks are loaded. The resolver is the same root process as [VPC Interface endpoint private DNS](vpce-private-dns.md) (`init/boot.d/20-vpce-resolver.py`; port 53 needs `NET_BIND_SERVICE`, which the gateway drops). It answers private zones first, then endpoint names, then forwards. It reads Route 53 and ELBv2 from `127.0.0.1:4566` (all pages). Names it does not own go to the upstream resolver (`8.8.8.8`, or `AWSBOX_DNS_UPSTREAM`, comma separated).
@@ -61,6 +63,6 @@ It checks:
 
 - Every load balancer in a VPC answers as this container's address on that VPC network, not a distinct ENI per LB ([#245](https://github.com/kgz/awsl/issues/245)).
 - Connect goes through the ELBv2 data plane ([elbv2.md](elbv2.md)).
-- Alias to API Gateway and public zones for the host: [#300](https://github.com/kgz/awsl/issues/300).
+- Alias to API Gateway and public-zone dig from the **host** (without `docker exec`): [#300](https://github.com/kgz/awsl/issues/300). In-emulator public resolve is in [r53.md](r53.md).
 - The EC2 step needs the #299 workaround above until that issue is fixed.
 - No Route 53 console, and the Lambda `VpcConfig` hook is not in the smoke ([#245](https://github.com/kgz/awsl/issues/245)).

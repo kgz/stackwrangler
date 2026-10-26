@@ -376,7 +376,10 @@ def _tcp_server(lookup: Lookup) -> None:
 
 def _ensure_udp(bound: dict[str, socket.socket]) -> None:
     refresh_self_ips()
-    for ip in list(SELF_IPS):
+    # Loopback for dig @127.0.0.1 inside the emulator (public zones).
+    want = set(SELF_IPS)
+    want.add("127.0.0.1")
+    for ip in list(want):
         if ip in bound:
             continue
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -389,9 +392,9 @@ def _ensure_udp(bound: dict[str, socket.socket]) -> None:
             continue
         sock.setblocking(False)
         bound[ip] = sock
-        LOG.info("private DNS UDP/53 on %s vpc=%s", ip, SELF_IPS.get(ip))
+        LOG.info("private DNS UDP/53 on %s vpc=%s", ip, SELF_IPS.get(ip) or "-")
     for ip in list(bound):
-        if ip not in SELF_IPS:
+        if ip not in want:
             try:
                 bound.pop(ip).close()
             except OSError:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update GitHub Project #8 (awsl) card status for issues.
-# Usage: ./bin/board-status.sh <backlog|ready|in-progress|in-review|done> <issue-num> [issue-num...]
+# Usage: ./bin/board-status.sh <backlog|ready|designing|in-progress|in-review|done> <issue-num> [issue-num...]
 set -euo pipefail
 
 gh_stored_token() {
@@ -31,7 +31,7 @@ resolve_github_token() {
 resolve_github_token
 
 if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <backlog|ready|in-progress|in-review|done> <issue-num> [issue-num...]" >&2
+  echo "Usage: $0 <backlog|ready|designing|in-progress|in-review|done> <issue-num> [issue-num...]" >&2
   exit 1
 fi
 
