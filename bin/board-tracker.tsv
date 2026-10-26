@@ -39,8 +39,8 @@
 52	backlog	ALB
 53	backlog	NLB
 54	backlog	Classic ELB
-55	backlog	WAFv2
-56	backlog	Route 53 zones
+55	in-review	WAFv2
+56	in-review	Route 53 zones
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
 # v1 Data
@@ -61,7 +61,7 @@
 71	done	KMS happy+authz
 72	done	Secrets Manager happy+authz
 73	backlog	Cognito
-74	backlog	ACM
+74	in-review	ACM
 75	backlog	detection stubs
 # v1 Observability
 76	backlog	CW Metrics + Alarms
@@ -72,7 +72,7 @@
 # v1 Containers
 81	backlog	ECR
 82	backlog	EKS
-83	backlog	Batch / Beanstalk / App Runner / ASG
+83	in-review	Batch / Beanstalk / App Runner / ASG
 # v1 Analytics
 84	backlog	OpenSearch
 85	backlog	Athena + Glue + Lake Formation
@@ -88,7 +88,7 @@
 # Developer tools
 96	backlog	CodePipeline
 97	backlog	CodeBuild
-98	backlog	CodeDeploy
+98	in-review	CodeDeploy
 99	backlog	CodeArtifact (+ CodeCommit)
 # Data movement
 100	done	Transfer Family (SFTP)
@@ -130,7 +130,7 @@
 133	done	Vision fully-working / LocalStack lesson
 137	done	Console Transfer servers UI
 138	done	Console RDS databases UI
-141	backlog	Transfer native SFTP auth — drop sidecar
+141	in-review	Transfer native SFTP auth — drop sidecar
 143	done	Debt: unify dual S3 backends
 144	done	Debt: workload IAM authz smokes
 145	backlog	Debt: RDS create UI + Aurora fidelity
@@ -159,11 +159,11 @@
 181	backlog	Debt: ECS same-host hairpin fidelity
 182	done	Real-AWS parity batch10 messaging/data
 184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
-185	backlog	Serverless v3 deploy smoke
+185	in-review	Serverless v3 deploy smoke
 186	done	VPC Lambda → host services via mapped hostnames
 187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
-190	backlog	Debt: REST authorizer Deny 401 vs 403 (from #184)
+190	in-review	Debt: REST authorizer Deny 401 vs 403 (from #184)
 191	done	Debt: REST custom domain routing (from #184)
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
@@ -193,7 +193,7 @@
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
-230	backlog	Debt: VPC gateway endpoints + Lambda egress (from #204)
+230	in-review	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	backlog	Debt: VPC Lambda SG enforcement (from #205)
