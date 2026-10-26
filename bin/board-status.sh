@@ -42,6 +42,7 @@ case "$STATUS_NAME" in
   backlog|todo) OPT="dfa84092" ;;
   ready) OPT="ae0781e5" ;;
   designing) OPT="6199a95a" ;;
+  designing|design) OPT="6199a95a" ;;
   in-progress|in_progress) OPT="99efdfee" ;;
   in-review|in_review) OPT="649b2f32" ;;
   done) OPT="023eb12d" ;;

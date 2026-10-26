@@ -145,6 +145,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |
 | ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
+| WAFv2 create WebACL + associate API GW stage; get/list association | happy | covered | `./bin/waf-smoke.sh` · [waf.md](waf.md) |
+| **WAFv2 deny-user CreateWebACL → AccessDenied** | sad/authz | covered | `./bin/waf-authz-smoke.sh` |
+| WAFv2 rule evaluation blocks/allows HTTP | happy | missing | [#326](https://github.com/kgz/awsl/issues/326) · [waf.md](waf.md) |
+| WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |
+| CFN `AWS::WAFv2::WebACL` / Association deploy | happy | missing | [#325](https://github.com/kgz/awsl/issues/325) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |

@@ -39,7 +39,7 @@
 52	backlog	ALB
 53	backlog	NLB
 54	backlog	Classic ELB
-55	backlog	WAFv2
+55	in-review	WAFv2
 56	backlog	Route 53 zones
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
@@ -225,3 +225,6 @@
 317	backlog	Debt: EventBridge schedule cadence beyond rate(1 minute) and non-wildcard cron (from #297)
 321	backlog	Debt: Transfer console user+key (from #141)
 322	backlog	Debt: Transfer LOGICAL/IdP/SFTP-byte authz (from #141)
+324	backlog	Debt: WAFv2 console (from #55)
+325	backlog	Debt: CFN AWS::WAFv2 (from #55)
+326	backlog	Debt: WAFv2 rule evaluation (from #55)
