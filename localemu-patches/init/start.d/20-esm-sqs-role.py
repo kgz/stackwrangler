@@ -1,17 +1,26 @@
-"""Refuse CreateEventSourceMapping when the Lambda role lacks SQS poll perms (#266).
+"""Refuse CreateEventSourceMapping when the Lambda role lacks SQS poll perms (#266),
+queue VisibilityTimeout < function timeout, or MaximumConcurrency < 2 (#363).
 
 LocalEmu calls GetQueueAttributes as the function role via an internal client, but
 IAM_ENFORCEMENT skips internal hops — so a role with no SQS policy still creates a
 mapping. Real AWS returns InvalidParameterValueException when the execution role
-cannot ReceiveMessage / DeleteMessage / GetQueueAttributes.
+cannot ReceiveMessage / DeleteMessage / GetQueueAttributes, when visibility is
+shorter than the function timeout, or when MaximumConcurrency is below 2.
 
-Patches Skeleton.dispatch_request (dynamic on every call) under IAM_ENFORCEMENT.
+Patches Skeleton.dispatch_request (dynamic on every call). Role check runs under
+IAM_ENFORCEMENT; visibility/concurrency always apply.
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import sys
+
+if "/opt/awsbox/esm" not in sys.path:
+    sys.path.insert(0, "/opt/awsbox/esm")
+
+import awsbox_esm_common as esm  # noqa: E402
 
 LOG = logging.getLogger("localemu.awsbox.esm_sqs_role")
 
@@ -20,6 +29,7 @@ _SQS_POLL_ACTIONS = (
     "sqs:DeleteMessage",
     "sqs:GetQueueAttributes",
 )
+_MAX_CONCURRENCY_MIN = 2
 
 
 def _iam_enabled() -> bool:
@@ -35,17 +45,6 @@ def _role_name_from_arn(role_arn: str) -> str | None:
     if not role_arn or ":role/" not in role_arn:
         return None
     return role_arn.rsplit("/", 1)[-1] or None
-
-
-def _request_get(request, key: str):
-    if request is None:
-        return None
-    if isinstance(request, dict):
-        return request.get(key)
-    getter = getattr(request, "get", None)
-    if callable(getter):
-        return getter(key)
-    return getattr(request, key, None)
 
 
 def _caller_for_role(role_arn: str, account_id: str):
@@ -93,53 +92,79 @@ def _missing_sqs_action(role_arn: str, queue_arn: str, account_id: str, region: 
     return None
 
 
-def _function_role(function_ref: str, account_id: str, region: str) -> str | None:
-    from localemu.services.lambda_ import api_utils
-    from localemu.services.lambda_.api_utils import function_locators_from_arn
-    from localemu.services.lambda_.invocation.models import lambda_stores
-    from localemu.services.lambda_.provider_utils import get_function_version_from_arn
+def _queue_visibility_timeout(queue_arn: str, account_id: str, region: str) -> int | None:
+    from localemu.services.sqs.models import sqs_stores
+    from localemu.utils.aws.arns import parse_arn
 
-    function_name, qualifier, account, fn_region = function_locators_from_arn(function_ref)
-    account = account or account_id
-    fn_region = fn_region or region
-    state = lambda_stores[account][fn_region]
-    fn = state.functions.get(function_name)
-    if not fn:
+    parsed = parse_arn(queue_arn)
+    queue_account = parsed.get("account") or account_id
+    queue_region = parsed.get("region") or region
+    queue_name = (parsed.get("resource") or "").split("/", 1)[-1]
+    if not queue_name:
         return None
-    if qualifier:
-        fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account, fn_region)
+    store = sqs_stores[queue_account][queue_region]
+    queue = (getattr(store, "queues", None) or {}).get(queue_name)
+    if queue is None:
+        return None
+    attrs = getattr(queue, "attributes", None) or {}
+    raw = attrs.get("VisibilityTimeout")
+    if raw is None:
+        return int(getattr(queue, "visibility_timeout", 30))
+    return int(raw)
+
+
+def _enforce_maximum_concurrency(request) -> None:
+    scaling = esm.request_get(request, "ScalingConfig")
+    if not scaling:
+        return
+    if isinstance(scaling, dict):
+        raw = scaling.get("MaximumConcurrency")
     else:
-        fn_arn = api_utils.unqualified_lambda_arn(function_name, account, fn_region)
-    version = get_function_version_from_arn(fn_arn)
-    return version.config.role
-
-
-def _enforce_from_request(context, request) -> None:
-    if not _iam_enabled():
+        raw = getattr(scaling, "MaximumConcurrency", None)
+        if raw is None and callable(getattr(scaling, "get", None)):
+            raw = scaling.get("MaximumConcurrency")
+    if raw is None:
         return
-    service = getattr(context, "service", None)
-    operation = getattr(context, "operation", None)
-    if getattr(service, "service_name", None) != "lambda":
-        return
-    if getattr(operation, "name", None) != "CreateEventSourceMapping":
-        return
-
-    source_arn = _request_get(request, "EventSourceArn")
-    if not isinstance(source_arn, str) or ":sqs:" not in source_arn:
-        return
-
-    function_ref = _request_get(request, "FunctionName") or _request_get(request, "FunctionArn")
-    if not isinstance(function_ref, str) or not function_ref:
-        return
-
-    account_id = getattr(context, "account_id", None) or "000000000000"
-    region = getattr(context, "region", None) or "us-east-1"
     try:
-        role_arn = _function_role(function_ref, account_id, region)
-    except Exception as e:
-        LOG.debug("ESM SQS role lookup failed: %s", e)
+        value = int(raw)
+    except (TypeError, ValueError):
         return
-    if not role_arn:
+    if value >= _MAX_CONCURRENCY_MIN:
+        return
+
+    from localemu.aws.api.lambda_ import InvalidParameterValueException
+
+    raise InvalidParameterValueException(
+        f"Value {value} at 'scalingConfig.maximumConcurrency' failed to satisfy "
+        f"constraint: Member must have value greater than or equal to {_MAX_CONCURRENCY_MIN}.",
+        Type="User",
+    )
+
+
+def _enforce_visibility_vs_timeout(source_arn: str, version, account_id: str, region: str) -> None:
+    timeout = getattr(getattr(version, "config", None), "timeout", None)
+    if timeout is None:
+        return
+    try:
+        fn_timeout = int(timeout)
+        visibility = _queue_visibility_timeout(source_arn, account_id, region)
+    except Exception as e:
+        LOG.debug("ESM SQS visibility check lookup failed: %s", e)
+        return
+    if visibility is None or visibility >= fn_timeout:
+        return
+
+    from localemu.aws.api.lambda_ import InvalidParameterValueException
+
+    raise InvalidParameterValueException(
+        f"Invalid value for attribute: Queue visibility timeout: {visibility} seconds "
+        f"is less than Function timeout: {fn_timeout} seconds",
+        Type="User",
+    )
+
+
+def _enforce_role(role_arn: str, source_arn: str, account_id: str, region: str) -> None:
+    if not _iam_enabled():
         return
 
     from localemu.utils.aws.arns import parse_arn
@@ -172,6 +197,43 @@ def _enforce_from_request(context, request) -> None:
     raise InvalidParameterValueException(message, Type="User")
 
 
+def _enforce_from_request(context, request) -> None:
+    service = getattr(context, "service", None)
+    operation = getattr(context, "operation", None)
+    if getattr(service, "service_name", None) != "lambda":
+        return
+    if getattr(operation, "name", None) != "CreateEventSourceMapping":
+        return
+
+    _enforce_maximum_concurrency(request)
+
+    source_arn = esm.request_get(request, "EventSourceArn")
+    if not isinstance(source_arn, str) or ":sqs:" not in source_arn:
+        return
+
+    function_ref = esm.request_get(request, "FunctionName") or esm.request_get(
+        request, "FunctionArn"
+    )
+    if not isinstance(function_ref, str) or not function_ref:
+        return
+
+    account_id = getattr(context, "account_id", None) or "000000000000"
+    region = getattr(context, "region", None) or "us-east-1"
+    try:
+        version = esm.get_function_version(function_ref, account_id, region)
+    except Exception as e:
+        LOG.debug("ESM SQS function lookup failed: %s", e)
+        return
+    if not version:
+        return
+
+    _enforce_visibility_vs_timeout(source_arn, version, account_id, region)
+
+    role_arn = getattr(version.config, "role", None)
+    if role_arn:
+        _enforce_role(role_arn, source_arn, account_id, region)
+
+
 def _patch() -> None:
     from localemu.aws.skeleton import Skeleton
 
@@ -186,7 +248,7 @@ def _patch() -> None:
 
     Skeleton.dispatch_request = dispatch_request
     Skeleton._awsbox_esm_sqs_role = True
-    LOG.info("awsbox ESM SQS execution-role check applied")
+    LOG.info("awsbox ESM SQS role/visibility/concurrency checks applied")
 
 
 _patch()

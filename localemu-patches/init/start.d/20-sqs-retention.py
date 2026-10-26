@@ -7,6 +7,12 @@ stacks that pass locally can fail on deploy.
 from __future__ import annotations
 
 import logging
+import sys
+
+if "/opt/awsbox/esm" not in sys.path:
+    sys.path.insert(0, "/opt/awsbox/esm")
+
+import awsbox_esm_common as esm  # noqa: E402
 
 LOG = logging.getLogger("localemu.awsbox.sqs_retention")
 
@@ -14,19 +20,8 @@ _RETENTION_MIN = 60
 _RETENTION_MAX = 1_209_600  # 14 days
 
 
-def _request_get(request, key: str):
-    if request is None:
-        return None
-    if isinstance(request, dict):
-        return request.get(key)
-    getter = getattr(request, "get", None)
-    if callable(getter):
-        return getter(key)
-    return getattr(request, key, None)
-
-
 def _attributes_from_request(request) -> dict | None:
-    attrs = _request_get(request, "Attributes")
+    attrs = esm.request_get(request, "Attributes")
     if attrs is None:
         return None
     if isinstance(attrs, dict):
