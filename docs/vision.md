@@ -111,7 +111,7 @@ Milestones remain the catalogue ([Project #8](https://github.com/users/kgz/proje
 | [AI/ML stubs](https://github.com/kgz/awsl/milestone/17) | Bedrock, SageMaker, common AI APIs |
 | [Niche IaC](https://github.com/kgz/awsl/milestone/22) | MWAA, Amplify, Lightsail, IoT, Media, WorkSpaces, Pinpoint, Pulumi, Ansible |
 
-**Shipped so far:** S3 UI, IAM, Lambda, Logs, API GW, Terraform/CFN/CDK/SAM S3+Lambda, ECS/EC2 samples, Transfer API + **SFTP→S3 bridge** (`./bin/transfer-dataplane-smoke.sh`), RDS Docker Postgres (`./bin/rds-smoke.sh`), RDS MySQL / Aurora MySQL (`./bin/rds-mysql-smoke.sh`).
+**Shipped so far:** S3 UI, IAM, Lambda, Logs, API GW, Terraform/CFN/CDK/SAM S3+Lambda, ECS/EC2 samples, Transfer API + **native SFTP SSH keys → S3** (`./bin/transfer-key-smoke.sh`), RDS Docker Postgres (`./bin/rds-smoke.sh`), RDS MySQL / Aurora MySQL (`./bin/rds-mysql-smoke.sh`).
 
 ```bash
 ./bin/awsbox up

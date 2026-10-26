@@ -41,7 +41,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Resource policies (SM, KMS, S3) | yes (delegation allows) | **yes** (explicit deny / no key-policy delegation) | cross-account [#233](https://github.com/kgz/awsl/issues/233) | — | `resource-policy-smoke.sh` |
 | Kinesis | yes | **yes** | — | no → [#178](https://github.com/kgz/awsl/issues/178) | `kinesis-smoke.sh`, `kinesis-authz-smoke.sh` |
 | Transfer API | yes | **yes** (`transfer-authz-smoke.sh`) | — | list/create | `transfer-smoke.sh`, `transfer-authz-smoke.sh` |
-| Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |
+| Transfer SFTP→S3 (SSH keys) | yes (native) | **yes** (wrong key) | LOGICAL / IdP / SFTP-byte authz → [#322](https://github.com/kgz/awsl/issues/322) | create user + import key → [#321](https://github.com/kgz/awsl/issues/321) | `transfer-key-smoke.sh`, `transfer-dataplane-smoke.sh` |
 | RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail | `rds-smoke.sh`, `rds-authz-smoke.sh` |
 | RDS MySQL / Aurora MySQL | yes | **yes** (wrong password) | reader read-only | list/detail · create [#145](https://github.com/kgz/awsl/issues/145) | `rds-mysql-smoke.sh` |
 | SQS | yes | **yes** (deny SendMessage) | — | no → [#167](https://github.com/kgz/awsl/issues/167) | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |

@@ -35,7 +35,7 @@ Link from docs and/or README status row
 
 ## Examples we already needed
 
-- Transfer sidecar password → [#141](https://github.com/kgz/awsl/issues/141)
+- Transfer native SSH keys (was sidecar password) → [#141](https://github.com/kgz/awsl/issues/141)
 - Dual S3 → [#143](https://github.com/kgz/awsl/issues/143)
 - Workload IAM → [#144](https://github.com/kgz/awsl/issues/144)
 - RDS create/Aurora → [#145](https://github.com/kgz/awsl/issues/145)

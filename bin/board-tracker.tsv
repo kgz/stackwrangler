@@ -130,7 +130,7 @@
 133	done	Vision fully-working / LocalStack lesson
 137	done	Console Transfer servers UI
 138	done	Console RDS databases UI
-141	backlog	Transfer native SFTP auth — drop sidecar
+141	in-review	Transfer native SFTP auth — drop sidecar
 143	done	Debt: unify dual S3 backends
 144	done	Debt: workload IAM authz smokes
 145	backlog	Debt: RDS create UI + Aurora fidelity
@@ -216,3 +216,5 @@
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+321	backlog	Debt: Transfer console user+key (from #141)
+322	backlog	Debt: Transfer LOGICAL/IdP/SFTP-byte authz (from #141)

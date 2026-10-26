@@ -104,8 +104,9 @@ function ServersList() {
       </div>
 
       <p className="page-lead">
-        Control plane via LocalEmu. SFTP bytes use the awsbox sidecar on{' '}
-        <code>127.0.0.1:2222</code> — see <code>docs/transfer.md</code>.
+        Native Transfer SFTP (SSH public keys) on <code>127.0.0.1:2222</code>.
+        Create users / import keys via CLI until the console form lands — see{' '}
+        <code>docs/transfer.md</code>.
       </p>
 
       {error ? <div className="error-banner">{error}</div> : null}
@@ -261,8 +262,9 @@ function ServerDetail({ serverId }: { serverId: string }) {
               <h2 className="cfn-section-title">Users</h2>
               {users.length === 0 ? (
                 <p className="cfn-muted">
-                  No users listed (LocalEmu list-users may be empty). Create via
-                  CLI smoke.
+                  No users listed (LocalEmu list-users may be empty). Create user
+                  + <code>import-ssh-public-key</code> via CLI (
+                  <code>./bin/transfer-key-smoke.sh</code>).
                 </p>
               ) : (
                 <table className="data">
@@ -292,9 +294,9 @@ function ServerDetail({ serverId }: { serverId: string }) {
             <section>
               <h2 className="cfn-section-title">Data plane</h2>
               <p className="cfn-muted">
-                SFTP listen: <code>sftp://awsbox@127.0.0.1:2222</code> (compose{' '}
-                <code>sftp</code> service). Bridge smoke:{' '}
-                <code>./bin/transfer-dataplane-smoke.sh</code>
+                SFTP listen: <code>sftp -i key -P 2222 user@127.0.0.1</code>{' '}
+                (native LocalEmu; SSH keys). Smoke:{' '}
+                <code>./bin/transfer-key-smoke.sh</code>
               </p>
             </section>
           </>

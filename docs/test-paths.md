@@ -184,10 +184,11 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
 | CFN Create/Update in console | ui | missing | [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Transfer create-server / create-user API | happy | covered | `./bin/transfer-smoke.sh` |
-| SFTP put via sidecar → LocalEmu S3 | happy | covered | `./bin/transfer-dataplane-smoke.sh` |
-| Transfer user SSH key auth (native) | happy | missing | [#141](https://github.com/kgz/awsl/issues/141) |
+| SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./bin/transfer-key-smoke.sh` |
+| SFTP key put → S3 (short dataplane) | happy | covered | `./bin/transfer-dataplane-smoke.sh` |
+| **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./bin/transfer-key-smoke.sh` |
 | **Transfer empty role → simulate PutObject deny** | sad/authz | covered | `./bin/transfer-authz-smoke.sh` |
-| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) |
+| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./bin/rds-smoke.sh` |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./bin/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
@@ -221,6 +222,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 ./bin/lambda-smoke.sh           # happy
 ./bin/lambda-authz-smoke.sh     # sad/authz
 ./bin/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
+./bin/transfer-key-smoke.sh
 ./bin/transfer-dataplane-smoke.sh
 ./bin/rds-smoke.sh              # needs psql
 ./bin/rds-mysql-smoke.sh        # needs mysql
