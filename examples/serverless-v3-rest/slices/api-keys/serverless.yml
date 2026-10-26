@@ -1,0 +1,35 @@
+# Reference shape (Serverless Framework v3). The smoke does not run `serverless deploy`;
+# it builds the same API from openapi.template.json with the AWS CLI.
+service: awsbox-api-keys
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  apiGateway:
+    apiKeySourceType: HEADER
+    usagePlan:
+      - standard:
+          throttle: { rateLimit: 50, burstLimit: 100 }
+      - tight:
+          throttle: { rateLimit: 1, burstLimit: 2 }
+      - capped:
+          quota: { limit: 4, offset: 1, period: DAY }
+          throttle: { rateLimit: 50, burstLimit: 100 }
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: ["apigateway:POST", "apigateway:GET", "apigateway:DELETE"]
+          Resource:
+            - arn:aws:apigateway:${aws:region}::/apikeys
+            - arn:aws:apigateway:${aws:region}::/apikeys/*
+            - arn:aws:apigateway:${aws:region}::/usageplans
+            - arn:aws:apigateway:${aws:region}::/usageplans/*
+
+functions:
+  items:
+    handler: handler.handler
+    events:
+      - http: { path: v1/items, method: get, private: true }
+  tokenAdmin:
+    handler: token-admin.handler

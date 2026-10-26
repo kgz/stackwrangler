@@ -55,6 +55,14 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST request via custom domain (root mapping, local DNS) | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST request via custom domain named base path | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST custom domain unmapped prefix → 403 Forbidden | sad/other | covered | `./bin/apigw-rest-smoke.sh` |
+| REST `x-api-key` valid key (minted by Lambda: CreateApiKey + CreateUsagePlanKey + GetUsagePlans) → 200 | happy | covered | `./bin/apigw-usage-plan-smoke.sh` · [apigw-rest.md](apigw-rest.md#api-keys-and-usage-plans) |
+| REST `apiKeySource` AUTHORIZER (`usageIdentifierKey`) | happy | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST `apiKeyRequired` with no key / unknown key / disabled key → 403 | sad/authz | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST revoked key (DeleteApiKey) → 403 | sad/authz | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST usage plan throttle (rate/burst) → 429 | sad/other | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| REST usage plan quota → 429 | sad/other | covered | `./bin/apigw-usage-plan-smoke.sh` |
+| `apigateway:POST` on `/apikeys` denied for a role (CreateApiKey) | sad/authz | covered | `./bin/apigw-usage-plan-smoke.sh` · [#311](https://github.com/kgz/awsl/issues/311) |
+| REST usage plan `get-usage` / per-stage throttle | happy | missing | [#309](https://github.com/kgz/awsl/issues/309) |
 | REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A · [apigw-rest.md](apigw-rest.md) |
 | REST VPC_LINK to NLB with stopped/unhealthy target → 5xx | sad | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A |
 | ECS awsvpc `describe-tasks` privateIPv4Address inside subnet CIDR and equals container VPC IP; that address reachable on the VPC | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` · [#268](https://github.com/kgz/awsl/issues/268) |

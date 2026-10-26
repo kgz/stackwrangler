@@ -216,3 +216,6 @@
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)
+310	backlog	Debt: Console for API Gateway API keys and usage plans (from #294)
+311	backlog	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
