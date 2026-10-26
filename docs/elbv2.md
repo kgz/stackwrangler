@@ -32,3 +32,4 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 - Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
 - Classic ELB is not this path.
+- `elbv2-smoke.sh` needs EC2 containers; the mirror resource-id start.d patch breaks them on beta ([#299](https://github.com/kgz/awsl/issues/299)).

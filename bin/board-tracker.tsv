@@ -209,3 +209,4 @@
 241	backlog	Debt: ELBv2 console (from #203)
 242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
+299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)

@@ -1489,6 +1489,11 @@ def _ensure_sidecar() -> bool:
     if _sidecar_running():
         return True
     try:
+        # An exited sidecar from an earlier stack keeps the name; drop it before recreating.
+        _docker_sdk().containers.get(_SIDECAR).remove(force=True)
+    except Exception:
+        pass
+    try:
         _docker_sdk().containers.run(
             "localemu/ec2-base:v4",
             command=["infinity"],
