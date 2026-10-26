@@ -31,7 +31,7 @@ ${main}
 function th(label, { sort, filter } = {}) {
   const sortMark = sort ? ` <span aria-hidden="true">↑</span>` : "";
   const filterBtn = filter
-    ? ` <button type="button" class="filter" aria-label="Filter ${label}">▾</button>`
+    ? ` <button type="button" class="filter" disabled aria-disabled="true" title="To implement" aria-label="Filter ${label}">▾</button>`
     : "";
   return `<th scope="col"><span class="th-inner">${label}${sortMark}${filterBtn}</span></th>`;
 }
