@@ -222,6 +222,16 @@ OUT="$(invoke "$PAYLOAD_PEER")"
 echo "$OUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("peer",{}).get("ok") is True, d; print("peer ok")' \
 	&& ok "peer VPC CIDR reachable" || bad "peer VPC unreachable: $OUT"
 
+# --- #204 sad path: removing the pcx route must fail closed ---
+aws ec2 delete-route --route-table-id "$RTB_A" --destination-cidr-block "$CIDR_B" >/dev/null
+sleep 2
+OUT="$(invoke "$PAYLOAD_PEER")"
+echo "$OUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("peer",{}).get("ok") is False, d; print("peer blocked after DeleteRoute:", d["peer"].get("detail","")[:80])' \
+	&& ok "removing peering route blocks peer VPC" || bad "peer still reachable after DeleteRoute: $OUT"
+aws ec2 create-route --route-table-id "$RTB_A" --destination-cidr-block "$CIDR_B" \
+	--vpc-peering-connection-id "$PCX" >/dev/null
+sleep 2
+
 # --- replay after container restart (required AC) ---
 CTR="$(docker ps --format '{{.Names}}' | grep -E "lambda.*${FN}|${FN}" | head -1 || true)"
 if [[ -z "$CTR" ]]; then

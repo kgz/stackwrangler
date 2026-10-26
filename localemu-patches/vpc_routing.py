@@ -490,10 +490,9 @@ def _sync_peering(
             peer_pcx_ip = _safe_ip(peer_pcx_ip)
             if not peer_vpc_ip or not peer_pcx_ip or not iface:
                 continue
-            covered = any(_covers(dest, peer_cidr, peer_vpc_ip) for dest in dests) or (
-                bool(peer_cidr) and _covers(peer_cidr, peer_cidr, peer_vpc_ip)
-            )
-            if covered or not dests:
+            # #204: only when the route table has a pcx dest covering the peer.
+            covered = any(_covers(dest, peer_cidr, peer_vpc_ip) for dest in dests)
+            if covered:
                 # Prefer LocalEmu helper; also apply via _sh so Lambda
                 # sidecars (no in-image iptables) still get the DNAT.
                 add_peer_host_route(container, iface, peer_vpc_ip, peer_pcx_ip)
@@ -509,15 +508,18 @@ def _sync_peering(
                 allowed_ips.append(f"{peer_vpc_ip}/32")
             else:
                 del_peer_host_route(container, iface, peer_vpc_ip, peer_pcx_ip)
-        # Whole peering dest via pcx gateway — Lambda / non-EC2 peers.
-        # Fall back to the peer VPC CIDR when the route-table dest list is
-        # empty (moto pcx id mismatch) so fib can still reach the peer.
+                _sh(
+                    container,
+                    "iptables -t nat -D OUTPUT "
+                    f"-d {peer_vpc_ip}/32 -j DNAT --to-destination {peer_pcx_ip} "
+                    "2>/dev/null || true; "
+                    f"ip route del {peer_vpc_ip}/32 2>/dev/null || true",
+                )
+        # Fib for route-table pcx destinations only (not the whole peer VPC
+        # CIDR) so DeleteRoute fails closed (#204 sad path).
         pcx_gw = _network_gateway(peering_net)
-        route_cidrs = list(dests)
-        if peer_cidr and peer_cidr not in route_cidrs:
-            route_cidrs.append(peer_cidr)
         if iface and pcx_gw:
-            for dest in route_cidrs:
+            for dest in dests:
                 safe = _safe_cidr(dest)
                 if not safe:
                     continue
@@ -526,8 +528,14 @@ def _sync_peering(
                     f"ip route replace {safe} via {pcx_gw} dev {iface} 2>/dev/null || "
                     f"ip route replace {safe} via {pcx_gw}",
                 )
-                if safe not in allowed_ips and "/32" not in safe:
-                    allowed_ips.append(safe)
+            # Drop a stale whole-VPC fib if the RT no longer has that dest.
+            if peer_cidr and peer_cidr not in dests:
+                safe_peer = _safe_cidr(peer_cidr)
+                if safe_peer:
+                    _sh(
+                        container,
+                        f"ip route del {safe_peer} 2>/dev/null || true",
+                    )
     return allowed_ips
 
 
