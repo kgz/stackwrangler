@@ -153,9 +153,10 @@ Smokes: `./bin/apigw-smoke.sh` · `./bin/apigw-authz-smoke.sh` · `./bin/apigw-r
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Serverless Framework v3 | **Partial** — `examples/serverless-v3-rest` · [docs/serverless-awsbox.md](docs/serverless-awsbox.md) · authorizer http-event [#328](https://github.com/kgz/awsl/issues/328) · domain-manager [#329](https://github.com/kgz/awsl/issues/329) · sad smoke [#330](https://github.com/kgz/awsl/issues/330) |
 | Pulumi / Ansible examples | **Backlog** |
-| CodePipeline / Build / Deploy / Artifact | **Backlog** |
+| CodeDeploy | **CLI + smoke** — ECS blue/green + Lambda canary DG (control plane) · `./bin/codedeploy-smoke.sh` · slice `examples/serverless-v3-rest/slices/codedeploy/` · alias weight [#340](https://github.com/kgz/awsl/issues/340) · authz/console [#341](https://github.com/kgz/awsl/issues/341) |
+| CodePipeline / Build / Artifact | **Backlog** |
 
-Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`, `./bin/serverless-v3-smoke.sh`
+Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`, `./bin/serverless-v3-smoke.sh`, `./bin/codedeploy-smoke.sh`
 
 
 ## Org staging path (target)

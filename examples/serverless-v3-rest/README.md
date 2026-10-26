@@ -63,3 +63,4 @@ Slice status (parent + any `slices/*` present):
 | [dns](slices/dns/) | [#56](https://github.com/kgz/awsl/issues/56) | `./bin/route53-smoke.sh` |
 | [acm](slices/acm/) | [#74](https://github.com/kgz/awsl/issues/74) | `./bin/acm-smoke.sh` |
 | [asg](slices/asg/) | [#83](https://github.com/kgz/awsl/issues/83) | `./bin/autoscaling-smoke.sh` |
+| [codedeploy](slices/codedeploy/) | [#98](https://github.com/kgz/awsl/issues/98) | `./bin/codedeploy-smoke.sh` |

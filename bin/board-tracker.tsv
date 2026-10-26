@@ -90,7 +90,7 @@
 # Developer tools
 96	backlog	CodePipeline
 97	backlog	CodeBuild
-98	backlog	CodeDeploy
+98	in-review	CodeDeploy
 99	backlog	CodeArtifact (+ CodeCommit)
 # Data movement
 100	done	Transfer Family (SFTP)
@@ -237,7 +237,10 @@
 337	backlog	Debt: Batch/Beanstalk/App Runner/ASG console (from #83)
 83	in-review	Batch / Beanstalk / App Runner / ASG
 185	in-review	Serverless v3 deploy smoke
+98	in-review	CodeDeploy
 328	backlog	Debt: Serverless http authorizer CFN PutMethod (from #185)
 329	backlog	Debt: serverless-domain-manager (from #185)
 330	backlog	Debt: Serverless v3 smoke sad path (from #185)
 344	backlog	Debt: Serverless endpoint override without editing serverless.yml (from #185)
+340	backlog	Debt: CodeDeploy Lambda canary alias weight (from #98)
+341	backlog	Debt: CodeDeploy authz smoke + console (from #98)

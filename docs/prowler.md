@@ -71,7 +71,7 @@ Do **not** point `AWS_ENDPOINT_URL` at `http://127.0.0.1:4566` for Prowler — b
 | `localemu-patches/s3control_provider.py` | Account Get/PutPublicAccessBlock + access-point lists (AWS-shaped empty get) |
 | `localemu-patches/init/start.d/10-prowler-stubs.py` | EC2/IAM/RDS/SSM/Backup actions Prowler probes |
 | `localemu-patches/ecs_task_manager.py` / `ecs_provider.py` | ECS secrets `valueFrom`, host ports, failed-start status (#201) |
-| `localemu-patches/ecs_ec2_services.py` | EC2 container instances, service replacement, bridge target registration, CodeDeploy blue/green (#207) |
+| `localemu-patches/ecs_ec2_services.py` | EC2 container instances, service replacement, bridge target registration, CodeDeploy blue/green (#207) + Lambda deploy Succeeded control plane (#98) |
 | `localemu/localemu@sha256:…` (pinned) | Avoid silent break of file mounts on `:latest` drift |
 | `./bin/awsbox-hosts` | Check / print / apply loopback hosts for S3 Control |
 
