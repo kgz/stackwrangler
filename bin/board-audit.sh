@@ -28,11 +28,15 @@ while IFS=$'\t' read -r issue expected _rest; do
 done < "$TRACKER"
 
 fetch_board() {
-	gh api graphql -f query='
+	local cursor="" page
+	while true; do
+		if [[ -z "$cursor" ]]; then
+			page="$(gh api graphql -f query='
 query {
   user(login: "kgz") {
     projectV2(number: 8) {
       items(first: 100) {
+        pageInfo { hasNextPage endCursor }
         nodes {
           content { ... on Issue { number } }
           fieldValueByName(name: "Status") {
@@ -42,7 +46,36 @@ query {
       }
     }
   }
-}' --jq '.data.user.projectV2.items.nodes[] | select(.content != null) | "\(.content.number)\t\(.fieldValueByName.name // "?")"'
+}')"
+		else
+			page="$(gh api graphql -f query='
+query($cursor: String!) {
+  user(login: "kgz") {
+    projectV2(number: 8) {
+      items(first: 100, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          content { ... on Issue { number } }
+          fieldValueByName(name: "Status") {
+            ... on ProjectV2ItemFieldSingleSelectValue { name }
+          }
+        }
+      }
+    }
+  }
+}' -f cursor="$cursor")"
+		fi
+		echo "$page" | jq -r '
+			.data.user.projectV2.items.nodes[]
+			| select(.content != null)
+			| "\(.content.number)\t\(.fieldValueByName.name // "?")"
+		'
+		local has_next end
+		has_next="$(echo "$page" | jq -r '.data.user.projectV2.items.pageInfo.hasNextPage')"
+		end="$(echo "$page" | jq -r '.data.user.projectV2.items.pageInfo.endCursor // empty')"
+		[[ "$has_next" == "true" && -n "$end" ]] || break
+		cursor="$end"
+	done
 }
 
 normalize_status() {
