@@ -63,6 +63,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | REST usage plan quota → 429 | sad/other | covered | `./bin/apigw-usage-plan-smoke.sh` |
 | `apigateway:POST` on `/apikeys` denied for a role (CreateApiKey) | sad/authz | covered | `./bin/apigw-usage-plan-smoke.sh` · [#311](https://github.com/kgz/awsl/issues/311) |
 | REST usage plan `get-usage` / per-stage throttle | happy | missing | [#309](https://github.com/kgz/awsl/issues/309) |
+| REST `HTTP_PROXY` forwards curl `-d` form-urlencoded body bytes unchanged to the backend | happy | covered | `./bin/apigw-proxy-body-smoke.sh` · [apigw-rest.md](apigw-rest.md) · [#364](https://github.com/kgz/awsl/issues/364) |
 | REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A · [apigw-rest.md](apigw-rest.md) |
 | REST VPC_LINK to NLB with stopped/unhealthy target → 5xx | sad | covered | `./bin/apigw-nlb-ecs-smoke.sh` phase A |
 | ECS awsvpc `describe-tasks` privateIPv4Address inside subnet CIDR and equals container VPC IP; that address reachable on the VPC | happy | covered | `./bin/apigw-nlb-ecs-smoke.sh` · [#268](https://github.com/kgz/awsl/issues/268) |

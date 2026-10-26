@@ -16,6 +16,7 @@ Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/se
 | Unknown route → 403 `Missing Authentication Token` | Working (matches AWS) |
 | Authorizer **Deny** | Working (403 `User is not authorized to access this resource`, matches AWS) |
 | Custom domain + base-path mapping | Working. `Host` (or DNS pointed at the edge) reaches the mapped API/stage. Needs `route53,acm` in SERVICES to create the domain. |
+| `HTTP_PROXY` request body | Working. Raw body is forwarded (including curl `-d` default `application/x-www-form-urlencoded`). Smoke: `./bin/apigw-proxy-body-smoke.sh`. |
 | `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./bin/apigw-nlb-ecs-smoke.sh` phase A. |
 | API keys + usage plans | Working: `x-api-key` (`apiKeySource` HEADER) or authorizer `usageIdentifierKey` (AUTHORIZER); missing / unknown / disabled / revoked key → 403; plan throttle and quota → 429. [Details](#api-keys-and-usage-plans) |
 | Console | HTTP APIs only → [#189](https://github.com/kgz/awsl/issues/189) · API keys / usage plans [#310](https://github.com/kgz/awsl/issues/310) |
@@ -80,3 +81,4 @@ Enforcement lives in `localemu-patches/init/start.d/20-apigw-usage-plans.py` and
 
 - An authorizer sees headers in their original case (`Authorization`), as in AWS. Check both spellings if you lower-case elsewhere.
 - Grant API Gateway `lambda:InvokeFunction` on each function (`add-permission`), as AWS requires. The smoke does.
+- HTTP_PROXY must not re-encode `application/x-www-form-urlencoded` bodies (`localemu-patches/init/start.d/20-apigw-proxy-body.py`).
