@@ -1,6 +1,6 @@
 {
   "openapi": "3.0.1",
-  "info": { "title": "awsbox-rest-demo", "version": "1" },
+  "info": { "title": "awsbox-apigw-authz", "version": "1" },
   "components": {
     "securitySchemes": {
       "bearer": {

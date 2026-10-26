@@ -27,7 +27,6 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | **Backlog** | Ticketed, not started |
 | **Local smokes** | Proven with `./bin/*-smoke.sh` (no GitHub Actions e2e) |
 
----
 
 ## Platform / core
 
@@ -41,7 +40,6 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [docs/custom-ids.md](docs/custom-ids.md) · `./bin/custom-id-smoke.sh` |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
----
 
 ## Storage & objects
 
@@ -54,12 +52,9 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 
 Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`, `./bin/transfer-connector-smoke.sh`
 
----
 
 ## Compute & containers
 
-| Service | CLI / data | Console | Status |
-|---------|------------|---------|--------|
 | Lambda | Docker invoke · VPC → host services ([docs/lambda-vpc.md](docs/lambda-vpc.md)) | Functions | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) · VPC isolation **Partial** ([#187](https://github.com/kgz/awsl/issues/187)) |
 | EC2 | Docker instances · IMDSv2 instance-profile creds · user data · SSM `SendCommand` | Instances list | **Partial** · console depth [#146](https://github.com/kgz/awsl/issues/146) |
 | ECS | Docker tasks · secrets/`valueFrom` · host ports · EC2 container instances · desiredCount replacement · bridge ports → target groups · CodeDeploy blue/green · pull from ECR URI | Clusters / services / tasks | **Partial** · awsvpc ENI [#268](https://github.com/kgz/awsl/issues/268) · EC2 services [#207](https://github.com/kgz/awsl/issues/207) · bridge targets vs instance-IP health [#247](https://github.com/kgz/awsl/issues/247) · VPC NLB listeners [#203](https://github.com/kgz/awsl/issues/203) · depth [#146](https://github.com/kgz/awsl/issues/146) |
@@ -68,7 +63,6 @@ Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer
 
 Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smoke.sh` · `./bin/ecs-authz-smoke.sh` · `./bin/ecs-taskdef-smoke.sh` · `./bin/ecs-host-creds-smoke.sh` · `./bin/ecs-ec2-smoke.sh` · `./bin/ec2-smoke.sh` · `./bin/ec2-imds-smoke.sh` · `./bin/ec2-authz-smoke.sh` · `./bin/ecr-smoke.sh` · `./bin/vpc-routing-smoke.sh` · `./bin/sg-enforcement-smoke.sh` · `./bin/vpce-private-dns-smoke.sh` · `./bin/elbv2-smoke.sh`
 
----
 
 ## Networking
 
@@ -86,12 +80,9 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 
 Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh` · `./bin/r53-private-smoke.sh`
 
----
 
 ## Data stores
 
-| Service | CLI / data | Console | Status |
-|---------|------------|---------|--------|
 | RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + `psql` hint | **Partial** · create/Aurora debt [#145](https://github.com/kgz/awsl/issues/145) |
 | RDS (MySQL / Aurora MySQL) | Docker DB · writer/reader · `rds!` secret | Databases + `mysql` hint | **Partial** · failover [#225](https://github.com/kgz/awsl/issues/225) · console create [#145](https://github.com/kgz/awsl/issues/145) |
 | DynamoDB | put/get · GSI query · scan filter · conditional writes · UpdateItem expressions · TransactWriteItems · TTL sweep · IAM on table/index ARNs | — | **Working** (CLI) · console [#174](https://github.com/kgz/awsl/issues/174) · `./bin/dynamodb-depth-smoke.sh` · Batch/Transact table-scoped IAM [#306](https://github.com/kgz/awsl/issues/306) · index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) |
@@ -99,12 +90,9 @@ Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh` · `./bin/r53-pri
 
 Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql`) · MySQL/Aurora: `./bin/rds-mysql-smoke.sh` (needs host `mysql`)
 
----
 
 ## Messaging & integration
 
-| Service | CLI / data | Console | Status |
-|---------|------------|---------|--------|
 | SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [docs/sqs.md](docs/sqs.md) |
 | SNS | publish · SQS fan-out (queue policy / `SourceArn`) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./bin/sns-sqs-fanout-smoke.sh` |
 | EventBridge | put-events + rule · scheduled `rate()` rule → Lambda (disable stops it; no invoke permission = no fire) | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) · [slice](examples/serverless-v3-rest/slices/schedule/README.md) · cadence [#317](https://github.com/kgz/awsl/issues/317) |
@@ -115,12 +103,9 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` (+ `*-authz-smoke.sh`)
 Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` (+ `*-authz-smoke.sh`)
 
----
 
 ## Security & identity
 
-| Service | CLI / data | Console | Status |
-|---------|------------|---------|--------|
 | IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** · resource policies `./bin/resource-policy-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | IAM OIDC / web identity | `AssumeRoleWithWebIdentity` checks a local JWKS; trust `StringEquals`/`StringLike` on `<issuer>:sub` and `:aud`. `repo:org/*` matches every repo in the org (risky). `iam:PassRole` is limited by `iam:PassedToService` | — | **CLI + smoke** · [docs/oidc.md](docs/oidc.md) · service-origin `kms:ViaService` / `aws:SourceArn` [#223](https://github.com/kgz/awsl/issues/223) |
 | STS | Enabled | — | **Control plane** (polish backlog) |
@@ -134,21 +119,18 @@ Smoke: `./bin/sqs-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` · `./bin/sns-smo
 Smoke: `./bin/iam-access-denied.sh` · `./bin/resource-policy-smoke.sh` · `./bin/oidc-smoke.sh` · `./bin/prowler-smoke.sh` · `./bin/multi-account-smoke.sh` · real AWS (~$0): `./bin/aws-parity-iam-denied.sh` ([docs/aws-parity-agent-iam.md](docs/aws-parity-agent-iam.md))  
 CFN parity (local + real, short-lived): `./bin/aws-parity-cfn-s3-lambda.sh` · sad: `./bin/aws-parity-cfn-authz.sh` ([docs/aws-parity-cfn.md](docs/aws-parity-cfn.md))
 
----
 
 ## Observability & account
 
-| Service | CLI / data | Console | Status |
-|---------|------------|---------|--------|
 | CloudWatch Logs | Log groups | Log groups | **Working** (basic) · sad [#169](https://github.com/kgz/awsl/issues/169) |
 | API Gateway HTTP | APIs | HTTP APIs | **Partial** · sad [#170](https://github.com/kgz/awsl/issues/170) |
 | API Gateway REST (v1) | OpenAPI import · `aws_proxy` · REQUEST authorizers · custom domain Host + base path · VPC_LINK → NLB · API keys + usage plans (`x-api-key`, throttle, quota; IAM `apigateway:POST/GET/DELETE` on `/apikeys`, `/usageplans`) ([docs/apigw-rest.md](docs/apigw-rest.md)) | — ([#189](https://github.com/kgz/awsl/issues/189), keys [#310](https://github.com/kgz/awsl/issues/310)) | **Partial** · Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) · ENI IP [#268](https://github.com/kgz/awsl/issues/268) · usage reporting [#309](https://github.com/kgz/awsl/issues/309) · IAM breadth [#311](https://github.com/kgz/awsl/issues/311) |
+| API Gateway REST (v1) | OpenAPI import · `aws_proxy` · REQUEST authorizers · custom domain Host + base path · VPC_LINK → NLB ([docs/apigw-rest.md](docs/apigw-rest.md)) | — ([#189](https://github.com/kgz/awsl/issues/189)) | **Partial** · ENI IP [#268](https://github.com/kgz/awsl/issues/268) |
 | Metrics / Alarms / SSM / CloudTrail / Orgs (empty reads) | Enabled for scanners (Prowler) | — | **Partial** (read-empty) · [#198](https://github.com/kgz/awsl/issues/198) · [docs/prowler.md](docs/prowler.md) |
 | X-Ray / deeper observability | — | — | **Backlog** |
 
 Smokes: `./bin/apigw-smoke.sh` · `./bin/apigw-authz-smoke.sh` · `./bin/apigw-rest-smoke.sh` · `./bin/apigw-nlb-ecs-smoke.sh` · `./bin/apigw-usage-plan-smoke.sh`
 
----
 
 ## IaC & deploy
 
@@ -163,7 +145,6 @@ Smokes: `./bin/apigw-smoke.sh` · `./bin/apigw-authz-smoke.sh` · `./bin/apigw-r
 
 Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`
 
----
 
 ## Org staging path (target)
 
@@ -175,23 +156,18 @@ VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS — epic [#90](https://g
 | Lambda / S3 / ECS / RDS | **Partial**–**Working** pieces exist |
 | Full E2E one smoke | **Backlog** |
 
----
 
 ## Quick start
 
 Needs Docker + [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Optional: `psql`, `mysql`, `sshpass` for RDS / Transfer dataplane smokes.
 
-```bash
 cp .env.example .env   # first time; awsbox up also does this
-./bin/awsbox up
 ./bin/awsbox console    # http://127.0.0.1:3000
 aws --profile local s3 ls
 ./bin/awsbox down                 # keep profile
 ./bin/awsbox down --remove-profile
-```
 
 | What | Where |
-|------|--------|
 | S3 (console buckets) | `http://127.0.0.1:8333` SeaweedFS |
 | LocalEmu (IAM, Lambda, CFN, Transfer, RDS, …) | `http://127.0.0.1:4566` |
 | SFTP sidecar | `127.0.0.1:2222` (user `awsbox` / pass `awsboxpass`) |
@@ -204,16 +180,13 @@ If profile `local` exists and isn’t awsbox-managed: `./bin/awsbox up --force`.
 
 Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or engine in WSL).
 
----
 
 ## Board & workflow
 
-```bash
 ./bin/board-status.sh in-progress <n>
 ./bin/gap-check.sh <n>    # before done — Partial/UI stubs → Debt tickets
 ./bin/board-audit.sh
 ./bin/setup-github-board.sh
-```
 
 Gap rubric: [docs/gap-check.md](docs/gap-check.md) ·  
 **Is this path tested?** → [docs/test-paths.md](docs/test-paths.md) · grid: [docs/smoke-matrix.md](docs/smoke-matrix.md).  

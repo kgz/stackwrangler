@@ -2,7 +2,7 @@
 
 REST APIs imported from an OpenAPI 3 document with `x-amazon-apigateway-*` extensions, the shape spec-first stacks (Serverless `resources`, CloudFormation `AWS::ApiGateway::RestApi` `Body`) deploy.
 
-Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-rest-smoke.sh`
+Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/serverless-v3-rest/slices/apigw-authz/) · Smoke: `./bin/apigw-rest-smoke.sh`
 
 ## What works
 
@@ -14,7 +14,7 @@ Example: [examples/apigw-rest](../examples/apigw-rest/) · Smoke: `./bin/apigw-r
 | REQUEST Lambda authorizers (`x-amazon-apigateway-authorizer`), identity source enforced, `context` + `principalId` in `requestContext.authorizer` | Working |
 | Missing identity source → 401 | Working (matches AWS) |
 | Unknown route → 403 `Missing Authentication Token` | Working (matches AWS) |
-| Authorizer **Deny** | **401**; AWS returns 403 → [#190](https://github.com/kgz/awsl/issues/190) |
+| Authorizer **Deny** | Working (403 `User is not authorized to access this resource`, matches AWS) |
 | Custom domain + base-path mapping | Working. `Host` (or DNS pointed at the edge) reaches the mapped API/stage. Needs `route53,acm` in SERVICES to create the domain. |
 | `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./bin/apigw-nlb-ecs-smoke.sh` phase A. |
 | API keys + usage plans | Working: `x-api-key` (`apiKeySource` HEADER) or authorizer `usageIdentifierKey` (AUTHORIZER); missing / unknown / disabled / revoked key → 403; plan throttle and quota → 429. [Details](#api-keys-and-usage-plans) |

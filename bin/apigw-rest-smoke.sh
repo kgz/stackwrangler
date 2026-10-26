@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # REST API (v1) imported from OpenAPI: aws_proxy + REQUEST Lambda authorizer
-# (examples/apigw-rest, docs/apigw-rest.md).
+# (examples/serverless-v3-rest/slices/apigw-authz, docs/apigw-rest.md).
 # Happy: public route 200 with query passthrough; good token 200 with authorizer context.
 # Happy: custom domain root mapping and a named base path (Host / local DNS).
-# Sad: no token 401; denied token 401 (AWS returns 403, see docs); unknown route 403;
+# Sad: no token 401; denied token 403; unknown route 403;
 #      custom domain prefix with no base-path mapping 403 Forbidden.
 set -euo pipefail
 
@@ -15,7 +15,7 @@ EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 REGION="${AWSBOX_REGION:-us-east-1}"
 ACCOUNT="000000000000"
 TS="$(date +%s)"
-EX="$ROOT/examples/apigw-rest"
+EX="$ROOT/examples/serverless-v3-rest/slices/apigw-authz"
 WORK="$ROOT/.awsbox/apigw-rest-${TS}"
 HANDLER="awsbox-rest-handler-${TS}"
 AUTHZ="awsbox-rest-authz-${TS}"
@@ -111,7 +111,9 @@ code="$(req "${BASE}/v1/items")"
 check "sad no token" 401 "$code"
 
 code="$(req -H 'Authorization: Bearer bad' "${BASE}/v1/items")"
-check "sad denied token (AWS: 403, emulator: 401)" 401 "$code"
+check "sad denied token" 403 "$code"
+check "sad denied token message" "User is not authorized to access this resource" \
+	"$(python3 -c 'import json,sys; b=json.load(open(sys.argv[1])); print(b.get("message") or b.get("Message") or "")' "$WORK/body" 2>/dev/null || echo bad-body)"
 
 code="$(req -H 'Authorization: Bearer good' "${BASE}/v1/items")"
 check "happy allowed token" 200 "$code" "$(cat "$WORK/body")"

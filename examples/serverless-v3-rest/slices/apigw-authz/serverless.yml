@@ -1,0 +1,26 @@
+# Reference shape (Serverless Framework v3). The smoke does not run `serverless deploy`;
+# it builds the same API from openapi.template.json with the AWS CLI.
+service: awsbox-apigw-authz
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+
+functions:
+  authorizer:
+    handler: authorizer.handler
+  handler:
+    handler: handler.handler
+    events:
+      - http:
+          path: public/callback
+          method: get
+      - http:
+          path: v1/items
+          method: get
+          authorizer:
+            name: authorizer
+            type: request
+            identitySource: method.request.header.Authorization
+            resultTtlInSeconds: 0
