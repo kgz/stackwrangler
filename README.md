@@ -47,7 +47,6 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 |---------|------------|---------|--------|
 | S3 general purpose | SeaweedFS objects + parity script | Buckets / objects / preview | **Working** (UI) · **Partial** (vs LocalEmu S3 for events) |
 | S3 specialty / Access Points / Lens | — | Empty states | **Console chrome** |
-| Transfer Family | API + SFTP sidecar → S3 bridge; outbound connectors (`StartFileTransfer` → remote SFTP) | Servers list/detail · connectors: [#313](https://github.com/kgz/awsl/issues/313) | **Partial** + **Sidecar** (`docs/transfer.md`) · native keys: [#141](https://github.com/kgz/awsl/issues/141) · retrieve/AS2: [#314](https://github.com/kgz/awsl/issues/314) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
 Smokes: `./bin/s3-parity.sh`, `./bin/s3-dual-endpoint-smoke.sh`, `./bin/transfer-smoke.sh`, `./bin/transfer-dataplane-smoke.sh`, `./bin/transfer-authz-smoke.sh`, `./bin/transfer-connector-smoke.sh`
