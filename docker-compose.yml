@@ -24,7 +24,7 @@ services:
     image: localemu/localemu@sha256:86a84bf21e3c0cf2cb695bdd890bce642e8e3d852c41f46d7aa8123551cee10b
     user: root
     environment:
-      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,dax,wafv2,waf
+      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,elasticbeanstalk,apprunner,dax,wafv2,waf
       # Host docker daemon pulls this address (published below). #211
       AWSBOX_ECR_REGISTRY: 127.0.0.1:${AWSBOX_ECR_HOST_PORT:-5000}
       # ECS task-role credentials for host-network tasks (start.d/05-ecs-creds-port.py)

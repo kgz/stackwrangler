@@ -74,7 +74,7 @@
 # v1 Containers
 81	backlog	ECR
 82	backlog	EKS
-83	backlog	Batch / Beanstalk / App Runner / ASG
+83	in-review	Batch / Beanstalk / App Runner / ASG
 # v1 Analytics
 84	backlog	OpenSearch
 85	backlog	Athena + Glue + Lake Formation
@@ -232,3 +232,7 @@
 326	backlog	Debt: WAFv2 rule evaluation (from #55)
 333	backlog	Debt: ACM console (from #74)
 339	backlog	Debt: ACM DNS validation automation (from #74)
+334	backlog	Debt: Batch/Beanstalk/App Runner/ASG authz (from #83)
+335	backlog	Debt: Batch/Beanstalk/App Runner dataplane (from #83)
+337	backlog	Debt: Batch/Beanstalk/App Runner/ASG console (from #83)
+83	in-review	Batch / Beanstalk / App Runner / ASG

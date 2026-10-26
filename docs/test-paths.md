@@ -106,6 +106,15 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | ECS EC2 bridge service behind an internal NLB (2 tasks) | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS task killed → replaced and re-registered in the target group | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS container instance from an ASG + launch template | happy | covered | `./bin/ecs-ec2-smoke.sh` |
+| ASG create + set-desired-capacity 2 + describe shows 2 instances | happy | covered | `./bin/autoscaling-smoke.sh` · [batch-stubs.md](batch-stubs.md) |
+| Application Auto Scaling register/describe DynamoDB RCU target | happy | covered | `./bin/application-autoscaling-smoke.sh` |
+| Batch compute environment + job queue create/describe | happy | covered | `./bin/batch-smoke.sh` |
+| Elastic Beanstalk create/describe application | happy | covered | `./bin/elasticbeanstalk-smoke.sh` |
+| App Runner list-services / list-connections (empty stub) | happy | covered | `./bin/apprunner-smoke.sh` |
+| Batch / Beanstalk / App Runner / ASG authz deny | sad/authz | missing | [#334](https://github.com/kgz/awsl/issues/334) |
+| App Runner CreateService + traffic | happy | missing | [#335](https://github.com/kgz/awsl/issues/335) |
+| Batch SubmitJob dataplane | happy | missing | [#335](https://github.com/kgz/awsl/issues/335) |
+| Elastic Beanstalk environment provision | happy | missing | [#335](https://github.com/kgz/awsl/issues/335) |
 | ECS `CODE_DEPLOY` service starts blue tasks behind the listener | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS CodeDeploy blue/green: v2 on green, listener swap, blue stopped | happy | covered | `./bin/ecs-ec2-smoke.sh` |
 | ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./bin/ecs-ec2-smoke.sh` |

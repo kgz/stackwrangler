@@ -63,6 +63,11 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Route 53 private zones | yes (associated VPC CNAME connect, alias, A/AAAA, upstream forward, EC2 with #299 override) | **yes** (deny `route53:ListHostedZones`) | unassociated VPC NXDOMAIN | no → [#245](https://github.com/kgz/awsl/issues/245) | `r53-private-smoke.sh` |
 | WAFv2 | yes (create + associate + get/list) | **yes** (`waf-authz-smoke.sh`) | rule eval not real → [#326](https://github.com/kgz/awsl/issues/326) | no → [#324](https://github.com/kgz/awsl/issues/324) | `waf-smoke.sh`, `waf-authz-smoke.sh` |
 | ACM | yes (request/import/describe/list + API domain + ALB HTTPS ARN) | **yes** (deny `acm:RequestCertificate`) | TLS handshake [#242](https://github.com/kgz/awsl/issues/242) | no → [#333](https://github.com/kgz/awsl/issues/333) | `acm-smoke.sh` |
+| Auto Scaling (ASG) | yes (create / set-desired 2 / describe) | no → [#334](https://github.com/kgz/awsl/issues/334) | real ECS host launch [#207](https://github.com/kgz/awsl/issues/207) | no → [#337](https://github.com/kgz/awsl/issues/337) | `autoscaling-smoke.sh` |
+| Application Auto Scaling | yes (register/describe target) | no → [#334](https://github.com/kgz/awsl/issues/334) | — | no → [#337](https://github.com/kgz/awsl/issues/337) | `application-autoscaling-smoke.sh` |
+| Batch | yes (CE + queue create/describe) | no → [#334](https://github.com/kgz/awsl/issues/334) | no job run → [#335](https://github.com/kgz/awsl/issues/335) | no → [#337](https://github.com/kgz/awsl/issues/337) | `batch-smoke.sh` |
+| Elastic Beanstalk | yes (create/describe app) | no → [#334](https://github.com/kgz/awsl/issues/334) | no environment → [#335](https://github.com/kgz/awsl/issues/335) | no → [#337](https://github.com/kgz/awsl/issues/337) | `elasticbeanstalk-smoke.sh` |
+| App Runner | yes (list-* empty stub) | no → [#334](https://github.com/kgz/awsl/issues/334) | CreateService → [#335](https://github.com/kgz/awsl/issues/335) | no → [#337](https://github.com/kgz/awsl/issues/337) | `apprunner-smoke.sh` |
 
 ## Rule
 
