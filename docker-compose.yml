@@ -75,8 +75,8 @@ services:
       - ./localemu-patches/ecs_task_manager.py:/opt/code/localemu/src/localemu/services/ecs/docker/task_manager.py:ro
       - ./localemu-patches/ecs_provider.py:/opt/code/localemu/src/localemu/services/ecs/provider.py:ro
       # ECS on EC2 (#207): container instances, desiredCount, TG registration, CodeDeploy.
-      # Loopback NLB forwarder lives in this module. Do not mount #203's elbv2 files here;
-      # those bind the real listener addresses and rewrite i-* targets to the EC2 VPC IP.
+      # Loopback NLB forwarder lives in this module: #203's listener dials the EC2 VPC IP,
+      # which does not publish bridge host ports (#247).
       - ./localemu-patches/ecs_ec2_services.py:/opt/code/localemu/src/localemu/services/ecs/ec2_services.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro

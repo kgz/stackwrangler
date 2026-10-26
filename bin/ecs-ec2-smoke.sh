@@ -7,8 +7,8 @@
 #   5) CodeDeploy revision for a missing task def → Failed, listener unchanged
 #   6) CodeDeploy blue/green swaps the listener target group, then replaces a killed task
 #
-# The NLB listener is bound on 127.0.0.1 inside LocalEmu (not published on the
-# host). VPC-scoped listeners are #203 — this script does not mount those patches.
+# Traffic goes through a 127.0.0.1 forwarder inside LocalEmu (not published on
+# the host). The #203 VPC listener cannot reach bridge host ports yet (#247).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

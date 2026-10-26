@@ -12,10 +12,11 @@ are published on the Docker host, not inside the EC2 container network
 namespace — target health and the loopback NLB forwarder dial
 ``host.docker.internal``. ``ECS_NLB_FORWARD=0`` skips the loopback socket.
 
-That forwarder binds ``127.0.0.1:<listener port>`` inside LocalEmu only.
-It is not the VPC-scoped NLB in #203. Do not point it at ``0.0.0.0``:
-#203 binds the real listener addresses, and its instance-IP health rewrite
-will mark these bridge targets unhealthy if both patches are mounted.
+That forwarder binds ``127.0.0.1:<listener port>`` inside LocalEmu only,
+next to the VPC-scoped NLB listener from #203. The #203 listener resolves an
+``i-*`` target to the EC2 container address, where a bridge host port does not
+exist, so it cannot carry this traffic (#247). Do not point the forwarder at
+``0.0.0.0``: that would shadow the real listener bind.
 
 ``deploymentController: CODE_DEPLOY`` does not start tasks.
 ``CreateDeployment`` with an ECS AppSpec launches the idle target group,
