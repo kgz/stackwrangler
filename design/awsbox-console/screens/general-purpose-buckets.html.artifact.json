@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/general-purpose-buckets.html",
+  "entry": "screens/general-purpose-buckets.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-10-26T05:54:24.955Z",
+  "updatedAt": "2026-10-26T05:54:24.955Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

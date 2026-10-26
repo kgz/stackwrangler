@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/marketplace-for-s3.html",
+  "entry": "screens/marketplace-for-s3.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-10-26T05:54:24.955Z",
+  "updatedAt": "2026-10-26T05:54:24.955Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

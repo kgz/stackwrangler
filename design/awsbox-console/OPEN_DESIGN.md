@@ -2,10 +2,14 @@
 
 - Project id: `2ce89424-6266-4cc3-a273-3b68c3049183`
 - Name: `awsbox-console`
-- Conversation: `eb1c88fa-e9f5-4667-829a-9044c48f472c`
 - On disk: this folder (imported with `baseDir` — edits here are the OD project)
-- Skill: `frontend-design`
-- Role: AWS-feel console mocks (S3 browser, Lambda, frame chrome). Not the runtime product UI.
+- Theme: `design/awsbox/` (grey rose) — required for new screens
+- Skills: prefer `web-clone` for real AWS console screens; `frontend-design` for craft
+- Role: awsbox console mocks. Not the runtime product UI.
+
+Board: web UI tickets use status **designing** while OD runs (`./bin/od-design-run.sh --issue <n>` sets it). Move to **in-progress** only after mocks land here.
+
+Dead controls: not wired yet → `disabled` with `title="To implement"`. Will never ship → omit. Never leave an enabled button/link that does nothing (including toast-only).
 
 Start a run (shows in OD UI):
 
@@ -13,9 +17,7 @@ Start a run (shows in OD UI):
 ./bin/od-design-run.sh --issue <n> "Design …"
 ```
 
-Stub: `index.html` — replace via OD when building console screens (#4 / #5).
-
-Visual target (current AWS S3 dark console): `refs/aws-s3-console-dark-2026.png`.
+Visual refs: `refs/`. Paint with grey rose, not AWS orange / sky blue / smile.
 
 Daemon must mount this repo (already in `~/tools/open-design/deploy/docker-compose.wsl.yml`):
 

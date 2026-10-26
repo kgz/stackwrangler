@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account and organization settings — S3</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="account-organization-settings" data-nav="account-organization-settings" data-title="Account and organization settings" data-crumb="Account and organization settings">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Account and organization settings</h1>
+      <section class="aws-card" data-od-id="bpa-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar">
+            <h2 class="aws-section-title" style="margin:0;flex:1" data-od-id="bpa-title">Block Public Access settings for this account</h2>
+            <button type="button" class="btn btn-normal" data-od-id="btn-edit-bpa" title="To implement" disabled aria-disabled="true">Edit</button>
+          </div>
+          <p class="aws-desc">Amazon S3 Block Public Access provides settings for access points, buckets, and accounts to help you manage public access to Amazon S3 resources. <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html" target="_blank" rel="noopener">Learn more ↗</a></p>
+          <dl class="aws-kv" data-od-id="bpa-settings">
+            <div><dt>Block all public access</dt><dd><span class="aws-placeholder">[Setting not loaded]</span></dd></div>
+            <div><dt>Block public access to buckets and objects granted through new access control lists (ACLs)</dt><dd><span class="aws-placeholder">[Setting not loaded]</span></dd></div>
+            <div><dt>Block public access to buckets and objects granted through any access control lists (ACLs)</dt><dd><span class="aws-placeholder">[Setting not loaded]</span></dd></div>
+            <div><dt>Block public access to buckets and objects granted through new public bucket or access point policies</dt><dd><span class="aws-placeholder">[Setting not loaded]</span></dd></div>
+            <div><dt>Block public and cross-account access to buckets and objects through any public bucket or access point policies</dt><dd><span class="aws-placeholder">[Setting not loaded]</span></dd></div>
+          </dl>
+        </div>
+      </section>
+      <section class="aws-card" data-od-id="org-lens-card" style="margin-top:16px">
+        <div class="aws-card-body">
+          <div class="aws-toolbar">
+            <h2 class="aws-section-title" style="margin:0;flex:1" data-od-id="org-title">AWS Organizations settings for Storage Lens <button type="button" class="info" disabled aria-disabled="true" title="To implement">Info</button></h2>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-edit-trusted" title="To implement">Edit trusted access</button>
+          </div>
+          <p class="aws-desc">Authorize Storage Lens to access AWS Organizations for organization-wide dashboards. <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-lens-trusted-access.html" target="_blank" rel="noopener">Learn more ↗</a></p>
+          <dl class="aws-kv">
+            <div><dt>Trusted access</dt><dd><span class="aws-placeholder">[Status not loaded]</span></dd></div>
+          </dl>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
