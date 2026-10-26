@@ -1,0 +1,127 @@
+# Shape stub: VPC Link → internal NLB → ECS (DesiredCount 0).
+# Data plane is exercised by ./bin/apigw-nlb-ecs-smoke.sh; parent only needs the CFN shape.
+Resources:
+  StubVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.185.0.0/16
+      Tags:
+        - Key: Name
+          Value: ${self:service}-${self:provider.stage}-vpc
+
+  StubSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref StubVpc
+      CidrBlock: 10.185.1.0/24
+      AvailabilityZone: ${self:provider.region}a
+      Tags:
+        - Key: Name
+          Value: ${self:service}-${self:provider.stage}-subnet
+
+  StubNlb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      # ELB name max 32 chars — use short suffix, not full service name.
+      Name: sls-${env:AWSBOX_SLSE_SUFFIX, 'dev'}-nlb
+      Type: network
+      Scheme: internal
+      Subnets:
+        - !Ref StubSubnet
+
+  StubTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: sls-${env:AWSBOX_SLSE_SUFFIX, 'dev'}-tg
+      Port: 80
+      Protocol: TCP
+      VpcId: !Ref StubVpc
+      TargetType: ip
+
+  StubNlbListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref StubNlb
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref StubTargetGroup
+
+  StubVpcLink:
+    Type: AWS::ApiGateway::VpcLink
+    Properties:
+      Name: sls-${env:AWSBOX_SLSE_SUFFIX, 'dev'}-vpclink
+      TargetArns:
+        - !Ref StubNlb
+
+  StubEcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: sls-${env:AWSBOX_SLSE_SUFFIX, 'dev'}-ecs
+
+  StubTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sls-${env:AWSBOX_SLSE_SUFFIX, 'dev'}-ecs-exec
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: stub-ecs-exec
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  StubTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: sls-${env:AWSBOX_SLSE_SUFFIX, 'dev'}-api
+      RequiresCompatibilities:
+        - FARGATE
+      NetworkMode: awsvpc
+      Cpu: "256"
+      Memory: "512"
+      ExecutionRoleArn: !GetAtt StubTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: api
+          Image: public.ecr.aws/nginx/nginx:alpine
+          Essential: true
+          PortMappings:
+            - ContainerPort: 80
+              Protocol: tcp
+
+  # DesiredCount 0 — shape only; no running task / data plane in this parent smoke.
+  StubEcsService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - StubNlbListener
+    Properties:
+      ServiceName: sls-${env:AWSBOX_SLSE_SUFFIX, 'dev'}-api
+      Cluster: !Ref StubEcsCluster
+      TaskDefinition: !Ref StubTaskDefinition
+      DesiredCount: 0
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref StubSubnet
+
+Outputs:
+  StubVpcLinkId:
+    Description: API Gateway VPC Link to internal NLB (shape stub)
+    Value: !Ref StubVpcLink
+  StubNlbArn:
+    Value: !Ref StubNlb
+  StubEcsClusterName:
+    Value: !Ref StubEcsCluster

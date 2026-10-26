@@ -1,0 +1,54 @@
+Resources:
+  TokensTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-${self:provider.stage}-tokens
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  AppKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: awsbox-rest ${self:provider.stage} key
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnableRoot
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: "*"
+
+  AppKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/${self:service}-${self:provider.stage}
+      TargetKeyId: !Ref AppKey
+
+  AppSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: ${self:service}/${self:provider.stage}/app
+      Description: awsbox-rest app secret
+      SecretString: '{"clientId":"awsbox","clientSecret":"local-only"}'
+
+Outputs:
+  TokensTableName:
+    Value: !Ref TokensTable
+  AppSecretArn:
+    Value: !Ref AppSecret
+  AppKeyId:
+    Value: !Ref AppKey
+  OpenApiRestApiId:
+    Description: RestApi created from resources/rest-api.js Body
+    Value: !Ref OpenApiRestApi
