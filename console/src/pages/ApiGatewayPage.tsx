@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Api } from '@aws-sdk/client-apigatewayv2'
 import type { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import {
@@ -9,6 +9,18 @@ import {
 } from '../lib/apigw'
 import { listFunctions } from '../lib/lambda'
 import { ResourceLabel } from '../components/ResourceLabel'
+import { DeadButton, RefreshButton, TableTools } from '../components/S3Ui'
+import {
+  DeadLink,
+  EmptyRow,
+  FilterHeader,
+  Mono,
+  Notices,
+  SelectCell,
+  SelectHeader,
+  SortHeader,
+} from '../components/ServiceUi'
+import { formatServiceDate } from '../lib/format'
 
 export function ApiGatewayPage() {
   const [apis, setApis] = useState<Api[]>([])
@@ -19,6 +31,8 @@ export function ApiGatewayPage() {
   const [busy, setBusy] = useState(false)
   const [lastUrl, setLastUrl] = useState<string | null>(null)
   const [probe, setProbe] = useState<string | null>(null)
+  const [filter, setFilter] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     setError(null)
@@ -35,6 +49,20 @@ export function ApiGatewayPage() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase()
+    if (!q) return apis
+    return apis.filter(
+      (a) =>
+        (a.Name ?? '').toLowerCase().includes(q) ||
+        (a.ApiId ?? '').toLowerCase().includes(q),
+    )
+  }, [apis, filter])
+
+  function toggle(id: string) {
+    setSelected((cur) => (cur === id ? null : id))
+  }
 
   async function onCreate() {
     if (!fnName) return
@@ -72,104 +100,137 @@ export function ApiGatewayPage() {
   }
 
   return (
-    <div>
-      <h1>HTTP APIs</h1>
-      <p className="page-lead">
-        API Gateway HTTP API in front of a local Lambda. Create wires GET / to
-        the selected function (AWS_PROXY).
-      </p>
-
-      {error ? <div className="error-banner">{error}</div> : null}
-      {toast ? (
-        <div className="toast-banner" role="status">
-          {toast}
+    <>
+      <h1 className="aws-h1">APIs</h1>
+      <Notices error={error} toast={toast} />
+      <section className="aws-card">
+        <div className="aws-tabs" role="tablist">
+          <span className="aws-tab active" aria-current="page">
+            HTTP APIs
+          </span>
         </div>
-      ) : null}
-
-      <div className="toolbar toolbar-stack">
-        <h3>APIs ({apis.length})</h3>
-        <div className="toolbar-actions">
-          <label className="field-inline">
-            Lambda
-            <select
-              value={fnName}
-              onChange={(e) => setFnName(e.target.value)}
-              disabled={fns.length === 0}
+        <div className="aws-card-body">
+          <p className="aws-desc">
+            HTTP APIs enable you to create RESTful APIs with lower latency and
+            cost.
+          </p>
+          <div className="aws-toolbar">
+            <RefreshButton onClick={() => void refresh()} />
+            <DeadButton>Delete</DeadButton>
+            <label className="field-inline">
+              Lambda
+              <select
+                value={fnName}
+                onChange={(e) => setFnName(e.target.value)}
+                disabled={fns.length === 0}
+              >
+                {fns.length === 0 ? (
+                  <option value="">No functions</option>
+                ) : (
+                  fns.map((f) => (
+                    <option key={f.FunctionArn} value={f.FunctionName ?? ''}>
+                      {f.FunctionName}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={busy || !fnName}
+              title={fnName ? undefined : 'Create a Lambda function first'}
+              onClick={() => void onCreate()}
             >
-              {fns.length === 0 ? (
-                <option value="">No functions</option>
-              ) : (
-                fns.map((f) => (
-                  <option key={f.FunctionArn} value={f.FunctionName ?? ''}>
-                    {f.FunctionName}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-          <button type="button" className="btn" onClick={() => void refresh()}>
-            Refresh
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={busy || !fnName}
-            onClick={() => void onCreate()}
-          >
-            {busy ? 'Working…' : 'Create HTTP API → Lambda'}
-          </button>
-        </div>
-      </div>
-
-      {apis.length === 0 ? (
-        <p className="empty-state">No HTTP APIs</p>
-      ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>API ID</th>
-              <th>Invoke URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {apis.map((a) => {
-              const id = a.ApiId ?? ''
-              return (
-                <tr key={id}>
-                  <td>{a.Name}</td>
-                  <td>
-                    <ResourceLabel ids={[id, a.ApiEndpoint]}>
-                      <code>{id}</code>
-                    </ResourceLabel>
-                  </td>
-                  <td>
-                    <code>{localInvokeUrl(id)}</code>
-                  </td>
+              {busy ? 'Working…' : 'Create HTTP API → Lambda'}
+            </button>
+            <div className="spacer" />
+            <DeadButton variant="primary">Create</DeadButton>
+          </div>
+          <TableTools
+            placeholder="Search APIs"
+            value={filter}
+            onChange={setFilter}
+          />
+          <div className="aws-table-wrap">
+            <table className="aws-table" data-testid="http-apis-table">
+              <thead>
+                <tr>
+                  <SelectHeader />
+                  <SortHeader>Name</SortHeader>
+                  <FilterHeader>API ID</FilterHeader>
+                  <FilterHeader>Description</FilterHeader>
+                  <SortHeader>Created date</SortHeader>
+                  <FilterHeader>Endpoint</FilterHeader>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      )}
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <EmptyRow
+                    colSpan={6}
+                    loading={false}
+                    loadingText=""
+                    title="No HTTP APIs"
+                    text="You do not have any HTTP APIs in this region."
+                  />
+                ) : (
+                  filtered.map((a) => {
+                    const id = a.ApiId ?? ''
+                    const isSelected = selected === id
+                    return (
+                      <tr
+                        key={id}
+                        className={`selectable${isSelected ? ' selected' : ''}`}
+                        onClick={() => toggle(id)}
+                      >
+                        <SelectCell
+                          name="selected-api"
+                          id={id}
+                          selected={isSelected}
+                          onToggle={toggle}
+                        />
+                        <td>
+                          <DeadLink>{a.Name ?? '—'}</DeadLink>
+                        </td>
+                        <td>
+                          <ResourceLabel ids={[id, a.ApiEndpoint]}>
+                            <Mono>{id}</Mono>
+                          </ResourceLabel>
+                        </td>
+                        <td>{a.Description || '—'}</td>
+                        <td>{formatServiceDate(a.CreatedDate)}</td>
+                        <td>
+                          <Mono>{localInvokeUrl(id)}</Mono>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       {lastUrl ? (
-        <div className="invoke-panel">
-          <h3>Last created invoke URL</h3>
-          <p>
-            <code>{lastUrl}</code>
-          </p>
-          <button
-            type="button"
-            className="btn"
-            disabled={busy}
-            onClick={() => void onProbe()}
-          >
-            GET invoke URL
-          </button>
-          {probe ? <pre className="lab-detail">{probe}</pre> : null}
-        </div>
+        <section className="aws-card" style={{ marginTop: 16 }}>
+          <div className="aws-card-body">
+            <h2 className="aws-section-title">Last created invoke URL</h2>
+            <p>
+              <code>{lastUrl}</code>
+            </p>
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={busy}
+              onClick={() => void onProbe()}
+            >
+              GET invoke URL
+            </button>
+            {probe ? <pre className="lab-detail">{probe}</pre> : null}
+          </div>
+        </section>
       ) : null}
-    </div>
+    </>
   )
 }

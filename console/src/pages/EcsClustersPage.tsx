@@ -1,6 +1,22 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
+import { DeadButton, RefreshButton } from '../components/S3Ui'
+import {
+  DetailHeader,
+  EmptyRow,
+  FilterHeader,
+  Kv,
+  ListCard,
+  Mono,
+  Notices,
+  PlainHeader,
+  Section,
+  SelectCell,
+  SelectHeader,
+  SortHeader,
+  StatusBadge,
+} from '../components/ServiceUi'
 import {
   describeClusters,
   describeServices,
@@ -19,8 +35,9 @@ function clusterName(arn: string): string {
 }
 
 function ClustersList() {
-  const navigate = useNavigate()
   const [clusters, setClusters] = useState<Cluster[]>([])
+  const [filter, setFilter] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -41,73 +58,98 @@ function ClustersList() {
     void refresh()
   }, [refresh])
 
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase()
+    if (!q) return clusters
+    return clusters.filter((c) =>
+      (c.clusterName ?? '').toLowerCase().includes(q),
+    )
+  }, [clusters, filter])
+
+  function toggle(id: string) {
+    setSelected((cur) => (cur === id ? null : id))
+  }
+
   return (
-    <>
-      <div className="crumbs">
-        <span>Elastic Container Service</span>
-        <span className="crumbs-sep">/</span>
-        <span>Clusters</span>
-      </div>
-      <div className="cfn-page-head">
-        <h1 className="page-title">
-          Clusters ({loading ? '…' : clusters.length})
-        </h1>
-        <button type="button" className="btn" onClick={() => void refresh()}>
-          Refresh
-        </button>
-      </div>
-      <p className="page-lead">
-        Create via <code>./bin/ecs-smoke.sh</code> / terraform example.
-      </p>
-      {error ? <div className="error-banner">{error}</div> : null}
-      <div className="panel">
-        {loading ? (
-          <div className="cfn-loading">Loading…</div>
-        ) : clusters.length === 0 ? (
-          <div className="empty">
-            <strong>No clusters</strong>
-          </div>
-        ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th>Cluster name</th>
-                <th>Status</th>
-                <th>Active services</th>
-                <th>Running tasks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clusters.map((c) => {
-                const name = c.clusterName ?? clusterName(c.clusterArn ?? '')
-                return (
-                  <tr key={c.clusterArn ?? name}>
-                    <td>
-                      <ResourceLabel ids={[c.clusterArn, name]}>
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() =>
-                            navigate(
-                              `/ecs/clusters/${encodeURIComponent(name)}`,
-                            )
-                          }
-                        >
-                          {name}
-                        </button>
-                      </ResourceLabel>
-                    </td>
-                    <td>{c.status ?? '—'}</td>
-                    <td>{c.activeServicesCount ?? '—'}</td>
-                    <td>{c.runningTasksCount ?? '—'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </>
+    <ListCard
+      title="Clusters"
+      desc={
+        <>
+          An Amazon ECS cluster is a logical grouping of tasks or services.
+          Create via <code>./bin/ecs-smoke.sh</code> / terraform example.
+        </>
+      }
+      notices={<Notices error={error} />}
+      toolbar={
+        <>
+          <RefreshButton onClick={() => void refresh()} />
+          <DeadButton>Delete Cluster</DeadButton>
+          <div className="spacer" />
+          <DeadButton variant="primary">Create Cluster</DeadButton>
+        </>
+      }
+      placeholder="Filter clusters"
+      filter={filter}
+      onFilter={setFilter}
+    >
+      <table className="aws-table" data-testid="ecs-clusters-table">
+        <thead>
+          <tr>
+            <SelectHeader />
+            <SortHeader>Cluster name</SortHeader>
+            <FilterHeader>Status</FilterHeader>
+            <SortHeader>Registered container instances</SortHeader>
+            <SortHeader>Services</SortHeader>
+            <SortHeader>Tasks running</SortHeader>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.length === 0 ? (
+            <EmptyRow
+              colSpan={6}
+              loading={loading}
+              loadingText="Loading clusters…"
+              title="No clusters"
+            />
+          ) : (
+            filtered.map((c) => {
+              const name = c.clusterName ?? clusterName(c.clusterArn ?? '')
+              const isSelected = selected === name
+              return (
+                <tr
+                  key={c.clusterArn ?? name}
+                  className={`selectable${isSelected ? ' selected' : ''}`}
+                  onClick={() => toggle(name)}
+                >
+                  <SelectCell
+                    name="selected-cluster"
+                    id={name}
+                    selected={isSelected}
+                    onToggle={toggle}
+                  />
+                  <td>
+                    <ResourceLabel ids={[c.clusterArn, name]}>
+                      <Link
+                        to={`/ecs/clusters/${encodeURIComponent(name)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {name}
+                      </Link>
+                    </ResourceLabel>
+                  </td>
+                  <td>
+                    <StatusBadge status={c.status} />
+                  </td>
+                  <td>{c.registeredContainerInstancesCount ?? 0}</td>
+                  <td>{c.activeServicesCount ?? 0}</td>
+                  <td>{c.runningTasksCount ?? 0}</td>
+                </tr>
+              )
+            })
+          )}
+        </tbody>
+      </table>
+    </ListCard>
   )
 }
 
@@ -147,113 +189,122 @@ function ClusterDetail({ name }: { name: string }) {
 
   return (
     <>
-      <div className="crumbs">
-        <Link to="/ecs">ECS</Link>
-        <span className="crumbs-sep">/</span>
-        <Link to="/ecs">Clusters</Link>
-        <span className="crumbs-sep">/</span>
-        <span>{name}</span>
-      </div>
-      <div className="cfn-page-head">
-        <h1 className="page-title">{name}</h1>
-        <button type="button" className="btn" onClick={() => void refresh()}>
-          Refresh
-        </button>
-      </div>
-      {error ? <div className="error-banner">{error}</div> : null}
-      <div className="panel cfn-overview">
-        {loading ? (
-          <div className="cfn-loading">Loading…</div>
-        ) : (
-          <>
-            <section>
-              <h2 className="cfn-section-title">Overview</h2>
-              <dl className="cfn-kv">
-                <div>
-                  <dt>Status</dt>
-                  <dd>{cluster?.status ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt>ARN</dt>
-                  <dd>
-                    <ResourceLabel ids={[cluster?.clusterArn, name]} detail>
-                      <code className="cfn-arn">
-                        {cluster?.clusterArn ?? '—'}
-                      </code>
-                    </ResourceLabel>
-                  </dd>
-                </div>
-              </dl>
-            </section>
-            <section>
-              <h2 className="cfn-section-title">Services</h2>
-              {services.length === 0 ? (
-                <p className="cfn-muted">No services</p>
-              ) : (
-                <table className="data">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Status</th>
-                      <th>Desired</th>
-                      <th>Running</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {services.map((s) => (
+      <DetailHeader
+        title={name}
+        actions={<RefreshButton onClick={() => void refresh()} />}
+        subtitle={cluster ? <StatusBadge status={cluster.status} /> : null}
+      />
+      <Notices error={error} />
+      {loading ? (
+        <p className="aws-desc">Loading…</p>
+      ) : (
+        <>
+          <Section title="Overview">
+            <Kv
+              rows={[
+                ['Status', <StatusBadge key="st" status={cluster?.status} />],
+                [
+                  'ARN',
+                  <ResourceLabel
+                    key="arn"
+                    ids={[cluster?.clusterArn, name]}
+                    detail
+                  >
+                    <Mono>{cluster?.clusterArn ?? '—'}</Mono>
+                  </ResourceLabel>,
+                ],
+                ['Active services', cluster?.activeServicesCount ?? 0],
+                ['Running tasks', cluster?.runningTasksCount ?? 0],
+              ]}
+            />
+          </Section>
+          <Section title="Services" spaced>
+            <div className="aws-table-wrap">
+              <table className="aws-table" data-testid="ecs-services-table">
+                <thead>
+                  <tr>
+                    <PlainHeader>Service name</PlainHeader>
+                    <PlainHeader>Status</PlainHeader>
+                    <PlainHeader>Desired tasks</PlainHeader>
+                    <PlainHeader>Running tasks</PlainHeader>
+                  </tr>
+                </thead>
+                <tbody>
+                  {services.length === 0 ? (
+                    <EmptyRow
+                      colSpan={4}
+                      loading={false}
+                      loadingText=""
+                      title="No services"
+                    />
+                  ) : (
+                    services.map((s) => (
                       <tr key={s.serviceArn ?? s.serviceName}>
                         <td>
                           <ResourceLabel ids={[s.serviceArn, s.serviceName]}>
                             {s.serviceName ?? '—'}
                           </ResourceLabel>
                         </td>
-                        <td>{s.status ?? '—'}</td>
+                        <td>
+                          <StatusBadge status={s.status} />
+                        </td>
                         <td>{s.desiredCount ?? '—'}</td>
                         <td>{s.runningCount ?? '—'}</td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </section>
-            <section>
-              <h2 className="cfn-section-title">Tasks</h2>
-              {tasks.length === 0 ? (
-                <p className="cfn-muted">No tasks</p>
-              ) : (
-                <table className="data">
-                  <thead>
-                    <tr>
-                      <th>Task</th>
-                      <th>Last status</th>
-                      <th>Desired</th>
-                      <th>Launch type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasks.map((t) => {
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+          <Section title="Tasks" spaced>
+            <div className="aws-table-wrap">
+              <table className="aws-table" data-testid="ecs-tasks-table">
+                <thead>
+                  <tr>
+                    <PlainHeader>Task</PlainHeader>
+                    <PlainHeader>Last status</PlainHeader>
+                    <PlainHeader>Desired status</PlainHeader>
+                    <PlainHeader>Launch type</PlainHeader>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasks.length === 0 ? (
+                    <EmptyRow
+                      colSpan={4}
+                      loading={false}
+                      loadingText=""
+                      title="No tasks"
+                    />
+                  ) : (
+                    tasks.map((t) => {
                       const arn = t.taskArn ?? ''
                       const short = arn.split('/').pop() ?? arn
                       return (
                         <tr key={arn}>
                           <td>
                             <ResourceLabel ids={[arn]}>
-                              <code>{short || '—'}</code>
+                              <Mono>{short || '—'}</Mono>
                             </ResourceLabel>
                           </td>
-                          <td>{t.lastStatus ?? '—'}</td>
+                          <td>
+                            <StatusBadge status={t.lastStatus} />
+                          </td>
                           <td>{t.desiredStatus ?? '—'}</td>
-                          <td className="cfn-muted">{t.launchType ?? '—'}</td>
+                          <td>{t.launchType ?? '—'}</td>
                         </tr>
                       )
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </section>
-          </>
-        )}
-      </div>
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        </>
+      )}
+      <p className="aws-desc" style={{ marginTop: 16 }}>
+        <Link to="/ecs">Back to clusters</Link>
+      </p>
     </>
   )
 }
