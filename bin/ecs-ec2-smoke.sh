@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # #207: EC2-backed ECS services.
 #   1) deny-user ecs:CreateService → AccessDenied
-#   2) ASG instance becomes the container instance
+#   2) ASG (launch template) instance becomes the container instance
 #   3) bridge service, desired 2, behind an internal NLB; kill one → replaced
 #   4) task definition update rolls the tasks
 #   5) CodeDeploy revision for a missing task def → Failed, listener unchanged
-#   6) CodeDeploy blue/green swaps the listener target group, then replaces a killed task
+#   6) CODE_DEPLOY service starts blue tasks; blue/green launches v2 on green,
+#      swaps the listener, stops blue; a killed green task is replaced
 #
 # Traffic goes through a 127.0.0.1 forwarder inside LocalEmu (not published on
 # the host). The #203 VPC listener cannot reach bridge host ports yet (#247).
@@ -37,7 +38,7 @@ BG_SVC="bg-${TS}"
 FAMILY="awsbox-ecs-ec2-${TS}"
 BG_FAMILY="awsbox-ecs-bg-${TS}"
 ASG="ecs-${TS}"
-LC="ecs-lc-${TS}"
+LT="ecs-lt-${TS}"
 APP="ecs-bg-${TS}"
 DG="ecs-bg-${TS}"
 ROLE="awsbox-ecs-cd-${TS}"
@@ -99,7 +100,7 @@ cleanup() {
 	[[ -n "$TG_BLUE" ]] && aws elbv2 delete-target-group --target-group-arn "$TG_BLUE" >/dev/null 2>&1 || true
 	[[ -n "$TG_GREEN" ]] && aws elbv2 delete-target-group --target-group-arn "$TG_GREEN" >/dev/null 2>&1 || true
 	aws autoscaling delete-auto-scaling-group --auto-scaling-group-name "$ASG" --force-delete >/dev/null 2>&1 || true
-	aws autoscaling delete-launch-configuration --launch-configuration-name "$LC" >/dev/null 2>&1 || true
+	aws ec2 delete-launch-template --launch-template-name "$LT" >/dev/null 2>&1 || true
 	[[ -n "$IID" ]] && aws ec2 terminate-instances --instance-ids "$IID" >/dev/null 2>&1 || true
 	[[ -n "$SUB_A" ]] && aws ec2 delete-subnet --subnet-id "$SUB_A" >/dev/null 2>&1 || true
 	[[ -n "$SUB_B" ]] && aws ec2 delete-subnet --subnet-id "$SUB_B" >/dev/null 2>&1 || true
@@ -146,17 +147,22 @@ echo "$DENY_OUT" | grep -qiE 'AccessDenied|not authorized|ExplicitDeny|Unauthori
 	|| fail "expected AccessDenied, got: ${DENY_OUT}"
 echo "OK: CreateService AccessDenied"
 
-echo "==> container instance from an ASG"
-IID="$(aws ec2 run-instances --image-id ami-localemu-ecs --instance-type t3.micro --count 1 \
-	--subnet-id "$SUB_A" --query 'Instances[0].InstanceId' --output text)"
-echo "instance=${IID}"
-aws autoscaling create-launch-configuration --launch-configuration-name "$LC" \
-	--image-id ami-localemu-ecs --instance-type t3.micro
+echo "==> container instance from an ASG (launch template)"
+aws ec2 create-launch-template --launch-template-name "$LT" \
+	--launch-template-data '{"ImageId":"ami-localemu-ecs","InstanceType":"t3.micro"}' >/dev/null
 aws autoscaling create-auto-scaling-group --auto-scaling-group-name "$ASG" \
-	--launch-configuration-name "$LC" --min-size 0 --max-size 1 --desired-capacity 0 \
-	--availability-zones "${REGION}a" \
+	--launch-template "LaunchTemplateName=${LT},Version=\$Latest" \
+	--min-size 1 --max-size 1 --desired-capacity 1 \
+	--vpc-zone-identifier "$SUB_A" \
 	--tags "Key=ecs:cluster,Value=${CLUSTER},PropagateAtLaunch=true"
-aws autoscaling attach-instances --auto-scaling-group-name "$ASG" --instance-ids "$IID"
+for _ in $(seq 1 30); do
+	IID="$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "$ASG" \
+		--query 'AutoScalingGroups[0].Instances[?LifecycleState==`InService`].InstanceId | [0]' --output text)"
+	[[ -n "$IID" && "$IID" != "None" ]] && break
+	sleep 2
+done
+[[ -n "$IID" && "$IID" != "None" ]] || fail "ASG launched no instance"
+echo "instance=${IID}"
 
 mk_tg() {
 	local name="$1"
@@ -206,8 +212,10 @@ V2_CMD='echo -n "v2-$HOSTNAME" > /usr/share/nginx/html/index.html && exec nginx 
 write_taskdef "$FAMILY" "$TMPDIR/web.json" "$WEB_CMD"
 write_taskdef "$FAMILY" "$TMPDIR/web2.json" "$V2_CMD"
 write_taskdef "$BG_FAMILY" "$TMPDIR/bg.json" "$WEB_CMD"
+write_taskdef "$BG_FAMILY" "$TMPDIR/bg2.json" "$V2_CMD"
 TD1="$(aws ecs register-task-definition --cli-input-json "file://${TMPDIR}/web.json" --query 'taskDefinition.taskDefinitionArn' --output text)"
 TD_BG="$(aws ecs register-task-definition --cli-input-json "file://${TMPDIR}/bg.json" --query 'taskDefinition.taskDefinitionArn' --output text)"
+TD_BG2="$(aws ecs register-task-definition --cli-input-json "file://${TMPDIR}/bg2.json" --query 'taskDefinition.taskDefinitionArn' --output text)"
 
 echo "==> bridge service desired 2"
 aws ecs create-service --cluster "$CLUSTER" --service-name "$SVC" \
@@ -401,6 +409,14 @@ aws ecs create-service --cluster "$CLUSTER" --service-name "$BG_SVC" \
 	--deployment-controller type=CODE_DEPLOY \
 	--load-balancers "targetGroupArn=${TG_BLUE},containerName=web,containerPort=80" >/dev/null
 
+echo "==> CODE_DEPLOY service blue tasks"
+# The CODE_DEPLOY service must run its own blue task before any deployment.
+wait_healthy "$TG_BLUE" 1
+BLUE_NAME="$(nlb_names "$BG_PORT" | sort -u | head -1)"
+[[ -n "$BLUE_NAME" && "$BLUE_NAME" != v2-* ]] || fail "blue NLB name is '${BLUE_NAME}'"
+BLUE_CID="$(cid_for_name "$BLUE_NAME")" || fail "no blue container for ${BLUE_NAME}"
+echo "OK: CODE_DEPLOY service started blue task ${BLUE_NAME}"
+
 write_revision() {
 	local dest="$1" td="$2"
 	python3 - "$dest" "$td" <<'PY'
@@ -435,10 +451,11 @@ BAD_STATUS="$(aws deploy get-deployment --deployment-id "$BAD_ID" --query 'deplo
 [[ "$BAD_STATUS" == "Failed" ]] || fail "bad deployment status is ${BAD_STATUS}"
 STILL="$(aws elbv2 describe-listeners --listener-arns "$LIS_BG" --query 'Listeners[0].DefaultActions[0].TargetGroupArn' --output text)"
 [[ "$STILL" == "$TG_BLUE" ]] || fail "failed deployment moved the listener to ${STILL}"
+[[ "$(health_n "$TG_BLUE")" == "1" ]] || fail "failed deployment disturbed the blue target"
 echo "OK: bad revision Failed, listener unchanged"
 
 echo "==> CodeDeploy blue/green"
-write_revision "$TMPDIR/good.json" "$TD_BG"
+write_revision "$TMPDIR/good.json" "$TD_BG2"
 GOOD_ID="$(aws deploy create-deployment --application-name "$APP" --deployment-group-name "$DG" \
 	--revision "file://${TMPDIR}/good.json" --query 'deploymentId' --output text)"
 GOOD_STATUS="$(aws deploy get-deployment --deployment-id "$GOOD_ID" --query 'deploymentInfo.status' --output text)"
@@ -450,11 +467,12 @@ BLUE_N="$(aws elbv2 describe-target-health --target-group-arn "$TG_BLUE" --query
 wait_healthy "$TG_GREEN" 1
 GREEN_PORT="$(tg_ports "$TG_GREEN" | awk '{print $1}')"
 GREEN_NAMES="$(nlb_names "$BG_PORT")"
-echo "$GREEN_NAMES" | grep -q . || fail "green NLB returned nothing"
+[[ "$(echo "$GREEN_NAMES" | grep -c '^v2-')" -eq 12 ]] || fail "listener is not serving v2 (${GREEN_NAMES})"
+[[ -z "$(docker ps -q --filter "id=${BLUE_CID}")" ]] || fail "blue container ${BLUE_NAME} still running"
 echo "OK: listener swapped to green"
 
 echo "==> replace the green task"
-GREEN_NAME="$(echo "$GREEN_NAMES" | head -1)"
+GREEN_NAME="$(echo "$GREEN_NAMES" | head -1 | sed 's/^v2-//')"
 GCID="$(cid_for_name "$GREEN_NAME")" || fail "no container for ${GREEN_NAME}"
 GPORT="$(host_port_of "$GCID")"
 docker kill "$GCID" >/dev/null
@@ -467,7 +485,7 @@ for _ in $(seq 1 40); do
 	STILL_GREEN="$(aws elbv2 describe-listeners --listener-arns "$LIS_BG" --query 'Listeners[0].DefaultActions[0].TargetGroupArn' --output text)"
 	if [[ "$HN" == "1" && -n "$NEW_PORT" && "$NEW_PORT" != "$GPORT" && "$STILL_GREEN" == "$TG_GREEN" ]]; then
 		NEW_NAMES="$(nlb_names "$BG_PORT" || true)"
-		if ! echo "$NEW_NAMES" | grep -qx "$GREEN_NAME"; then
+		if ! echo "$NEW_NAMES" | grep -qx "v2-${GREEN_NAME}"; then
 			GREEN_REPLACED=1
 			break
 		fi

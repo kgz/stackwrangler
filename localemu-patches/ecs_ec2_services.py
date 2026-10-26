@@ -18,9 +18,10 @@ next to the VPC-scoped NLB listener from #203. The #203 listener resolves an
 exist, so it cannot carry this traffic (#247). Do not point the forwarder at
 ``0.0.0.0``: that would shadow the real listener bind.
 
-``deploymentController: CODE_DEPLOY`` does not start tasks.
-``CreateDeployment`` with an ECS AppSpec launches the idle target group,
-then ``ModifyListener`` swaps production traffic.
+``deploymentController: CODE_DEPLOY`` services start their initial (blue)
+tasks like any other service. ``CreateDeployment`` with an ECS AppSpec then
+launches the new task definition onto the idle target group, swaps the
+listener with ``ModifyListener``, and stops the old tasks.
 """
 
 from __future__ import annotations
@@ -80,7 +81,6 @@ class _Svc:
     network_configuration: dict | None
     load_balancers: list[_Lb]
     controller: str
-    scheduling: bool
     tasks: dict[str, list[_Reg]] = field(default_factory=dict)
     busy: threading.Lock = field(default_factory=threading.Lock)
 
@@ -111,8 +111,7 @@ def on_create_service(context: object, request: dict, service_data: dict) -> Non
     svc.busy.acquire()
     try:
         _ensure_capacity(svc, context)
-        if svc.scheduling:
-            _reconcile_body(svc)
+        _reconcile_body(svc)
         _sync_counts(svc, service_data)
         _remember(svc)
         LOG.info(
@@ -131,7 +130,11 @@ def on_update_service(context: object, request: dict, service_data: dict) -> Non
     if svc is None:
         on_create_service(context, request, service_data)
         return
-    new_td = str(service_data.get("taskDefinition") or svc.task_def_arn)
+    # CODE_DEPLOY services only change task definition through CreateDeployment.
+    if svc.controller == "CODE_DEPLOY":
+        new_td = svc.task_def_arn
+    else:
+        new_td = str(service_data.get("taskDefinition") or svc.task_def_arn)
     td_changed = new_td != svc.task_def_arn
     desired = _as_int(service_data.get("desiredCount"), svc.desired)
     net = service_data.get("networkConfiguration")
@@ -149,12 +152,11 @@ def on_update_service(context: object, request: dict, service_data: dict) -> Non
     try:
         svc.task_def_arn = new_td
         svc.desired = desired
-        if svc.scheduling:
-            _ensure_capacity(svc, context)
-            if td_changed:
-                _replace(svc)
-            else:
-                _reconcile_body(svc)
+        _ensure_capacity(svc, context)
+        if td_changed:
+            _replace(svc)
+        else:
+            _reconcile_body(svc)
         _sync_counts(svc, service_data)
         _remember(svc)
     finally:
@@ -191,7 +193,7 @@ def _loop() -> None:
     while not _stop.is_set():
         try:
             with _services_lock:
-                snapshot = [svc for svc in _services.values() if svc.scheduling]
+                snapshot = list(_services.values())
             for svc in snapshot:
                 if not svc.busy.acquire(blocking=False):
                     continue
@@ -710,7 +712,9 @@ class _TcpProxy:
             host = str(getattr(target, "host", "") or _docker_host())
             port = int(getattr(target, "port", 0) or 0)
             upstream = socket.create_connection((host, port), 3)
-            _pipe(conn, upstream)
+            from localemu.services.elbv2.listener_router import _pipe_sockets
+
+            _pipe_sockets(conn, upstream)
         except Exception:
             LOG.debug("NLB forward failed", exc_info=True)
         finally:
@@ -742,29 +746,6 @@ def _pick_target(account_id: str, region: str, listener_arn: str) -> object | No
         port = int(getattr(target, "port", 0) or 0)
         target.health = "healthy" if port and _tcp_open(target.host, port, 0.4) else "unhealthy"
     return tg.pick_target()
-
-
-def _pipe(left: socket.socket, right: socket.socket) -> None:
-    def copy(src: socket.socket, dst: socket.socket) -> None:
-        try:
-            while True:
-                data = src.recv(16384)
-                if not data:
-                    break
-                dst.sendall(data)
-        except Exception:
-            pass
-        try:
-            dst.shutdown(socket.SHUT_WR)
-        except Exception:
-            pass
-
-    left_to_right = threading.Thread(target=copy, args=(left, right), daemon=True)
-    right_to_left = threading.Thread(target=copy, args=(right, left), daemon=True)
-    left_to_right.start()
-    right_to_left.start()
-    left_to_right.join(20)
-    right_to_left.join(20)
 
 
 def _tcp_open(host: str, port: int, timeout: float) -> bool:
@@ -872,7 +853,6 @@ def _build(context: object, request: dict, service_data: dict) -> _Svc:
         network_configuration=network,
         load_balancers=lbs,
         controller=controller,
-        scheduling=controller != "CODE_DEPLOY",
     )
 
 
@@ -1051,7 +1031,6 @@ def _blue_green(backend: object, dep: object, ecs_services: list) -> None:
         for arn in old:
             _forget(svc, arn)
         svc.load_balancers = dest_lbs
-        svc.scheduling = True
         _sync_counts(svc, None)
         _remember(svc)
         LOG.info(
@@ -1104,7 +1083,6 @@ def _runtime_for(account_id: str, region: str, cluster_name: str, service_name: 
         network_configuration=net if isinstance(net, dict) and net else None,
         load_balancers=lbs,
         controller=controller,
-        scheduling=controller != "CODE_DEPLOY",
     )
     with _services_lock:
         if svc.service_arn:
