@@ -317,8 +317,19 @@ def _register_task(svc: _Svc, task_arn: str, lbs: list[_Lb]) -> list[_Reg]:
         return []
     instance_id = _task_instance_id(svc, task_arn)
     if not instance_id:
-        LOG.warning("ECS task %s has no container instance; not registered", task_arn)
-        return []
+        # awsvpc / Fargate: real ECS registers the task's ENI address into an ip-type target group.
+        ip = getattr(info, "private_ipv4", None)
+        if not ip:
+            LOG.warning("ECS task %s has no container instance or address; not registered", task_arn)
+            return []
+        ip_regs: list[_Reg] = []
+        names = {str(getattr(c, "container_name", "") or "") for c in getattr(info, "containers", []) or []}
+        for lb in lbs:
+            if lb.container_name in names:
+                _register_target(svc, lb.tg_arn, str(ip), lb.container_port, direct=True)
+                ip_regs.append(_Reg(lb.tg_arn, str(ip), lb.container_port))
+                LOG.info("Registered %s:%s into %s for task %s", ip, lb.container_port, lb.tg_arn, task_arn.split("/")[-1])
+        return ip_regs
     regs: list[_Reg] = []
     containers = getattr(info, "containers", []) or []
     for container in containers:
@@ -553,7 +564,7 @@ def _task_instance_id(svc: _Svc, task_arn: str) -> str:
     return str(getattr(ci, "ec2_instance_id", "") or "")
 
 
-def _register_target(svc: _Svc, tg_arn: str, instance_id: str, port: int) -> None:
+def _register_target(svc: _Svc, tg_arn: str, instance_id: str, port: int, direct: bool = False) -> None:
     try:
         from localemu.services.elbv2.listener_router import get_router
     except Exception:
@@ -566,7 +577,7 @@ def _register_target(svc: _Svc, tg_arn: str, instance_id: str, port: int) -> Non
     target = None
     if tg is not None:
         target = tg.targets.get(f"{instance_id}:{port}")
-    if target is not None:
+    if target is not None and not direct:
         # Bridge host ports are published on the Docker host. The EC2
         # container's VPC address is not listening on this port.
         target.host = _docker_host()
