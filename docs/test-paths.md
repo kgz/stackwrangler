@@ -48,6 +48,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | Lambda deploy zip | happy | covered | `./bin/lambda-deploy-smoke.sh` |
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./bin/lambda-authz-smoke.sh` |
 | Lambda role trust `aws:SourceAccount` = function account → CreateFunction ok; other account → refused; plain trust ok | happy + sad/authz | covered | `./bin/lambda-trust-condition-smoke.sh` |
+| Lambda role trust `aws:SourceArn` = function ARN → CreateFunction ok; other ARN → refused | happy + sad/authz | covered | `./bin/lambda-trust-sourcearn-smoke.sh` |
 | REST API import from OpenAPI + `aws_proxy` public route | happy | covered | `./bin/apigw-rest-smoke.sh` · [apigw-rest.md](apigw-rest.md) |
 | REST REQUEST authorizer Allow → handler gets context | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |

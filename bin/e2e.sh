@@ -33,6 +33,9 @@ echo "==> Lambda authz (sad: missing s3:PutObject)"
 echo "==> Lambda trust aws:SourceAccount"
 ./bin/lambda-trust-condition-smoke.sh
 
+echo "==> Lambda trust aws:SourceArn"
+./bin/lambda-trust-sourcearn-smoke.sh
+
 echo "==> Lambda VPC → host services (sad: unmapped name)"
 ./bin/lambda-vpc-smoke.sh
 
