@@ -20,6 +20,7 @@ import sys
 LOG = logging.getLogger("localemu.awsbox.multi_account")
 
 _ACCOUNT = re.compile(r"\d{12}")
+_LAMBDA_PRINCIPALS = {"lambda", "lambda.amazonaws.com"}
 _ASSUME_ACTIONS = {"sts:AssumeRole", "sts:*", "*"}
 _SUPPORTED_CONDITIONS = {
     "StringEquals": {"sts:ExternalId", "sts:externalId", "aws:SourceAccount"},
@@ -138,13 +139,13 @@ def _install_s3_isolation() -> None:
 
 
 def _source_account(role: object, service_principal: str | None) -> str | None:
-    """Account AWS reports as aws:SourceAccount when a service assumes the role.
+    """Account AWS reports as aws:SourceAccount when Lambda assumes the role.
 
     Lambda only accepts roles from the function's own account, so the role's
     account stands in for the function account (the assume call carries no
-    other account).
+    other account). Other services get no synthetic value.
     """
-    if not service_principal:
+    if (service_principal or "").lower() not in _LAMBDA_PRINCIPALS:
         return None
     arn = str(getattr(role, "arn", "") or "")
     parts = arn.split(":")
