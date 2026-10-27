@@ -2,10 +2,14 @@
 
 LocalEmu hard-codes 256 KiB. Real AWS defaults to 256 KiB and allows opt-in up to
 1 MiB via MaximumMessageSize on CreateTopic / SetTopicAttributes.
+
+Publish size uses a ContextVar-backed limit object so concurrent requests with
+different topic caps do not clobber a process-global MAXIMUM_MESSAGE_LENGTH.
 """
 
 from __future__ import annotations
 
+import contextvars
 import logging
 
 LOG = logging.getLogger("localemu.awsbox.sns_max_message_size")
@@ -14,6 +18,57 @@ _ATTR = "MaximumMessageSize"
 _DEFAULT = 262_144  # 256 KiB
 _MIN = 1_024
 _MAX = 1_048_576  # 1 MiB
+
+_limit_var: contextvars.ContextVar[int] = contextvars.ContextVar(
+    "awsbox_sns_maximum_message_length",
+    default=_DEFAULT,
+)
+
+
+class _MessageLengthLimit:
+    """Compares as the per-request limit from ``_limit_var`` (no global swap)."""
+
+    def _value(self) -> int:
+        return _limit_var.get()
+
+    def __index__(self) -> int:
+        return self._value()
+
+    def __int__(self) -> int:
+        return self._value()
+
+    def __repr__(self) -> str:
+        return str(self._value())
+
+    def __eq__(self, other):
+        try:
+            return self._value() == int(other)
+        except (TypeError, ValueError):
+            return NotImplemented
+
+    def __lt__(self, other):
+        try:
+            return self._value() < int(other)
+        except (TypeError, ValueError):
+            return NotImplemented
+
+    def __le__(self, other):
+        try:
+            return self._value() <= int(other)
+        except (TypeError, ValueError):
+            return NotImplemented
+
+    def __gt__(self, other):
+        try:
+            return self._value() > int(other)
+        except (TypeError, ValueError):
+            return NotImplemented
+
+    def __ge__(self, other):
+        try:
+            return self._value() >= int(other)
+        except (TypeError, ValueError):
+            return NotImplemented
 
 
 def _parse_maximum_message_size(raw) -> int:
@@ -45,13 +100,15 @@ def _topic_limit(topic: dict | None) -> int:
         return _DEFAULT
 
 
-def _resolve_topic(provider, context, topic_arn, target_arn):
+def _try_topic_limit(provider, context, topic_arn, target_arn) -> int:
+    """Resolve topic limit without failing the request early (size check precedes NotFound)."""
     topic_or_target = topic_arn or target_arn
-    if not topic_or_target:
-        return None
-    if ":endpoint/" in topic_or_target:
-        return None
-    return provider._get_topic(topic_or_target, context)
+    if not topic_or_target or ":endpoint/" in topic_or_target:
+        return _DEFAULT
+    try:
+        return _topic_limit(provider._get_topic(topic_or_target, context))
+    except Exception:
+        return _DEFAULT
 
 
 def _patch() -> None:
@@ -61,6 +118,9 @@ def _patch() -> None:
     if getattr(SnsProvider, "_awsbox_sns_max_message_size", False):
         return
 
+    # One-time install: publish does `size > MAXIMUM_MESSAGE_LENGTH` against this object.
+    sns_provider.MAXIMUM_MESSAGE_LENGTH = _MessageLengthLimit()
+
     orig_create = SnsProvider.create_topic
     orig_set = SnsProvider.set_topic_attributes
     orig_publish = SnsProvider.publish
@@ -68,7 +128,6 @@ def _patch() -> None:
 
     def create_topic(self, context, name, attributes=None, tags=None, data_protection_policy=None, **kwargs):
         if attributes and _ATTR in attributes:
-            # store as string like other SNS topic attrs
             parsed = _parse_maximum_message_size(attributes[_ATTR])
             attributes = dict(attributes)
             attributes[_ATTR] = str(parsed)
@@ -84,8 +143,7 @@ def _patch() -> None:
 
     def set_topic_attributes(self, context, topic_arn, attribute_name, attribute_value=None, **kwargs):
         if attribute_name == _ATTR:
-            parsed = _parse_maximum_message_size(attribute_value)
-            attribute_value = str(parsed)
+            attribute_value = str(_parse_maximum_message_size(attribute_value))
         return orig_set(
             self,
             context,
@@ -109,10 +167,7 @@ def _patch() -> None:
         message_group_id=None,
         **kwargs,
     ):
-        topic = _resolve_topic(self, context, topic_arn, target_arn)
-        limit = _topic_limit(topic)
-        old = sns_provider.MAXIMUM_MESSAGE_LENGTH
-        sns_provider.MAXIMUM_MESSAGE_LENGTH = limit
+        token = _limit_var.set(_try_topic_limit(self, context, topic_arn, target_arn))
         try:
             return orig_publish(
                 self,
@@ -129,13 +184,14 @@ def _patch() -> None:
                 **kwargs,
             )
         finally:
-            sns_provider.MAXIMUM_MESSAGE_LENGTH = old
+            _limit_var.reset(token)
 
     def publish_batch(self, context, topic_arn, publish_batch_request_entries, **kwargs):
-        topic = self._get_topic(topic_arn, context)
-        limit = _topic_limit(topic)
-        old = sns_provider.MAXIMUM_MESSAGE_LENGTH
-        sns_provider.MAXIMUM_MESSAGE_LENGTH = limit
+        try:
+            limit = _topic_limit(self._get_topic(topic_arn, context))
+        except Exception:
+            limit = _DEFAULT
+        token = _limit_var.set(limit)
         try:
             return orig_publish_batch(
                 self,
@@ -145,14 +201,14 @@ def _patch() -> None:
                 **kwargs,
             )
         finally:
-            sns_provider.MAXIMUM_MESSAGE_LENGTH = old
+            _limit_var.reset(token)
 
     SnsProvider.create_topic = create_topic
     SnsProvider.set_topic_attributes = set_topic_attributes
     SnsProvider.publish = publish
     SnsProvider.publish_batch = publish_batch
     SnsProvider._awsbox_sns_max_message_size = True
-    LOG.info("awsbox SNS MaximumMessageSize applied")
+    LOG.info("awsbox SNS MaximumMessageSize applied (ContextVar limit)")
 
 
 _patch()
