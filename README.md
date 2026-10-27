@@ -212,6 +212,7 @@ Lifecycle: **Backlog** → **Ready** → **Designing** → **In progress** → *
 
 Gap rubric: [docs/gap-check.md](docs/gap-check.md) ·  
 **Is this path tested?** → [docs/test-paths.md](docs/test-paths.md) · grid: [docs/smoke-matrix.md](docs/smoke-matrix.md).  
+New smokes: [docs/smokes.md](docs/smokes.md) (`smokes/<area>/`; `./bin/…` wrappers still work).  
 Closing a ticket that leaves a bridge, disabled console action, or happy-only smoke must open a **Debt:** follow-up the same day.
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
