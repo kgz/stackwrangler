@@ -261,3 +261,4 @@
 378	backlog	Debt: aws:SourceArn in service trust policies (from #374)
 370	in-review	SNS refuse alias/aws/sqs for SQS encryption
 384	backlog	Debt: SNS→SQS CMK key policy (from #370)
+369	in-review	Lambda VpcConfig startup timeout + DeleteVpc docker network leak

@@ -28,6 +28,7 @@ It creates a VPC, subnet and security group, deploys a Lambda with `VpcConfig`, 
 
 ## Fidelity gaps
 
-- `VpcConfig` is stored and returned, but has no network effect: no ENIs, subnet routing or security-group checks ([#51](https://github.com/kgz/awsl/issues/51)).
+- `VpcConfig` attaches the function to `localemu-vpc-<vpc-id>` and may apply subnet route filters via a netns sidecar; there are still no real ENIs, and security-group rules are not enforced inside the Lambda container ([#51](https://github.com/kgz/awsl/issues/51), [#237](https://github.com/kgz/awsl/issues/237)). Package managers are never used to install iptables into the runtime image (that hung cold start; [#369](https://github.com/kgz/awsl/issues/369)).
 - Mappings apply to every function, so a Lambda **without** `VpcConfig` can also reach mapped hosts. In AWS it couldn't reach private addresses ([#187](https://github.com/kgz/awsl/issues/187)).
 - NLB/ALB forwarding is covered by [elbv2.md](elbv2.md). This smoke still hits the host directly.
+- `DeleteVpc` removes the VPC's Docker network (disconnecting leftover endpoints first).
