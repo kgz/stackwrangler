@@ -266,5 +266,7 @@
 373	done	batch/2026-10-27
 374	done	batch/2026-10-27
 375	done	batch/2026-10-27
-386	in-review	IGW attach keep localemu-vpc network (from #369)
-387	in-review	SNS large-topic subscribe protocol limits (from #373)
+386	done	IGW attach keep localemu-vpc network (from #369)
+387	done	SNS large-topic subscribe protocol limits (from #373)
+378	done	batch/2026-10-27-bugs
+384	done	batch/2026-10-27-bugs
