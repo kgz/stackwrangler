@@ -136,6 +136,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | VPC peering both ways; deleting one route breaks that direction | sad/other | covered | `./bin/vpc-routing-smoke.sh` · Lambda: `./bin/vpc-egress-smoke.sh` |
 | NAT gateway `0.0.0.0/0` restores egress | happy | covered | `./bin/vpc-routing-smoke.sh` |
 | VPC Lambda private subnet: public host blocked; S3 only via GW endpoint; peer OK; IGW restores; routes replay after restart | happy + sad/other | covered | `./bin/vpc-egress-smoke.sh` · [vpc-routing.md](vpc-routing.md) · slice `examples/serverless-v3-rest/slices/egress/` |
+| Attach/DetachInternetGateway keeps the same `localemu-vpc-*` Docker network id | happy | covered | `./bin/vpc-egress-smoke.sh` · [#386](https://github.com/kgz/awsl/issues/386) |
 | ECS `bridge` task joins subnet VPC (`localemu-vpc-*`) and keeps default bridge | happy | covered | `./bin/vpc-egress-bridge-check.sh` (from `vpc-egress-smoke.sh`) · [#230](https://github.com/kgz/awsl/issues/230) |
 | Private ECS task reaches a public host only through an egress proxy (`HTTP_PROXY`) | happy | covered | `./bin/egress-proxy-smoke.sh` |
 | Same task with proxy env unset cannot reach the public host directly | sad/other | covered | `./bin/egress-proxy-smoke.sh` |

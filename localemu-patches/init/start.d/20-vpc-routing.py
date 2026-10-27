@@ -319,6 +319,79 @@ def _patch_delete_vpc_network() -> None:
     VpcNetworkManager.delete_vpc_network = delete_vpc_network
 
 
+def _patch_igw_keep_vpc_network() -> None:
+    """Do not recreate localemu-vpc-* on Attach/DetachInternetGateway (#386).
+
+    Upstream flips Docker ``--internal`` by delete+create. That can fail
+    mid-way (``create_network ... internal=False failed``) and leave the
+    VPC with no bridge. awsbox already gates egress with subnet route
+    tables (``vpc_routing``), so bridges are created non-internal and
+    IGW only updates ``has_igw`` + resyncs routes.
+    """
+    from localemu.services.ec2.docker.vpc_network import VpcNetworkManager
+    from localemu.services.ec2.docker.vpc_routing import sync_vpc
+
+    original_bridge = VpcNetworkManager._create_docker_bridge
+
+    def _create_docker_bridge(self, vpc_id, network_name, cidr_block, internal):
+        # Peering nets still pass internal=True via create_peering; only
+        # the per-VPC bridge is forced non-internal so IGW need not recreate.
+        return original_bridge(self, vpc_id, network_name, cidr_block, False)
+
+    def attach_internet_gateway(self, vpc_id: str) -> bool:
+        with self._lock:
+            vpc_info = self._vpcs.get(vpc_id)
+            if not vpc_info or vpc_info.get("has_igw"):
+                return True
+            self._vpcs[vpc_id]["has_igw"] = True
+        try:
+            sync_vpc(vpc_id)
+        except Exception:
+            LOG.warning(
+                "vpc route sync after AttachInternetGateway failed for %s",
+                vpc_id,
+                exc_info=True,
+            )
+        LOG.info(
+            "Internet Gateway attached to VPC %s — kept Docker network (#386)",
+            vpc_id,
+        )
+        return True
+
+    def detach_internet_gateway(self, vpc_id: str) -> bool:
+        with self._lock:
+            vpc_info = self._vpcs.get(vpc_id)
+            if not vpc_info or not vpc_info.get("has_igw"):
+                return True
+            self._vpcs[vpc_id]["has_igw"] = False
+        try:
+            sync_vpc(vpc_id)
+        except Exception:
+            LOG.warning(
+                "vpc route sync after DetachInternetGateway failed for %s",
+                vpc_id,
+                exc_info=True,
+            )
+        LOG.info(
+            "Internet Gateway detached from VPC %s — kept Docker network (#386)",
+            vpc_id,
+        )
+        return True
+
+    def _recreate_network(self, vpc_id, network_name, cidr, containers, internal):
+        LOG.info(
+            "skipping Docker network recreate for %s (awsbox #386; internal=%s)",
+            network_name,
+            internal,
+        )
+        return True
+
+    VpcNetworkManager._create_docker_bridge = _create_docker_bridge
+    VpcNetworkManager.attach_internet_gateway = attach_internet_gateway
+    VpcNetworkManager.detach_internet_gateway = detach_internet_gateway
+    VpcNetworkManager._recreate_network = _recreate_network
+
+
 _patch_routes()
 _patch_launch()
 _patch_nat_and_peering()
@@ -326,4 +399,5 @@ _patch_lambda()
 _patch_vpc_endpoint()
 _patch_container_restart()
 _patch_delete_vpc_network()
+_patch_igw_keep_vpc_network()
 LOG.info("awsbox vpc route enforcement installed")

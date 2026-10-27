@@ -21,6 +21,8 @@ After pulling, recreate LocalEmu so the patch is mounted:
 
 Workloads attach to the Docker network of the subnet's VPC (`localemu-vpc-<vpc-id>`). ECS `awsvpc` tasks attach **only** to that VPC network (not the default docker bridge); `host.docker.internal` maps to the VPC bridge gateway so host reachability is explicit ([#271](https://github.com/kgz/awsl/issues/271)). ECS `bridge` tasks stay on docker0 for host ports and also join the container-instance subnet's VPC network so the same route filter applies. EC2 still publishes ports on `localemu-pubport-br`; without a default route that bridge's default route is removed and other destinations are dropped. Peering and NAT attachments follow the route table, not the mere existence of the connection or gateway.
 
+`AttachInternetGateway` / `DetachInternetGateway` keep the same `localemu-vpc-*` Docker network (they do not delete+recreate to flip `--internal`). Egress still follows the subnet route table; the smoke asserts the bridge id is unchanged across attach/detach ([#386](https://github.com/kgz/awsl/issues/386)). See also [lambda-vpc.md](lambda-vpc.md).
+
 ECS `awsvpc` tasks pin an address from the subnet CIDR via `SubnetAllocator` (same as EC2/RDS). `DescribeTasks` attachment `privateIPv4Address` is that container address, so ip-type target registration from `describe-tasks` reaches the task (`./bin/apigw-nlb-ecs-smoke.sh`, [#268](https://github.com/kgz/awsl/issues/268)).
 
 Console route tables stay with [#146](https://github.com/kgz/awsl/issues/146).
