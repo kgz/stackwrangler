@@ -11,7 +11,6 @@ only when the encoded account is one we were configured with (or the default).
 
 from __future__ import annotations
 
-import fnmatch
 import json
 import logging
 import os
@@ -24,7 +23,6 @@ _ACCOUNT = re.compile(r"\d{12}")
 _ASSUME_ACTIONS = {"sts:AssumeRole", "sts:*", "*"}
 _SUPPORTED_CONDITIONS = {
     "StringEquals": {"sts:ExternalId", "sts:externalId", "aws:SourceAccount"},
-    "StringLike": {"aws:SourceAccount"},
     "Bool": {"aws:MultiFactorAuthPresent"},
 }
 
@@ -79,14 +77,8 @@ def _conditions_hold(
             elif key == "aws:SourceAccount":
                 if not source_account:
                     return False
-                patterns = expected if isinstance(expected, list) else [expected]
-                if operator == "StringLike":
-                    if not any(
-                        isinstance(p, str) and fnmatch.fnmatchcase(source_account, p)
-                        for p in patterns
-                    ):
-                        return False
-                elif source_account not in patterns:
+                accounts = expected if isinstance(expected, list) else [expected]
+                if source_account not in accounts:
                     return False
             elif key == "aws:MultiFactorAuthPresent" and str(expected).lower() == "true":
                 if not serial_number:

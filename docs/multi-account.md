@@ -48,7 +48,7 @@ Trust statements honour:
 |-----------|-----------|
 | `StringEquals` `sts:ExternalId` | Must equal `ExternalId` on the call. A list means any value. |
 | `Bool` `aws:MultiFactorAuthPresent` = `true` | Call must include `SerialNumber`. |
-| `StringEquals` / `StringLike` `aws:SourceAccount` | Set only when a service (Lambda, …) assumes the role, to the role's account. A user call never satisfies it. |
+| `StringEquals` `aws:SourceAccount` | Set only when a service (Lambda, …) assumes the role, to the role's account. A user call never satisfies it. |
 | Anything else (`aws:SourceArn` [#378](https://github.com/kgz/awsl/issues/378), `aws:PrincipalOrgID`, `ArnEquals`, …) | That statement does not apply. |
 
 `Action` must be `sts:AssumeRole`, `sts:*`, or `*`. An explicit `Deny` that matches wins. Service principals (`lambda.amazonaws.com` and the rest) are unchanged.

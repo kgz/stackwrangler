@@ -9,8 +9,6 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 REGION="${AWSBOX_REGION:-us-east-1}"
-ACCOUNT="${AWSBOX_ACCOUNT_ID:-000000000000}"
-OTHER_ACCOUNT="999999999999"
 TS="$(date +%s)"
 ZIP="$ROOT/.awsbox/lambda-trust-condition.zip"
 
@@ -21,6 +19,14 @@ export AWS_DEFAULT_REGION="$REGION"
 aws() {
 	command aws --endpoint-url "$EP" --region "$REGION" "$@"
 }
+
+ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+# Same account with the last digit bumped: never the caller's, whatever AWSBOX_ACCOUNT_IDS maps.
+OTHER_ACCOUNT="${ACCOUNT:0:11}$(((${ACCOUNT:11:1} + 1) % 10))"
+if [[ ! "$ACCOUNT" =~ ^[0-9]{12}$ || "$OTHER_ACCOUNT" == "$ACCOUNT" ]]; then
+	echo "FAIL: cannot derive a distinct account from caller account '${ACCOUNT}'" >&2
+	exit 1
+fi
 
 MODES=(plain same other)
 cleanup() {
