@@ -194,6 +194,8 @@ aws --profile local s3 ls
 
 If profile `local` exists and isn’t awsbox-managed: `./bin/awsbox up --force`.
 
+Coming from `beta/full-flow-v1`, `./bin/awsbox up` removes this checkout's leftover `sftp` container (compose project of this directory, image `atmoz/sftp`, often `awsl-sftp-1`) when it still holds `127.0.0.1:2222`. Any other holder is named and `up` stops before Compose leaves the emulator `Created`. Set `AWSBOX_SFTP_HOST_PORT` to keep that process. Details: `docs/transfer.md`.
+
 ### WSL / Docker
 
 Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or engine in WSL).
