@@ -19,6 +19,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/<name>.sh` sti
 | Lambda VPC → host service | yes | no ([#187](https://github.com/kgz/awsl/issues/187)) | unmapped name | — | `lambda-vpc-smoke.sh` |
 | Lambda → Secrets Manager → OAuth token → external API | yes (+ per-stage secret isolation, env-var base URL) | **yes** (role without `GetSecretValue`: mock sees no requests) | wrong client secret → 401, no document posted | — | `lambda-secret-oauth-smoke.sh` |
 | Lambda trust `aws:SourceAccount` | yes (same account; plain trust) | **yes** (other account refused) | — | — | `lambda-trust-condition-smoke.sh` |
+| Lambda trust `aws:SourceArn` | yes (function ARN) | **yes** (other function ARN refused) | — | — | `lambda-trust-sourcearn-smoke.sh` |
 | Lambda invoke/deploy | yes | **yes** (`lambda-authz-smoke.sh`) | state wait | thin | `lambda-smoke.sh`, `lambda-deploy-smoke.sh`, `lambda-authz-smoke.sh` |
 | Logs | yes | **yes** (`logs-authz-smoke.sh`) | — | thin | `logs-smoke.sh`, `logs-authz-smoke.sh` |
 | API GW REST (v1) | yes | yes (no token / Deny / unknown route) | unmapped domain prefix; Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) | no → [#189](https://github.com/kgz/awsl/issues/189) | `apigw-rest-smoke.sh` |

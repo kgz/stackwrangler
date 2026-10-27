@@ -48,11 +48,12 @@ Trust statements honour:
 |-----------|-----------|
 | `StringEquals` `sts:ExternalId` | Must equal `ExternalId` on the call. A list means any value. |
 | `Bool` `aws:MultiFactorAuthPresent` = `true` | Call must include `SerialNumber`. |
-| `StringEquals` `aws:SourceAccount` | Set only when Lambda assumes the role, to the role's account; other services get no value, so the statement does not apply. A user call never satisfies it. |
-| Anything else (`aws:SourceArn` [#378](https://github.com/kgz/awsl/issues/378), `aws:PrincipalOrgID`, `ArnEquals`, …) | That statement does not apply. |
+| `StringEquals` `aws:SourceAccount` | Set when a service assumes the role: from the calling resource ARN's account when present, otherwise (Lambda only) the role's account. A user call never satisfies it. |
+| `ArnLike` / `ArnEquals` `aws:SourceArn` | Set from the calling resource (function / rule / topic ARN) when a service assumes the role. A list means any value. A user call never satisfies it. |
+| Anything else (`aws:PrincipalOrgID`, …) | That statement does not apply. |
 
 `Action` must be `sts:AssumeRole`, `sts:*`, or `*`. An explicit `Deny` that matches wins. Service principals (`lambda.amazonaws.com` and the rest) are unchanged.
 
 Organizations (OU, SCP) are not evaluated. A bucket or key policy that grants the other account is [#233](https://github.com/kgz/awsl/issues/233).
 
-Smoke: `./bin/multi-account-smoke.sh`.
+Smoke: `./bin/multi-account-smoke.sh`. Lambda trust `aws:SourceAccount` / `aws:SourceArn`: `./bin/lambda-trust-condition-smoke.sh`, `./bin/lambda-trust-sourcearn-smoke.sh`.

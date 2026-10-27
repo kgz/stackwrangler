@@ -11,6 +11,7 @@ only when the encoded account is one we were configured with (or the default).
 
 from __future__ import annotations
 
+import contextvars
 import json
 import logging
 import os
@@ -22,10 +23,21 @@ LOG = logging.getLogger("localemu.awsbox.multi_account")
 _ACCOUNT = re.compile(r"\d{12}")
 _LAMBDA_PRINCIPALS = {"lambda", "lambda.amazonaws.com"}
 _ASSUME_ACTIONS = {"sts:AssumeRole", "sts:*", "*"}
+_SOURCE_ARN_KEYS = {"aws:SourceArn", "AWS:SourceArn"}
 _SUPPORTED_CONDITIONS = {
     "StringEquals": {"sts:ExternalId", "sts:externalId", "aws:SourceAccount"},
     "Bool": {"aws:MultiFactorAuthPresent"},
+    "ArnLike": _SOURCE_ARN_KEYS,
+    "ArnEquals": _SOURCE_ARN_KEYS,
 }
+
+# Calling resource when a service assumes a role (function / rule / topic ARN).
+_PENDING_SOURCE_ARN: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "awsbox_pending_source_arn", default=None
+)
+_STS_SOURCE_ARN: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "awsbox_sts_source_arn", default=None
+)
 
 
 def _parse_account_map(raw: str) -> dict[str, str]:
@@ -44,19 +56,32 @@ def _parse_account_map(raw: str) -> dict[str, str]:
     return parsed
 
 
+def _arn_like(value: str, pattern: str) -> bool:
+    regex = "".join(
+        ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern
+    )
+    return re.fullmatch(regex, value) is not None
+
+
+def _values(expected: object) -> list[object]:
+    return expected if isinstance(expected, list) else [expected]
+
+
 def _conditions_hold(
     conditions: object,
     external_id: str | None,
     serial_number: str | None,
     source_account: str | None = None,
+    source_arn: str | None = None,
 ) -> bool:
     """True when every condition is one we evaluate and it matches.
 
     An operator or key we do not know makes the statement not apply, so an
     Allow with ``aws:PrincipalOrgID`` does not become an allow.
 
-    ``source_account`` is only set when an AWS service assumes the role; a
-    missing key never satisfies ``aws:SourceAccount``.
+    ``source_account`` / ``source_arn`` are only set when an AWS service
+    assumes the role; a missing key never satisfies ``aws:SourceAccount``
+    or ``aws:SourceArn``.
     """
     if not conditions:
         return True
@@ -78,8 +103,16 @@ def _conditions_hold(
             elif key == "aws:SourceAccount":
                 if not source_account:
                     return False
-                accounts = expected if isinstance(expected, list) else [expected]
-                if source_account not in accounts:
+                if source_account not in _values(expected):
+                    return False
+            elif key in _SOURCE_ARN_KEYS:
+                if not source_arn:
+                    return False
+                patterns = [str(item) for item in _values(expected)]
+                if operator == "ArnEquals":
+                    if source_arn not in patterns:
+                        return False
+                elif not any(_arn_like(source_arn, pattern) for pattern in patterns):
                     return False
             elif key == "aws:MultiFactorAuthPresent" and str(expected).lower() == "true":
                 if not serial_number:
@@ -138,20 +171,38 @@ def _install_s3_isolation() -> None:
     S3Provider.head_bucket = head_bucket
 
 
-def _source_account(role: object, service_principal: str | None) -> str | None:
-    """Account AWS reports as aws:SourceAccount when Lambda assumes the role.
-
-    Lambda only accepts roles from the function's own account, so the role's
-    account stands in for the function account (the assume call carries no
-    other account). Other services get no synthetic value.
-    """
-    if (service_principal or "").lower() not in _LAMBDA_PRINCIPALS:
+def _account_from_arn(arn: str | None) -> str | None:
+    if not arn:
         return None
-    arn = str(getattr(role, "arn", "") or "")
     parts = arn.split(":")
     if len(parts) >= 5 and _ACCOUNT.fullmatch(parts[4]):
         return parts[4]
     return None
+
+
+def _source_arn(service_principal: str | None) -> str | None:
+    """aws:SourceArn from the calling resource on a service AssumeRole."""
+    if not service_principal:
+        return None
+    pending = _STS_SOURCE_ARN.get() or _PENDING_SOURCE_ARN.get()
+    return pending if isinstance(pending, str) and pending else None
+
+
+def _source_account(role: object, service_principal: str | None) -> str | None:
+    """Account AWS reports as aws:SourceAccount when a service assumes the role.
+
+    Prefer the calling resource ARN. Lambda CreateFunction has no other
+    account on the assume call, so the role's account stands in when the
+    function ARN is missing. A user call never gets a value.
+    """
+    if not service_principal:
+        return None
+    from_arn = _account_from_arn(_source_arn(service_principal))
+    if from_arn:
+        return from_arn
+    if (service_principal or "").lower() not in _LAMBDA_PRINCIPALS:
+        return None
+    return _account_from_arn(str(getattr(role, "arn", "") or ""))
 
 
 def _install_trust() -> None:
@@ -213,6 +264,7 @@ def _install_trust() -> None:
                 external_id,
                 serial_number,
                 _source_account(role, service_principal),
+                _source_arn(service_principal),
             ):
                 continue
             if effect == "deny":
@@ -221,6 +273,123 @@ def _install_trust() -> None:
         return allow
 
     sts_provider._evaluate_trust_policy = _evaluate_trust_policy
+
+
+def _function_arn_for_create(context: object, request: object) -> str | None:
+    getter = getattr(request, "get", None)
+    raw = None
+    if callable(getter):
+        raw = getter("FunctionName")
+        if raw is None:
+            raw = getter("function_name")
+    if not isinstance(raw, str) or not raw:
+        return None
+    from localemu.services.lambda_ import api_utils
+
+    name, _qualifier, account, region = api_utils.function_locators_from_arn(raw)
+    if not name:
+        return None
+    account_id = account or getattr(context, "account_id", None)
+    region_name = region or getattr(context, "region", None)
+    if not isinstance(account_id, str) or not isinstance(region_name, str):
+        return None
+    return api_utils.unqualified_lambda_arn(name, account_id, region_name)
+
+
+def _copy_handler(dst: object, src: object) -> None:
+    for attr in ("operation", "expand_parameters", "pass_context"):
+        if hasattr(src, attr):
+            setattr(dst, attr, getattr(src, attr))
+
+
+def _install_source_arn() -> None:
+    """Carry the calling resource ARN on service AssumeRole."""
+    from localemu.aws.connect import MetadataRequestInjector
+    from localemu.services.lambda_.invocation.execution_environment import (
+        ExecutionEnvironment,
+    )
+    from localemu.services.lambda_.provider import LambdaProvider
+    from localemu.services.sts.provider import StsProvider
+
+    original_metadata = MetadataRequestInjector.request_metadata
+
+    def request_metadata(
+        self,
+        source_arn: str | None = None,
+        service_principal: str | None = None,
+    ):
+        if not source_arn:
+            source_arn = _PENDING_SOURCE_ARN.get()
+        return original_metadata(
+            self, source_arn=source_arn, service_principal=service_principal
+        )
+
+    MetadataRequestInjector.request_metadata = request_metadata
+
+    original_assume = StsProvider.assume_role
+
+    def assume_role(self, context, *args, **kwargs):
+        internal = getattr(context, "internal_request_params", None)
+        raw = None
+        if internal is not None:
+            getter = getattr(internal, "get", None)
+            if callable(getter):
+                raw = getter("source_arn")
+        token = _STS_SOURCE_ARN.set(raw if isinstance(raw, str) else None)
+        try:
+            return original_assume(self, context, *args, **kwargs)
+        finally:
+            _STS_SOURCE_ARN.reset(token)
+
+    _copy_handler(assume_role, original_assume)
+    StsProvider.assume_role = assume_role
+
+    original_create = LambdaProvider.create_function
+
+    def create_function(self, context, request):
+        token = _PENDING_SOURCE_ARN.set(_function_arn_for_create(context, request))
+        try:
+            return original_create(self, context, request)
+        finally:
+            _PENDING_SOURCE_ARN.reset(token)
+
+    _copy_handler(create_function, original_create)
+    LambdaProvider.create_function = create_function
+
+    original_creds = ExecutionEnvironment.get_credentials
+
+    def get_credentials(self):
+        token = _PENDING_SOURCE_ARN.set(self.function_version.id.unqualified_arn())
+        try:
+            return original_creds(self)
+        finally:
+            _PENDING_SOURCE_ARN.reset(token)
+
+    ExecutionEnvironment.get_credentials = get_credentials
+
+    try:
+        from localemu.services.apigateway.next_gen.execute_api.integrations import (
+            aws as apigw_aws,
+        )
+
+        original_headers = apigw_aws._get_internal_mocked_headers_cached
+
+        def _get_internal_mocked_headers_cached(
+            service_name, region_name, source_arn, role_arn=None
+        ):
+            token = _PENDING_SOURCE_ARN.set(source_arn if source_arn else None)
+            try:
+                return original_headers(
+                    service_name, region_name, source_arn, role_arn
+                )
+            finally:
+                _PENDING_SOURCE_ARN.reset(token)
+
+        apigw_aws._get_internal_mocked_headers_cached = (
+            _get_internal_mocked_headers_cached
+        )
+    except Exception as exc:
+        LOG.debug("apigw source_arn wrap skipped: %s", exc)
 
 
 def _install_root_keys(per_key: dict[str, str]) -> None:
@@ -290,6 +459,10 @@ def _apply() -> None:
     _install_root_keys(per_key)
     _install_s3_isolation()
     _install_trust()
+    try:
+        _install_source_arn()
+    except Exception as exc:
+        LOG.error("awsbox source_arn trust wrap failed: %s", exc)
     LOG.info(
         "awsbox multi-account applied (default=%s, keys=%s)",
         default or "-",
