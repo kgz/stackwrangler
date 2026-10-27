@@ -6,7 +6,7 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 ./bin/awsbox up --force   # after enabling sqs in compose
 ./bin/sqs-smoke.sh
 ./bin/sqs-authz-smoke.sh
-./bin/sqs-lambda-dlq-smoke.sh
+./bin/sqs-lambda-dlq-smoke.sh   # needs python3 boto3
 ```
 
 | Area | Status |
