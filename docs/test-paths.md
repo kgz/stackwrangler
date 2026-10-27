@@ -3,7 +3,8 @@
 **Quick answer:** search this page for the path (e.g. `s3:PutObject`, `AccessDenied`, `SFTP put`).  
 If it’s not listed, it is **untested** — add a smoke + row, or a Debt ticket.
 
-Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check.md](gap-check.md) (before `done`).
+Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check.md](gap-check.md) (before `done`).  
+Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths below are wrappers.
 
 ## Legend
 
@@ -46,6 +47,7 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Lambda invoke hello (basic role) | happy | covered | `./bin/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./bin/lambda-deploy-smoke.sh` |
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./bin/lambda-authz-smoke.sh` |
+| Lambda role trust `aws:SourceAccount` = function account → CreateFunction ok; other account → refused; plain trust ok | happy + sad/authz | covered | `./bin/lambda-trust-condition-smoke.sh` |
 | REST API import from OpenAPI + `aws_proxy` public route | happy | covered | `./bin/apigw-rest-smoke.sh` · [apigw-rest.md](apigw-rest.md) |
 | REST REQUEST authorizer Allow → handler gets context | happy | covered | `./bin/apigw-rest-smoke.sh` |
 | REST authorizer, no token → 401 | sad/authz | covered | `./bin/apigw-rest-smoke.sh` |
@@ -203,8 +205,10 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | ESM MaximumConcurrency < 2 → CreateEventSourceMapping refused | sad/other | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
+| SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./bin/sns-max-message-size-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS → SQS with `KmsMasterKeyId=alias/aws/sqs` → not delivered | sad | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./bin/events-smoke.sh` |
 | EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
 | EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./bin/events-schedule-smoke.sh` |
@@ -250,6 +254,8 @@ Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check
 | Transfer create-server / create-user API | happy | covered | `./bin/transfer-smoke.sh` |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./bin/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./bin/transfer-dataplane-smoke.sh` |
+| `awsbox up` while this checkout's beta `atmoz/sftp` container holds the emulator port | sad | covered | `./bin/transfer-sftp-port-smoke.sh` |
+| `awsbox up` while another project or process holds the SFTP host port | sad | covered | `./bin/transfer-sftp-port-smoke.sh` |
 | **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./bin/transfer-key-smoke.sh` |
 | **Transfer empty role → simulate PutObject deny** | sad/authz | covered | `./bin/transfer-authz-smoke.sh` |
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) |

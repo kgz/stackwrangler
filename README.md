@@ -106,13 +106,13 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 ## Messaging & integration
 
 | SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [docs/sqs.md](docs/sqs.md) |
-| SNS | publish · SQS fan-out (queue policy / `SourceArn`) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS | publish · MaximumMessageSize ≤1 MiB · SQS fan-out (queue policy / `SourceArn`; refuse `alias/aws/sqs`) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/sns-max-message-size-smoke.sh` |
 | EventBridge | put-events + rule · scheduled `rate()` rule → Lambda (disable stops it; no invoke permission = no fire) | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) · [slice](examples/serverless-v3-rest/slices/schedule/README.md) · cadence [#317](https://github.com/kgz/awsl/issues/317) |
 | Step Functions | Pass state machine | — | **Working** (CLI) · console [#175](https://github.com/kgz/awsl/issues/175) |
 | Kinesis | put/get records | — | **Working** (CLI) · console [#178](https://github.com/kgz/awsl/issues/178) |
 | MSK / SES / AppSync | — | — | **Backlog** |
 
-Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` (+ `*-authz-smoke.sh`)
+Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-max-message-size-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` (+ `*-authz-smoke.sh`)
 
 
 ## Security & identity
@@ -194,6 +194,8 @@ aws --profile local s3 ls
 
 If profile `local` exists and isn’t awsbox-managed: `./bin/awsbox up --force`.
 
+Coming from `beta/full-flow-v1`, `./bin/awsbox up` removes this checkout's leftover `sftp` container (compose project of this directory, image `atmoz/sftp`, often `awsl-sftp-1`) when it still holds `127.0.0.1:2222`. Any other holder is named and `up` stops before Compose leaves the emulator `Created`. Set `AWSBOX_SFTP_HOST_PORT` to keep that process. Details: `docs/transfer.md`.
+
 ### WSL / Docker
 
 Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or engine in WSL).
@@ -212,6 +214,7 @@ Lifecycle: **Backlog** → **Ready** → **Designing** → **In progress** → *
 
 Gap rubric: [docs/gap-check.md](docs/gap-check.md) ·  
 **Is this path tested?** → [docs/test-paths.md](docs/test-paths.md) · grid: [docs/smoke-matrix.md](docs/smoke-matrix.md).  
+New smokes: [docs/smokes.md](docs/smokes.md) (`smokes/<area>/`; `./bin/…` wrappers still work).  
 Closing a ticket that leaves a bridge, disabled console action, or happy-only smoke must open a **Debt:** follow-up the same day.
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  

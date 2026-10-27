@@ -1,0 +1,42 @@
+# Where local smokes live
+
+New smokes go under `smokes/<area>/`. `bin/` stays product and tooling (`awsbox`, `e2e.sh`, board scripts).
+
+`./bin/<name>.sh` is a thin wrapper so existing docs and `e2e.sh` keep working:
+
+```bash
+#!/usr/bin/env bash
+exec "$(cd "$(dirname "$0")/.." && pwd)/smokes/<area>/<name>.sh" "$@"
+```
+
+Inside a smoke, the repo root is two levels up:
+
+```bash
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+```
+
+## Areas
+
+Same spirit as the catalogue milestones. Match the script prefix, then the exceptions below.
+
+| Dir | Put here |
+|-----|----------|
+| `smokes/lambda/` | `lambda-*`, `sqs-lambda-dlq-smoke.sh` |
+| `smokes/messaging/` | `sqs-*`, `sns-*`, `events-*`, `sfn-*`, `kinesis-*` |
+| `smokes/networking/` | `vpc-*`, `sg-*`, `elbv2-*`, `route53-*`, `r53-*`, `vpce-*`, `egress-*`, `waf-*` |
+| `smokes/compute/` | `ecs-*`, `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
+| `smokes/apigw/` | `apigw-*` |
+| `smokes/data/` | `dynamodb-*`, `rds-*` |
+| `smokes/transfer/` | `transfer-*` |
+| `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh` |
+| `smokes/s3/` | `s3-*` (including `s3-parity.sh`) |
+| `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `iac-smoke.sh` |
+| `smokes/account/` | `mirror-*`, `custom-id-*`, `labels-*` |
+| `smokes/parity/` | `aws-parity-*` |
+| `smokes/logs/` | `logs-*` (CloudWatch Logs catalogue) |
+
+`sqs-lambda-dlq-smoke.sh` is lambda, not messaging (requires `python3` with `boto3`). WAF is networking (same milestone as VPC / ELB / DNS).
+
+## Stay in `bin/`
+
+Checks that are not smokes stay next to the tooling they support: `serverless-v3-fixture-check.sh`, `vpc-egress-bridge-check.sh`, `oidc-mint.py`.

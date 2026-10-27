@@ -273,17 +273,18 @@ def _sync_container(
     backend = _ec2_backend(account_id, region)
     if backend is None:
         return
-    # Install iptables while default egress may still work (private images).
-    # Lambda Amazon Linux often cannot apt/yum without egress — use netns sidecar.
-    has_iptables = False
-    try:
-        from localemu.services.ec2.docker.sg_iptables import (
-            ensure_iptables_in_container,
+    # Probe only — never apt/yum/apk install. Lambda Amazon Linux (and other
+    # private images) hang for minutes on package managers without egress,
+    # which burns LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT (#369). Route filter
+    # uses the privileged alpine netns sidecar when iptables is missing;
+    # in-container SG enforcement stays off (docs/lambda-vpc.md).
+    has_iptables = _container_has_iptables(container)
+    if not has_iptables:
+        LOG.info(
+            "container %s has no iptables; VPC routes via netns sidecar "
+            "(in-container SG enforcement off)",
+            container,
         )
-
-        has_iptables = bool(ensure_iptables_in_container(container))
-    except Exception:
-        LOG.debug("iptables ensure skipped for %s", container, exc_info=True)
     _netns.sidecar = not has_iptables
 
     route_table_id = _resolve_route_table_for_subnet(subnet_id, account_id, region)
@@ -962,6 +963,24 @@ def _connect(network: str, container: str) -> None:
         DOCKER_CLIENT.connect_container_to_network(network, container)
     except Exception:
         LOG.debug("connect %s to %s skipped", container, network, exc_info=True)
+
+
+def _container_has_iptables(container: str) -> bool:
+    """True when iptables is already runnable — never tries to install it."""
+    from localemu.utils.docker_utils import DOCKER_CLIENT
+
+    try:
+        DOCKER_CLIENT.exec_in_container(
+            container,
+            [
+                "sh",
+                "-c",
+                "command -v iptables >/dev/null && iptables -V >/dev/null",
+            ],
+        )
+        return True
+    except Exception:
+        return False
 
 
 def _sh(container: str, script: str) -> None:

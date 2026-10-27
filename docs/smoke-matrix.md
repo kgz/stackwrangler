@@ -5,6 +5,8 @@
 Honest coverage grid. Update when adding or closing a smoke.  
 **Sad path** = deliberate expected failure that must exit 0 only when the failure is observed.
 
+Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/<name>.sh` still runs them. Script names in the table are the file name, not the directory.
+
 | Surface | Happy | Sad (authz / deny) | Sad (other) | Console e2e | Script |
 |---------|-------|--------------------|-------------|-------------|--------|
 | S3 SeaweedFS | yes | no (parity gaps) | dual-split | yes | `s3-parity.sh`, `s3-dual-endpoint-smoke.sh` |
@@ -16,6 +18,7 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Real AWS HF cheap (#296/#297/#190/#294/#230 VPCE) | **yes** (focused) | **yes** (Deny 403, missing/disabled key) | schedule quiet after disable | — | `aws-parity-hf-cheap.sh` · skipped gaps [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Lambda VPC → host service | yes | no ([#187](https://github.com/kgz/awsl/issues/187)) | unmapped name | — | `lambda-vpc-smoke.sh` |
 | Lambda → Secrets Manager → OAuth token → external API | yes (+ per-stage secret isolation, env-var base URL) | **yes** (role without `GetSecretValue`: mock sees no requests) | wrong client secret → 401, no document posted | — | `lambda-secret-oauth-smoke.sh` |
+| Lambda trust `aws:SourceAccount` | yes (same account; plain trust) | **yes** (other account refused) | — | — | `lambda-trust-condition-smoke.sh` |
 | Lambda invoke/deploy | yes | **yes** (`lambda-authz-smoke.sh`) | state wait | thin | `lambda-smoke.sh`, `lambda-deploy-smoke.sh`, `lambda-authz-smoke.sh` |
 | Logs | yes | **yes** (`logs-authz-smoke.sh`) | — | thin | `logs-smoke.sh`, `logs-authz-smoke.sh` |
 | API GW REST (v1) | yes | yes (no token / Deny / unknown route) | unmapped domain prefix; Deny 401≠403 [#190](https://github.com/kgz/awsl/issues/190) | no → [#189](https://github.com/kgz/awsl/issues/189) | `apigw-rest-smoke.sh` |
@@ -40,7 +43,8 @@ Honest coverage grid. Update when adding or closing a smoke.
 | VPCE private DNS (ecr/logs/ssm/sts/ecs) | yes (in-VPC resolve + call) | n/a (isolation is other-VPC) | other VPC does not get endpoint IP | — | `vpce-private-dns-smoke.sh` |
 | ELBv2 NLB/ALB | yes | **yes** (deny CreateLoadBalancer) | unhealthy target drops | no → [#241](https://github.com/kgz/awsl/issues/241) | `elbv2-smoke.sh` |
 | SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |
-| SNS → SQS fan-out | yes (envelope, raw, filter) | **yes** (wrong/missing queue policy; unsubscribe) | — | — | `sns-sqs-fanout-smoke.sh` |
+| SNS MaximumMessageSize (≤1 MiB) | yes (CreateTopic/Set; 300 KiB–1 MiB → SQS raw) | **yes** (default >256 KiB) | large-topic sub protocol limits → [#387](https://github.com/kgz/awsl/issues/387) | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-max-message-size-smoke.sh` |
+| SNS → SQS fan-out | yes (envelope, raw, filter) | **yes** (wrong/missing queue policy; `alias/aws/sqs` KMS; unsubscribe) | — | — | `sns-sqs-fanout-smoke.sh` |
 | EventBridge | yes | **yes** | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-smoke.sh`, `events-authz-smoke.sh` |
 | EventBridge schedule → Lambda | yes (`rate(1 minute)` ≥2 invocations; none after disable-rule) | **yes** (rule without `lambda:InvokeFunction` for `events.amazonaws.com` never invokes) | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-schedule-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
@@ -54,10 +58,11 @@ Honest coverage grid. Update when adding or closing a smoke.
 | Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |
 | Transfer outbound connector (S3 → remote SFTP) | yes (Lambda creates tenant connector; `start-file-transfer`; CloudWatch events) | **yes** (role without `s3:GetObject` / secret / `kms:Decrypt`, trust scoped to another account, Lambda without `iam:PassRole`) | wrong host key | no → [#313](https://github.com/kgz/awsl/issues/313) · retrieve [#314](https://github.com/kgz/awsl/issues/314) | `transfer-connector-smoke.sh` |
 | Transfer SFTP→S3 (SSH keys) | yes (native) | **yes** (wrong key) | LOGICAL / IdP / SFTP-byte authz → [#322](https://github.com/kgz/awsl/issues/322) | create user + import key → [#321](https://github.com/kgz/awsl/issues/321) | `transfer-key-smoke.sh`, `transfer-dataplane-smoke.sh` |
+| `awsbox up` SFTP host port (beta leftover) | yes (port free, or this project's `atmoz/sftp` container removed) | — | other project or other holder named; `up` stops before the emulator is left Created | — | `transfer-sftp-port-smoke.sh` |
 | RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail | `rds-smoke.sh`, `rds-authz-smoke.sh` |
 | RDS MySQL / Aurora MySQL | yes | **yes** (wrong password) | reader read-only | list/detail · create [#145](https://github.com/kgz/awsl/issues/145) | `rds-mysql-smoke.sh` |
 | SQS | yes | **yes** (deny SendMessage; MessageRetentionPeriod > 14d) | — | no → [#167](https://github.com/kgz/awsl/issues/167) | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |
-| SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ) | **yes** (role without SQS; VT < timeout; MaximumConcurrency < 2) | — | — | `sqs-lambda-dlq-smoke.sh` |
+| SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ) | **yes** (role without SQS; VT < timeout; MaximumConcurrency < 2) | — | — | `sqs-lambda-dlq-smoke.sh` (needs `boto3`) |
 | Prowler | yes (scoped unused-services) | ratchet (failing API count) | S3 Control host | — | `prowler-smoke.sh` |
 | Account mirror | yes (synthetic apply) | n/a (local apply) | in-repo write + non-local endpoint | — | `mirror-smoke.sh` |
 | Terraform S3 backend + lock | yes (opt-in) | — | canary abort if real AWS STS succeeds | — | `terraform-backend-smoke.sh` (`AWSBOX_TERRAFORM_BACKEND_SMOKE=1`) |

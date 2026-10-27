@@ -5,6 +5,20 @@ LocalEmu `transfer` on `:4566` = **control plane** (create-server / create-user 
 
 Optional `legacy-sftp` compose profile (atmoz password target on `:2223`) remains for outbound connector probes that need a dumb remote host.
 
+## Upgrading from `beta/full-flow-v1`
+
+That branch published atmoz SFTP as compose service `sftp` on `127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}` (container `awsl-sftp-1`). This tree runs inbound SFTP inside the emulator on the same host port. The password target is the `legacy-sftp` profile on `127.0.0.1:${AWSBOX_LEGACY_SFTP_HOST_PORT:-2223}`.
+
+`./bin/awsbox up` removes this checkout's leftover `sftp` container when it still holds the emulator port: compose project label matches this directory, service `sftp`, image `atmoz/sftp`. Another project's SFTP server, or anything else on the port, makes `up` exit before Compose and names the holder. A failed bind otherwise leaves the emulator container `Created` and the rest of the stack down.
+
+```bash
+docker rm -f awsl-sftp-1
+# or keep the other process and move the emulator:
+AWSBOX_SFTP_HOST_PORT=2223 ./bin/awsbox up
+```
+
+Smoke: `./bin/transfer-sftp-port-smoke.sh`.
+
 **Outbound** (connectors that push S3 objects to a remote SFTP host) is a real data plane: see [Outbound SFTP connectors](#outbound-sftp-connectors).
 
 ## Smokes

@@ -30,6 +30,9 @@ echo "==> Lambda deploy zip"
 echo "==> Lambda authz (sad: missing s3:PutObject)"
 ./bin/lambda-authz-smoke.sh
 
+echo "==> Lambda trust aws:SourceAccount"
+./bin/lambda-trust-condition-smoke.sh
+
 echo "==> Lambda VPC → host services (sad: unmapped name)"
 ./bin/lambda-vpc-smoke.sh
 
@@ -76,7 +79,7 @@ echo "==> SQS authz (sad: deny SendMessage)"
 ./bin/sqs-authz-smoke.sh
 
 echo "==> SNS / EventBridge / DynamoDB / SFN / Secrets / KMS / Kinesis"
-./bin/sns-smoke.sh && ./bin/sns-authz-smoke.sh
+./bin/sns-smoke.sh && ./bin/sns-authz-smoke.sh && ./bin/sns-max-message-size-smoke.sh
 ./bin/events-smoke.sh && ./bin/events-authz-smoke.sh
 ./bin/dynamodb-smoke.sh && ./bin/dynamodb-authz-smoke.sh
 ./bin/sfn-smoke.sh && ./bin/sfn-authz-smoke.sh

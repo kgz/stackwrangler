@@ -3,7 +3,7 @@
 # Usage: awsbox up | down | status | console | hosts | mirror | apply …
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
@@ -86,12 +86,172 @@ wait_healthy() {
 	exit 1
 }
 
+sftp_host_port() {
+	local from_file
+	if [[ -n "${AWSBOX_SFTP_HOST_PORT:-}" ]]; then
+		printf '%s\n' "$AWSBOX_SFTP_HOST_PORT"
+		return 0
+	fi
+	if [[ -f "$ROOT/.env" ]]; then
+		from_file="$(
+			set -a
+			# shellcheck disable=SC1091
+			source "$ROOT/.env" >/dev/null 2>&1 || true
+			printf '%s' "${AWSBOX_SFTP_HOST_PORT:-}"
+		)"
+		if [[ -n "$from_file" ]]; then
+			printf '%s\n' "$from_file"
+			return 0
+		fi
+	fi
+	printf '%s\n' 2222
+}
+
+host_port_busy() {
+	local port="$1"
+	if ! command -v ss >/dev/null 2>&1; then
+		return 1
+	fi
+	ss -H -ltn "sport = :${port}" 2>/dev/null | grep -q .
+}
+
+# Compose project for this checkout (directory name, or COMPOSE_PROJECT_NAME / compose name:).
+compose_project_name() {
+	local raw name
+	if ! command -v python3 >/dev/null 2>&1; then
+		return 1
+	fi
+	if ! raw="$("${COMPOSE[@]}" config --format json 2>/dev/null)"; then
+		return 1
+	fi
+	name="$(printf '%s' "$raw" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("name") or "")' 2>/dev/null)" || return 1
+	[[ -n "$name" ]] || return 1
+	printf '%s\n' "$name"
+}
+
+# beta atmoz/sftp from this compose project. Other projects stay up; up names them and stops.
+beta_sftp_image() {
+	case "$1" in
+		atmoz/sftp | atmoz/sftp:* | atmoz/sftp@* | */atmoz/sftp | */atmoz/sftp:* | */atmoz/sftp@*)
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+# beta/full-flow-v1 kept compose service sftp on the emulator host port.
+# Drop only that leftover from this checkout. Anything else must fail before
+# compose leaves localstack Created.
+free_sftp_host_port() {
+	local port id_raw fmt inspect_out id name service project image host_ip host_port short
+	local -a id_list=() remove_ids=() remove_names=() blocker_desc=()
+	local -a cand_ids=() cand_names=() cand_services=() cand_projects=() cand_images=()
+	local seen_cand=" " seen_block=" " localstack_holds=0 joined i attempt our_project
+	port="$(sftp_host_port)"
+	if [[ ! "$port" =~ ^[1-9][0-9]*$ ]]; then
+		echo "error: AWSBOX_SFTP_HOST_PORT must be a port number (got ${port})" >&2
+		return 1
+	fi
+	if ! command -v docker >/dev/null 2>&1; then
+		return 0
+	fi
+	if ! id_raw="$(docker ps -q --filter status=running)"; then
+		echo "error: cannot list containers (is the Docker daemon running?)" >&2
+		return 1
+	fi
+	if [[ -n "$id_raw" ]]; then
+		mapfile -t id_list <<< "$id_raw"
+		# Unit separator keeps an empty compose label from collapsing under IFS.
+		fmt='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{range $conf}}{{$.Id}}{{printf "\x1f"}}{{$.Name}}{{printf "\x1f"}}{{if $.Config.Labels}}{{index $.Config.Labels "com.docker.compose.service"}}{{end}}{{printf "\x1f"}}{{if $.Config.Labels}}{{index $.Config.Labels "com.docker.compose.project"}}{{end}}{{printf "\x1f"}}{{$.Config.Image}}{{printf "\x1f"}}{{.HostIp}}{{printf "\x1f"}}{{.HostPort}}{{printf "\n"}}{{end}}{{end}}{{end}}'
+		if ! inspect_out="$(docker inspect --format "$fmt" "${id_list[@]}")"; then
+			echo "error: docker inspect failed" >&2
+			return 1
+		fi
+		while IFS=$'\x1f' read -r id name service project image host_ip host_port; do
+			[[ -n "$id" ]] || continue
+			[[ "$host_port" == "$port" ]] || continue
+			case "$host_ip" in
+				"" | 0.0.0.0 | :: | 127.0.0.1) ;;
+				*) continue ;;
+			esac
+			short="${name#/}"
+			if [[ "$service" == "localstack" || "$short" == *-localstack-* ]]; then
+				localstack_holds=1
+				continue
+			fi
+			case "$seen_cand" in
+				*" $id "*) ;;
+				*)
+					seen_cand+="$id "
+					cand_ids+=("$id")
+					cand_names+=("$short")
+					cand_services+=("$service")
+					cand_projects+=("$project")
+					cand_images+=("$image")
+					;;
+			esac
+		done <<< "$inspect_out"
+	fi
+	our_project=""
+	if [[ ${#cand_ids[@]} -gt 0 ]]; then
+		our_project="$(compose_project_name 2>/dev/null || true)"
+	fi
+	for i in "${!cand_ids[@]}"; do
+		if [[ -n "$our_project" && "${cand_services[$i]}" == "sftp" && "${cand_projects[$i]}" == "$our_project" ]] && beta_sftp_image "${cand_images[$i]}"; then
+			remove_ids+=("${cand_ids[$i]}")
+			remove_names+=("${cand_names[$i]}")
+			continue
+		fi
+		case "$seen_block" in
+			*" ${cand_ids[$i]} "*) ;;
+			*)
+				seen_block+="${cand_ids[$i]} "
+				blocker_desc+=("container ${cand_names[$i]} (${cand_ids[$i]:0:12})")
+				;;
+		esac
+	done
+	if [[ ${#blocker_desc[@]} -gt 0 ]]; then
+		joined="$(printf '%s, ' "${blocker_desc[@]}")"
+		joined="${joined%, }"
+		echo "error: 127.0.0.1:${port} is already in use by ${joined}." >&2
+		echo "Inbound SFTP in the emulator binds this port. Stop the holder (docker rm -f <name>) or set AWSBOX_SFTP_HOST_PORT to a free port." >&2
+		echo "Stopping here so Compose does not leave the emulator container Created." >&2
+		return 1
+	fi
+	for i in "${!remove_ids[@]}"; do
+		echo "awsbox: removing leftover sftp container ${remove_names[$i]} (holds 127.0.0.1:${port}; inbound SFTP now runs in the emulator)."
+		docker rm -f "${remove_ids[$i]}" >/dev/null
+	done
+	if [[ ${#remove_ids[@]} -gt 0 ]]; then
+		echo "Legacy password SFTP stays on AWSBOX_LEGACY_SFTP_HOST_PORT (default 2223) via the legacy-sftp profile."
+	fi
+	if [[ "$localstack_holds" -eq 1 ]]; then
+		return 0
+	fi
+	for attempt in 1 2 3 4 5 6 7 8 9 10; do
+		if ! host_port_busy "$port"; then
+			return 0
+		fi
+		sleep 0.1
+	done
+	echo "error: 127.0.0.1:${port} is already in use." >&2
+	if command -v ss >/dev/null 2>&1; then
+		ss -H -ltnp "sport = :${port}" >&2 || ss -H -ltn "sport = :${port}" >&2 || true
+	fi
+	echo "Inbound SFTP in the emulator binds this port. Stop that process or set AWSBOX_SFTP_HOST_PORT to a free port." >&2
+	echo "Stopping here so Compose does not leave the emulator container Created." >&2
+	return 1
+}
+
 cmd_up() {
 	if ! command -v docker >/dev/null 2>&1; then
 		echo "error: Docker is required (not found on PATH)" >&2
 		exit 1
 	fi
 	ensure_env
+	free_sftp_host_port
 	"${COMPOSE[@]}" up -d
 	wait_healthy
 	"$ROOT/bin/awsbox-profile" write "$@"
@@ -173,6 +333,7 @@ cmd_console() {
 	exec yarn dev --host 127.0.0.1 --port 3000
 }
 
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 case "${1:-}" in
 	up)
 		shift
@@ -200,3 +361,4 @@ case "${1:-}" in
 		exit 1
 		;;
 esac
+fi
