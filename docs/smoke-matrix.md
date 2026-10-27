@@ -44,7 +44,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/<name>.sh` sti
 | ELBv2 NLB/ALB | yes | **yes** (deny CreateLoadBalancer) | unhealthy target drops | no → [#241](https://github.com/kgz/awsl/issues/241) | `elbv2-smoke.sh` |
 | SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |
 | SNS MaximumMessageSize (≤1 MiB) | yes (CreateTopic/Set; 300 KiB–1 MiB → SQS raw) | **yes** (default >256 KiB) | large-topic sub protocol limits → [#387](https://github.com/kgz/awsl/issues/387) | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-max-message-size-smoke.sh` |
-| SNS → SQS fan-out | yes (envelope, raw, filter) | **yes** (wrong/missing queue policy; `alias/aws/sqs` KMS; unsubscribe) | — | — | `sns-sqs-fanout-smoke.sh` |
+| SNS → SQS fan-out | yes (envelope, raw, filter; CMK with SNS grant) | **yes** (wrong/missing queue policy; `alias/aws/sqs` KMS; CMK without SNS grant; unsubscribe) | — | — | `sns-sqs-fanout-smoke.sh` |
 | EventBridge | yes | **yes** | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-smoke.sh`, `events-authz-smoke.sh` |
 | EventBridge schedule → Lambda | yes (`rate(1 minute)` ≥2 invocations; none after disable-rule) | **yes** (rule without `lambda:InvokeFunction` for `events.amazonaws.com` never invokes) | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-schedule-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
