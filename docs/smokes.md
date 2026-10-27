@@ -35,7 +35,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/parity/` | `aws-parity-*` |
 | `smokes/logs/` | `logs-*` (CloudWatch Logs catalogue) |
 
-`sqs-lambda-dlq-smoke.sh` is lambda, not messaging. WAF is networking (same milestone as VPC / ELB / DNS).
+`sqs-lambda-dlq-smoke.sh` is lambda, not messaging (requires `python3` with `boto3`). WAF is networking (same milestone as VPC / ELB / DNS).
 
 ## Stay in `bin/`
 

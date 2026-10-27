@@ -45,6 +45,8 @@ trap cleanup EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 ok() { echo "ok: $*"; }
 
+python3 -c 'import boto3, botocore' 2>/dev/null || fail "python3 boto3 required for sqs-lambda-dlq-smoke (pip install boto3)"
+
 # Handlers: "ok" writes one S3 object per message; "boom" always throws.
 python3 - "$TMP" <<'PY'
 import sys, zipfile
