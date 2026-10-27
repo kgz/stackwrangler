@@ -3,7 +3,8 @@
 **Quick answer:** search this page for the path (e.g. `s3:PutObject`, `AccessDenied`, `SFTP put`).  
 If it’s not listed, it is **untested** — add a smoke + row, or a Debt ticket.
 
-Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check.md](gap-check.md) (before `done`).
+Companion tables: [smoke-matrix.md](smoke-matrix.md) (yes/no grid) · [gap-check.md](gap-check.md) (before `done`).  
+Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths below are wrappers.
 
 ## Legend
 
