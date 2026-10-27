@@ -960,6 +960,9 @@ def _run_service_tasks(
                     "containerDefinitions": container_defs,
                     "networkMode": network_mode,
                     "volumes": td_volumes,
+                    # Same as RunTask: the execution role drives secrets/registry auth, the task role drives credentials.
+                    "taskRoleArn": full_td.get("taskRoleArn"),
+                    "executionRoleArn": full_td.get("executionRoleArn"),
                 }
 
                 try:
