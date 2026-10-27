@@ -205,6 +205,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | ESM MaximumConcurrency < 2 → CreateEventSourceMapping refused | sad/other | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
+| SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./bin/sns-max-message-size-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS with `KmsMasterKeyId=alias/aws/sqs` → not delivered | sad | covered | `./bin/sns-sqs-fanout-smoke.sh` |
