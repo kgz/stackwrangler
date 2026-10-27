@@ -875,6 +875,73 @@ def evaluate_service_delivery(
     )
 
 
+def _sqs_queue_from_arn(queue_arn: str):
+    """Resolve a native LocalEmu SQS queue object from its ARN, or None."""
+    if not queue_arn or not isinstance(queue_arn, str) or not queue_arn.startswith("arn:"):
+        return None
+    parts = queue_arn.split(":")
+    if len(parts) < 6:
+        return None
+    region = parts[3] or "us-east-1"
+    account_id = parts[4] or "000000000000"
+    queue_name = parts[5]
+    if not queue_name:
+        return None
+    try:
+        from localemu.services.sqs.models import sqs_stores
+
+        store = sqs_stores[account_id][region]
+        queues = getattr(store, "queues", None) or {}
+        queue = queues.get(queue_name) if isinstance(queues, dict) else None
+        if queue is not None:
+            return queue
+        for candidate in (queues.values() if isinstance(queues, dict) else queues):
+            if getattr(candidate, "arn", None) == queue_arn:
+                return candidate
+            name = getattr(candidate, "name", None) or getattr(candidate, "queue_name", None)
+            if name == queue_name:
+                return candidate
+    except Exception as exc:
+        LOG.debug("SQS queue lookup failed for %s: %s", queue_arn, exc)
+    return None
+
+
+def sqs_queue_kms_master_key_id(queue_arn: str) -> str | None:
+    """``KmsMasterKeyId`` on the queue, or None when unset / SQS-managed SSE only."""
+    queue = _sqs_queue_from_arn(queue_arn)
+    if queue is None:
+        return None
+    attrs = getattr(queue, "attributes", None) or {}
+    raw = attrs.get("KmsMasterKeyId")
+    if raw is None:
+        return None
+    key = str(raw).strip()
+    return key or None
+
+
+def is_aws_managed_sqs_kms_key(key_id: str | None) -> bool:
+    """True for ``alias/aws/sqs`` (policy cannot grant sns.amazonaws.com)."""
+    if not key_id or not isinstance(key_id, str):
+        return False
+    ref = key_id.strip()
+    if not ref:
+        return False
+    if ref == "alias/aws/sqs":
+        return True
+    # Full alias ARN: arn:aws:kms:region:account:alias/aws/sqs
+    return ref.endswith(":alias/aws/sqs") or ":alias/aws/sqs" in ref
+
+
+def sns_blocked_by_sqs_aws_managed_kms(queue_arn: str) -> bool:
+    """AWS cannot deliver SNS→SQS when the queue uses ``alias/aws/sqs``.
+
+    The AWS-managed SQS CMK policy is not editable, so SNS never gets
+    ``kms:GenerateDataKey`` / ``kms:Decrypt``. SQS-managed SSE
+    (``SqsManagedSseEnabled``) and customer CMKs are not blocked here.
+    """
+    return is_aws_managed_sqs_kms_key(sqs_queue_kms_master_key_id(queue_arn))
+
+
 def _truthy(value: Any) -> bool:
     if isinstance(value, str):
         return value.lower() == "true"

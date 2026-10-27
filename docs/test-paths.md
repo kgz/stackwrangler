@@ -207,6 +207,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS → SQS with `KmsMasterKeyId=alias/aws/sqs` → not delivered | sad | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./bin/events-smoke.sh` |
 | EventBridge deny PutEvents | sad/authz | covered | `./bin/events-authz-smoke.sh` |
 | EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./bin/events-schedule-smoke.sh` |

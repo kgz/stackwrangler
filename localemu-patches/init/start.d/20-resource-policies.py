@@ -10,6 +10,10 @@ marks the SendMessage as an internal hop and the stock IAM enforcer
 bypasses it; AWS still requires the queue policy to Allow
 sns.amazonaws.com (usually with aws:SourceArn). We gate in the SNS
 publisher so a deny becomes a silent drop (same as AWS).
+
+Queues encrypted with the AWS-managed key ``alias/aws/sqs`` also fail
+delivery on real AWS (that key policy cannot grant SNS); we refuse those
+the same way and record a failed delivery.
 """
 
 from __future__ import annotations
@@ -209,6 +213,37 @@ def _install() -> None:
         LOG.info("IAM DENY (SNS→SQS): %s (source=%s)", wire, topic_arn)
         return False
 
+    def _sns_may_deliver_to_queue(queue_arn: str, topic_arn: str) -> bool:
+        """Queue policy + KMS: refuse ``alias/aws/sqs`` (AWS cannot grant SNS)."""
+        if rp.sns_blocked_by_sqs_aws_managed_kms(queue_arn):
+            LOG.info(
+                "SNS→SQS refuse: queue %s uses alias/aws/sqs (source=%s)",
+                queue_arn,
+                topic_arn,
+            )
+            return False
+        return _queue_allows_sns(queue_arn, topic_arn)
+
+    def _record_sqs_delivery_failure(sns_publisher, context, subscriber, batch: bool) -> None:
+        try:
+            if batch:
+                for message in getattr(context, "messages", None) or []:
+                    sns_publisher.store_delivery_log(
+                        message,
+                        subscriber,
+                        success=False,
+                        topic_attributes=getattr(context, "topic_attributes", None),
+                    )
+            else:
+                sns_publisher.store_delivery_log(
+                    context.message,
+                    subscriber,
+                    success=False,
+                    topic_attributes=getattr(context, "topic_attributes", None),
+                )
+        except Exception:
+            LOG.debug("SNS→SQS deny delivery log failed", exc_info=True)
+
     def _patch_sns_sqs_publishers() -> None:
         from localemu.services.sns import publisher as sns_publisher
 
@@ -217,17 +252,9 @@ def _install() -> None:
         def sqs_publish(self, context, subscriber):
             queue_arn = subscriber.get("Endpoint") or ""
             topic_arn = subscriber.get("TopicArn") or ""
-            if not _queue_allows_sns(queue_arn, topic_arn):
+            if not _sns_may_deliver_to_queue(queue_arn, topic_arn):
                 # Mirror AWS: Subscribe succeeded; delivery is silently dropped.
-                try:
-                    sns_publisher.store_delivery_log(
-                        context.message,
-                        subscriber,
-                        success=False,
-                        topic_attributes=getattr(context, "topic_attributes", None),
-                    )
-                except Exception:
-                    LOG.debug("SNS→SQS deny delivery log failed", exc_info=True)
+                _record_sqs_delivery_failure(sns_publisher, context, subscriber, batch=False)
                 return
             return orig_sqs(self, context, subscriber)
 
@@ -238,17 +265,8 @@ def _install() -> None:
         def sqs_batch_publish(self, context, subscriber):
             queue_arn = subscriber.get("Endpoint") or ""
             topic_arn = subscriber.get("TopicArn") or ""
-            if not _queue_allows_sns(queue_arn, topic_arn):
-                try:
-                    for message in getattr(context, "messages", None) or []:
-                        sns_publisher.store_delivery_log(
-                            message,
-                            subscriber,
-                            success=False,
-                            topic_attributes=getattr(context, "topic_attributes", None),
-                        )
-                except Exception:
-                    LOG.debug("SNS→SQS batch deny delivery log failed", exc_info=True)
+            if not _sns_may_deliver_to_queue(queue_arn, topic_arn):
+                _record_sqs_delivery_failure(sns_publisher, context, subscriber, batch=True)
                 return
             return orig_batch(self, context, subscriber)
 
@@ -269,7 +287,10 @@ def _install() -> None:
         _implicit_kms(self, context)
 
     enforcer.IAMEnforcementHandler.__call__ = _call
-    LOG.info("awsbox resource policy hooks applied (SNS→SQS queue policy gated)")
+    LOG.info(
+        "awsbox resource policy hooks applied "
+        "(SNS→SQS queue policy + alias/aws/sqs KMS gated)"
+    )
 
 
 _install()
