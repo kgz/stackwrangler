@@ -267,15 +267,40 @@ else
 	bad "ECS bridge subnet VPC attach failed"
 fi
 
-# --- IGW restores public egress ---
+# --- IGW restores public egress (must keep localemu-vpc-* #386) ---
+VPC_A_NET="localemu-vpc-${VPC_A}"
+NET_ID_BEFORE="$(docker network inspect "$VPC_A_NET" --format '{{.Id}}' 2>/dev/null || true)"
+[[ -n "$NET_ID_BEFORE" ]] || {
+	echo "FAIL: VPC A docker network ${VPC_A_NET} missing before IGW attach" >&2
+	exit 1
+}
 IGW="$(aws ec2 create-internet-gateway --query InternetGateway.InternetGatewayId --output text)"
 aws ec2 attach-internet-gateway --internet-gateway-id "$IGW" --vpc-id "$VPC_A" >/dev/null
+NET_ID_AFTER="$(docker network inspect "$VPC_A_NET" --format '{{.Id}}' 2>/dev/null || true)"
+if [[ -n "$NET_ID_AFTER" && "$NET_ID_AFTER" == "$NET_ID_BEFORE" ]]; then
+	ok "IGW attach kept Docker network ${VPC_A_NET}"
+else
+	bad "IGW attach orphaned/recreated ${VPC_A_NET} (before=${NET_ID_BEFORE:-none} after=${NET_ID_AFTER:-none})"
+fi
 aws ec2 create-route --route-table-id "$RTB_A" --destination-cidr-block 0.0.0.0/0 \
 	--gateway-id "$IGW" >/dev/null
 sleep 2
 OUT="$(invoke "$PAYLOAD_PUBLIC")"
 echo "$OUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("public",{}).get("ok") is True, d; print("public ok")' \
 	&& ok "IGW route restores public egress" || bad "public still blocked with IGW: $OUT"
+# Detach must also leave the bridge in place (#386).
+aws ec2 delete-route --route-table-id "$RTB_A" --destination-cidr-block 0.0.0.0/0 >/dev/null 2>&1 || true
+aws ec2 detach-internet-gateway --internet-gateway-id "$IGW" --vpc-id "$VPC_A" >/dev/null
+NET_ID_DETACH="$(docker network inspect "$VPC_A_NET" --format '{{.Id}}' 2>/dev/null || true)"
+if [[ -n "$NET_ID_DETACH" && "$NET_ID_DETACH" == "$NET_ID_BEFORE" ]]; then
+	ok "IGW detach kept Docker network ${VPC_A_NET}"
+else
+	bad "IGW detach orphaned/recreated ${VPC_A_NET} (before=${NET_ID_BEFORE:-none} after=${NET_ID_DETACH:-none})"
+fi
+# Re-attach + default route for any follow-on checks that expect public egress.
+aws ec2 attach-internet-gateway --internet-gateway-id "$IGW" --vpc-id "$VPC_A" >/dev/null
+aws ec2 create-route --route-table-id "$RTB_A" --destination-cidr-block 0.0.0.0/0 \
+	--gateway-id "$IGW" >/dev/null 2>&1 || true
 
 # --- lambda-vpc-smoke still green (mapped host.docker.internal) ---
 if [[ "${AWSBOX_VPC_EGRESS_SKIP_LAMBDA_VPC:-0}" != "1" ]]; then

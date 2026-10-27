@@ -32,3 +32,4 @@ It creates a VPC, subnet and security group, deploys a Lambda with `VpcConfig`, 
 - Mappings apply to every function, so a Lambda **without** `VpcConfig` can also reach mapped hosts. In AWS it couldn't reach private addresses ([#187](https://github.com/kgz/awsl/issues/187)).
 - NLB/ALB forwarding is covered by [elbv2.md](elbv2.md). This smoke still hits the host directly.
 - `DeleteVpc` removes the VPC's Docker network (disconnecting leftover endpoints first).
+- `AttachInternetGateway` does not recreate or orphan `localemu-vpc-*`; route-table egress is covered by [vpc-routing.md](vpc-routing.md) and `./bin/vpc-egress-smoke.sh` ([#386](https://github.com/kgz/awsl/issues/386)).
