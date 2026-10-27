@@ -30,6 +30,9 @@ echo "==> Lambda deploy zip"
 echo "==> Lambda authz (sad: missing s3:PutObject)"
 ./bin/lambda-authz-smoke.sh
 
+echo "==> Lambda trust aws:SourceAccount"
+./bin/lambda-trust-condition-smoke.sh
+
 echo "==> Lambda VPC → host services (sad: unmapped name)"
 ./bin/lambda-vpc-smoke.sh
 
