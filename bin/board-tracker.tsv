@@ -258,3 +258,4 @@
 367	backlog	Debt: UpdateEventSourceMapping VT/MC (from #363)
 363	done	SQS/ESM validation: VT vs timeout, MaximumConcurrency>=2, retention 60-14d
 364	done	API Gateway HTTP_PROXY form-urlencoded body passthrough
+378	backlog	Debt: aws:SourceArn in service trust policies (from #374)

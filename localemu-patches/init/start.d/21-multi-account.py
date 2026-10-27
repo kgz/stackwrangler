@@ -11,6 +11,7 @@ only when the encoded account is one we were configured with (or the default).
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import logging
 import os
@@ -22,7 +23,8 @@ LOG = logging.getLogger("localemu.awsbox.multi_account")
 _ACCOUNT = re.compile(r"\d{12}")
 _ASSUME_ACTIONS = {"sts:AssumeRole", "sts:*", "*"}
 _SUPPORTED_CONDITIONS = {
-    "StringEquals": {"sts:ExternalId", "sts:externalId"},
+    "StringEquals": {"sts:ExternalId", "sts:externalId", "aws:SourceAccount"},
+    "StringLike": {"aws:SourceAccount"},
     "Bool": {"aws:MultiFactorAuthPresent"},
 }
 
@@ -47,11 +49,15 @@ def _conditions_hold(
     conditions: object,
     external_id: str | None,
     serial_number: str | None,
+    source_account: str | None = None,
 ) -> bool:
     """True when every condition is one we evaluate and it matches.
 
     An operator or key we do not know makes the statement not apply, so an
     Allow with ``aws:PrincipalOrgID`` does not become an allow.
+
+    ``source_account`` is only set when an AWS service assumes the role; a
+    missing key never satisfies ``aws:SourceAccount``.
     """
     if not conditions:
         return True
@@ -69,6 +75,18 @@ def _conditions_hold(
                     if external_id not in expected:
                         return False
                 elif external_id != expected:
+                    return False
+            elif key == "aws:SourceAccount":
+                if not source_account:
+                    return False
+                patterns = expected if isinstance(expected, list) else [expected]
+                if operator == "StringLike":
+                    if not any(
+                        isinstance(p, str) and fnmatch.fnmatchcase(source_account, p)
+                        for p in patterns
+                    ):
+                        return False
+                elif source_account not in patterns:
                     return False
             elif key == "aws:MultiFactorAuthPresent" and str(expected).lower() == "true":
                 if not serial_number:
@@ -125,6 +143,22 @@ def _install_s3_isolation() -> None:
         )
 
     S3Provider.head_bucket = head_bucket
+
+
+def _source_account(role: object, service_principal: str | None) -> str | None:
+    """Account AWS reports as aws:SourceAccount when a service assumes the role.
+
+    Lambda only accepts roles from the function's own account, so the role's
+    account stands in for the function account (the assume call carries no
+    other account).
+    """
+    if not service_principal:
+        return None
+    arn = str(getattr(role, "arn", "") or "")
+    parts = arn.split(":")
+    if len(parts) >= 5 and _ACCOUNT.fullmatch(parts[4]):
+        return parts[4]
+    return None
 
 
 def _install_trust() -> None:
@@ -185,6 +219,7 @@ def _install_trust() -> None:
                 statement.get("Condition") or {},
                 external_id,
                 serial_number,
+                _source_account(role, service_principal),
             ):
                 continue
             if effect == "deny":
