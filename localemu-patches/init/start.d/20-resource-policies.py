@@ -14,6 +14,10 @@ publisher so a deny becomes a silent drop (same as AWS).
 Queues encrypted with the AWS-managed key ``alias/aws/sqs`` also fail
 delivery on real AWS (that key policy cannot grant SNS); we refuse those
 the same way and record a failed delivery.
+
+A customer-managed key is refused the same way unless its key policy
+Allows ``sns.amazonaws.com`` both ``kms:GenerateDataKey`` and
+``kms:Decrypt``. A grant on the key still delivers.
 """
 
 from __future__ import annotations
@@ -214,10 +218,18 @@ def _install() -> None:
         return False
 
     def _sns_may_deliver_to_queue(queue_arn: str, topic_arn: str) -> bool:
-        """Queue policy + KMS: refuse ``alias/aws/sqs`` (AWS cannot grant SNS)."""
+        """Queue policy + KMS: refuse ``alias/aws/sqs`` and CMKs without an SNS grant."""
         if rp.sns_blocked_by_sqs_aws_managed_kms(queue_arn):
             LOG.info(
                 "SNS→SQS refuse: queue %s uses alias/aws/sqs (source=%s)",
+                queue_arn,
+                topic_arn,
+            )
+            return False
+        if rp.sns_blocked_by_sqs_cmk_policy(queue_arn, topic_arn):
+            LOG.info(
+                "SNS→SQS refuse: queue %s CMK policy does not allow "
+                "sns.amazonaws.com kms:GenerateDataKey and kms:Decrypt (source=%s)",
                 queue_arn,
                 topic_arn,
             )
@@ -289,7 +301,7 @@ def _install() -> None:
     enforcer.IAMEnforcementHandler.__call__ = _call
     LOG.info(
         "awsbox resource policy hooks applied "
-        "(SNS→SQS queue policy + alias/aws/sqs KMS gated)"
+        "(SNS→SQS queue policy + alias/aws/sqs and CMK key policy gated)"
     )
 
 

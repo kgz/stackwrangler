@@ -935,11 +935,47 @@ def is_aws_managed_sqs_kms_key(key_id: str | None) -> bool:
 def sns_blocked_by_sqs_aws_managed_kms(queue_arn: str) -> bool:
     """AWS cannot deliver SNS→SQS when the queue uses ``alias/aws/sqs``.
 
-    The AWS-managed SQS CMK policy is not editable, so SNS never gets
+    The AWS-managed SQS key policy is not editable, so SNS never gets
     ``kms:GenerateDataKey`` / ``kms:Decrypt``. SQS-managed SSE
-    (``SqsManagedSseEnabled``) and customer CMKs are not blocked here.
+    (``SqsManagedSseEnabled``) is not blocked here. Customer CMKs are
+    evaluated by ``sns_blocked_by_sqs_cmk_policy``.
     """
     return is_aws_managed_sqs_kms_key(sqs_queue_kms_master_key_id(queue_arn))
+
+
+def sns_blocked_by_sqs_cmk_policy(queue_arn: str, topic_arn: str) -> bool:
+    """True when the queue CMK does not Allow ``sns.amazonaws.com``.
+
+    Both ``kms:GenerateDataKey`` and ``kms:Decrypt`` must be allowed
+    (``kms:GenerateDataKey*`` and ``kms:*`` count). No ``KmsMasterKeyId``
+    and ``alias/aws/*`` are not customer CMKs. A missing key or a policy
+    that does not Allow both actions blocks delivery. Account-root
+    delegation does not grant the SNS service principal.
+    """
+    customer = _customer_managed_key(sqs_queue_kms_master_key_id(queue_arn))
+    if not customer:
+        return False
+    parts = queue_arn.split(":") if isinstance(queue_arn, str) else []
+    region = parts[3] if len(parts) > 3 and parts[3] else "us-east-1"
+    account_id = parts[4] if len(parts) > 4 and parts[4] else "000000000000"
+    policy = load_kms_key_policy(customer, account_id, region)
+    key_arn = canonical_kms_arn(customer, account_id, region) or customer
+    # Account-root Allow is IAM delegation, not a grant to sns.amazonaws.com.
+    # The principal matcher treats :root as every caller in that account, so
+    # pass no account id and only Principal.Service / "*" can match.
+    for action in ("kms:GenerateDataKey", "kms:Decrypt"):
+        effect = evaluate_service_delivery(
+            "sns.amazonaws.com",
+            action,
+            key_arn,
+            policy,
+            topic_arn,
+            "",
+            region,
+        )
+        if effect != "allow":
+            return True
+    return False
 
 
 def _truthy(value: Any) -> bool:
