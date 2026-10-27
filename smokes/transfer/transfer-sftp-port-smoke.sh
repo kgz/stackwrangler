@@ -12,7 +12,9 @@ NAMES=(
 	"$PREFIX-other"
 	"$PREFIX-localstack-1"
 	"$PREFIX-sftp-1"
-	"$PREFIX-legacy"
+	"$PREFIX-foreign"
+	"$PREFIX-wrong-image"
+	"$PREFIX-ours"
 )
 PY_PID=""
 CHECK_OUT=""
@@ -58,6 +60,13 @@ run_holder() {
 	local name="$1" port="$2"
 	shift 2
 	docker run -d --name "$name" --pull=never -p "127.0.0.1:${port}:9" "$@" alpine:3.20 sleep 300 >/dev/null
+	wait_published "$name" "$port"
+}
+
+run_atmoz() {
+	local name="$1" port="$2"
+	shift 2
+	docker run -d --name "$name" --pull=never -p "127.0.0.1:${port}:22" "$@" atmoz/sftp:alpine smoke:smokepass:1001:1001:upload >/dev/null
 	wait_published "$name" "$port"
 }
 
@@ -115,29 +124,57 @@ assert_rc 0
 running "$PREFIX-localstack-1" || die "localstack holder was removed"
 docker rm -f "$PREFIX-localstack-1" >/dev/null
 
+OUR_PROJECT="$(compose_project_name)"
+[[ -n "$OUR_PROJECT" ]] || die "compose project name"
+[[ "$OUR_PROJECT" != "other-project" ]] || die "unexpected compose project name"
+
 port="$(pick_port "$port")"
 run_holder "$PREFIX-sftp-1" "$port"
 call_check "$port"
-assert_rc 0
-assert_grep "removing leftover sftp container ${PREFIX}-sftp-1"
-gone "$PREFIX-sftp-1"
+assert_rc 1
+assert_grep "$PREFIX-sftp-1"
+assert_grep "Created"
+running "$PREFIX-sftp-1" || die "name-only sftp container was removed"
+docker rm -f "$PREFIX-sftp-1" >/dev/null
 
 port="$(pick_port "$port")"
-run_holder "$PREFIX-legacy" "$port" \
+run_atmoz "$PREFIX-foreign" "$port" \
 	--label com.docker.compose.service=sftp \
-	--label com.docker.compose.project=awsl
+	--label com.docker.compose.project=other-project
+call_check "$port"
+assert_rc 1
+assert_grep "$PREFIX-foreign"
+running "$PREFIX-foreign" || die "other project's sftp container was removed"
+docker rm -f "$PREFIX-foreign" >/dev/null
+
+port="$(pick_port "$port")"
+run_holder "$PREFIX-wrong-image" "$port" \
+	--label com.docker.compose.service=sftp \
+	--label com.docker.compose.project="$OUR_PROJECT"
+call_check "$port"
+assert_rc 1
+assert_grep "$PREFIX-wrong-image"
+running "$PREFIX-wrong-image" || die "non-atmoz sftp container was removed"
+docker rm -f "$PREFIX-wrong-image" >/dev/null
+
+port="$(pick_port "$port")"
+run_atmoz "$PREFIX-ours" "$port" \
+	--label com.docker.compose.service=sftp \
+	--label com.docker.compose.project="$OUR_PROJECT"
 call_check "$port"
 assert_rc 0
-assert_grep "removing leftover sftp container ${PREFIX}-legacy"
-gone "$PREFIX-legacy"
+assert_grep "removing leftover sftp container ${PREFIX}-ours"
+gone "$PREFIX-ours"
 
 keep_port="$(pick_port $((port + 1)))"
-run_holder "$PREFIX-legacy" "$keep_port" --label com.docker.compose.service=sftp
+run_atmoz "$PREFIX-ours" "$keep_port" \
+	--label com.docker.compose.service=sftp \
+	--label com.docker.compose.project="$OUR_PROJECT"
 emu_port="$(pick_port $((keep_port + 1)))"
 call_check "$emu_port"
 assert_rc 0
-running "$PREFIX-legacy" || die "legacy sftp on another port was removed"
-docker rm -f "$PREFIX-legacy" >/dev/null
+running "$PREFIX-ours" || die "this project's sftp on another port was removed"
+docker rm -f "$PREFIX-ours" >/dev/null
 
 py_port="$(pick_port $((emu_port + 1)))"
 python3 - "$py_port" <<'PY' &

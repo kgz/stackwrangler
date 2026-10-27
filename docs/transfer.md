@@ -9,7 +9,7 @@ Optional `legacy-sftp` compose profile (atmoz password target on `:2223`) remain
 
 That branch published atmoz SFTP as compose service `sftp` on `127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}` (container `awsl-sftp-1`). This tree runs inbound SFTP inside the emulator on the same host port. The password target is the `legacy-sftp` profile on `127.0.0.1:${AWSBOX_LEGACY_SFTP_HOST_PORT:-2223}`.
 
-`./bin/awsbox up` removes a leftover compose `sftp` container (or a container named `*-sftp-N`) when it still holds the emulator port, then starts the stack. If something else holds the port, `up` exits before Compose runs and names the holder. A failed bind otherwise leaves the emulator container `Created` and the rest of the stack down.
+`./bin/awsbox up` removes this checkout's leftover `sftp` container when it still holds the emulator port: compose project label matches this directory, service `sftp`, image `atmoz/sftp`. Another project's SFTP server, or anything else on the port, makes `up` exit before Compose and names the holder. A failed bind otherwise leaves the emulator container `Created` and the rest of the stack down.
 
 ```bash
 docker rm -f awsl-sftp-1

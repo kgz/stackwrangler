@@ -115,12 +115,40 @@ host_port_busy() {
 	ss -H -ltn "sport = :${port}" 2>/dev/null | grep -q .
 }
 
+# Compose project for this checkout (directory name, or COMPOSE_PROJECT_NAME / compose name:).
+compose_project_name() {
+	local raw name
+	if ! command -v python3 >/dev/null 2>&1; then
+		return 1
+	fi
+	if ! raw="$("${COMPOSE[@]}" config --format json 2>/dev/null)"; then
+		return 1
+	fi
+	name="$(printf '%s' "$raw" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("name") or "")' 2>/dev/null)" || return 1
+	[[ -n "$name" ]] || return 1
+	printf '%s\n' "$name"
+}
+
+# beta atmoz/sftp from this compose project. Other projects stay up; up names them and stops.
+beta_sftp_image() {
+	case "$1" in
+		atmoz/sftp | atmoz/sftp:* | atmoz/sftp@* | */atmoz/sftp | */atmoz/sftp:* | */atmoz/sftp@*)
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
 # beta/full-flow-v1 kept compose service sftp on the emulator host port.
-# Drop that leftover. Anything else must fail before compose leaves localstack Created.
+# Drop only that leftover from this checkout. Anything else must fail before
+# compose leaves localstack Created.
 free_sftp_host_port() {
-	local port id_raw fmt inspect_out id name service host_ip host_port short
+	local port id_raw fmt inspect_out id name service project image host_ip host_port short
 	local -a id_list=() remove_ids=() remove_names=() blocker_desc=()
-	local seen_remove=" " seen_block=" " localstack_holds=0 joined i attempt
+	local -a cand_ids=() cand_names=() cand_services=() cand_projects=() cand_images=()
+	local seen_cand=" " seen_block=" " localstack_holds=0 joined i attempt our_project
 	port="$(sftp_host_port)"
 	if [[ ! "$port" =~ ^[1-9][0-9]*$ ]]; then
 		echo "error: AWSBOX_SFTP_HOST_PORT must be a port number (got ${port})" >&2
@@ -135,13 +163,13 @@ free_sftp_host_port() {
 	fi
 	if [[ -n "$id_raw" ]]; then
 		mapfile -t id_list <<< "$id_raw"
-		# Unit separator keeps an empty compose-service label from collapsing under IFS.
-		fmt='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{range $conf}}{{$.Id}}{{printf "\x1f"}}{{$.Name}}{{printf "\x1f"}}{{if $.Config.Labels}}{{index $.Config.Labels "com.docker.compose.service"}}{{end}}{{printf "\x1f"}}{{.HostIp}}{{printf "\x1f"}}{{.HostPort}}{{printf "\n"}}{{end}}{{end}}{{end}}'
+		# Unit separator keeps an empty compose label from collapsing under IFS.
+		fmt='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{range $conf}}{{$.Id}}{{printf "\x1f"}}{{$.Name}}{{printf "\x1f"}}{{if $.Config.Labels}}{{index $.Config.Labels "com.docker.compose.service"}}{{end}}{{printf "\x1f"}}{{if $.Config.Labels}}{{index $.Config.Labels "com.docker.compose.project"}}{{end}}{{printf "\x1f"}}{{$.Config.Image}}{{printf "\x1f"}}{{.HostIp}}{{printf "\x1f"}}{{.HostPort}}{{printf "\n"}}{{end}}{{end}}{{end}}'
 		if ! inspect_out="$(docker inspect --format "$fmt" "${id_list[@]}")"; then
 			echo "error: docker inspect failed" >&2
 			return 1
 		fi
-		while IFS=$'\x1f' read -r id name service host_ip host_port; do
+		while IFS=$'\x1f' read -r id name service project image host_ip host_port; do
 			[[ -n "$id" ]] || continue
 			[[ "$host_port" == "$port" ]] || continue
 			case "$host_ip" in
@@ -153,26 +181,37 @@ free_sftp_host_port() {
 				localstack_holds=1
 				continue
 			fi
-			if [[ "$service" == "sftp" || "$short" =~ -sftp-[0-9]+$ ]]; then
-				case "$seen_remove" in
-					*" $id "*) ;;
-					*)
-						seen_remove+="$id "
-						remove_ids+=("$id")
-						remove_names+=("$short")
-						;;
-				esac
-				continue
-			fi
-			case "$seen_block" in
+			case "$seen_cand" in
 				*" $id "*) ;;
 				*)
-					seen_block+="$id "
-					blocker_desc+=("container ${short} (${id:0:12})")
+					seen_cand+="$id "
+					cand_ids+=("$id")
+					cand_names+=("$short")
+					cand_services+=("$service")
+					cand_projects+=("$project")
+					cand_images+=("$image")
 					;;
 			esac
 		done <<< "$inspect_out"
 	fi
+	our_project=""
+	if [[ ${#cand_ids[@]} -gt 0 ]]; then
+		our_project="$(compose_project_name 2>/dev/null || true)"
+	fi
+	for i in "${!cand_ids[@]}"; do
+		if [[ -n "$our_project" && "${cand_services[$i]}" == "sftp" && "${cand_projects[$i]}" == "$our_project" ]] && beta_sftp_image "${cand_images[$i]}"; then
+			remove_ids+=("${cand_ids[$i]}")
+			remove_names+=("${cand_names[$i]}")
+			continue
+		fi
+		case "$seen_block" in
+			*" ${cand_ids[$i]} "*) ;;
+			*)
+				seen_block+="${cand_ids[$i]} "
+				blocker_desc+=("container ${cand_names[$i]} (${cand_ids[$i]:0:12})")
+				;;
+		esac
+	done
 	if [[ ${#blocker_desc[@]} -gt 0 ]]; then
 		joined="$(printf '%s, ' "${blocker_desc[@]}")"
 		joined="${joined%, }"
