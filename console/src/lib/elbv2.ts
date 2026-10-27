@@ -1,7 +1,11 @@
 import {
   DescribeLoadBalancersCommand,
+  DescribeTargetGroupsCommand,
+  DescribeTargetHealthCommand,
   ElasticLoadBalancingV2Client,
   type LoadBalancer,
+  type TargetGroup,
+  type TargetHealthDescription,
 } from '@aws-sdk/client-elastic-load-balancing-v2'
 import { emuCreds } from './emu'
 
@@ -23,4 +27,18 @@ export async function describeLoadBalancer(
   return out.LoadBalancers?.[0] ?? null
 }
 
-export type { LoadBalancer }
+export async function listTargetGroups(): Promise<TargetGroup[]> {
+  const out = await client().send(new DescribeTargetGroupsCommand({}))
+  return out.TargetGroups ?? []
+}
+
+export async function describeTargetHealth(
+  targetGroupArn: string,
+): Promise<TargetHealthDescription[]> {
+  const out = await client().send(
+    new DescribeTargetHealthCommand({ TargetGroupArn: targetGroupArn }),
+  )
+  return out.TargetHealthDescriptions ?? []
+}
+
+export type { LoadBalancer, TargetGroup, TargetHealthDescription }

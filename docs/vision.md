@@ -12,6 +12,8 @@ Living product intent. Not a ticket; update when the destination shifts.
 
 Learning target: a large org can tell a dev “implement X” (e.g. VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS) and they can **run that stack locally** — including failing for the same mistakes as AWS — before touching a real account.
 
+**Architecture map (experimental):** not a hand-drawn / AI happy-path slide. The console map should surface **what the account actually wires** — attachments, routes, load-balancer targets, task roles, IAM `Allow`s — including the extra accesses nobody put on the diagram. Review that before shipping. Prefer over-showing a proven edge to inventing a tidy story. Gaps (e.g. app→RDS with no SG/IAM proof) stay labeled gaps, not fake arrows. Seed a **one-account platform** (NLB/edge EC2 → Lambda/S3 → ECS mesh → several RDS), not thousands of AWS tenants: [docs/architecture-map-org.md](architecture-map-org.md) (`./bin/architecture-map-seed.sh`).
+
 End state: `./bin/awsbox up` once — endpoints + profile `local` — then real apps run on that account.
 
 ## What “fully working” means

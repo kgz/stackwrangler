@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Architecture map — awsbox</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+  <style>
+    /* Page-scoped map surface — grey rose only; no AWS service hues */
+    .arch-page {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: calc(100vh - var(--topnav-h) - var(--fav-h) - var(--service-h) - 48px);
+    }
+    .arch-toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .arch-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--awsbox-border);
+      border-radius: 2px;
+      background: var(--awsbox-panel);
+      color: var(--awsbox-body);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+    .arch-live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--awsbox-success);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--awsbox-success) 25%, transparent);
+    }
+    .arch-live[data-state="paused"] .arch-live-dot {
+      background: var(--awsbox-quiet);
+      box-shadow: none;
+    }
+    .arch-toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .arch-toggles legend {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    .arch-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--awsbox-border);
+      border-radius: 2px;
+      background: var(--awsbox-chrome);
+      color: var(--awsbox-body);
+      font-weight: 550;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      user-select: none;
+    }
+    .arch-toggle:hover {
+      background: var(--awsbox-raised);
+      color: var(--awsbox-fg);
+    }
+    .arch-toggle[aria-pressed="true"] {
+      background: var(--awsbox-selected);
+      border-color: color-mix(in oklch, var(--awsbox-accent) 45%, var(--awsbox-border));
+      color: var(--awsbox-link);
+    }
+    .arch-toggle input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .arch-density {
+      display: inline-flex;
+      border: 1px solid var(--awsbox-border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .arch-density button {
+      height: 32px;
+      padding: 0 12px;
+      border: 0;
+      border-right: 1px solid var(--awsbox-border);
+      background: var(--awsbox-chrome);
+      color: var(--awsbox-body);
+      font-weight: 550;
+      letter-spacing: 0.02em;
+    }
+    .arch-density button:last-child {
+      border-right: 0;
+    }
+    .arch-density button[aria-pressed="true"] {
+      background: var(--awsbox-selected);
+      color: var(--awsbox-link);
+    }
+    .arch-density button:hover {
+      background: var(--awsbox-raised);
+    }
+
+    .arch-stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 0fr;
+      gap: 0;
+      flex: 1;
+      min-height: 520px;
+      transition: grid-template-columns 120ms ease;
+    }
+    .arch-stage.is-open {
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+      gap: 16px;
+    }
+
+    .arch-canvas-wrap {
+      position: relative;
+      background: var(--awsbox-panel);
+      border: 1px solid var(--awsbox-border);
+      border-radius: 4px;
+      overflow: auto;
+      min-height: 520px;
+    }
+    .arch-canvas {
+      position: relative;
+      min-width: 980px;
+      min-height: 560px;
+      padding: 28px 32px 40px;
+    }
+    .arch-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 12px;
+      text-align: center;
+      color: var(--awsbox-quiet);
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+    }
+
+    .arch-flow {
+      display: grid;
+      grid-template-columns: 88px 24px 120px 24px minmax(0, 1fr);
+      align-items: stretch;
+      gap: 0;
+      min-height: 480px;
+    }
+    .arch-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+    .arch-arrow-col {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--awsbox-quiet);
+    }
+    .arch-arrow-col svg {
+      width: 24px;
+      height: 48px;
+    }
+
+    .arch-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 96px;
+      padding: 6px 4px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--awsbox-fg);
+      cursor: pointer;
+      font: inherit;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .arch-node:hover {
+      background: var(--awsbox-raised);
+      border-color: var(--awsbox-border);
+    }
+    .arch-node:focus-visible {
+      outline: 2px solid var(--awsbox-accent);
+      outline-offset: 1px;
+    }
+    .arch-node.is-selected {
+      background: var(--awsbox-selected);
+      border-color: color-mix(in oklch, var(--awsbox-accent) 55%, var(--awsbox-border));
+    }
+    .arch-node.is-new {
+      animation: arch-pulse 1.2s ease 2;
+    }
+    @keyframes arch-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 transparent; }
+      40% { box-shadow: 0 0 0 3px color-mix(in oklch, var(--awsbox-accent) 40%, transparent); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .arch-node.is-new { animation: none; }
+      .arch-stage { transition: none; }
+    }
+    .arch-node-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 4px;
+      border: 1px solid var(--awsbox-border);
+      background: var(--awsbox-chrome);
+      color: var(--awsbox-link);
+    }
+    .arch-node-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+    .arch-node-label {
+      font-size: 12px;
+      line-height: 1.3;
+      text-align: center;
+      color: var(--awsbox-body);
+      max-width: 100%;
+    }
+    .arch-node.is-selected .arch-node-label {
+      color: var(--awsbox-fg);
+    }
+
+    .arch-vpc {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr 0.95fr 0.7fr;
+      gap: 12px;
+      width: 100%;
+      min-height: 460px;
+      padding: 28px 16px 16px;
+      border: 1px solid var(--awsbox-border);
+      border-radius: 4px;
+      background: color-mix(in oklch, var(--awsbox-page) 55%, var(--awsbox-panel));
+    }
+    .arch-vpc-label {
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      font-size: 12px;
+      font-weight: 550;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--awsbox-quiet);
+    }
+    .arch-band {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+      padding: 28px 8px 16px;
+      border: 1px dashed color-mix(in oklch, var(--awsbox-border) 80%, var(--awsbox-accent));
+      border-radius: 4px;
+      background: color-mix(in oklch, var(--awsbox-panel) 70%, transparent);
+      min-height: 400px;
+    }
+    .arch-band-label {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      color: var(--awsbox-quiet);
+      text-align: center;
+      line-height: 1.3;
+    }
+    .arch-band-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      margin-top: 12px;
+      width: 100%;
+    }
+    .arch-band-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .arch-cluster {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 220px;
+      padding: 12px 8px 10px;
+      border: 1px solid var(--awsbox-border);
+      border-radius: 4px;
+      background: var(--awsbox-chrome);
+    }
+    .arch-cluster-title {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--awsbox-quiet);
+    }
+
+    .arch-side-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 36px;
+      padding-top: 48px;
+    }
+    .arch-link-hint {
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      color: var(--awsbox-quiet);
+      font-style: italic;
+    }
+    .arch-dash-bridge {
+      position: absolute;
+      right: calc(0.7fr + 12px);
+      top: 38%;
+      width: 48px;
+      height: 2px;
+      border-top: 1px dashed var(--awsbox-quiet);
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .arch-connectors {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+    .arch-connectors .primary {
+      stroke: color-mix(in oklch, var(--awsbox-quiet) 75%, var(--awsbox-fg));
+      stroke-width: 1.5;
+      fill: none;
+      marker-end: url(#arch-arrow);
+    }
+    .arch-connectors .secondary {
+      stroke: var(--awsbox-quiet);
+      stroke-width: 1.25;
+      stroke-dasharray: 4 4;
+      fill: none;
+      marker-end: url(#arch-arrow-muted);
+    }
+
+    .arch-empty-tier {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 1;
+      width: 100%;
+      padding: 24px 12px;
+      text-align: center;
+      color: var(--awsbox-quiet);
+      font-size: 13px;
+    }
+    .arch-empty-tier strong {
+      color: var(--awsbox-fg);
+      font-weight: 550;
+      font-size: 14px;
+    }
+
+    /* Layer / density visibility */
+    body[data-density="sparse"] .arch-node[data-sparse="hide"],
+    body[data-density="sparse"] .arch-cluster[data-sparse="hide"],
+    body[data-density="sparse"] .arch-band-row[data-sparse="hide"],
+    body[data-density="sparse"] [data-layer].is-layer-hidden,
+    body:not([data-layer-edge="on"]) [data-layer="edge"],
+    body:not([data-layer-networking="on"]) [data-layer="networking"],
+    body:not([data-layer-compute="on"]) [data-layer="compute"],
+    body:not([data-layer-data="on"]) [data-layer="data"],
+    body:not([data-layer-messaging="on"]) [data-layer="messaging"] {
+      display: none !important;
+    }
+    body[data-density="sparse"] .arch-empty-tier {
+      display: flex;
+    }
+    body[data-density="sparse"] .arch-band[data-band="public"] .arch-empty-tier {
+      display: none;
+    }
+    body[data-density="sparse"] .arch-side-stack .arch-link-hint {
+      display: none;
+    }
+
+    .arch-sheet {
+      display: none;
+      flex-direction: column;
+      background: var(--awsbox-panel);
+      border: 1px solid var(--awsbox-border);
+      border-radius: 4px;
+      min-height: 520px;
+      overflow: hidden;
+    }
+    .arch-stage.is-open .arch-sheet {
+      display: flex;
+    }
+    .arch-sheet-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--awsbox-hairline);
+    }
+    .arch-sheet-head h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--awsbox-fg);
+      letter-spacing: -0.01em;
+    }
+    .arch-sheet-type {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--awsbox-quiet);
+      letter-spacing: 0.02em;
+    }
+    .arch-sheet-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+    .arch-sheet .aws-kv > div {
+      grid-template-columns: 88px minmax(0, 1fr);
+      padding: 8px 0;
+    }
+    .arch-sheet-actions {
+      margin-top: auto;
+      padding-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .arch-sheet-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    .arch-placeholder {
+      color: var(--awsbox-quiet);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body
+  data-page="architecture-map"
+  data-nav="architecture-map"
+  data-service="architecture"
+  data-title="Architecture map"
+  data-crumb="Architecture map"
+  data-density="full"
+  data-layer-edge="on"
+  data-layer-networking="on"
+  data-layer-compute="on"
+  data-layer-data="on"
+  data-layer-messaging="on"
+>
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+      <div class="arch-page" data-od-id="architecture-page">
+        <h1 class="aws-h1" data-od-id="page-title">Architecture map</h1>
+        <p class="aws-desc" data-od-id="page-desc">
+          Live view of resources in this account, arranged as a three-tier web stack. Toggle layers, click a node for detail, or switch to a sparse account sample.
+        </p>
+
+        <div class="arch-toolbar-row" data-od-id="arch-toolbar">
+          <div class="arch-live" id="arch-live" data-state="live" data-od-id="live-indicator" title="Mock live feed">
+            <span class="arch-live-dot" aria-hidden="true"></span>
+            <span>Live</span>
+          </div>
+
+          <fieldset class="arch-toggles" data-od-id="layer-toggles">
+            <legend>Layers</legend>
+            <label class="arch-toggle" aria-pressed="true"><input type="checkbox" data-layer-toggle="edge" checked /> Edge</label>
+            <label class="arch-toggle" aria-pressed="true"><input type="checkbox" data-layer-toggle="networking" checked /> Networking</label>
+            <label class="arch-toggle" aria-pressed="true"><input type="checkbox" data-layer-toggle="compute" checked /> Compute</label>
+            <label class="arch-toggle" aria-pressed="true"><input type="checkbox" data-layer-toggle="data" checked /> Data</label>
+            <label class="arch-toggle" aria-pressed="true"><input type="checkbox" data-layer-toggle="messaging" checked /> Messaging</label>
+          </fieldset>
+
+          <div class="spacer" style="flex:1"></div>
+
+          <div class="arch-density" role="group" aria-label="Map density" data-od-id="density-control">
+            <button type="button" id="density-full" aria-pressed="true">Full stack</button>
+            <button type="button" id="density-sparse" aria-pressed="false">Sparse account</button>
+          </div>
+
+          <button type="button" class="btn btn-normal" id="btn-simulate-appear" data-od-id="btn-simulate-appear">Simulate appear</button>
+          <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        </div>
+
+        <div class="arch-stage" id="arch-stage" data-od-id="arch-stage">
+          <div class="arch-canvas-wrap" data-od-id="map-canvas">
+            <div class="arch-canvas" id="arch-canvas">
+              <svg class="arch-connectors" aria-hidden="true">
+                <defs>
+                  <marker id="arch-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M0 0 L10 5 L0 10 z" fill="var(--awsbox-quiet)" />
+                  </marker>
+                  <marker id="arch-arrow-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M0 0 L10 5 L0 10 z" fill="var(--awsbox-quiet)" />
+                  </marker>
+                </defs>
+                <path id="conn-users-cf" class="primary" d="" />
+                <path id="conn-cf-vpc" class="primary" d="" />
+                <path id="conn-cf-s3" class="primary" d="" />
+                <path id="conn-igw-alb" class="primary" d="" />
+                <path id="conn-alb-ecs" class="primary" d="" />
+                <path id="conn-ecs-aurora" class="primary" d="" />
+                <path id="conn-ecs-role" class="secondary" d="" />
+                <path id="conn-ecs-sqs" class="secondary" d="" />
+              </svg>
+
+              <div class="arch-flow" data-od-id="arch-flow">
+                <div class="arch-col" data-od-id="col-users">
+                  <button type="button" class="arch-node" data-node="users" data-layer="edge" data-od-id="node-users">
+                    <span class="arch-node-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="2.5"/><circle cx="15" cy="8" r="2.5"/><path d="M4.5 18c.5-2.5 2.4-4 4.5-4s4 1.5 4.5 4"/><path d="M10.5 18c.5-2.5 2.4-4 4.5-4s4 1.5 4.5 4"/></svg>
+                    </span>
+                    <span class="arch-node-label">Users</span>
+                  </button>
+                </div>
+
+                <div class="arch-arrow-col" aria-hidden="true" data-layer="edge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12h14"/><path d="M14 7l5 5-5 5"/></svg>
+                </div>
+
+                <div class="arch-col" data-od-id="col-edge">
+                  <button type="button" class="arch-node" data-node="cloudfront" data-layer="edge" data-od-id="node-cloudfront">
+                    <span class="arch-node-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/><path d="M7 7l10 10M17 7L7 17"/></svg>
+                    </span>
+                    <span class="arch-node-label">CloudFront Distribution</span>
+                  </button>
+                  <button type="button" class="arch-node" data-node="s3-static" data-layer="edge" data-sparse="hide" data-od-id="node-s3">
+                    <span class="arch-node-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8l8-3 8 3v8l-8 3-8-3V8z"/><path d="M4 8l8 3 8-3M12 11v9"/></svg>
+                    </span>
+                    <span class="arch-node-label">Static Content (S3)</span>
+                  </button>
+                </div>
+
+                <div class="arch-arrow-col" aria-hidden="true" data-layer="edge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12h14"/><path d="M14 7l5 5-5 5"/></svg>
+                </div>
+
+                <div class="arch-vpc" data-od-id="vpc-container" data-node-host="vpc">
+                  <span class="arch-vpc-label">VPC</span>
+
+                  <div class="arch-band" data-band="public" data-od-id="band-public">
+                    <span class="arch-band-label">Public Subnets (Multi-AZ)</span>
+                    <div class="arch-band-stack">
+                      <button type="button" class="arch-node" data-node="igw" data-layer="networking" data-od-id="node-igw">
+                        <span class="arch-node-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 14c2-4 5-6 8-6s6 2 8 6"/><path d="M12 8V4M9 5l3-2 3 2"/><circle cx="12" cy="16" r="2"/></svg>
+                        </span>
+                        <span class="arch-node-label">Internet Gateway</span>
+                      </button>
+                      <div class="arch-band-row" data-layer="networking" data-sparse="hide">
+                        <button type="button" class="arch-node" data-node="nat-az1" data-layer="networking" data-od-id="node-nat-az1">
+                          <span class="arch-node-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11l3-3 3 3M9 14l3 3 3-3"/></svg>
+                          </span>
+                          <span class="arch-node-label">NAT Gateway AZ1</span>
+                        </button>
+                        <button type="button" class="arch-node" data-node="nat-az2" data-layer="networking" data-od-id="node-nat-az2">
+                          <span class="arch-node-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11l3-3 3 3M9 14l3 3 3-3"/></svg>
+                          </span>
+                          <span class="arch-node-label">NAT Gateway AZ2</span>
+                        </button>
+                      </div>
+                      <button type="button" class="arch-node" data-node="alb" data-layer="networking" data-od-id="node-alb">
+                        <span class="arch-node-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M12 8v2M12 14v2M8 12h2M14 12h2"/></svg>
+                        </span>
+                        <span class="arch-node-label">Application Load Balancer</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="arch-band" data-band="app" data-od-id="band-app">
+                    <span class="arch-band-label">Private Subnets — Application Tier (Multi-AZ)</span>
+                    <div class="arch-empty-tier" data-od-id="empty-app">
+                      <strong>No compute in private tiers</strong>
+                      <span>This sparse sample has a VPC and public edge only. App services have not been created.</span>
+                    </div>
+                    <div class="arch-cluster" data-layer="compute" data-sparse="hide" data-od-id="ecs-cluster-box">
+                      <span class="arch-cluster-title">ECS Cluster</span>
+                      <div class="arch-band-row">
+                        <button type="button" class="arch-node" data-node="ecs-c1" data-layer="compute" data-od-id="node-ecs-c1">
+                          <span class="arch-node-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+                          </span>
+                          <span class="arch-node-label">Container 1</span>
+                        </button>
+                        <button type="button" class="arch-node" data-node="ecs-c2" data-layer="compute" data-od-id="node-ecs-c2">
+                          <span class="arch-node-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+                          </span>
+                          <span class="arch-node-label">Container 2</span>
+                        </button>
+                      </div>
+                      <button type="button" class="arch-node" data-node="fargate" data-layer="compute" data-od-id="node-fargate">
+                        <span class="arch-node-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="6" width="14" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
+                        </span>
+                        <span class="arch-node-label">Fargate</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="arch-band" data-band="data" data-od-id="band-data">
+                    <span class="arch-band-label">Private Subnets — Data Tier (Multi-AZ)</span>
+                    <div class="arch-empty-tier" data-od-id="empty-data">
+                      <strong>No data tier resources</strong>
+                      <span>Aurora and other data stores are absent in this sparse account.</span>
+                    </div>
+                    <div class="arch-band-stack" data-sparse="hide">
+                      <button type="button" class="arch-node" data-node="aurora" data-layer="data" data-od-id="node-aurora">
+                        <span class="arch-node-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7"/><path d="M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg>
+                        </span>
+                        <span class="arch-node-label">Aurora PostgreSQL Cluster</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="arch-side-stack" data-od-id="side-services">
+                    <button type="button" class="arch-node" data-node="task-role" data-layer="messaging" data-sparse="hide" data-od-id="node-task-role">
+                      <span class="arch-node-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="4" width="14" height="16" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M8.5 16c.8-1.5 2-2.2 3.5-2.2s2.7.7 3.5 2.2"/><path d="M16 8.5l1.5-1.5"/></svg>
+                      </span>
+                      <span class="arch-node-label">ECS Task Role</span>
+                    </button>
+                    <span class="arch-link-hint" data-layer="messaging" data-sparse="hide">uses</span>
+                    <button type="button" class="arch-node" data-node="sqs" data-layer="messaging" data-sparse="hide" data-od-id="node-sqs">
+                      <span class="arch-node-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M7 10h10M7 14h6"/><path d="M16 13l3 1-3 1"/></svg>
+                      </span>
+                      <span class="arch-node-label">SQS Queue</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="arch-caption">Three-tier web application — live account map</div>
+            </div>
+          </div>
+
+          <aside class="arch-sheet" id="arch-sheet" data-od-id="detail-sheet" aria-live="polite">
+            <div class="arch-sheet-head">
+              <div>
+                <h2 id="sheet-title">Select a resource</h2>
+                <p class="arch-sheet-type" id="sheet-type">Click a node on the map</p>
+              </div>
+              <button type="button" class="btn-icon" id="sheet-close" aria-label="Close detail" data-od-id="sheet-close">✕</button>
+            </div>
+            <div class="arch-sheet-body">
+              <p class="arch-placeholder" id="sheet-empty">No resource selected.</p>
+              <dl class="aws-kv" id="sheet-kv" hidden data-od-id="sheet-kv">
+                <div><dt>Name</dt><dd id="sheet-name">—</dd></div>
+                <div><dt>ID / ARN</dt><dd><code class="aws-mono" id="sheet-arn">—</code></dd></div>
+                <div><dt>Status</dt><dd id="sheet-status">—</dd></div>
+                <div><dt>AZ</dt><dd id="sheet-az">—</dd></div>
+              </dl>
+              <div class="arch-sheet-actions" id="sheet-actions" hidden>
+                <a class="btn btn-primary" id="sheet-open" href="#" data-od-id="sheet-open-console">Open in console</a>
+                <button type="button" class="btn btn-normal" id="sheet-open-disabled" hidden disabled aria-disabled="true" title="To implement" data-od-id="sheet-open-disabled">Open in console</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      const NODES = {
+        users: {
+          name: "Users",
+          type: "External",
+          arn: "—",
+          status: "N/A",
+          az: "—",
+          href: null,
+          statusClass: "",
+        },
+        cloudfront: {
+          name: "lab-cdn",
+          type: "CloudFront distribution",
+          arn: "arn:aws:cloudfront::445772506418:distribution/E1LABCDN9X",
+          status: "Deployed",
+          az: "Global",
+          href: null,
+          statusClass: "aws-status-success",
+        },
+        "s3-static": {
+          name: "lab-static-assets",
+          type: "S3 bucket",
+          arn: "arn:aws:s3:::lab-static-assets",
+          status: "Available",
+          az: "ap-southeast-2",
+          href: "general-purpose-buckets.html",
+          statusClass: "aws-status-success",
+        },
+        igw: {
+          name: "igw-0labgate",
+          type: "Internet gateway",
+          arn: "igw-0labgate01a2b3c4",
+          status: "Attached",
+          az: "—",
+          href: "ec2-vpc-detail.html",
+          statusClass: "aws-status-success",
+        },
+        "nat-az1": {
+          name: "nat-0az1lab",
+          type: "NAT gateway",
+          arn: "nat-0az1lab01a2b3c4",
+          status: "Available",
+          az: "ap-southeast-2a",
+          href: null,
+          statusClass: "aws-status-success",
+        },
+        "nat-az2": {
+          name: "nat-0az2lab",
+          type: "NAT gateway",
+          arn: "nat-0az2lab01a2b3c4",
+          status: "Available",
+          az: "ap-southeast-2b",
+          href: null,
+          statusClass: "aws-status-success",
+        },
+        alb: {
+          name: "lab-alb",
+          type: "Application load balancer",
+          arn: "arn:aws:elasticloadbalancing:ap-southeast-2:445772506418:loadbalancer/app/lab-alb/50dc6c495c0c9188",
+          status: "Active",
+          az: "ap-southeast-2a, ap-southeast-2b",
+          href: "ec2-load-balancers.html",
+          statusClass: "aws-status-success",
+        },
+        "ecs-c1": {
+          name: "web-1",
+          type: "ECS task / container",
+          arn: "arn:aws:ecs:ap-southeast-2:445772506418:task/awsbox-lab/1a2b3c4d5e6f",
+          status: "RUNNING",
+          az: "ap-southeast-2a",
+          href: "ecs-cluster-detail.html",
+          statusClass: "aws-status-success",
+        },
+        "ecs-c2": {
+          name: "web-2",
+          type: "ECS task / container",
+          arn: "arn:aws:ecs:ap-southeast-2:445772506418:task/awsbox-lab/9f8e7d6c5b4a",
+          status: "RUNNING",
+          az: "ap-southeast-2b",
+          href: "ecs-cluster-detail.html",
+          statusClass: "aws-status-success",
+        },
+        fargate: {
+          name: "Fargate capacity",
+          type: "ECS launch type",
+          arn: "arn:aws:ecs:ap-southeast-2:445772506418:cluster/awsbox-lab",
+          status: "ACTIVE",
+          az: "ap-southeast-2a, ap-southeast-2b",
+          href: "ecs-cluster-detail.html",
+          statusClass: "aws-status-success",
+        },
+        aurora: {
+          name: "lab-aurora",
+          type: "Aurora PostgreSQL cluster",
+          arn: "arn:aws:rds:ap-southeast-2:445772506418:cluster:lab-aurora",
+          status: "Available",
+          az: "ap-southeast-2a (writer), ap-southeast-2b",
+          href: "rds-instance-detail.html",
+          statusClass: "aws-status-success",
+        },
+        "task-role": {
+          name: "ecsTaskRole",
+          type: "IAM role",
+          arn: "arn:aws:iam::445772506418:role/ecsTaskRole",
+          status: "Active",
+          az: "—",
+          href: null,
+          statusClass: "aws-status-success",
+        },
+        sqs: {
+          name: "lab-jobs",
+          type: "SQS queue",
+          arn: "arn:aws:sqs:ap-southeast-2:445772506418:lab-jobs",
+          status: "Active",
+          az: "ap-southeast-2",
+          href: null,
+          statusClass: "aws-status-success",
+        },
+      };
+
+      const body = document.body;
+      const stage = document.getElementById("arch-stage");
+      const sheetEmpty = document.getElementById("sheet-empty");
+      const sheetKv = document.getElementById("sheet-kv");
+      const sheetActions = document.getElementById("sheet-actions");
+      const sheetOpen = document.getElementById("sheet-open");
+      const sheetOpenDisabled = document.getElementById("sheet-open-disabled");
+      let selectedId = null;
+
+      function setDensity(mode) {
+        body.setAttribute("data-density", mode);
+        document.getElementById("density-full").setAttribute("aria-pressed", mode === "full" ? "true" : "false");
+        document.getElementById("density-sparse").setAttribute("aria-pressed", mode === "sparse" ? "true" : "false");
+        requestAnimationFrame(drawConnectors);
+      }
+
+      document.getElementById("density-full").addEventListener("click", function () {
+        setDensity("full");
+      });
+      document.getElementById("density-sparse").addEventListener("click", function () {
+        setDensity("sparse");
+        clearSelection();
+      });
+
+      document.querySelectorAll("[data-layer-toggle]").forEach(function (input) {
+        const label = input.closest(".arch-toggle");
+        input.addEventListener("change", function () {
+          const layer = input.getAttribute("data-layer-toggle");
+          body.setAttribute("data-layer-" + layer, input.checked ? "on" : "off");
+          label.setAttribute("aria-pressed", input.checked ? "true" : "false");
+          if (selectedId) {
+            const node = document.querySelector('.arch-node[data-node="' + selectedId + '"]');
+            if (!node || node.offsetParent === null) clearSelection();
+          }
+          requestAnimationFrame(drawConnectors);
+        });
+      });
+
+      function clearSelection() {
+        selectedId = null;
+        document.querySelectorAll(".arch-node.is-selected").forEach(function (n) {
+          n.classList.remove("is-selected");
+        });
+        stage.classList.remove("is-open");
+        document.getElementById("sheet-title").textContent = "Select a resource";
+        document.getElementById("sheet-type").textContent = "Click a node on the map";
+        sheetEmpty.hidden = false;
+        sheetKv.hidden = true;
+        sheetActions.hidden = true;
+      }
+
+      function selectNode(id) {
+        const data = NODES[id];
+        if (!data) return;
+        selectedId = id;
+        document.querySelectorAll(".arch-node.is-selected").forEach(function (n) {
+          n.classList.remove("is-selected");
+        });
+        const btn = document.querySelector('.arch-node[data-node="' + id + '"]');
+        if (btn) btn.classList.add("is-selected");
+
+        stage.classList.add("is-open");
+        document.getElementById("sheet-title").textContent = data.name;
+        document.getElementById("sheet-type").textContent = data.type;
+        sheetEmpty.hidden = true;
+        sheetKv.hidden = false;
+        sheetActions.hidden = false;
+        document.getElementById("sheet-name").textContent = data.name;
+        document.getElementById("sheet-arn").textContent = data.arn;
+        document.getElementById("sheet-az").textContent = data.az;
+
+        const statusEl = document.getElementById("sheet-status");
+        statusEl.innerHTML = "";
+        const badge = document.createElement("span");
+        badge.className = "aws-status" + (data.statusClass ? " " + data.statusClass : "");
+        badge.textContent = data.status;
+        statusEl.appendChild(badge);
+
+        if (data.href) {
+          sheetOpen.hidden = false;
+          sheetOpen.href = data.href;
+          sheetOpenDisabled.hidden = true;
+        } else {
+          sheetOpen.hidden = true;
+          sheetOpenDisabled.hidden = false;
+        }
+        requestAnimationFrame(drawConnectors);
+      }
+
+      document.querySelectorAll(".arch-node[data-node]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          selectNode(btn.getAttribute("data-node"));
+        });
+      });
+
+      document.getElementById("sheet-close").addEventListener("click", clearSelection);
+
+      document.getElementById("btn-simulate-appear").addEventListener("click", function () {
+        if (body.getAttribute("data-density") === "sparse") setDensity("full");
+        const messaging = body.querySelector('[data-layer-toggle="messaging"]');
+        if (messaging && !messaging.checked) {
+          messaging.checked = true;
+          messaging.dispatchEvent(new Event("change"));
+        }
+        const sqs = document.querySelector('[data-node="sqs"]');
+        if (!sqs) return;
+        sqs.classList.remove("is-new");
+        void sqs.offsetWidth;
+        sqs.classList.add("is-new");
+        selectNode("sqs");
+        window.setTimeout(function () {
+          sqs.classList.remove("is-new");
+        }, 2400);
+      });
+
+      function centerOf(el, root) {
+        if (!el || el.offsetParent === null) return null;
+        const a = el.getBoundingClientRect();
+        const b = root.getBoundingClientRect();
+        return {
+          x: a.left - b.left + a.width / 2,
+          y: a.top - b.top + a.height / 2,
+        };
+      }
+
+      function setPath(id, from, to, curve) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!from || !to) {
+          el.setAttribute("d", "");
+          return;
+        }
+        if (curve === "vert") {
+          const mid = (from.y + to.y) / 2;
+          el.setAttribute("d", "M" + from.x + " " + from.y + " C " + from.x + " " + mid + ", " + to.x + " " + mid + ", " + to.x + " " + to.y);
+        } else {
+          const mid = (from.x + to.x) / 2;
+          el.setAttribute("d", "M" + from.x + " " + from.y + " C " + mid + " " + from.y + ", " + mid + " " + to.y + ", " + to.x + " " + to.y);
+        }
+      }
+
+      function drawConnectors() {
+        const root = document.getElementById("arch-canvas");
+        const icon = function (id) {
+          const n = document.querySelector('[data-node="' + id + '"] .arch-node-icon');
+          return centerOf(n, root);
+        };
+        setPath("conn-users-cf", icon("users"), icon("cloudfront"));
+        setPath("conn-cf-vpc", icon("cloudfront"), icon("igw") || icon("alb"));
+        setPath("conn-cf-s3", icon("cloudfront"), icon("s3-static"), "vert");
+        setPath("conn-igw-alb", icon("igw"), icon("alb"), "vert");
+        setPath("conn-alb-ecs", icon("alb"), icon("ecs-c1") || icon("fargate"));
+        setPath("conn-ecs-aurora", icon("ecs-c1") || icon("fargate"), icon("aurora"));
+        setPath("conn-ecs-role", icon("ecs-c2") || icon("fargate"), icon("task-role"));
+        setPath("conn-ecs-sqs", icon("fargate") || icon("ecs-c1"), icon("sqs"));
+      }
+
+      window.addEventListener("resize", drawConnectors);
+      window.addEventListener("load", function () {
+        requestAnimationFrame(drawConnectors);
+      });
+      requestAnimationFrame(drawConnectors);
+    })();
+  </script>
+</body>
+</html>

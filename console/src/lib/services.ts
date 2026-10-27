@@ -9,6 +9,7 @@ export type AppId =
   | 'rds'
   | 'ecs'
   | 'ec2'
+  | 'architecture'
 
 export type ServiceDef = {
   id: AppId
@@ -29,9 +30,17 @@ export const SERVICES: ServiceDef[] = [
   { id: 'rds', abbr: 'RDS', name: 'RDS', desc: 'Managed relational databases', to: '/rds' },
   { id: 'ecs', abbr: 'ECS', name: 'Elastic Container Service', desc: 'Run containerized applications', to: '/ecs' },
   { id: 'ec2', abbr: 'EC2', name: 'EC2', desc: 'Virtual servers in the cloud', to: '/ec2' },
+  {
+    id: 'architecture',
+    abbr: 'Map',
+    name: 'Architecture',
+    desc: 'Live account topology map',
+    to: '/architecture',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
+  if (pathname.startsWith('/architecture')) return 'architecture'
   if (pathname.startsWith('/iam')) return 'iam'
   if (pathname.startsWith('/lambda')) return 'lambda'
   if (pathname.startsWith('/logs')) return 'logs'
@@ -76,6 +85,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'Instances', to: '/ec2' },
   { type: 'Feature', label: 'VPCs', to: '/ec2/vpcs' },
   { type: 'Feature', label: 'Load balancers', to: '/ec2/load-balancers' },
+  { type: 'Feature', label: 'Architecture map', to: '/architecture' },
 ]
 
 const CRUMBS: Record<string, string> = {
@@ -104,6 +114,7 @@ const CRUMBS: Record<string, string> = {
   '/ec2': 'Instances',
   '/ec2/vpcs': 'Your VPCs',
   '/ec2/load-balancers': 'Load balancers',
+  '/architecture': 'Architecture map',
 }
 
 export function crumbFor(pathname: string): string {

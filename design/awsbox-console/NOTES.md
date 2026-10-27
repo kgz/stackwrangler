@@ -93,6 +93,36 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 1. Create / Actions / Refresh disabled with `title="To implement"` (design-only).
 2. React follow-ups: #347 (S3), #349 (services), full Create/detail #350+.
 
+## Issue #389 — Architecture map (experimental)
+
+### Mode
+- Live account topology as a console surface (not a slide): three-tier nested map + right detail sheet
+- Structure from `refs/architecture-map-example.png`; paint from grey rose (`brand-spec.md`)
+- Designs only — HTML under `screens/`; React `console/` untouched
+
+### Interactions
+| Control | Behaviour |
+|---|---|
+| Layers (Edge / Networking / Compute / Data / Messaging) | Show/hide node groups |
+| Live | Mock indicator (not a real feed) |
+| Full stack / Sparse account | Same page; sparse = VPC + public edge + honest empty app/data copy |
+| Simulate appear | Ensures messaging layer visible, pulses SQS, opens sheet |
+| Node click | Right detail sheet — name, ARN (mono), status, AZ |
+| Open in console | Real href when a screen exists; else `disabled` + `title="To implement"` |
+| Refresh | `disabled` + `title="To implement"` |
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `screens/architecture-map.html` | Map canvas + detail sheet + toggles |
+| Shared `assets/console.js` | Architecture service nav, search, favorites “Map” |
+
+### Gaps
+1. Live is mock-only (no LocalEmu topology feed).
+2. CloudFront / NAT / IAM role / SQS / Users have no deep-link screens — Open disabled.
+3. Connectors are approximate SVG paths (not a layout engine).
+4. React implementation deferred until design accepted.
+
 ## Run
 
 ```bash

@@ -262,6 +262,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  architecture: {
+    title: 'Architecture',
+    sections: [
+      {
+        id: 'arch-explore',
+        label: 'Explore',
+        items: [
+          {
+            label: 'Architecture map',
+            to: '/architecture',
+            active: exactly('/architecture'),
+          },
+        ],
+      },
+    ],
+  },
 }
 
 const MARKETPLACE_NAV = [
