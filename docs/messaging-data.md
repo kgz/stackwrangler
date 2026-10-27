@@ -11,7 +11,7 @@ docker compose up -d --force-recreate localstack
 |---------|-------|-----|
 | SQS | `sqs-smoke.sh` | `sqs-authz-smoke.sh` |
 | SNS | `sns-smoke.sh` | `sns-authz-smoke.sh` |
-| SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter) | same (wrong/missing queue `SourceArn`; unsubscribe) |
+| SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter) | same (wrong/missing queue `SourceArn`; `alias/aws/sqs` KMS; unsubscribe) |
 | EventBridge | `events-smoke.sh` | `events-authz-smoke.sh` |
 | DynamoDB | `dynamodb-smoke.sh` | `dynamodb-authz-smoke.sh` |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs); gaps [#306](https://github.com/kgz/awsl/issues/306), [#307](https://github.com/kgz/awsl/issues/307) |

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# SNS -> SQS fan-out: envelope, raw delivery, filter policy, queue-policy authz (sad), unsubscribe.
+# SNS -> SQS fan-out: envelope, raw delivery, filter policy, queue-policy authz (sad),
+# alias/aws/sqs KMS refuse (sad), unsubscribe.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # Caller-exported AWSBOX_* wins over .env (parallel worktrees / alt ports).
@@ -17,10 +18,11 @@ TOPIC="awsbox-fanout-${TS}"
 QOK="awsbox-fanout-ok-${TS}"
 QDENY="awsbox-fanout-deny-${TS}"
 QNOPOL="awsbox-fanout-nopol-${TS}"
+QAWSSQS="awsbox-fanout-awssqs-${TS}"
 KEEP="${AWSBOX_AUTHZ_KEEP:-0}"
 WAIT="${AWSBOX_FANOUT_WAIT:-8}"   # seconds to wait for a delivery
 QUIET="${AWSBOX_FANOUT_QUIET:-4}" # seconds to wait before declaring "not delivered"
-TOPIC_ARN="" QOK_URL="" QDENY_URL="" QNOPOL_URL="" SUBS=()
+TOPIC_ARN="" QOK_URL="" QDENY_URL="" QNOPOL_URL="" QAWSSQS_URL="" SUBS=()
 aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }
 cleanup() {
 	[[ "$KEEP" == "1" ]] && return 0
@@ -29,6 +31,7 @@ cleanup() {
 	[[ -n "$QOK_URL" ]] && aws sqs delete-queue --queue-url "$QOK_URL" >/dev/null 2>&1 || true
 	[[ -n "$QDENY_URL" ]] && aws sqs delete-queue --queue-url "$QDENY_URL" >/dev/null 2>&1 || true
 	[[ -n "$QNOPOL_URL" ]] && aws sqs delete-queue --queue-url "$QNOPOL_URL" >/dev/null 2>&1 || true
+	[[ -n "$QAWSSQS_URL" ]] && aws sqs delete-queue --queue-url "$QAWSSQS_URL" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -131,9 +134,29 @@ B="$(recv "$QNOPOL_URL" "$QUIET")"
 ok "queue with no policy: message NOT delivered"
 recv "$QOK_URL" "$WAIT" >/dev/null
 
-# 6. unsubscribe stops delivery
+# 6. sad: queue encrypted with alias/aws/sqs — AWS cannot grant SNS on that key
+QAWSSQS_URL="$(aws sqs create-queue --queue-name "$QAWSSQS" \
+	--attributes KmsMasterKeyId=alias/aws/sqs --query QueueUrl --output text)"
+QAWSSQS_ARN="$(aws sqs get-queue-attributes --queue-url "$QAWSSQS_URL" \
+	--attribute-names QueueArn --query Attributes.QueueArn --output text)"
+KMS_ATTR="$(aws sqs get-queue-attributes --queue-url "$QAWSSQS_URL" \
+	--attribute-names KmsMasterKeyId --query Attributes.KmsMasterKeyId --output text)"
+[[ "$KMS_ATTR" == *aws/sqs* ]] || fail "expected KmsMasterKeyId alias/aws/sqs, got '$KMS_ATTR'"
+aws sqs set-queue-attributes --queue-url "$QAWSSQS_URL" --attributes "$(policy "$QAWSSQS_ARN" "$TOPIC_ARN")"
+KSUB="$(aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$QAWSSQS_ARN" \
+	--attributes RawMessageDelivery=true --query SubscriptionArn --output text)"
+SUBS+=("$KSUB")
+[[ "$KSUB" == arn:aws:sns:* ]] || fail "alias/aws/sqs subscribe returned '$KSUB'"
+aws sns publish --topic-arn "$TOPIC_ARN" --message "awssqs-${TS}" \
+	--message-attributes '{"kind":{"DataType":"String","StringValue":"keep"}}' >/dev/null
+B="$(recv "$QAWSSQS_URL" "$QUIET")"
+[[ -z "$B" ]] || fail "alias/aws/sqs: SNS delivered despite AWS-managed SQS key: '$B'"
+ok "queue with KmsMasterKeyId=alias/aws/sqs: message NOT delivered"
+recv "$QOK_URL" "$WAIT" >/dev/null
+
+# 7. unsubscribe stops delivery
 aws sns unsubscribe --subscription-arn "$SUB"
-SUBS=("$DSUB" "$NSUB")
+SUBS=("$DSUB" "$NSUB" "$KSUB")
 aws sns publish --topic-arn "$TOPIC_ARN" --message "after-${TS}" \
 	--message-attributes '{"kind":{"DataType":"String","StringValue":"keep"}}' >/dev/null
 B="$(recv "$QOK_URL" "$QUIET")"
