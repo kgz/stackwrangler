@@ -106,13 +106,13 @@ Smoke: `./bin/rds-smoke.sh` · sad: `./bin/rds-authz-smoke.sh` (needs host `psql
 ## Messaging & integration
 
 | SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [docs/sqs.md](docs/sqs.md) |
-| SNS | publish · SQS fan-out (queue policy / `SourceArn`; refuse `alias/aws/sqs`) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS | publish · MaximumMessageSize ≤1 MiB · SQS fan-out (queue policy / `SourceArn`; refuse `alias/aws/sqs`) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/sns-max-message-size-smoke.sh` |
 | EventBridge | put-events + rule · scheduled `rate()` rule → Lambda (disable stops it; no invoke permission = no fire) | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) · [slice](examples/serverless-v3-rest/slices/schedule/README.md) · cadence [#317](https://github.com/kgz/awsl/issues/317) |
 | Step Functions | Pass state machine | — | **Working** (CLI) · console [#175](https://github.com/kgz/awsl/issues/175) |
 | Kinesis | put/get records | — | **Working** (CLI) · console [#178](https://github.com/kgz/awsl/issues/178) |
 | MSK / SES / AppSync | — | — | **Backlog** |
 
-Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` (+ `*-authz-smoke.sh`)
+Smoke: `./bin/sqs-smoke.sh` · `./bin/sns-smoke.sh` · `./bin/sns-max-message-size-smoke.sh` · `./bin/sns-sqs-fanout-smoke.sh` · `./bin/events-smoke.sh` · `./bin/sfn-smoke.sh` · `./bin/kinesis-smoke.sh` · `./bin/dynamodb-depth-smoke.sh` · `./bin/events-schedule-smoke.sh` · `./bin/sqs-lambda-dlq-smoke.sh` (+ `*-authz-smoke.sh`)
 
 
 ## Security & identity

@@ -262,3 +262,5 @@
 370	in-review	SNS refuse alias/aws/sqs for SQS encryption
 384	backlog	Debt: SNS→SQS CMK key policy (from #370)
 369	in-review	Lambda VpcConfig startup timeout + DeleteVpc docker network leak
+373	in-review	SNS MaximumMessageSize up to 1 MiB
+387	backlog	Debt: SNS large-topic subscription protocol limits (from #373)
