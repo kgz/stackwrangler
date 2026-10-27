@@ -245,10 +245,85 @@ def _patch_container_restart() -> None:
     ensure_restart_watcher()
 
 
+def _disconnect_vpc_endpoints(network_name: str) -> None:
+    """Force-disconnect every endpoint so ``docker network rm`` can succeed (#369)."""
+    from localemu.utils.docker_utils import DOCKER_CLIENT
+
+    try:
+        net_info = DOCKER_CLIENT.inspect_network(network_name) or {}
+    except Exception:
+        return
+    containers = net_info.get("Containers") or {}
+    if not isinstance(containers, dict):
+        return
+    for cid, info in containers.items():
+        name = ""
+        if isinstance(info, dict):
+            name = str(info.get("Name") or "")
+        for endpoint in (cid, name):
+            if not endpoint:
+                continue
+            try:
+                DOCKER_CLIENT.disconnect_container_from_network(
+                    network_name, endpoint
+                )
+                break
+            except Exception:
+                try:
+                    # docker-py force=True when the endpoint is sticky
+                    import docker
+
+                    docker.from_env().networks.get(network_name).disconnect(
+                        endpoint, force=True
+                    )
+                    break
+                except Exception:
+                    LOG.debug(
+                        "disconnect %s from %s failed",
+                        endpoint,
+                        network_name,
+                        exc_info=True,
+                    )
+
+
+def _patch_delete_vpc_network() -> None:
+    """DeleteVpc must drop localemu-vpc-* even when Lambda/ECS endpoints linger."""
+    from localemu.services.ec2.docker.vpc_network import (
+        VPC_NETWORK_PREFIX,
+        VpcNetworkManager,
+    )
+    from localemu.utils.docker_utils import DOCKER_CLIENT
+
+    original = VpcNetworkManager.delete_vpc_network
+
+    def delete_vpc_network(self, vpc_id: str) -> None:
+        network_name = f"{VPC_NETWORK_PREFIX}{vpc_id}"
+        _disconnect_vpc_endpoints(network_name)
+        original(self, vpc_id)
+        # Upstream swallows delete failures (active endpoints). Retry once.
+        try:
+            DOCKER_CLIENT.inspect_network(network_name)
+        except Exception:
+            return
+        _disconnect_vpc_endpoints(network_name)
+        try:
+            DOCKER_CLIENT.delete_network(network_name)
+            LOG.info("Deleted Docker network for VPC %s (retry)", vpc_id)
+        except Exception:
+            LOG.warning(
+                "Docker network %s still present after DeleteVpc",
+                network_name,
+                exc_info=True,
+            )
+
+    VpcNetworkManager.delete_vpc_network = delete_vpc_network
+
+
 _patch_routes()
 _patch_launch()
 _patch_nat_and_peering()
 _patch_lambda()
 _patch_vpc_endpoint()
 _patch_container_restart()
+_patch_delete_vpc_network()
 LOG.info("awsbox vpc route enforcement installed")
