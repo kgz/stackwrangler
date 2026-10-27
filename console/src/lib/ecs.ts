@@ -1,6 +1,7 @@
 import {
   DescribeClustersCommand,
   DescribeServicesCommand,
+  DescribeTaskDefinitionCommand,
   DescribeTasksCommand,
   ECSClient,
   ListClustersCommand,
@@ -9,6 +10,7 @@ import {
   type Cluster,
   type Service,
   type Task,
+  type TaskDefinition,
 } from '@aws-sdk/client-ecs'
 import { emuCreds } from './emu'
 
@@ -65,4 +67,13 @@ export async function describeTasks(
   return out.tasks ?? []
 }
 
-export type { Cluster, Service, Task }
+export async function describeTaskDefinition(
+  taskDefinition: string,
+): Promise<TaskDefinition | null> {
+  const out = await client().send(
+    new DescribeTaskDefinitionCommand({ taskDefinition }),
+  )
+  return out.taskDefinition ?? null
+}
+
+export type { Cluster, Service, Task, TaskDefinition }

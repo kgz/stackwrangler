@@ -22,6 +22,7 @@ import { EcsClustersPage } from './pages/EcsClustersPage'
 import { Ec2InstancesPage } from './pages/Ec2InstancesPage'
 import { LoadBalancersPage } from './pages/LoadBalancersPage'
 import { VpcsPage } from './pages/VpcsPage'
+import { ArchitectureMapPage } from './pages/ArchitectureMapPage'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
       <Routes>
         <Route element={<Shell />}>
           <Route index element={<BucketsPage />} />
+          <Route path="architecture" element={<ArchitectureMapPage />} />
           <Route path="buckets/:name" element={<BucketObjectsPage />} />
           <Route path="iam" element={<IamUsersPage />} />
           <Route path="lambda" element={<LambdaFunctionsPage />} />

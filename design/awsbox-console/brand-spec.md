@@ -1,6 +1,6 @@
 # Brand spec — awsbox grey rose
 
-Source: `design/awsbox/DESIGN.md` + `design/awsbox/tokens.css`. Dense dark operations console; same skeleton as AWS Console, different skin.
+Source: `design/awsbox/DESIGN.md` + `tokens.css` + `refs/architecture-map-example.png` (layout language only). Dense dark operations console; same skeleton as AWS Console, different skin.
 
 ## System (one sentence)
 
@@ -34,3 +34,4 @@ Chrome surfaces (not in the six, still binding): `--chrome: #1C1C1C`, `--raised:
 3. Active nav: 3px accent bar + selected wash; inactive = body copy.
 4. Dense console spacing: 32px controls, 40px rows, 2px/4px radii — not marketing cards.
 5. Mark is an 18px rounded square with accent stroke and a vertical slot — no smile/arrow.
+6. Architecture map: nested containers (edge → VPC → public / app / data Multi-AZ bands); labels under icons; solid arrows for traffic; dashed for roles/queues; icons are monoline grey-rose, never AWS service-hue fills.

@@ -58,6 +58,8 @@
     { type: "Service", label: "RDS", href: "rds-databases.html" },
     { type: "Service", label: "ECS", href: "ecs-clusters.html" },
     { type: "Service", label: "EC2", href: "ec2-instances.html" },
+    { type: "Service", label: "Architecture", href: "architecture-map.html" },
+    { type: "Feature", label: "Architecture map", href: "architecture-map.html" },
     { type: "Feature", label: "General purpose buckets", href: "general-purpose-buckets.html" },
     { type: "Feature", label: "Directory buckets", href: "directory-buckets.html" },
     { type: "Feature", label: "Table buckets", href: "table-buckets.html" },
@@ -289,6 +291,19 @@
       ],
       foot: [],
     },
+    architecture: {
+      label: "Architecture",
+      home: "architecture-map.html",
+      tree: [
+        {
+          id: "arch-explore",
+          label: "Explore",
+          open: true,
+          items: [{ id: "architecture-map", label: "Architecture map", href: "architecture-map.html" }],
+        },
+      ],
+      foot: [],
+    },
   };
 
   const ACTIVE_SERVICE = SERVICE_DEFS[SERVICE] || SERVICE_DEFS.s3;
@@ -444,6 +459,7 @@
     ["IAM", "IAM", "iam-users.html"],
     ["λ", "Lambda", "lambda-functions.html"],
     ["S3", "S3", "general-purpose-buckets.html"],
+    ["Map", "Architecture", "architecture-map.html"],
   ]
     .map(([abbr, name, href]) =>
       href
@@ -526,6 +542,7 @@
       ["CFN", "CloudFormation", "Model and provision resources", "cloudformation-stacks.html"],
       ["EC2", "EC2", "Virtual servers in the cloud", "ec2-instances.html"],
       ["RDS", "RDS", "Managed relational databases", "rds-databases.html"],
+      ["Map", "Architecture", "Live account topology map", "architecture-map.html"],
     ]
       .map(([abbr, name, desc, href], i) =>
         href
