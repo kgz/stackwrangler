@@ -5,6 +5,9 @@ LocalEmu hard-codes 256 KiB. Real AWS defaults to 256 KiB and allows opt-in up t
 
 Publish size uses a ContextVar-backed limit object so concurrent requests with
 different topic caps do not clobber a process-global MAXIMUM_MESSAGE_LENGTH.
+
+Topics with MaximumMessageSize > 256 KiB only allow firehose / sqs / lambda
+subscriptions (≤100) — AWS large-message payload rules (#387).
 """
 
 from __future__ import annotations
@@ -18,6 +21,8 @@ _ATTR = "MaximumMessageSize"
 _DEFAULT = 262_144  # 256 KiB
 _MIN = 1_024
 _MAX = 1_048_576  # 1 MiB
+_LARGE_TOPIC_PROTOCOLS = frozenset({"sqs", "lambda", "firehose"})
+_LARGE_TOPIC_SUB_LIMIT = 100
 
 _limit_var: contextvars.ContextVar[int] = contextvars.ContextVar(
     "awsbox_sns_maximum_message_length",
@@ -111,6 +116,68 @@ def _try_topic_limit(provider, context, topic_arn, target_arn) -> int:
         return _DEFAULT
 
 
+def _subscription_store(provider, topic_arn, context):
+    from localemu.services.sns.utils import parse_and_validate_topic_arn
+
+    parsed = parse_and_validate_topic_arn(topic_arn)
+    return provider.get_store(parsed["account"], parsed["region"])
+
+
+def _topic_subscription_protocols(provider, topic, context, topic_arn) -> list[str]:
+    store = _subscription_store(provider, topic_arn, context)
+    protocols: list[str] = []
+    for sub_arn in topic.get("subscriptions") or []:
+        sub = store.subscriptions.get(sub_arn) or {}
+        proto = sub.get("Protocol")
+        if proto:
+            protocols.append(proto)
+    return protocols
+
+
+def _raise_if_large_topic_subs_invalid(protocols: list[str]) -> None:
+    from localemu.aws.api.sns import InvalidParameterException
+
+    if len(protocols) > _LARGE_TOPIC_SUB_LIMIT:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Topics with MaximumMessageSize "
+            f"greater than {_DEFAULT} cannot have more than {_LARGE_TOPIC_SUB_LIMIT} subscriptions"
+        )
+    bad = sorted({p for p in protocols if p not in _LARGE_TOPIC_PROTOCOLS})
+    if bad:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Topics with MaximumMessageSize "
+            f"greater than {_DEFAULT} only support SQS, Lambda, and Firehose subscriptions"
+        )
+
+
+def _raise_if_subscribe_disallowed(provider, context, topic_arn, protocol, endpoint) -> None:
+    from localemu.aws.api.sns import InvalidParameterException
+
+    topic = provider._get_topic(topic_arn, context)
+    if _topic_limit(topic) <= _DEFAULT:
+        return
+
+    if protocol not in _LARGE_TOPIC_PROTOCOLS:
+        raise InvalidParameterException(
+            "Invalid parameter: Protocol Reason: Topics with MaximumMessageSize "
+            f"greater than {_DEFAULT} only support SQS, Lambda, and Firehose subscriptions"
+        )
+
+    store = _subscription_store(provider, topic_arn, context)
+    topic_subscriptions = topic.get("subscriptions") or []
+    for sub_arn in topic_subscriptions:
+        sub = store.subscriptions.get(sub_arn) or {}
+        if sub.get("Endpoint") == endpoint:
+            # Idempotent re-subscribe; stock handler decides attributes mismatch.
+            return
+
+    if len(topic_subscriptions) >= _LARGE_TOPIC_SUB_LIMIT:
+        raise InvalidParameterException(
+            "Invalid parameter: TopicArn Reason: Topics with MaximumMessageSize "
+            f"greater than {_DEFAULT} cannot have more than {_LARGE_TOPIC_SUB_LIMIT} subscriptions"
+        )
+
+
 def _patch() -> None:
     import localemu.services.sns.provider as sns_provider
     from localemu.services.sns.provider import SnsProvider
@@ -123,6 +190,7 @@ def _patch() -> None:
 
     orig_create = SnsProvider.create_topic
     orig_set = SnsProvider.set_topic_attributes
+    orig_subscribe = SnsProvider.subscribe
     orig_publish = SnsProvider.publish
     orig_publish_batch = SnsProvider.publish_batch
 
@@ -143,13 +211,40 @@ def _patch() -> None:
 
     def set_topic_attributes(self, context, topic_arn, attribute_name, attribute_value=None, **kwargs):
         if attribute_name == _ATTR:
-            attribute_value = str(_parse_maximum_message_size(attribute_value))
+            parsed = _parse_maximum_message_size(attribute_value)
+            attribute_value = str(parsed)
+            if parsed > _DEFAULT:
+                topic = self._get_topic(topic_arn, context)
+                protocols = _topic_subscription_protocols(self, topic, context, topic_arn)
+                _raise_if_large_topic_subs_invalid(protocols)
         return orig_set(
             self,
             context,
             topic_arn,
             attribute_name,
             attribute_value=attribute_value,
+            **kwargs,
+        )
+
+    def subscribe(
+        self,
+        context,
+        topic_arn,
+        protocol,
+        endpoint=None,
+        attributes=None,
+        return_subscription_arn=None,
+        **kwargs,
+    ):
+        _raise_if_subscribe_disallowed(self, context, topic_arn, protocol, endpoint)
+        return orig_subscribe(
+            self,
+            context,
+            topic_arn,
+            protocol,
+            endpoint=endpoint,
+            attributes=attributes,
+            return_subscription_arn=return_subscription_arn,
             **kwargs,
         )
 
@@ -205,10 +300,11 @@ def _patch() -> None:
 
     SnsProvider.create_topic = create_topic
     SnsProvider.set_topic_attributes = set_topic_attributes
+    SnsProvider.subscribe = subscribe
     SnsProvider.publish = publish
     SnsProvider.publish_batch = publish_batch
     SnsProvider._awsbox_sns_max_message_size = True
-    LOG.info("awsbox SNS MaximumMessageSize applied (ContextVar limit)")
+    LOG.info("awsbox SNS MaximumMessageSize + large-topic subscribe limits applied")
 
 
 _patch()

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # SNS MaximumMessageSize: default 256 KiB reject; opt-in 1 MiB publish + SQS raw delivery (#373).
+# Large-topic subscribe: only firehose/sqs/lambda; http/email/sms/application → InvalidParameter (#387).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 _PRESET_EP="${AWSBOX_IAM_ENDPOINT-}"
@@ -16,12 +17,16 @@ TOPIC="awsbox-sns-mms-${TS}"
 QUEUE="awsbox-sns-mms-q-${TS}"
 KEEP="${AWSBOX_SNS_KEEP:-0}"
 WAIT="${AWSBOX_FANOUT_WAIT:-8}"
-TOPIC_ARN="" QUEUE_URL="" SUB=""
+TOPIC_ARN="" QUEUE_URL="" SUB="" EXTRA_SUBS=()
 TMP="$(mktemp -d)"
 aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }
 cleanup() {
 	rm -rf "$TMP"
 	[[ "$KEEP" == "1" ]] && return 0
+	local s
+	for s in "${EXTRA_SUBS[@]+"${EXTRA_SUBS[@]}"}"; do
+		aws sns unsubscribe --subscription-arn "$s" >/dev/null 2>&1 || true
+	done
 	[[ -n "$SUB" ]] && aws sns unsubscribe --subscription-arn "$SUB" >/dev/null 2>&1 || true
 	[[ -n "$TOPIC_ARN" ]] && aws sns delete-topic --topic-arn "$TOPIC_ARN" >/dev/null 2>&1 || true
 	[[ -n "$QUEUE_URL" ]] && aws sqs delete-queue --queue-url "$QUEUE_URL" >/dev/null 2>&1 || true
@@ -29,6 +34,18 @@ cleanup() {
 trap cleanup EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 ok() { echo "ok: $*"; }
+
+expect_invalid_subscribe() {
+	local proto="$1" endpoint="$2"
+	local out
+	if out="$(aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol "$proto" \
+		--notification-endpoint "$endpoint" 2>&1)"; then
+		fail "large topic accepted $proto subscribe"
+	fi
+	printf '%s' "$out" | grep -qiE 'InvalidParameter' \
+		|| fail "large-topic $proto reject missing InvalidParameter: $out"
+	ok "large topic rejects $proto subscribe"
+}
 
 python3 -c 'open("'"$TMP"'/big300.txt","w").write("x"*(300*1024))'
 python3 -c 'open("'"$TMP"'/big1m.txt","w").write("y"*1048576)'
@@ -61,6 +78,47 @@ GOT="$(aws sns get-topic-attributes --topic-arn "$TOPIC_ARN" \
 [[ "$GOT" == "1048576" ]] || fail "SetTopicAttributes MaximumMessageSize not returned: '$GOT'"
 ok "SetTopicAttributes MaximumMessageSize=1048576"
 
+# 3b. Large topic: http/email/sms/application subscribe → InvalidParameter (#387)
+expect_invalid_subscribe http "http://127.0.0.1:9/sns-hook"
+expect_invalid_subscribe https "https://127.0.0.1:9/sns-hook"
+expect_invalid_subscribe email "nobody@example.com"
+expect_invalid_subscribe email-json "nobody@example.com"
+expect_invalid_subscribe sms "+15555550100"
+expect_invalid_subscribe application \
+	"arn:aws:sns:${REGION}:000000000000:app/GCM/awsbox-mms-app"
+
+# 3c. firehose / lambda still accepted (sqs exercised below)
+ACCT="$(printf '%s' "$TOPIC_ARN" | awk -F: '{print $5}')"
+LAM_SUB="$(aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol lambda \
+	--notification-endpoint "arn:aws:lambda:${REGION}:${ACCT}:function:awsbox-mms-fn-${TS}" \
+	--query SubscriptionArn --output text)"
+[[ -n "$LAM_SUB" && "$LAM_SUB" != "None" ]] || fail "lambda subscribe on large topic failed"
+EXTRA_SUBS+=("$LAM_SUB")
+ok "large topic accepts lambda subscribe"
+FH_SUB="$(aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol firehose \
+	--notification-endpoint "arn:aws:firehose:${REGION}:${ACCT}:deliverystream/awsbox-mms-fh-${TS}" \
+	--query SubscriptionArn --output text)"
+[[ -n "$FH_SUB" && "$FH_SUB" != "None" ]] || fail "firehose subscribe on large topic failed"
+EXTRA_SUBS+=("$FH_SUB")
+ok "large topic accepts firehose subscribe"
+
+# 3d. SetTopicAttributes >256 KiB refused when an unsupported subscription exists
+HTTP_TOPIC_ARN="$(aws sns create-topic --name "${TOPIC}-http" --query TopicArn --output text)"
+HTTP_SUB="$(aws sns subscribe --topic-arn "$HTTP_TOPIC_ARN" --protocol http \
+	--notification-endpoint "http://127.0.0.1:9/sns-hook" \
+	--query SubscriptionArn --output text)"
+if OUT="$(aws sns set-topic-attributes --topic-arn "$HTTP_TOPIC_ARN" \
+	--attribute-name MaximumMessageSize --attribute-value 1048576 2>&1)"; then
+	aws sns unsubscribe --subscription-arn "$HTTP_SUB" >/dev/null 2>&1 || true
+	aws sns delete-topic --topic-arn "$HTTP_TOPIC_ARN" >/dev/null 2>&1 || true
+	fail "SetTopicAttributes raised MaximumMessageSize with http subscription"
+fi
+printf '%s' "$OUT" | grep -qiE 'InvalidParameter' \
+	|| fail "SetTopicAttributes with http sub missing InvalidParameter: $OUT"
+aws sns unsubscribe --subscription-arn "$HTTP_SUB" >/dev/null 2>&1 || true
+aws sns delete-topic --topic-arn "$HTTP_TOPIC_ARN" >/dev/null 2>&1 || true
+ok "SetTopicAttributes >256 KiB refused with http subscription"
+
 QUEUE_URL="$(aws sqs create-queue --queue-name "$QUEUE" --query QueueUrl --output text)"
 QARN="$(aws sqs get-queue-attributes --queue-url "$QUEUE_URL" --attribute-names QueueArn \
 	--query Attributes.QueueArn --output text)"
@@ -77,6 +135,7 @@ SUB="$(aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-
 	--query SubscriptionArn --output text)"
 aws sns set-subscription-attributes --subscription-arn "$SUB" \
 	--attribute-name RawMessageDelivery --attribute-value true
+ok "large topic accepts sqs subscribe"
 
 MID="$(aws sns publish --topic-arn "$TOPIC_ARN" --message "file://$TMP/big300.txt" --query MessageId --output text)"
 [[ -n "$MID" && "$MID" != "None" ]] || fail "300 KiB publish failed after MaximumMessageSize"
