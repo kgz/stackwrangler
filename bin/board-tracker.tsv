@@ -258,9 +258,11 @@
 367	backlog	Debt: UpdateEventSourceMapping VT/MC (from #363)
 363	done	SQS/ESM validation: VT vs timeout, MaximumConcurrency>=2, retention 60-14d
 364	done	API Gateway HTTP_PROXY form-urlencoded body passthrough
-378	backlog	Debt: aws:SourceArn in service trust policies (from #374)
-370	in-review	SNS refuse alias/aws/sqs for SQS encryption
-384	backlog	Debt: SNS→SQS CMK key policy (from #370)
-369	in-review	Lambda VpcConfig startup timeout + DeleteVpc docker network leak
-373	in-review	SNS MaximumMessageSize up to 1 MiB
-387	backlog	Debt: SNS large-topic subscription protocol limits (from #373)
+389	designing	Experimental live architecture map (nice-to-have)
+369	done	batch/2026-10-27
+370	done	batch/2026-10-27
+371	done	batch/2026-10-27
+372	done	batch/2026-10-27
+373	done	batch/2026-10-27
+374	done	batch/2026-10-27
+375	done	batch/2026-10-27
