@@ -11,8 +11,8 @@ function resolveIamEndpoint(): string {
 }
 
 export const config = {
-  accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID || 'awsbox',
-  secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || 'awsboxawsbox',
+  accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID || 'stackwrangler',
+  secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || 'stackwranglerstackwrangler',
   region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
   accountId: import.meta.env.VITE_AWS_ACCOUNT_ID || '000000000000',
   /** SeaweedFS S3 API (CORS enabled) */
