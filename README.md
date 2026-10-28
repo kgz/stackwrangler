@@ -1,8 +1,10 @@
 # stackwrangler
 
-One **local AWS account** — real APIs, console on localhost, IaC against profile `local`. Learn and stage without a cloud bill.
+**Not affiliated with Amazon Web Services.** Independent open-source tooling to develop and test AWS-shaped stacks locally, then deploy to real AWS. Not an AWS product and not a hosted substitute for AWS.
 
-North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`)
+One **local AWS-shaped account** — real APIs, console on localhost, IaC against profile `local`. Learn and stage without a cloud bill.
+
+North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
 
 ```bash
 ./bin/stackwrangler up
@@ -10,7 +12,7 @@ North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://gith
 aws --profile local … # SeaweedFS S3 :8333 · LocalEmu :4566
 ```
 
-Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement). Console buckets UI uses **SeaweedFS**; IaC/Lambda/S3 events use **LocalEmu S3**.
+Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plus sidecars: **SeaweedFS** (console buckets), **distribution/registry** (ECR-shaped push/pull), **atmoz/sftp** (Transfer dataplane). Console buckets UI uses SeaweedFS; IaC/Lambda/S3 events use **LocalEmu S3**. Workflow: test on the local stack → deploy the same shape to real AWS.
 
 ---
 

@@ -2,9 +2,11 @@
 
 Living product intent. Not a ticket; update when the destination shifts.
 
+**Not affiliated with Amazon Web Services.** stackwrangler is independent OSS: build on LocalEmu and related sidecars, test locally, then deploy to real AWS. It is not an AWS product and not a hosted AWS substitute. See [LICENSE](../LICENSE) and [THIRD_PARTY.md](../THIRD_PARTY.md).
+
 ## Feel
 
-**One local AWS account** that speaks the real AWS API. Console, CLI, and **IaC** (Terraform / CDK / SAM / Ansible / Pulumi) talk to that same account.
+**One local AWS-shaped account** that speaks the real AWS API. Console, CLI, and **IaC** (Terraform / CDK / SAM / Ansible / Pulumi) talk to that same account.
 
 **Bar: fully working, not catalogue theatre.** Create → configure → traffic/data moves → you can see it in CLI + console. If a hop only returns JSON and never does work, it is unfinished.
 

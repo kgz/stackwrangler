@@ -527,6 +527,25 @@ button {
   background: var(--aws-page);
 }
 
+.aws-about-blurb {
+  max-width: 280px;
+  margin: 0 12px 8px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--aws-muted);
+  white-space: normal;
+}
+
+.aws-affiliation {
+  margin: 32px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--aws-border);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--aws-muted);
+}
+
 .aws-h1 {
   margin: 0 0 16px;
   font-size: 28px;
