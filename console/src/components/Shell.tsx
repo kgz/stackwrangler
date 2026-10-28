@@ -557,9 +557,9 @@ export function Shell() {
   return (
     <LabelsProvider>
       <header className="aws-topnav" role="banner">
-        <Link className="aws-logo" to="/" title="awsbox">
+        <Link className="aws-logo" to="/" title="stackwrangler">
           <LogoMark />
-          <span className="aws-logo-word">awsbox</span>
+          <span className="aws-logo-word">stackwrangler</span>
         </Link>
         <button
           type="button"

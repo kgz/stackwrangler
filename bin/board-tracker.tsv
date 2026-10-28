@@ -270,3 +270,4 @@
 387	done	SNS large-topic subscribe protocol limits (from #373)
 378	done	batch/2026-10-27-bugs
 384	done	batch/2026-10-27-bugs
+305	in-progress	Rebrand awsbox → stackwrangler (public-ready)

@@ -117,7 +117,7 @@ function ServersList() {
         <>
           Transfer Family provides fully managed support for transferring files
           over SFTP, FTPS, and FTP. Control plane via LocalEmu; SFTP bytes use
-          the awsbox sidecar on <code>{SFTP_HOST}:{SFTP_PORT}</code> — see{' '}
+          the stackwrangler sidecar on <code>{SFTP_HOST}:{SFTP_PORT}</code> — see{' '}
           <code>docs/transfer.md</code>.
         </>
       }
@@ -343,7 +343,7 @@ function ServerDetail({ serverId }: { serverId: string }) {
                 ['Host key fingerprint', '—'],
                 [
                   'Connect',
-                  <Mono key="cn">{`sftp -P ${SFTP_PORT} awsbox@${SFTP_HOST}`}</Mono>,
+                  <Mono key="cn">{`sftp -P ${SFTP_PORT} stackwrangler@${SFTP_HOST}`}</Mono>,
                 ],
               ]}
             />

@@ -7,8 +7,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PROFILE_NAME="local"
-SERVICES_NAME="awsbox"
-MARKER="# awsbox-managed"
+SERVICES_NAME="stackwrangler"
+MARKER="# stackwrangler-managed"
+LEGACY_MARKER="# awsbox-managed"
+LEGACY_SERVICES_NAME="awsbox"
 
 if [[ -n "${AWS_SHARED_CREDENTIALS_FILE:-}" ]]; then
 	CREDS_FILE="$AWS_SHARED_CREDENTIALS_FILE"
@@ -18,6 +20,20 @@ else
 	CREDS_FILE="$HOME/.aws/credentials"
 	CONFIG_FILE="${AWS_CONFIG_FILE:-$HOME/.aws/config}"
 fi
+
+sw_env() {
+	local sw_name="$1" ab_name="$2" default="${3:-}"
+	local sw_val ab_val
+	sw_val="${!sw_name-}"
+	ab_val="${!ab_name-}"
+	if [[ -n "$sw_val" ]]; then
+		printf '%s' "$sw_val"
+	elif [[ -n "$ab_val" ]]; then
+		printf '%s' "$ab_val"
+	else
+		printf '%s' "$default"
+	fi
+}
 
 load_env() {
 	if [[ -f "$ROOT/.env" ]]; then
@@ -31,11 +47,11 @@ load_env() {
 		source "$ROOT/.env.example"
 		set +a
 	fi
-	ACCESS_KEY="${AWSBOX_ACCESS_KEY:-awsbox}"
-	SECRET_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
-	REGION="${AWSBOX_REGION:-us-east-1}"
-	ENDPOINT="${AWSBOX_ENDPOINT:-http://127.0.0.1:8333}"
-	IAM_ENDPOINT="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
+	ACCESS_KEY="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
+	SECRET_KEY="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
+	REGION="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
+	ENDPOINT="$(sw_env STACKWRANGLER_ENDPOINT AWSBOX_ENDPOINT http://127.0.0.1:8333)"
+	IAM_ENDPOINT="$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT http://127.0.0.1:4566)"
 }
 
 profile_exists() {
@@ -44,10 +60,10 @@ profile_exists() {
 
 is_managed() {
 	[[ -f "$CREDS_FILE" ]] || return 1
-	awk -v p="[${PROFILE_NAME}]" -v m="$MARKER" '
+	awk -v p="[${PROFILE_NAME}]" -v m="$MARKER" -v lm="$LEGACY_MARKER" '
 		$0 == p { inp=1; next }
 		inp && /^\[/ { exit }
-		inp && index($0, m) { found=1; exit }
+		inp && (index($0, m) || index($0, lm)) { found=1; exit }
 		END { exit found ? 0 : 1 }
 	' "$CREDS_FILE"
 }
@@ -66,8 +82,8 @@ strip_profile_creds() {
 strip_profile_config() {
 	local f="$1"
 	[[ -f "$f" ]] || return 0
-	awk -v p="[profile ${PROFILE_NAME}]" -v s="[services ${SERVICES_NAME}]" '
-		$0 == p || $0 == s { skip=1; next }
+	awk -v p="[profile ${PROFILE_NAME}]" -v s="[services ${SERVICES_NAME}]" -v ls="[services ${LEGACY_SERVICES_NAME}]" '
+		$0 == p || $0 == s || $0 == ls { skip=1; next }
 		skip && /^\[/ { skip=0 }
 		!skip { print }
 	' "$f" > "${f}.awsbox.tmp"
@@ -84,7 +100,7 @@ cmd_write() {
 
 	if profile_exists && ! is_managed; then
 		if [[ "$force" -ne 1 ]]; then
-			echo "error: profile '${PROFILE_NAME}' exists and is not awsbox-managed; pass --force to overwrite" >&2
+			echo "error: profile '${PROFILE_NAME}' exists and is not stackwrangler-managed; pass --force to overwrite" >&2
 			exit 1
 		fi
 	fi
@@ -170,7 +186,7 @@ cmd_remove() {
 		exit 0
 	fi
 	if ! is_managed; then
-		echo "error: profile '${PROFILE_NAME}' is not awsbox-managed; refusing to remove" >&2
+		echo "error: profile '${PROFILE_NAME}' is not stackwrangler-managed; refusing to remove" >&2
 		exit 1
 	fi
 	strip_profile_creds "$CREDS_FILE"
