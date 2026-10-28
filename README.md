@@ -1,12 +1,12 @@
-# awsbox
+# stackwrangler
 
 One **local AWS account** — real APIs, console on localhost, IaC against profile `local`. Learn and stage without a cloud bill.
 
 North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`)
 
 ```bash
-./bin/awsbox up
-./bin/awsbox console   # http://127.0.0.1:3000
+./bin/stackwrangler up
+./bin/stackwrangler console   # http://127.0.0.1:3000
 aws --profile local … # SeaweedFS S3 :8333 · LocalEmu :4566
 ```
 
@@ -23,7 +23,7 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 | **Control plane** | `create-*` / `describe-*` OK; little/no real traffic |
 | **CLI + smoke** | Script/example works; **no console** (or thin) |
 | **Console chrome** | Nav / empty page only |
-| **Sidecar** | Real bytes via awsbox container, not native service listen |
+| **Sidecar** | Real bytes via stackwrangler container, not native service listen |
 | **Backlog** | Ticketed, not started |
 | **Local smokes** | Proven with `./bin/*-smoke.sh` (no GitHub Actions e2e) |
 
@@ -32,9 +32,9 @@ Emulator is **LocalEmu** (not LocalStack Community — we need IAM enforcement).
 
 | Area | Status | Notes |
 |------|--------|--------|
-| `./bin/awsbox up` + profile `local` | **Working** | Compose + managed AWS profile |
-| Console shell (awsbox grey rose) | **Working** | Chrome from `design/awsbox-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
-| Console labels | **Working** | `AWSBOX_LABELS` file kept outside the repo · [docs/labels.md](docs/labels.md) · `./bin/labels-smoke.sh` |
+| `./bin/stackwrangler up` + profile `local` | **Working** | Compose + managed AWS profile |
+| Console shell (grey rose) | **Working** | Chrome from `design/awsbox-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
+| Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [docs/labels.md](docs/labels.md) · `./bin/labels-smoke.sh` |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
 | IAM enforcement | **Partial** | resource policies `./bin/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [docs/custom-ids.md](docs/custom-ids.md) · `./bin/custom-id-smoke.sh` |
@@ -179,11 +179,11 @@ VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS — epic [#90](https://g
 
 Needs Docker + [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Optional: `psql`, `mysql`, `sshpass` for RDS / Transfer dataplane smokes.
 
-cp .env.example .env   # first time; awsbox up also does this
-./bin/awsbox console    # http://127.0.0.1:3000
+cp .env.example .env   # first time; stackwrangler up also does this
+./bin/stackwrangler console    # http://127.0.0.1:3000
 aws --profile local s3 ls
-./bin/awsbox down                 # keep profile
-./bin/awsbox down --remove-profile
+./bin/stackwrangler down                 # keep profile
+./bin/stackwrangler down --remove-profile
 
 | What | Where |
 | S3 (console buckets) | `http://127.0.0.1:8333` SeaweedFS |
@@ -192,9 +192,9 @@ aws --profile local s3 ls
 | Console | `http://127.0.0.1:3000` |
 | Profile | `local` |
 
-If profile `local` exists and isn’t awsbox-managed: `./bin/awsbox up --force`.
+If profile `local` exists and isn’t stackwrangler-managed: `./bin/stackwrangler up --force`.
 
-Coming from `beta/full-flow-v1`, `./bin/awsbox up` removes this checkout's leftover `sftp` container (compose project of this directory, image `atmoz/sftp`, often `awsl-sftp-1`) when it still holds `127.0.0.1:2222`. Any other holder is named and `up` stops before Compose leaves the emulator `Created`. Set `AWSBOX_SFTP_HOST_PORT` to keep that process. Details: `docs/transfer.md`.
+Coming from `beta/full-flow-v1`, `./bin/stackwrangler up` removes this checkout's leftover `sftp` container (compose project of this directory, image `atmoz/sftp`, often `awsl-sftp-1`) when it still holds `127.0.0.1:2222`. Any other holder is named and `up` stops before Compose leaves the emulator `Created`. Set `STACKWRANGLER_SFTP_HOST_PORT` to keep that process. Details: `docs/transfer.md`.
 
 ### WSL / Docker
 

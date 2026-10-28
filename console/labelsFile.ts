@@ -72,12 +72,12 @@ export function parseLabelsDocument(value: unknown): LabelEntry[] {
 }
 
 export function loadLabelEntries(): LabelEntry[] {
-  const raw = process.env.AWSBOX_LABELS
+  const raw = process.env.STACKWRANGLER_LABELS || process.env.AWSBOX_LABELS
   if (raw === undefined || raw.trim() === '') return []
   const filePath = resolveLabelsPath(raw.trim())
   if (!fs.existsSync(filePath)) return []
   const stat = fs.statSync(filePath)
-  if (!stat.isFile()) throw new Error('AWSBOX_LABELS is not a file')
+  if (!stat.isFile()) throw new Error('STACKWRANGLER_LABELS is not a file')
   const text = fs.readFileSync(filePath, 'utf8')
   const parsed: unknown = parse(text)
   return parseLabelsDocument(parsed)

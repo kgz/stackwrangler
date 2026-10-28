@@ -1,0 +1,372 @@
+#!/usr/bin/env bash
+# stackwrangler — local AWS stack lifecycle (SeaweedFS S3 + LocalEmu + console).
+# Usage: stackwrangler up | down | status | console | hosts | mirror | apply …
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
+ENDPOINT_DEFAULT="http://127.0.0.1:8333"
+IAM_ENDPOINT_DEFAULT="http://127.0.0.1:4566"
+CONSOLE_PID_FILE="$ROOT/.awsbox/console.pid"
+
+
+# STACKWRANGLER_* wins; else AWSBOX_* (old .env); else default.
+sw_env() {
+	local sw_name="$1" ab_name="$2" default="${3:-}"
+	local sw_val ab_val
+	sw_val="${!sw_name-}"
+	ab_val="${!ab_name-}"
+	if [[ -n "$sw_val" ]]; then
+		printf '%s' "$sw_val"
+	elif [[ -n "$ab_val" ]]; then
+		printf '%s' "$ab_val"
+	else
+		printf '%s' "$default"
+	fi
+}
+
+load_root_env() {
+	if [[ -f "$ROOT/.env" ]]; then
+		# shellcheck disable=SC1091
+		set -a && source "$ROOT/.env" && set +a
+	fi
+}
+
+ensure_env() {
+	if [[ ! -f "$ROOT/.env" ]]; then
+		cp "$ROOT/.env.example" "$ROOT/.env"
+		echo "created .env from .env.example"
+	fi
+}
+
+sync_console_env() {
+	ensure_env
+	load_root_env
+	mkdir -p "$ROOT/console"
+	cat > "$ROOT/console/.env" <<EOF
+VITE_AWS_ACCESS_KEY_ID=$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)
+VITE_AWS_SECRET_ACCESS_KEY=$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)
+VITE_AWS_REGION=$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)
+VITE_AWS_ACCOUNT_ID=$(sw_env STACKWRANGLER_ACCOUNT_ID AWSBOX_ACCOUNT_ID 000000000000)
+VITE_AWS_REGION_LABEL=$(sw_env STACKWRANGLER_REGION_LABEL AWSBOX_REGION_LABEL "US East (N. Virginia)")
+VITE_S3_ENDPOINT=$(sw_env STACKWRANGLER_ENDPOINT AWSBOX_ENDPOINT "$ENDPOINT_DEFAULT")
+VITE_IAM_ENDPOINT=/aws-iam
+VITE_IAM_PROXY_TARGET=$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT "$IAM_ENDPOINT_DEFAULT")
+EOF
+}
+
+endpoint_url() {
+	load_root_env
+	echo "$(sw_env STACKWRANGLER_ENDPOINT AWSBOX_ENDPOINT "$ENDPOINT_DEFAULT")"
+}
+
+iam_endpoint_url() {
+	load_root_env
+	echo "$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT "$IAM_ENDPOINT_DEFAULT")"
+}
+
+wait_healthy() {
+	local ep i code
+	ep="$(endpoint_url)"
+	for i in $(seq 1 40); do
+		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
+		if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+			break
+		fi
+		sleep 1
+		if [[ "$i" -eq 40 ]]; then
+			echo "error: S3 endpoint did not become ready: ${ep}" >&2
+			"${COMPOSE[@]}" ps >&2 || true
+			"${COMPOSE[@]}" logs --tail 40 s3 >&2 || true
+			exit 1
+		fi
+	done
+
+	ep="$(iam_endpoint_url)"
+	for i in $(seq 1 90); do
+		if curl -sf --max-time 2 "${ep}/_localstack/health" >/dev/null 2>&1 \
+			|| curl -sf --max-time 2 "${ep}/_localemu/health" >/dev/null 2>&1; then
+			return 0
+		fi
+		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "${ep}/" || true)"
+		if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+			return 0
+		fi
+		sleep 1
+	done
+	echo "error: IAM endpoint did not become ready: ${ep}" >&2
+	"${COMPOSE[@]}" ps >&2 || true
+	"${COMPOSE[@]}" logs --tail 60 localstack >&2 || true
+	exit 1
+}
+
+sftp_host_port() {
+	local from_file
+	load_root_env
+	from_file="$(sw_env STACKWRANGLER_SFTP_HOST_PORT AWSBOX_SFTP_HOST_PORT "")"
+	if [[ -n "$from_file" ]]; then
+		printf '%s\n' "$from_file"
+		return 0
+	fi
+	printf '%s\n' 2222
+}
+
+host_port_busy() {
+	local port="$1"
+	if ! command -v ss >/dev/null 2>&1; then
+		return 1
+	fi
+	ss -H -ltn "sport = :${port}" 2>/dev/null | grep -q .
+}
+
+# Compose project for this checkout (directory name, or COMPOSE_PROJECT_NAME / compose name:).
+compose_project_name() {
+	local raw name
+	if ! command -v python3 >/dev/null 2>&1; then
+		return 1
+	fi
+	if ! raw="$("${COMPOSE[@]}" config --format json 2>/dev/null)"; then
+		return 1
+	fi
+	name="$(printf '%s' "$raw" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("name") or "")' 2>/dev/null)" || return 1
+	[[ -n "$name" ]] || return 1
+	printf '%s\n' "$name"
+}
+
+# beta atmoz/sftp from this compose project. Other projects stay up; up names them and stops.
+beta_sftp_image() {
+	case "$1" in
+		atmoz/sftp | atmoz/sftp:* | atmoz/sftp@* | */atmoz/sftp | */atmoz/sftp:* | */atmoz/sftp@*)
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+# beta/full-flow-v1 kept compose service sftp on the emulator host port.
+# Drop only that leftover from this checkout. Anything else must fail before
+# compose leaves localstack Created.
+free_sftp_host_port() {
+	local port id_raw fmt inspect_out id name service project image host_ip host_port short
+	local -a id_list=() remove_ids=() remove_names=() blocker_desc=()
+	local -a cand_ids=() cand_names=() cand_services=() cand_projects=() cand_images=()
+	local seen_cand=" " seen_block=" " localstack_holds=0 joined i attempt our_project
+	port="$(sftp_host_port)"
+	if [[ ! "$port" =~ ^[1-9][0-9]*$ ]]; then
+		echo "error: STACKWRANGLER_SFTP_HOST_PORT must be a port number (got ${port})" >&2
+		return 1
+	fi
+	if ! command -v docker >/dev/null 2>&1; then
+		return 0
+	fi
+	if ! id_raw="$(docker ps -q --filter status=running)"; then
+		echo "error: cannot list containers (is the Docker daemon running?)" >&2
+		return 1
+	fi
+	if [[ -n "$id_raw" ]]; then
+		mapfile -t id_list <<< "$id_raw"
+		# Unit separator keeps an empty compose label from collapsing under IFS.
+		fmt='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{range $conf}}{{$.Id}}{{printf "\x1f"}}{{$.Name}}{{printf "\x1f"}}{{if $.Config.Labels}}{{index $.Config.Labels "com.docker.compose.service"}}{{end}}{{printf "\x1f"}}{{if $.Config.Labels}}{{index $.Config.Labels "com.docker.compose.project"}}{{end}}{{printf "\x1f"}}{{$.Config.Image}}{{printf "\x1f"}}{{.HostIp}}{{printf "\x1f"}}{{.HostPort}}{{printf "\n"}}{{end}}{{end}}{{end}}'
+		if ! inspect_out="$(docker inspect --format "$fmt" "${id_list[@]}")"; then
+			echo "error: docker inspect failed" >&2
+			return 1
+		fi
+		while IFS=$'\x1f' read -r id name service project image host_ip host_port; do
+			[[ -n "$id" ]] || continue
+			[[ "$host_port" == "$port" ]] || continue
+			case "$host_ip" in
+				"" | 0.0.0.0 | :: | 127.0.0.1) ;;
+				*) continue ;;
+			esac
+			short="${name#/}"
+			if [[ "$service" == "localstack" || "$short" == *-localstack-* ]]; then
+				localstack_holds=1
+				continue
+			fi
+			case "$seen_cand" in
+				*" $id "*) ;;
+				*)
+					seen_cand+="$id "
+					cand_ids+=("$id")
+					cand_names+=("$short")
+					cand_services+=("$service")
+					cand_projects+=("$project")
+					cand_images+=("$image")
+					;;
+			esac
+		done <<< "$inspect_out"
+	fi
+	our_project=""
+	if [[ ${#cand_ids[@]} -gt 0 ]]; then
+		our_project="$(compose_project_name 2>/dev/null || true)"
+	fi
+	for i in "${!cand_ids[@]}"; do
+		if [[ -n "$our_project" && "${cand_services[$i]}" == "sftp" && "${cand_projects[$i]}" == "$our_project" ]] && beta_sftp_image "${cand_images[$i]}"; then
+			remove_ids+=("${cand_ids[$i]}")
+			remove_names+=("${cand_names[$i]}")
+			continue
+		fi
+		case "$seen_block" in
+			*" ${cand_ids[$i]} "*) ;;
+			*)
+				seen_block+="${cand_ids[$i]} "
+				blocker_desc+=("container ${cand_names[$i]} (${cand_ids[$i]:0:12})")
+				;;
+		esac
+	done
+	if [[ ${#blocker_desc[@]} -gt 0 ]]; then
+		joined="$(printf '%s, ' "${blocker_desc[@]}")"
+		joined="${joined%, }"
+		echo "error: 127.0.0.1:${port} is already in use by ${joined}." >&2
+		echo "Inbound SFTP in the emulator binds this port. Stop the holder (docker rm -f <name>) or set STACKWRANGLER_SFTP_HOST_PORT to a free port." >&2
+		echo "Stopping here so Compose does not leave the emulator container Created." >&2
+		return 1
+	fi
+	for i in "${!remove_ids[@]}"; do
+		echo "stackwrangler: removing leftover sftp container ${remove_names[$i]} (holds 127.0.0.1:${port}; inbound SFTP now runs in the emulator)."
+		docker rm -f "${remove_ids[$i]}" >/dev/null
+	done
+	if [[ ${#remove_ids[@]} -gt 0 ]]; then
+		echo "Legacy password SFTP stays on STACKWRANGLER_LEGACY_SFTP_HOST_PORT (default 2223) via the legacy-sftp profile."
+	fi
+	if [[ "$localstack_holds" -eq 1 ]]; then
+		return 0
+	fi
+	for attempt in 1 2 3 4 5 6 7 8 9 10; do
+		if ! host_port_busy "$port"; then
+			return 0
+		fi
+		sleep 0.1
+	done
+	echo "error: 127.0.0.1:${port} is already in use." >&2
+	if command -v ss >/dev/null 2>&1; then
+		ss -H -ltnp "sport = :${port}" >&2 || ss -H -ltn "sport = :${port}" >&2 || true
+	fi
+	echo "Inbound SFTP in the emulator binds this port. Stop that process or set STACKWRANGLER_SFTP_HOST_PORT to a free port." >&2
+	echo "Stopping here so Compose does not leave the emulator container Created." >&2
+	return 1
+}
+
+cmd_up() {
+	if ! command -v docker >/dev/null 2>&1; then
+		echo "error: Docker is required (not found on PATH)" >&2
+		exit 1
+	fi
+	ensure_env
+	free_sftp_host_port
+	"${COMPOSE[@]}" up -d
+	wait_healthy
+	"$ROOT/bin/awsbox-profile" write "$@"
+	sync_console_env
+	local ep iam
+	ep="$(endpoint_url)"
+	iam="$(iam_endpoint_url)"
+	echo
+	echo "S3 API:   ${ep}"
+	echo "IAM/Lambda: ${iam}"
+	echo "Profile:  local  (aws --profile local s3 ls | lambda list-functions)"
+	echo "Console:  ./bin/stackwrangler console   → http://127.0.0.1:3000"
+	# Prowler / S3 Control need awsbox.localhost (RFC 6761 often missing on WSL).
+	if ! "$ROOT/bin/awsbox-hosts" check >/dev/null 2>&1; then
+		echo
+		echo "Prowler host: awsbox.localhost not resolving (needed for S3 Control)."
+		echo "  ./bin/awsbox-hosts print   # line to add"
+		echo "  ./bin/awsbox-hosts apply   # sudo append to /etc/hosts"
+		echo "  docs/prowler.md            # WSL / Windows hosts notes"
+	fi
+}
+
+cmd_down() {
+	local remove_profile=0
+	if [[ "${1:-}" == "--remove-profile" ]]; then
+		remove_profile=1
+		shift
+	fi
+	if [[ -f "$CONSOLE_PID_FILE" ]]; then
+		kill "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null || true
+		rm -f "$CONSOLE_PID_FILE"
+	fi
+	"${COMPOSE[@]}" down "$@"
+	if [[ "$remove_profile" -eq 1 ]]; then
+		"$ROOT/bin/awsbox-profile" remove
+	fi
+}
+
+cmd_status() {
+	ensure_env
+	load_root_env
+	"${COMPOSE[@]}" ps
+	local ep code iam labels
+	ep="$(endpoint_url)"
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
+	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "s3:       ${ep} (live, http ${code})"
+	else
+		echo "s3:       ${ep} (not reachable)"
+	fi
+	iam="$(iam_endpoint_url)"
+	if curl -sf --max-time 1 "${iam}/_localstack/health" >/dev/null 2>&1 \
+		|| curl -sf --max-time 1 "${iam}/_localemu/health" >/dev/null 2>&1 \
+		|| [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${iam}/" || true)" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "iam:      ${iam} (live)"
+	else
+		echo "iam:      ${iam} (not reachable)"
+	fi
+	if [[ -f "$CONSOLE_PID_FILE" ]] && kill -0 "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null; then
+		echo "console:  http://127.0.0.1:3000 (pid $(cat "$CONSOLE_PID_FILE"))"
+	else
+		echo "console:  not running (./bin/stackwrangler console)"
+	fi
+	labels="$(sw_env STACKWRANGLER_LABELS AWSBOX_LABELS "")"
+	if [[ -n "$labels" ]]; then
+		echo "labels:   ${labels}"
+	else
+		echo "labels:   unset (docs/labels.md)"
+	fi
+}
+
+cmd_console() {
+	sync_console_env
+	if [[ ! -d "$ROOT/console/node_modules" ]]; then
+		echo "installing console deps (yarn)…"
+		(cd "$ROOT/console" && yarn install)
+	fi
+	mkdir -p "$ROOT/.awsbox"
+	cd "$ROOT/console"
+	# foreground so logs visible; Ctrl+C stops
+	exec yarn dev --host 127.0.0.1 --port 3000
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+case "${1:-}" in
+	up)
+		shift
+		cmd_up "$@"
+		;;
+	down)
+		shift
+		cmd_down "$@"
+		;;
+	status)
+		cmd_status
+		;;
+	console)
+		cmd_console
+		;;
+	hosts)
+		shift
+		exec "$ROOT/bin/awsbox-hosts" "$@"
+		;;
+	mirror|apply)
+		exec "$ROOT/bin/awsl-mirror.sh" "$@"
+		;;
+	*)
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | hosts … | mirror … | apply <fixture>" >&2
+		exit 1
+		;;
+esac
+fi

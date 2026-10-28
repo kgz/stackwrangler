@@ -270,3 +270,8 @@
 387	done	SNS large-topic subscribe protocol limits (from #373)
 378	done	batch/2026-10-27-bugs
 384	done	batch/2026-10-27-bugs
+305	in-review	Rebrand awsbox → stackwrangler (public-ready)
+407	backlog	Debt: rename GitHub repo kgz/awsl → kgz/stackwrangler (from #305)
+405	backlog	Debt: align smoke/bin credential defaults to STACKWRANGLER_* (from #305)
+406	backlog	Debt: retarget internal docs CLI examples to stackwrangler (from #305)
+408	backlog	Debt: residual console awsbox copy (from #305)

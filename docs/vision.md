@@ -1,4 +1,4 @@
-# awsbox — north star
+# stackwrangler — north star
 
 Living product intent. Not a ticket; update when the destination shifts.
 
@@ -8,11 +8,11 @@ Living product intent. Not a ticket; update when the destination shifts.
 
 **Bar: fully working, not catalogue theatre.** Create → configure → traffic/data moves → you can see it in CLI + console. If a hop only returns JSON and never does work, it is unfinished.
 
-**Authz must match AWS locally.** Whatever would deny or fail in a real account — missing/wrong identity policy, resource policy, trust/assume-role, condition keys, cross-service call under a task/execution role — must deny or fail here too (`AccessDenied` / equivalent), not silently succeed. Root/`awsbox` keys admin the box; **workload principals** are enforced (`IAM_ENFORCEMENT=1` on LocalEmu). The S3 deny-user lab is only one proof; the rule is general across services on the path.
+**Authz must match AWS locally.** Whatever would deny or fail in a real account — missing/wrong identity policy, resource policy, trust/assume-role, condition keys, cross-service call under a task/execution role — must deny or fail here too (`AccessDenied` / equivalent), not silently succeed. Root/`stackwrangler` keys admin the box; **workload principals** are enforced (`IAM_ENFORCEMENT=1` on LocalEmu). The S3 deny-user lab is only one proof; the rule is general across services on the path.
 
 Learning target: a large org can tell a dev “implement X” (e.g. VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS) and they can **run that stack locally** — including failing for the same mistakes as AWS — before touching a real account.
 
-End state: `./bin/awsbox up` once — endpoints + profile `local` — then real apps run on that account.
+End state: `./bin/stackwrangler up` once — endpoints + profile `local` — then real apps run on that account.
 
 ## What “fully working” means
 
@@ -28,7 +28,7 @@ End state: `./bin/awsbox up` once — endpoints + profile `local` — then real 
 
 Smoke pattern for each hop: happy path **and** at least one deliberate authz failure (not a single hard-coded policy demo).
 
-**Fidelity bar (raise continuously):** if a real account fails because of a network path, default, or setting you “wouldn’t think of” (e.g. two ECS tasks on the same host cannot hairpin through a NAT/proxy without the right IP retention / routing), awsbox should be able to reproduce that class of failure — not only happy CRUD. Capture gaps as Debt with a concrete repro; do not wait for a full AWS clone before writing the ticket. See [docs/fidelity.md](fidelity.md).
+**Fidelity bar (raise continuously):** if a real account fails because of a network path, default, or setting you “wouldn’t think of” (e.g. two ECS tasks on the same host cannot hairpin through a NAT/proxy without the right IP retention / routing), stackwrangler should be able to reproduce that class of failure — not only happy CRUD. Capture gaps as Debt with a concrete repro; do not wait for a full AWS clone before writing the ticket. See [docs/fidelity.md](fidelity.md).
 
 ### Already real (keep raising the bar)
 
@@ -45,12 +45,12 @@ Transfer (actual SFTP), VPC wiring that matters, Lambda triggers, S3, ECS, **RDS
 ## What “done” looks like for you
 
 ```text
-./bin/awsbox up
+./bin/stackwrangler up
 # apply your Serverless / CDK / TF / Ansible against profile local
 # put a file through SFTP (or the path under test)
 # Lambda runs, object lands, ECS task runs, RDS has the row
 aws --profile local …   # same resources
-./bin/awsbox console     # same resources
+./bin/stackwrangler console     # same resources
 ```
 
 ## Architecture note
@@ -62,7 +62,7 @@ aws --profile local …   # same resources
 
 S3 ↔ Lambda “actually do things” must use **one** S3 backend → **LocalEmu S3**. SeaweedFS stays the polished buckets page until/unless we unify.
 
-LocalEmu is the emulator; **awsbox** is the product (compose, profile, console, smokes, examples, honesty about depth).
+LocalEmu is the emulator; **stackwrangler** is the product (compose, profile, console, smokes, examples, honesty about depth).
 
 ## LocalStack lesson (do not repeat)
 
@@ -73,7 +73,7 @@ Orgs often tried **LocalStack** for full local repro and got a false green:
 - **Pro-gated / partial services** → catalogue looks wide; depth is uneven
 - **Endpoint sprawl** → easy to point CLI/console/Lambda at different S3 brains
 
-**awsbox refusal:** never market a service as ready because `create-*` works. Prefer LocalEmu (`IAM_ENFORCEMENT=1`) and **real sidecars** when the emulator cannot deliver a data plane (e.g. Postgres for RDS-shaped work, real SFTP listener if Transfer stays API-only). Swap emulators if needed — the product contract is the account behaviour, not the vendor logo.
+**stackwrangler refusal:** never market a service as ready because `create-*` works. Prefer LocalEmu (`IAM_ENFORCEMENT=1`) and **real sidecars** when the emulator cannot deliver a data plane (e.g. Postgres for RDS-shaped work, real SFTP listener if Transfer stays API-only). Swap emulators if needed — the product contract is the account behaviour, not the vendor logo.
 
 ### Honest limits of the vision
 
@@ -114,8 +114,8 @@ Milestones remain the catalogue ([Project #8](https://github.com/users/kgz/proje
 **Shipped so far:** S3 UI, IAM, Lambda, Logs, API GW, Terraform/CFN/CDK/SAM S3+Lambda, ECS/EC2 samples, Transfer API + **native SFTP SSH keys → S3** (`./bin/transfer-key-smoke.sh`), RDS Docker Postgres (`./bin/rds-smoke.sh`), RDS MySQL / Aurora MySQL (`./bin/rds-mysql-smoke.sh`).
 
 ```bash
-./bin/awsbox up
-./bin/awsbox console   # http://127.0.0.1:3000
+./bin/stackwrangler up
+./bin/stackwrangler console   # http://127.0.0.1:3000
 aws --profile local s3 ls
 ```
 
@@ -129,4 +129,4 @@ aws --profile local s3 ls
 | Delivery design | OpenSpec changes |
 | Console mocks | `design/awsbox-console/` |
 | IaC examples | `examples/` |
-| Product entry | `./bin/awsbox` |
+| Product entry | `./bin/stackwrangler` |

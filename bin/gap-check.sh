@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PARENT="${1:-}"
 cd "$ROOT"
 
-echo "=== awsbox gap-check ${PARENT:+(parent #${PARENT})} ==="
+echo "=== stackwrangler gap-check ${PARENT:+(parent #${PARENT})} ==="
 echo
 echo "Rubric: docs/gap-check.md"
 echo "Answer each; open Debt: tickets for any NO / PARTIAL without an existing follow-up."
