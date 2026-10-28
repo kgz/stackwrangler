@@ -703,10 +703,15 @@ export function Shell() {
               <HelpIcon />
             </button>
             <div
-              className={`aws-menu${menu === 'help' ? ' open' : ''}`}
+              className={`aws-menu wide${menu === 'help' ? ' open' : ''}`}
               id="menu-help"
             >
               <div className="label">Help</div>
+              <div className="aws-about-blurb" role="note">
+                stackwrangler is not affiliated with Amazon Web Services. Local
+                console for AWS-shaped stacks — not an AWS product.
+              </div>
+              <div className="sep" />
               <DeadMenuButton>Info</DeadMenuButton>
               <a
                 href="https://docs.aws.amazon.com/"
@@ -912,6 +917,10 @@ export function Shell() {
         />
         <main className="aws-main" id="content">
           <Outlet />
+          <p className="aws-affiliation">
+            Not affiliated with Amazon Web Services. Independent local tooling
+            for AWS-shaped stacks — see repository LICENSE and THIRD_PARTY.md.
+          </p>
         </main>
       </div>
     </LabelsProvider>
