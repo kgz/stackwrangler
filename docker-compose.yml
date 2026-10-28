@@ -1,5 +1,3 @@
-name: stackwrangler
-
 # S3 (SeaweedFS) + IAM/Lambda (LocalEmu). Console is a client of both.
 services:
   s3:
