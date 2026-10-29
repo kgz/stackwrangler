@@ -1,0 +1,16 @@
+{
+  "name": "stackwrangler-docs-site",
+  "version": "0.0.2",
+  "private": true,
+  "description": "stackwrangler public documentation (VitePress)",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "devDependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.22"
+  }
+}

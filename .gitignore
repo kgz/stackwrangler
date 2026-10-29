@@ -11,6 +11,8 @@ build/
 console/dist/
 console/.env
 !console/.env.example
+docs-site/.vitepress/dist/
+docs-site/.vitepress/cache/
 
 out.json
 .serverless/

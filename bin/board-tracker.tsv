@@ -298,4 +298,6 @@
 469	done	stackwrangler sls non-root container user
 475	done	ESM poller ExpiredToken / credential refresh
 477	backlog	Debt: stream ESM cred-refresh smoke (from #475)
-416	in-review	Public OSS: split public AGENTS vs owner board workflow
+416	done	Public OSS: split public AGENTS vs owner board workflow
+403	in-review	Public OSS docs site (VitePress / Runa-style)
+425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
