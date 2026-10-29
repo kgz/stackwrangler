@@ -44,8 +44,8 @@ fi
 COLOR="0E8A16"
 DESC="Product release bucket"
 
-if ! gh api "repos/kgz/awsl/labels/${VER}" >/dev/null 2>&1; then
-	gh api repos/kgz/awsl/labels -f name="$VER" -f color="$COLOR" -f description="$DESC" >/dev/null
+if ! gh api "repos/kgz/stackwrangler/labels/${VER}" >/dev/null 2>&1; then
+	gh api repos/kgz/stackwrangler/labels -f name="$VER" -f color="$COLOR" -f description="$DESC" >/dev/null
 	echo "created label $VER"
 else
 	echo "label $VER already exists"
@@ -54,14 +54,14 @@ fi
 if git rev-parse "$VER" >/dev/null 2>&1; then
 	echo "git tag $VER already exists locally"
 else
-	git tag -a "$VER" "$SHA" -m "awsbox $VER"
+	git tag -a "$VER" "$SHA" -m "stackwrangler $VER"
 	echo "tagged $VER -> $SHA"
 fi
 
 if [[ "$NO_PUSH" -eq 0 ]]; then
 	git push origin "refs/tags/$VER"
 	if ! gh release view "$VER" >/dev/null 2>&1; then
-		gh release create "$VER" --target "$SHA" --title "awsbox $VER" --notes "Product release $VER. See docs/versioning.md. Catalogue milestones remain \`v1 — …\`; track this cut via label \`$VER\`."
+		gh release create "$VER" --target "$SHA" --title "stackwrangler $VER" --notes "Product release $VER. See docs/versioning.md. Catalogue milestones remain \`v1 — …\`; track this cut via label \`$VER\`."
 		echo "created GitHub release $VER"
 	else
 		echo "GitHub release $VER already exists"

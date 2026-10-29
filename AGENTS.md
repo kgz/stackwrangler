@@ -1,12 +1,17 @@
-# awsl / awsbox AI workflow
+# stackwrangler AI workflow
 
 Same shape as Colony / Funds Manager. Board: [Project #8](https://github.com/users/kgz/projects/8/views/1).
 
 ## Ticket first
 
 ```bash
+export STACKWRANGLER_AGENT=cursor-main # Project #8 field Agent — not a GitHub label
+# legacy: AWSBOX_AGENT still works if STACKWRANGLER_AGENT is unset
 ./bin/board-status.sh in-progress <issue-num>
+# or: ./bin/board-status.sh in-progress <n> --agent=cursor-main
 ```
+
+Claim ownership via the board’s **Agent** text field (set on `in-progress`, cleared on `done`/`backlog`/`ready`). No per-agent labels.
 
 Web UI / console tickets start in **designing**, then **in-progress** after Open Design mocks exist.
 
@@ -34,6 +39,8 @@ git checkout -b feature/<issue>-<short-slug>
 `docs/vision.md` — long-term feel (not a ticket).
 OpenSpec changes are for **one delivery**; don’t park the whole product vision there.
 
+CLI entry is `./bin/stackwrangler` (`./bin/awsbox` is a one-line shim). Prefer `STACKWRANGLER_*` env vars; `AWSBOX_*` remains a fallback.
+
 ## OpenSpec
 
 - On `main`: `/opsx-propose` → `openspec/changes/<change-name>/`
@@ -45,10 +52,10 @@ OpenSpec changes are for **one delivery**; don’t park the whole product vision
 Any ticket that adds or changes **console / web UI** must go through Open Design **before** React implementation:
 
 1. `./bin/board-status.sh designing <n>` (also set by `./bin/od-design-run.sh --issue <n>`)
-2. Theme: `design/awsbox/` (grey rose)
+2. Theme: grey rose under `design/` (historic directory names — [#421](https://github.com/kgz/stackwrangler/issues/421); do not invent a new palette)
 3. `./bin/od-design-run.sh --issue <n> "…"` — prefer **web-clone** when the AWS console has that screen; read-only screenshots OK
 4. Dead controls: not wired yet → `disabled` + `title="To implement"` (+ Debt if v1 needs it). Never ship it → omit from the mock. No enabled no-op / toast-only controls.
-5. Land mocks in `design/awsbox-console/`
+5. Land mocks under the console design folder in `design/` ([#421](https://github.com/kgz/stackwrangler/issues/421))
 6. Then `./bin/board-status.sh in-progress <n>` and implement
 
 Never raw `curl` for OD runs.
@@ -80,5 +87,5 @@ Do **not** mark the parent done until gaps are ticketed (or explicitly N/A in th
 
 ## Allowed without asking
 
-- **Local** awsbox / LocalEmu / SeaweedFS / Docker
+- **Local** stackwrangler / LocalEmu / SeaweedFS / Docker
 - **Read-only** on real AWS when already authenticated (list/describe/screenshot) — no Create / Update / Delete / purchase

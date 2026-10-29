@@ -17,7 +17,7 @@ cat <<'EOF'
 [ ] Authz under workload principal smoked (not only admin)?
 [ ] Console: create/update/detail not stubbed/disabled without Debt ticket?
 [ ] v1 skipped an AWS console UI for this service? Debt filed (or N/A — AWS has no such UI)?
-[ ] Web UI went through Open Design (`designing` + mocks in design/awsbox-console/ using design/awsbox/) before React?
+[ ] Web UI went through Open Design (`designing` + mocks in design/ console theme dirs; rename → #421) before React?
 [ ] Dead controls: unwired = disabled + title="To implement" (+ Debt if v1); never-ship = omitted; no enabled no-ops?
 [ ] No silent sidecar/bridge without Debt ticket + docs link?
 [ ] README/docs status row links a Debt issue for Partial/Sidecar?
@@ -69,7 +69,7 @@ fi
 echo
 echo "=== Open Debt: / gap-ish issues (sample) ==="
 if command -v gh >/dev/null 2>&1; then
-	gh issue list --repo kgz/awsl --state open --limit 30 --search 'Debt in:title' \
+	gh issue list --repo kgz/stackwrangler --state open --limit 30 --search 'Debt in:title' \
 		--json number,title --jq '.[] | "#\(.number) \(.title)"' 2>/dev/null || true
 fi
 

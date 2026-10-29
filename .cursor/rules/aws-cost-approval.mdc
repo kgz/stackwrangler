@@ -11,7 +11,7 @@ This includes “cheap” or free-tier-ish things (SSM Parameter, empty S3 bucke
 
 ## Allowed without asking
 
-- **Local** awsbox / LocalEmu / SeaweedFS / Docker (`--profile local`, `:4566`, `:8333`)
+- **Local** stackwrangler / LocalEmu / SeaweedFS / Docker (`--profile local`, `:4566`, `:8333`)
 - **Read-only** on real AWS when already authenticated for viewing UI (list/describe/screenshot) — no Create / Update / Delete / purchase
 
 ## Before any real-AWS write

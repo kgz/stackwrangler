@@ -1,7 +1,7 @@
 ---
 name: release-version
 description: >-
-  Product release labels and git tags for awsbox. Use when creating tickets with
+  Product release labels and git tags for stackwrangler. Use when creating tickets with
   a release label, cutting a semver release, tagging vX.Y.Z, or updating
   CURRENT_RELEASE / versioning docs.
 ---
