@@ -1,36 +1,11 @@
 ---
-description: stackwrangler delivery loop — ticket → board → OpenSpec → apply → PR → done
+description: stackwrangler delivery loop — branch → OpenSpec/OD → apply → PR → gap-check
 alwaysApply: true
 ---
 
 # stackwrangler AI workflow
 
-Same shape as Colony / Funds Manager. Board: [Project #8](https://github.com/users/kgz/projects/8/views/1).
-
-## Ticket first
-
-```bash
-export STACKWRANGLER_AGENT=cursor-main # Project #8 field Agent — not a GitHub label
-# legacy: AWSBOX_AGENT still works if STACKWRANGLER_AGENT is unset
-./bin/board-status.sh in-progress <issue-num>
-# or: ./bin/board-status.sh in-progress <n> --agent=cursor-main
-```
-
-Claim ownership via the board’s **Agent** text field (set on `in-progress`, cleared on `done`/`backlog`/`ready`). No per-agent labels.
-
-Web UI / console tickets start in **designing** (see Open Design below), then move to **in-progress** for implementation.
-
-Closing: `./bin/board-status.sh done <n>`. Keep `bin/board-tracker.tsv` in sync, then `./bin/board-audit.sh --apply`.
-
-Lifecycle: **Backlog** → **Ready** → **Designing** → **In progress** → **In review** → **Done**.
-
-## Versioning (milestones + release label)
-
-- **Milestone** = service catalogue (`v1 — Networking`, …). Keep these names.
-- **Label** = product release (`v0.0.1`, …) from `docs/CURRENT_RELEASE`. Catalogue “v1” work at the start of product versioning = label **`v0.0.1`**.
-- Creating issues / Debt: assign milestone **and** add label `$(cat docs/CURRENT_RELEASE)`.
-- **In progress / in review** → label `$(cat docs/CURRENT_RELEASE)` only (remove other `v0.0.x`). `v0.0.2`/`v0.0.3` are for backlog planning until the card is active.
-- Cut a release (git tag + GitHub Release + new label + bump CURRENT_RELEASE): `./bin/release-tag.sh vX.Y.Z`. Details: `docs/versioning.md`.
+Public in-repo defaults for agents. Private maintainer board claiming is **not** required for external contributors.
 
 ## Branch
 
@@ -39,12 +14,20 @@ git checkout main && git pull origin main
 git checkout -b feature/<issue>-<short-slug>
 ```
 
+## Versioning (milestones + release label)
+
+- **Milestone** = service catalogue (`v1 — Networking`, …). Keep these names.
+- **Label** = product release (`v0.0.1`, …) from `docs/CURRENT_RELEASE`. Catalogue “v1” work at the start of product versioning = label **`v0.0.1`**.
+- Creating issues / Debt: assign milestone **and** add label `$(cat docs/CURRENT_RELEASE)`.
+- Active work → label `$(cat docs/CURRENT_RELEASE)` only (drop other `v0.0.x`). `v0.0.2`/`v0.0.3` are for backlog planning until the card is active.
+- Cut a release (git tag + GitHub Release + new label + bump CURRENT_RELEASE): `./bin/release-tag.sh vX.Y.Z`. Details: `docs/versioning.md`.
+
 ## Product north star
 
 `docs/vision.md` — long-term feel (not a ticket).
 OpenSpec changes are for **one delivery**; don’t park the whole product vision there.
 
-CLI entry is `./bin/stackwrangler` (`./bin/awsbox` is a one-line shim). Prefer `STACKWRANGLER_*` env vars; `AWSBOX_*` remains a fallback.
+CLI entry is `./bin/stackwrangler` (`./bin/awsbox` is a one-line shim). Prefer `STACKWRANGLER_*` env vars; some `AWSBOX_*` names remain as fallbacks.
 
 ## OpenSpec
 
@@ -56,12 +39,11 @@ CLI entry is `./bin/stackwrangler` (`./bin/awsbox` is a one-line shim). Prefer `
 
 Any ticket that adds or changes **console / web UI** (`console/`, new service pages, chrome) must go through Open Design **before** React implementation:
 
-1. `./bin/board-status.sh designing <n>` (also set by `./bin/od-design-run.sh --issue <n>`)
-2. Theme: grey rose under `design/` (historic directory names — [#421](https://github.com/kgz/stackwrangler/issues/421); do not invent a new palette or copy AWS orange / sky blue / smile).
-3. Mocks: `./bin/od-design-run.sh --issue <n> "…"`. Prefer skill **web-clone** when the screen exists in real AWS. Read-only AWS console screenshots are allowed; never create/update/delete real resources without explicit approval.
-4. **Dead controls:** a button/link that is not wired yet must be `disabled` with `title="To implement"` (and a Debt ticket if it belongs in v1). If we will never ship it, omit it from the mock — do not leave an enabled control that does nothing or only toasts.
-5. Land HTML under the console design folder in `design/` (or the ticket’s design folder; [#421](https://github.com/kgz/stackwrangler/issues/421)).
-6. Only then `./bin/board-status.sh in-progress <n>` and implement against the mocks.
+1. Theme: grey rose under `design/` (historic directory names — [#421](https://github.com/kgz/stackwrangler/issues/421); do not invent a new palette or copy AWS orange / sky blue / smile).
+2. Mocks: `./bin/od-design-run.sh --issue <n> "…"`. Prefer skill **web-clone** when the screen exists in real AWS. Read-only AWS console screenshots are allowed; never create/update/delete real resources without explicit approval.
+3. **Dead controls:** a button/link that is not wired yet must be `disabled` with `title="To implement"` (and a Debt ticket if it belongs in v1). If we will never ship it, omit from the mock — do not leave an enabled control that does nothing or only toasts.
+4. Land HTML under the console design folder in `design/` (or the ticket’s design folder; [#421](https://github.com/kgz/stackwrangler/issues/421)).
+5. Then implement against the mocks.
 
 Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 
@@ -70,18 +52,22 @@ Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 - No `Co-authored-by` / Cursor attribution
 - PR body: `Closes #<n>`
 
-## Gap check before `done` (required)
+## Gap check before merge (required)
 
 User relies on the agent to not lose half-baked follow-ups (especially UI stubs).
 
-**Before** `./bin/board-status.sh done <n>` / merge:
+**Before** merge / treating the ticket as finished:
 
 ```bash
 ./bin/gap-check.sh <n>
 ```
 
 1. Walk the checklist in `docs/gap-check.md`
-2. For every Partial / disabled Create / sidecar / “use CLI smoke” / authz hole / AWS console UI left out of v1 **without** an open Debt ticket → create `Debt: … (from #<n>)`, `backlog`, label `$(cat docs/CURRENT_RELEASE)`, tracker row, link from README or service doc. Console debt designs use Open Design `web-clone` (`./bin/od-design-run.sh`)
+2. For every Partial / disabled Create / sidecar / “use CLI smoke” / authz hole / AWS console UI left out of v1 **without** an open Debt ticket → create `Debt: … (from #<n>)`, label `$(cat docs/CURRENT_RELEASE)`, link from README or service doc. Console debt designs use Open Design `web-clone` (`./bin/od-design-run.sh`)
 3. Mention new Debt issues in the PR body
 
-Do **not** mark the parent done until gaps are ticketed (or explicitly N/A in the PR).
+Do **not** treat the parent as finished until gaps are ticketed (or explicitly N/A in the PR).
+
+## Maintainers
+
+`bin/board-status.sh` may remain in-repo for maintainers who have private GitHub project access. Board claiming / Agent field / project URLs are **not** part of this public rule.

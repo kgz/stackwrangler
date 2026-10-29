@@ -22,6 +22,8 @@ gh issue edit <n> --add-label "$REL"
 
 Debt: same milestone area as parent + label `$REL` (or parent's release label if retargeting an older cut).
 
+Board / tracker updates (`bin/board-status.sh`, `bin/board-tracker.tsv`) require maintainer GitHub project access — optional for external contributors.
+
 ## Cut a release (only when the user asks)
 
 ```bash
