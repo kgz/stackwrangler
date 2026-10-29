@@ -4,7 +4,7 @@
 
 One **local AWS-shaped account** — real APIs, console on localhost, IaC against profile `local`. Learn and stage without a cloud bill.
 
-North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
+North star: [docs/vision.md](docs/vision.md) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`) · [Contributing](CONTRIBUTING.md) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
 
 ```bash
 ./bin/stackwrangler up
