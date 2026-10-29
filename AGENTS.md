@@ -38,6 +38,10 @@ git checkout -b feature/<issue>-<short-slug>   # or feature/<short-slug>
 `docs/vision.md` — long-term feel (not a ticket).
 OpenSpec changes are for **one delivery**; don’t park the whole product vision there.
 
+## Public README
+
+Root `README.md` is product-facing. Keep Board/workflow, Project #8, `/opsx-*`, OD run scripts, and Agent-field docs **here** (and [CONTRIBUTING.md](CONTRIBUTING.md) → this file) — not on the landing page. Product rewrite is #402; status matrix may move to the docs site (#403).
+
 ## OpenSpec
 
 - On `main`: `/opsx-propose` → `openspec/changes/<change-name>/`
