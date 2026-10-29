@@ -91,9 +91,9 @@ flowchart TB
 
 ## Architecture map (experimental)
 
-The console **architecture map** draws a live one-account platform topology (NLB/ALB → edge → Lambda/S3/ECS → RDS, plus honesty edges such as surprise IAM Allows). Design and seeds live in-repo under `docs/architecture-map-org.md` (see also issue [#389](https://github.com/kgz/stackwrangler/issues/389)).
+Coming with [#389](https://github.com/kgz/stackwrangler/issues/389): an experimental console canvas that draws a live one-account platform topology (NLB/ALB → edge → Lambda/S3/ECS → RDS, plus honesty edges such as surprise IAM Allows). Seed scripts and design notes land with that change — they are **not** on `main` yet.
 
-When that UI is on the branch you are running, seed with `./bin/architecture-map-seed.sh` (or the classic HA seed) and open the map in the console. A product screenshot belongs here once the page ships on `main` — we do **not** use AWS console recon images as stand-ins.
+A product screenshot belongs here once that page ships — we do **not** use AWS console recon images as stand-ins.
 
 ## Version cuts
 

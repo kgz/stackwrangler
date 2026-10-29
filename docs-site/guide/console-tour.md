@@ -42,7 +42,7 @@ Specialty bucket types are **console chrome** only — empty states, not a fake 
 
 ## Architecture map
 
-Experimental live topology map (seed scripts + canvas). Documented under `docs/architecture-map-org.md` / [#389](https://github.com/kgz/stackwrangler/issues/389). Add a screenshot here when that page is on the branch you run — do not substitute AWS recon PNGs from `design/.../refs/`.
+Experimental live topology map — coming with [#389](https://github.com/kgz/stackwrangler/issues/389) (not on `main` yet). Add a screenshot here once that console page ships; do not substitute AWS recon PNGs from `design/.../refs/`.
 
 ## Try it
 
