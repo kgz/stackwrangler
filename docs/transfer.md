@@ -9,12 +9,12 @@ Optional `legacy-sftp` compose profile (atmoz password target on `:2223`) remain
 
 That branch published atmoz SFTP as compose service `sftp` on `127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}` (container `awsl-sftp-1`). This tree runs inbound SFTP inside the emulator on the same host port. The password target is the `legacy-sftp` profile on `127.0.0.1:${AWSBOX_LEGACY_SFTP_HOST_PORT:-2223}`.
 
-`./bin/awsbox up` removes this checkout's leftover `sftp` container when it still holds the emulator port: compose project label matches this directory, service `sftp`, image `atmoz/sftp`. Another project's SFTP server, or anything else on the port, makes `up` exit before Compose and names the holder. A failed bind otherwise leaves the emulator container `Created` and the rest of the stack down.
+`./bin/stackwrangler up` removes this checkout's leftover `sftp` container when it still holds the emulator port: compose project label matches this directory, service `sftp`, image `atmoz/sftp`. Another project's SFTP server, or anything else on the port, makes `up` exit before Compose and names the holder. A failed bind otherwise leaves the emulator container `Created` and the rest of the stack down.
 
 ```bash
 docker rm -f awsl-sftp-1
 # or keep the other process and move the emulator:
-AWSBOX_SFTP_HOST_PORT=2223 ./bin/awsbox up
+STACKWRANGLER_SFTP_HOST_PORT=2223 ./bin/stackwrangler up
 ```
 
 Smoke: `./bin/transfer-sftp-port-smoke.sh`.
@@ -24,7 +24,7 @@ Smoke: `./bin/transfer-sftp-port-smoke.sh`.
 ## Smokes
 
 ```bash
-./bin/awsbox up --force
+./bin/stackwrangler up --force
 ./bin/transfer-smoke.sh              # API: server + user + S3 home
 ./bin/transfer-key-smoke.sh          # SSH key auth + put → S3 + ObjectCreated Lambda
 ./bin/transfer-dataplane-smoke.sh    # short key put → S3 (no Lambda)

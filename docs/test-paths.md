@@ -282,8 +282,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | Transfer create-server / create-user API | happy | covered | `./bin/transfer-smoke.sh` |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./bin/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./bin/transfer-dataplane-smoke.sh` |
-| `awsbox up` while this checkout's beta `atmoz/sftp` container holds the emulator port | sad | covered | `./bin/transfer-sftp-port-smoke.sh` |
-| `awsbox up` while another project or process holds the SFTP host port | sad | covered | `./bin/transfer-sftp-port-smoke.sh` |
+| `stackwrangler up` while this checkout's beta `atmoz/sftp` container holds the emulator port | sad | covered | `./bin/transfer-sftp-port-smoke.sh` |
+| `stackwrangler up` while another project or process holds the SFTP host port | sad | covered | `./bin/transfer-sftp-port-smoke.sh` |
 | **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./bin/transfer-key-smoke.sh` |
 | **Transfer empty role → simulate PutObject deny** | sad/authz | covered | `./bin/transfer-authz-smoke.sh` |
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) |
@@ -325,7 +325,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 ## How to run the suite (local)
 
 ```bash
-./bin/awsbox up --force
+./bin/stackwrangler up --force
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./bin/lambda-smoke.sh           # happy
 ./bin/lambda-authz-smoke.sh     # sad/authz

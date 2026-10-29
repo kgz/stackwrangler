@@ -2,7 +2,7 @@
 
 Interface endpoints created with `PrivateDnsEnabled` answer the regional service hostname from workloads in that VPC. Another VPC does not get that private answer.
 
-`./bin/awsbox up --force` after pulling so the resolver (`init/boot.d`) and EC2/ECS/Lambda `--dns` hooks load. The resolver process needs port 53 (`NET_BIND_SERVICE` before the gateway drops it).
+`./bin/stackwrangler up --force` after pulling so the resolver (`init/boot.d`) and EC2/ECS/Lambda `--dns` hooks load. The resolver process needs port 53 (`NET_BIND_SERVICE` before the gateway drops it).
 
 ## What resolves
 

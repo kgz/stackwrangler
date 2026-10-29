@@ -11,7 +11,7 @@ awsbox runs **two** S3 APIs on purpose until a later unify. Do not expect one bu
 
 ## Profiles
 
-- `./bin/awsbox-profile write` → profile `local` → **SeaweedFS** (`AWSBOX_ENDPOINT`, default `:8333`)
+- `./bin/stackwrangler up` → profile `local` → **SeaweedFS** (`AWSBOX_ENDPOINT`, default `:8333`)
 - IaC / authz smokes → `--endpoint-url` **LocalEmu** (`AWSBOX_IAM_ENDPOINT`, default `:4566`)
 
 ## Smoke

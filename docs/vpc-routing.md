@@ -16,7 +16,7 @@ Route rules are re-applied after `docker start` (container restart / ECS resume)
 After pulling, recreate LocalEmu so the patch is mounted:
 
 ```bash
-./bin/awsbox up --force
+./bin/stackwrangler up --force
 ```
 
 Workloads attach to the Docker network of the subnet's VPC (`localemu-vpc-<vpc-id>`). ECS `awsvpc` tasks attach **only** to that VPC network (not the default docker bridge); `host.docker.internal` maps to the VPC bridge gateway so host reachability is explicit ([#271](https://github.com/kgz/awsl/issues/271)). ECS `bridge` tasks stay on docker0 for host ports and also join the container-instance subnet's VPC network so the same route filter applies. EC2 still publishes ports on `localemu-pubport-br`; without a default route that bridge's default route is removed and other destinations are dropped. Peering and NAT attachments follow the route table, not the mere existence of the connection or gateway.

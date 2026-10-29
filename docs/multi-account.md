@@ -2,7 +2,7 @@
 
 One LocalEmu process can hold more than one account. The access key selects the account. IAM, STS, and S3 state for that account stay separate from the others.
 
-Patch: `localemu-patches/init/start.d/21-multi-account.py` (mounted with the other start scripts). Restart `./bin/awsbox up` after changing the env.
+Patch: `localemu-patches/init/start.d/21-multi-account.py` (mounted with the other start scripts). Restart `./bin/stackwrangler up` after changing the env.
 
 ## Account from the access key
 
@@ -16,7 +16,7 @@ Per-key entries win. A key created inside an account (`AKIA…` user key, `ASIA�
 Listing buckets was already per account. `HeadBucket` and object calls on another account's bucket return Access Denied. A bucket policy that grants the other account is [#233](https://github.com/kgz/awsl/issues/233). Compose also sets `MOTO_S3_ALLOW_CROSSACCOUNT_ACCESS=false` for the moto S3 path.
 
 ```bash
-# .env — then ./bin/awsbox up
+# .env — then ./bin/stackwrangler up
 AWSBOX_ACCOUNT_IDS=awsbox-a=111111111111,awsbox-b=222222222222,awsbox-c=333333333333
 ```
 

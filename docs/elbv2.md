@@ -3,13 +3,13 @@
 LocalEmu `elbv2` on `:4566` (`SERVICES` includes `elbv2`). Listeners are real sockets inside the LocalEmu container, not API stubs. Patches: `localemu-patches/elbv2_*.py` (#203). API Gateway VPC_LINK uses the same path (#267).
 
 ```bash
-./bin/awsbox up --force    # remounts localemu-patches/elbv2_*.py
+./bin/stackwrangler up --force    # remounts localemu-patches/elbv2_*.py
 AWSBOX_ELBV2_E2E=1 ./bin/e2e.sh  # runs elbv2-smoke in e2e (off by default, #299)
 ./bin/elbv2-smoke.sh           # NLB/ALB forward, client IP, health, DNS, authz
 ./bin/apigw-nlb-ecs-smoke.sh   # VPC_LINK → internal NLB → ECS ip target
 ```
 
-Profile `local` sends `elbv2` to the LocalEmu endpoint (`./bin/awsbox-profile write --force`).
+Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the LocalEmu endpoint.
 
 ## What works
 

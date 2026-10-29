@@ -119,7 +119,7 @@ terraform plan -input=false -detailed-exitcode
 Not part of `./bin/e2e.sh`. Requires LocalEmu up and an explicit opt-in:
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up
 AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh
 ```
 
@@ -132,7 +132,7 @@ The script:
 ## Manual walkthrough
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up
 cd examples/terraform/awsbox-backend/bootstrap
 terraform init
 terraform apply -auto-approve \

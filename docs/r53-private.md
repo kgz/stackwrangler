@@ -4,7 +4,7 @@ Public zones + CLI records smoke: [r53.md](r53.md) · `./bin/route53-smoke.sh`.
 
 Workloads on a VPC Docker network resolve that VPC's private hosted zones. A second VPC does not.
 
-`./bin/awsbox up --force` after pulling so the resolver process and the ECS/EC2/Lambda `--dns` hooks are loaded. The resolver is the same root process as [VPC Interface endpoint private DNS](vpce-private-dns.md) (`init/boot.d/20-vpce-resolver.py`; port 53 needs `NET_BIND_SERVICE`, which the gateway drops). It answers private zones first, then endpoint names, then forwards. It reads Route 53 and ELBv2 from `127.0.0.1:4566` (all pages). Names it does not own go to the upstream resolver (`8.8.8.8`, or `AWSBOX_DNS_UPSTREAM`, comma separated).
+`./bin/stackwrangler up --force` after pulling so the resolver process and the ECS/EC2/Lambda `--dns` hooks are loaded. The resolver is the same root process as [VPC Interface endpoint private DNS](vpce-private-dns.md) (`init/boot.d/20-vpce-resolver.py`; port 53 needs `NET_BIND_SERVICE`, which the gateway drops). It answers private zones first, then endpoint names, then forwards. It reads Route 53 and ELBv2 from `127.0.0.1:4566` (all pages). Names it does not own go to the upstream resolver (`8.8.8.8`, or `AWSBOX_DNS_UPSTREAM`, comma separated).
 
 Code: `localemu-patches/dns_common.py` (wire codec, UDP/TCP 53 server, upstream forward, VPC address discovery) is shared by `r53_private_resolver.py` and `vpce_private_dns.py`.
 

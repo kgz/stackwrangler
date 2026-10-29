@@ -3,7 +3,7 @@
 LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 
 ```bash
-./bin/awsbox up --force   # after enabling sqs in compose
+./bin/stackwrangler up --force   # after enabling sqs in compose
 ./bin/sqs-smoke.sh
 ./bin/sqs-authz-smoke.sh
 ./bin/sqs-lambda-queueurl-smoke.sh   # Lambda SendMessage via CreateQueue QueueUrl (#459)

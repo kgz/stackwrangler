@@ -13,7 +13,7 @@ LocalEmu `SERVICES` includes `batch`, `elasticbeanstalk`, `apprunner`, `autoscal
 ## Smokes
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up
 ./bin/autoscaling-smoke.sh
 ./bin/application-autoscaling-smoke.sh
 ./bin/batch-smoke.sh

@@ -3,7 +3,7 @@
 Local CI trust checks: which GitHub-style `sub` can assume which role, and which service a caller may pass a role to.
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up
 ./bin/oidc-smoke.sh
 ```
 
