@@ -172,7 +172,7 @@ function InstancesList() {
               loading={loading}
               loadingText="Loading databases…"
               title="No databases"
-              text="Run ./bin/rds-smoke.sh or ./bin/rds-mysql-smoke.sh (set KEEP=1 on the smoke to inspect)."
+              text="Run ./bin/rds-smoke.sh or ./bin/rds-mysql-smoke.sh (keep with AWSBOX_RDS_KEEP=1 to inspect)."
             />
           ) : (
             filtered.map((db) => {
