@@ -1,0 +1,8 @@
+# Subagent models — inherit only
+
+When launching Task / subagents for this repo (ticket-batch, implement, review, explore helpers):
+
+- Pass **`model: "inherit"`** (or omit model so the parent Auto/Composer model is used).
+- Do **not** select Claude, Grok, Gemini, GPT, Muse, or other “Other Models” slugs unless the user names one in that turn.
+
+Scout/explore agents that take no model argument stay as-is.

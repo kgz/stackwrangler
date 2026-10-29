@@ -270,3 +270,26 @@
 387	done	SNS large-topic subscribe protocol limits (from #373)
 378	done	batch/2026-10-27-bugs
 384	done	batch/2026-10-27-bugs
+402	backlog	Public OSS product README (Runa-shaped)
+403	backlog	Public OSS docs site (VitePress / Runa-style)
+405	backlog	Debt: STACKWRANGLER smoke defaults (from #305)
+406	backlog	Debt: docs CLI → stackwrangler (from #305)
+407	done	Debt: GitHub repo rename (done — kgz/stackwrangler)
+408	backlog	Debt: residual console awsbox copy (from #305)
+381	done	Public OSS THIRD_PARTY + disclaimer
+411	backlog	Public OSS: scrub Board/workflow from README
+412	backlog	Public OSS: branch protection — only kgz merges main
+413	backlog	Public OSS: flip repository visibility to public
+414	backlog	Public OSS: CONTRIBUTING + SECURITY (+ CODEOWNERS)
+415	backlog	Public OSS: finish awsbox rename (agents/board/residuals)
+416	backlog	Public OSS: split public AGENTS vs owner board workflow
+420	backlog	Debt: enable private vulnerability reporting (from #414)
+421	backlog	Debt: rename design/awsbox dirs (from #415)
+423	backlog	Debt: console e2e awsbox credential defaults (from #405)
+425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
+427	backlog	Debt: leftover awsbox doc/example/helper paths (from #415)
+428	backlog	Public OSS: polish docs-site Runa-grade + full north star
+428	backlog	Public OSS: polish docs-site Runa-grade + Pages prep
+431	backlog	Debt: enable branch protection after public\/Pro (from #412)
+433	backlog	Debt: scope stackwrangler-board.mdc alwaysApply (from #416)
+435	backlog	Debt: execute public flip + secret scanning (from #413)

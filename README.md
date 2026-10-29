@@ -205,12 +205,14 @@ Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or en
 
 ```bash
 ./bin/board-status.sh designing <n>     # web UI — Open Design first
-./bin/board-status.sh in-progress <n>
+export AWSBOX_AGENT=cursor-main        # Project #8 Agent field (not a label)
+./bin/board-status.sh in-progress <n>  # or --agent=cursor-main
 ./bin/gap-check.sh <n>    # before done — Partial/UI stubs → Debt tickets
 ./bin/board-audit.sh
 ./bin/setup-github-board.sh
 
 Lifecycle: **Backlog** → **Ready** → **Designing** → **In progress** → **In review** → **Done**.
+Agent claim: board text field **Agent** (set on in-progress, cleared on done/backlog/ready).
 
 Gap rubric: [docs/gap-check.md](docs/gap-check.md) ·  
 **Is this path tested?** → [docs/test-paths.md](docs/test-paths.md) · grid: [docs/smoke-matrix.md](docs/smoke-matrix.md).  

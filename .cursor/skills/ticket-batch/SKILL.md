@@ -28,16 +28,11 @@ Read the repo workflow before spawning anyone: `AGENTS.md`, `.cursor/rules/`, an
 
 ## 2. Models
 
-Pass `model` only from the session's available subagent model list. Never invent a slug. If a call rejects the slug, pick the next slug in the same tier. Do not retry the same slug.
+**Always `model: "inherit"`** for implement and review workers (and any other Task launch from this skill). Do not pick Claude / Grok / Gemini / GPT / Muse / “Other Models” slugs — the user routes via Auto / Cursor default only.
 
-| Tier | When | Pick |
-|---|---|---|
-| scout | Read the issue and find files | `explore`. No model argument. |
-| implement | Clear ticket, local change | First slug containing `fast` or `medium`. Else a `sonnet`, `grok`, `gemini`, or `gpt` slug that does not contain `thinking` or `fable`. |
-| implement-hard | Auth, data loss, payments, unclear acceptance criteria, or more than one service | First slug containing `high` that does not contain `thinking`. A `thinking` slug only after that worker has already failed once. |
-| review | The acceptance reviewer | A slug that is not the implementer's. Prefer `sonnet`, `gpt`, or `opus` plus `medium` or `high`, with no `fast` and no `thinking`. |
+Scout remains `explore` with no model argument.
 
-`inherit` only when the list has no other usable slug. One acceptance reviewer per PR. Do not launch Bugbot.
+One acceptance reviewer per PR. Do not launch Bugbot.
 
 ## 3. Isolate
 
@@ -70,7 +65,7 @@ Issue: #<n>
 
 Repo rules to follow (from AGENTS.md and the board docs):
 - Branch is already feature/<issue>-<slug>, based on origin/<base>.
-- Move the board to in-progress before editing, and to in-review when the PR is open, using only the repo's script (if bin/board-status.sh exists: ./bin/board-status.sh in-progress <n>, then in-review). If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
+- Move the board to in-progress before editing, and to in-review when the PR is open, using only the repo's script (if bin/board-status.sh exists: export AWSBOX_AGENT=cursor-batch-<slug>; ./bin/board-status.sh in-progress <n>, then in-review). Claim via Project field Agent — do not create per-agent labels. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
 - Do not mark the ticket done.
 - Run the tests the ticket and the repo docs require. If a gap-check script exists, run ./bin/gap-check.sh <n> and file any Debt ticket it requires before the PR.
 - Commit with a short message about why. No Co-authored-by or agent attribution.

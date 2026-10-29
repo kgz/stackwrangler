@@ -5,8 +5,12 @@ Same shape as Colony / Funds Manager. Board: [Project #8](https://github.com/use
 ## Ticket first
 
 ```bash
+export AWSBOX_AGENT=cursor-main   # or cursor-batch-debt, etc. — Project field, not a label
 ./bin/board-status.sh in-progress <issue-num>
+# equivalent: ./bin/board-status.sh in-progress <n> --agent=cursor-main
 ```
+
+Who owns a card: Project #8 text field **Agent** (visible on the board). Set on `in-progress`; cleared on `done` / `backlog` / `ready`. Do not create per-agent GitHub labels.
 
 Web UI / console tickets start in **designing**, then **in-progress** after Open Design mocks exist.
 
