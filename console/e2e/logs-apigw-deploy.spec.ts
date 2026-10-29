@@ -43,7 +43,7 @@ test.describe('Logs + API GW + zip deploy', () => {
     const name = `awsbox-ui-zip-${Date.now()}`
 
     await page.goto('/lambda')
-    await page.getByPlaceholder('awsbox-deploy-…').fill(name)
+    await page.getByPlaceholder('stackwrangler-deploy-…').fill(name)
     await page.getByLabel('Lambda zip file').setInputFiles(zipPath)
     await expect(
       page.getByRole('status').filter({ hasText: `Deployed zip to ${name}` }),

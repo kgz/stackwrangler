@@ -39,8 +39,8 @@ function isMysqlEngine(engine: string | undefined): boolean {
 
 function connectHint(db: DBInstance): string {
   const host = db.Endpoint?.Address ?? '127.0.0.1'
-  const user = db.MasterUsername ?? 'awsbox'
-  const name = db.DBName ?? 'awsbox'
+  const user = db.MasterUsername ?? 'stackwrangler'
+  const name = db.DBName ?? 'stackwrangler'
   const h =
     host.includes('rds.amazonaws.com') || host === 'localhost'
       ? '127.0.0.1'
@@ -172,7 +172,7 @@ function InstancesList() {
               loading={loading}
               loadingText="Loading databases…"
               title="No databases"
-              text="Run ./bin/rds-smoke.sh or ./bin/rds-mysql-smoke.sh (keep with AWSBOX_RDS_KEEP=1 to inspect)."
+              text="Run ./bin/rds-smoke.sh or ./bin/rds-mysql-smoke.sh (set KEEP=1 on the smoke to inspect)."
             />
           ) : (
             filtered.map((db) => {

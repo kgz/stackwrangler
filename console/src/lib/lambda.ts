@@ -334,7 +334,7 @@ def handler(event, context):
     return {
         "statusCode": 200,
         "headers": {"content-type": "application/json"},
-        "body": json.dumps({"message": "Hello from awsbox", "event": event}),
+        "body": json.dumps({"message": "Hello from stackwrangler", "event": event}),
     }
 `,
     }
@@ -344,7 +344,7 @@ def handler(event, context):
     handler: 'index.handler',
     source: `// Hello world template
 exports.handler = async (event) => {
-  const message = "Hello from awsbox";
+  const message = "Hello from stackwrangler";
   return {
     statusCode: 200,
     headers: { "content-type": "application/json" },

@@ -191,13 +191,13 @@ test.describe('Built service detail pages (#349)', () => {
       '--engine-version',
       '16.3',
       '--master-username',
-      'awsbox',
+      'stackwrangler',
       '--master-user-password',
       randomBytes(12).toString('hex'),
       '--allocated-storage',
       '20',
       '--db-name',
-      'awsbox',
+      'stackwrangler',
     ])
     ids.db = dbId
   })
@@ -329,7 +329,7 @@ test.describe('Built service detail pages (#349)', () => {
     ]) {
       await expect(connectivity).toContainText(label)
     }
-    await expect(connectivity).toContainText('awsbox')
+    await expect(connectivity).toContainText('stackwrangler')
     await expect(connectivity).toContainText('psql -h')
     const config = page.locator('.aws-kv').last()
     await expect(config).toContainText('DB instance class')

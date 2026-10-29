@@ -70,7 +70,7 @@ export function ApiGatewayPage() {
     setError(null)
     setToast(null)
     setProbe(null)
-    const name = `awsbox-http-${Date.now()}`
+    const name = `stackwrangler-http-${Date.now()}`
     try {
       const wired = await createHttpApiForLambda(name, fnName)
       setLastUrl(browserInvokeUrl(wired.apiId))

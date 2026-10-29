@@ -20,7 +20,7 @@ export type ServiceDef = {
 
 export const SERVICES: ServiceDef[] = [
   { id: 's3', abbr: 'S3', name: 'S3', desc: 'Scalable Storage in the Cloud', to: '/' },
-  { id: 'iam', abbr: 'IAM', name: 'IAM', desc: 'Manage access to awsbox resources', to: '/iam' },
+  { id: 'iam', abbr: 'IAM', name: 'IAM', desc: 'Manage access to stackwrangler resources', to: '/iam' },
   { id: 'lambda', abbr: 'λ', name: 'Lambda', desc: 'Run code without thinking about servers', to: '/lambda' },
   { id: 'apigw', abbr: 'API', name: 'API Gateway', desc: 'Build, deploy and manage APIs', to: '/apigateway' },
   { id: 'logs', abbr: 'CW', name: 'CloudWatch', desc: 'Monitor logs and metrics', to: '/logs' },

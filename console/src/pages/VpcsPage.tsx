@@ -75,7 +75,7 @@ function VpcList() {
       desc={
         <>
           A virtual private cloud (VPC) is a virtual network dedicated to your
-          account. Display names come from <code>AWSBOX_LABELS</code> (
+          account. Display names come from <code>STACKWRANGLER_LABELS</code> (
           <code>docs/labels.md</code>).
         </>
       }

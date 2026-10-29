@@ -81,7 +81,7 @@ function LoadBalancerList() {
         <>
           Distribute incoming traffic across multiple targets in one or more
           Availability Zones. Display names come from{' '}
-          <code>AWSBOX_LABELS</code> (<code>docs/labels.md</code>).
+          <code>STACKWRANGLER_LABELS</code> (<code>docs/labels.md</code>).
         </>
       }
       notices={<Notices error={error} />}

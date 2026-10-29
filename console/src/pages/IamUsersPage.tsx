@@ -75,7 +75,7 @@ export function IamUsersPage() {
   return (
     <ListCard
       title="Users"
-      desc="An IAM user is an identity with long-term credentials used to interact with awsbox."
+      desc="An IAM user is an identity with long-term credentials used to interact with stackwrangler."
       notices={
         <>
           <Notices error={error} />
