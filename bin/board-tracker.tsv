@@ -282,3 +282,4 @@
 441	backlog	Debt: Network Firewall packet filtering (from #109)
 442	backlog	Debt: Firewall Manager org enforcement (from #109)
 448	in-review	SNS FilterPolicy value limits (empty list, >150 combinations)
+445	in-review	SQS→Lambda ReportBatchItemFailures smoke

@@ -7,6 +7,7 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 ./bin/sqs-smoke.sh
 ./bin/sqs-authz-smoke.sh
 ./bin/sqs-lambda-dlq-smoke.sh   # needs python3 boto3
+./bin/sqs-lambda-batch-failures-smoke.sh   # ReportBatchItemFailures; needs python3 boto3
 ```
 
 | Area | Status |
@@ -18,4 +19,6 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | SNS → SQS refuses `KmsMasterKeyId=alias/aws/sqs` | Working (`sns-sqs-fanout-smoke.sh`; use SQS-managed SSE or a CMK that allows SNS) |
 | SNS → SQS CMK must Allow `sns.amazonaws.com` `kms:GenerateDataKey` and `kms:Decrypt` | Working (`sns-sqs-fanout-smoke.sh`; missing grant is a silent drop, grant delivers) |
 | SQS → Lambda ESM + DLQ | Working (`sqs-lambda-dlq-smoke.sh`; create refuses role without ReceiveMessage/DeleteMessage/GetQueueAttributes when `IAM_ENFORCEMENT=1`; VisibilityTimeout < function timeout; MaximumConcurrency < 2; post-create revoke stops poll + LastProcessingResult/State, re-grant resumes [#285](https://github.com/kgz/awsl/issues/285)) |
+| SQS → Lambda ESM + DLQ | Working (`sqs-lambda-dlq-smoke.sh`; create refuses role without ReceiveMessage/DeleteMessage/GetQueueAttributes when `IAM_ENFORCEMENT=1`; VisibilityTimeout < function timeout; MaximumConcurrency < 2) · post-create revoke [#285](https://github.com/kgz/awsl/issues/285) |
+| SQS → Lambda ReportBatchItemFailures | Working (`sqs-lambda-batch-failures-smoke.sh`; partial batch retry + DLQ; empty failures delete all; unknown `itemIdentifier` fails batch; response ignored without `FunctionResponseTypes`) |
 | Console | Not wired — Debt from #64 → [#167](https://github.com/kgz/awsl/issues/167) |
