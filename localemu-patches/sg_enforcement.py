@@ -310,14 +310,21 @@ def _apply(container: str, sg_ids: list[str], account_id: str, region: str) -> b
                 sg_ids, account_id, region
             )
             script = sg_iptables._build_apply_script(in_rules, out_rules)
-            _sh_netns(container, script)
-            LOG.debug(
-                "Container %s: applied SG via netns sidecar (%d in, %d out)",
-                container,
-                len(in_rules),
-                len(out_rules),
-            )
-            ok = True
+            # _sh_netns → False when the sidecar raises (non-zero exit / docker error).
+            ok = _sh_netns(container, script)
+            if ok:
+                LOG.debug(
+                    "Container %s: applied SG via netns sidecar (%d in, %d out)",
+                    container,
+                    len(in_rules),
+                    len(out_rules),
+                )
+            else:
+                LOG.warning(
+                    "SG netns sidecar failed for %s (%s)",
+                    container,
+                    sg_ids,
+                )
     except Exception:
         LOG.warning("SG apply failed for %s (%s)", container, sg_ids, exc_info=True)
         return False
@@ -349,7 +356,11 @@ def _allow_lambda_control_plane(container: str) -> None:
             "iptables -C SG_IN -s 172.17.0.1/32 -j ACCEPT 2>/dev/null || "
             "iptables -I SG_IN 1 -s 172.17.0.1/32 -j ACCEPT"
         )
-        _sh_netns(container, "; ".join(parts))
+        if not _sh_netns(container, "; ".join(parts)):
+            LOG.warning(
+                "Lambda control-plane SG_IN allow failed for %s",
+                container,
+            )
     except Exception:
         LOG.warning(
             "Lambda control-plane SG_IN allow failed for %s",

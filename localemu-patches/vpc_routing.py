@@ -1044,27 +1044,25 @@ def _ensure_rt_image() -> str:
             return "alpine:3.19"
 
 
-def _sh_netns(container: str, script: str) -> None:
-    """Run ``script`` in ``container``'s netns via a privileged alpine sidecar."""
-    _sh_out_netns(container, script)
+def _sh_netns(container: str, script: str) -> bool:
+    """Run ``script`` in ``container``'s netns via a privileged alpine sidecar.
+
+    Returns True when the sidecar finishes successfully. ``run_container``
+    raises on non-zero exit (``set -e`` scripts included); those failures
+    become False here so callers can propagate them.
+    """
+    try:
+        _run_netns(container, script)
+        return True
+    except Exception:
+        LOG.debug("netns sidecar for %s failed", container, exc_info=True)
+        return False
 
 
 def _sh_out_netns(container: str, script: str) -> str:
-    """Run ``script`` in ``container``'s netns; return stdout."""
-    from localemu.utils.docker_utils import DOCKER_CLIENT
-
-    image = _ensure_rt_image()
-    full = script
-    if image == "alpine:3.19":
-        full = "apk add --no-cache iptables iproute2 >/dev/null 2>&1; " + script
+    """Run ``script`` in ``container``'s netns; return stdout ("" on failure)."""
     try:
-        result = DOCKER_CLIENT.run_container(
-            image,
-            command=["sh", "-c", full],
-            additional_flags=f"--network container:{container}",
-            privileged=True,
-            remove=True,
-        )
+        result = _run_netns(container, script)
     except Exception:
         LOG.debug("netns sidecar for %s failed", container, exc_info=True)
         return ""
@@ -1075,6 +1073,23 @@ def _sh_out_netns(container: str, script: str) -> str:
     if isinstance(raw, bytes):
         return raw.decode("utf-8", errors="replace")
     return str(raw or "")
+
+
+def _run_netns(container: str, script: str):
+    """Execute ``script`` in ``container``'s netns; raise on sidecar failure."""
+    from localemu.utils.docker_utils import DOCKER_CLIENT
+
+    image = _ensure_rt_image()
+    full = script
+    if image == "alpine:3.19":
+        full = "apk add --no-cache iptables iproute2 >/dev/null 2>&1; " + script
+    return DOCKER_CLIENT.run_container(
+        image,
+        command=["sh", "-c", full],
+        additional_flags=f"--network container:{container}",
+        privileged=True,
+        remove=True,
+    )
 
 
 def _running(container: str) -> bool:
