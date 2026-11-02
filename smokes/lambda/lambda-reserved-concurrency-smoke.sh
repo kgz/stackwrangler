@@ -359,7 +359,8 @@ exports.handler = async (event) => {
     for start_ms, end_ms in intervals:
         events.append((start_ms, 1))
         events.append((end_ms, -1))
-    events.sort(key=lambda x: (x[0], -x[1]))
+    # Ends (-1) before starts (+1) at equal ms so serial handoffs don't false-fail.
+    events.sort(key=lambda x: (x[0], x[1]))
     cur = 0
     max_conc = 0
     for _, delta in events:
