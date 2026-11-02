@@ -78,7 +78,7 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 |---------|--------|
 | Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/RT/SG + fixture tags · [docs/mirror.md](docs/mirror.md) · `./bin/mirror-tags-smoke.sh` · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
 | VPC routes / peering / NAT / gateway endpoints | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · `./bin/vpc-egress-smoke.sh` · console [#146](https://github.com/kgz/awsl/issues/146) |
-| VPC security groups | **Partial** · [docs/sg-enforcement.md](docs/sg-enforcement.md) · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · VPC Lambda [#237](https://github.com/kgz/awsl/issues/237) · console [#146](https://github.com/kgz/awsl/issues/146) |
+| VPC security groups | **Partial** · [docs/sg-enforcement.md](docs/sg-enforcement.md) · EC2/ECS/RDS/VPC Lambda · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC Interface endpoint private DNS | **Partial** · [docs/vpce-private-dns.md](docs/vpce-private-dns.md) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC / AZ polish | **Backlog** |
 | ALB / NLB / Classic ELB | **Partial** · [docs/elbv2.md](docs/elbv2.md) · console [#241](https://github.com/kgz/awsl/issues/241) · TLS ACM [#242](https://github.com/kgz/awsl/issues/242) · HTTP health [#243](https://github.com/kgz/awsl/issues/243) · ECS bridge smoke loopback forwarder [#247](https://github.com/kgz/awsl/issues/247) |

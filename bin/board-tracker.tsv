@@ -196,7 +196,7 @@
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
-237	backlog	Debt: VPC Lambda SG enforcement (from #205)
+237	in-review	Debt: VPC Lambda SG enforcement (from #205)
 258	done	v1: VPC Interface endpoint private DNS
 269	done	v1: ECS tasks reach emulator endpoint
 270	done	v1: no-default-route for non-root containers
