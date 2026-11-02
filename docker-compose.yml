@@ -40,6 +40,8 @@ services:
       # Real Postgres/MySQL containers via Docker (not moto-only).
       # Aurora MySQL writer/reader + managed secret: init/start.d/20-rds-mysql.py
       RDS_DOCKER_BACKEND: "1"
+      # Expire messages past MessageRetentionPeriod (AWS default behaviour; off in upstream LocalEmu).
+      SQS_ENABLE_MESSAGE_RETENTION_PERIOD: "1"
       DEBUG: "0"
       PERSISTENCE: "0"
       GATEWAY_LISTEN: 0.0.0.0:4566

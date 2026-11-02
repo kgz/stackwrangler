@@ -215,6 +215,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | SQS → Lambda empty batchItemFailures deletes whole batch | happy | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda unknown itemIdentifier fails whole batch → DLQ | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda without ReportBatchItemFailures ignores response body | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
+| SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./bin/sqs-lambda-esm-enable-smoke.sh` |
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./bin/sns-max-message-size-smoke.sh` |
