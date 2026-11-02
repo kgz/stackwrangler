@@ -21,7 +21,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 
 | Dir | Put here |
 |-----|----------|
-| `smokes/lambda/` | `lambda-*`, `sqs-lambda-dlq-smoke.sh` |
+| `smokes/lambda/` | `lambda-*`, `sqs-lambda-dlq-smoke.sh`, `sqs-lambda-esm-enable-smoke.sh` |
 | `smokes/messaging/` | `sqs-*`, `sns-*`, `events-*`, `sfn-*`, `kinesis-*` |
 | `smokes/networking/` | `vpc-*`, `sg-*`, `elbv2-*`, `route53-*`, `r53-*`, `vpce-*`, `egress-*`, `waf-*` |
 | `smokes/compute/` | `ecs-*`, `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
@@ -35,7 +35,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/parity/` | `aws-parity-*` |
 | `smokes/logs/` | `logs-*` (CloudWatch Logs catalogue) |
 
-`sqs-lambda-dlq-smoke.sh` is lambda, not messaging (requires `python3` with `boto3`). WAF is networking (same milestone as VPC / ELB / DNS).
+`sqs-lambda-dlq-smoke.sh` / `sqs-lambda-esm-enable-smoke.sh` are lambda, not messaging (require `python3` with `boto3`). WAF is networking (same milestone as VPC / ELB / DNS).
 
 ## Stay in `bin/`
 
