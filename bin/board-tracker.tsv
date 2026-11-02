@@ -102,7 +102,7 @@
 106	backlog	PrivateLink polish
 107	backlog	VPC Lattice
 108	backlog	Global Accelerator
-109	backlog	Network Firewall + Firewall Manager
+109	in-progress	Network Firewall + Firewall Manager
 # Account / FinOps
 110	backlog	IAM Identity Center stub
 111	backlog	STS AssumeRole polish
@@ -276,3 +276,8 @@
 408	backlog	Debt: residual console awsbox copy (from #305)
 407	done	Debt: GitHub repo rename (done — kgz/stackwrangler)
 381	done	Public OSS THIRD_PARTY + disclaimer
+438	backlog	Debt: Network Firewall console (from #109)
+439	backlog	Debt: Firewall Manager console (from #109)
+440	backlog	Debt: Network Firewall / FMS authz smoke (from #109)
+441	backlog	Debt: Network Firewall packet filtering (from #109)
+442	backlog	Debt: Firewall Manager org enforcement (from #109)
