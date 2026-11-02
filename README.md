@@ -78,16 +78,18 @@ Smokes: Lambda via console/CLI · `./bin/lambda-vpc-smoke.sh` · `./bin/ecs-smok
 |---------|--------|
 | Account mirror (`./bin/awsl mirror` / `apply`) | **Partial** — synthetic VPC/subnet/RT/SG + fixture tags · [docs/mirror.md](docs/mirror.md) · `./bin/mirror-tags-smoke.sh` · real-account read [#220](https://github.com/kgz/awsl/issues/220) |
 | VPC routes / peering / NAT / gateway endpoints | **Partial** · [docs/vpc-routing.md](docs/vpc-routing.md) · `./bin/vpc-egress-smoke.sh` · console [#146](https://github.com/kgz/awsl/issues/146) |
-| VPC security groups | **Partial** · [docs/sg-enforcement.md](docs/sg-enforcement.md) · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · VPC Lambda [#237](https://github.com/kgz/awsl/issues/237) · console [#146](https://github.com/kgz/awsl/issues/146) |
+| VPC security groups | **Partial** · [docs/sg-enforcement.md](docs/sg-enforcement.md) · EC2/ECS/RDS/VPC Lambda · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC Interface endpoint private DNS | **Partial** · [docs/vpce-private-dns.md](docs/vpce-private-dns.md) · console [#146](https://github.com/kgz/awsl/issues/146) |
 | VPC / AZ polish | **Backlog** |
 | ALB / NLB / Classic ELB | **Partial** · [docs/elbv2.md](docs/elbv2.md) · console [#241](https://github.com/kgz/awsl/issues/241) · TLS ACM [#242](https://github.com/kgz/awsl/issues/242) · HTTP health [#243](https://github.com/kgz/awsl/issues/243) · ECS bridge smoke loopback forwarder [#247](https://github.com/kgz/awsl/issues/247) |
 | Route 53 private zones | **Partial** — associated VPC only · `./bin/r53-private-smoke.sh` · [docs/r53-private.md](docs/r53-private.md) · console/Lambda [#245](https://github.com/kgz/awsl/issues/245) · API Gateway alias / public zones [#300](https://github.com/kgz/awsl/issues/300) |
 | WAFv2 | **Partial** — create/associate API GW stage · rule eval **not** real edge WAF · [docs/waf.md](docs/waf.md) · console [#324](https://github.com/kgz/awsl/issues/324) · CFN [#325](https://github.com/kgz/awsl/issues/325) · edge eval [#326](https://github.com/kgz/awsl/issues/326) |
+| Network Firewall | **Partial** — rule group + firewall policy control plane · no packet filter · [docs/network-firewall.md](docs/network-firewall.md) · console [#438](https://github.com/kgz/stackwrangler/issues/438) · filter [#441](https://github.com/kgz/stackwrangler/issues/441) · authz [#440](https://github.com/kgz/stackwrangler/issues/440) |
+| Firewall Manager | **Partial** — Put/Get/List policy stub · no org enforcement · [docs/network-firewall.md](docs/network-firewall.md) · console [#439](https://github.com/kgz/stackwrangler/issues/439) · enforce [#442](https://github.com/kgz/stackwrangler/issues/442) · authz [#440](https://github.com/kgz/stackwrangler/issues/440) |
 | CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |
 
-Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh` · `./bin/r53-private-smoke.sh` · `./bin/waf-smoke.sh` · `./bin/waf-authz-smoke.sh`
+Smoke: `./bin/mirror-smoke.sh` · `./bin/mirror-tags-smoke.sh` · `./bin/r53-private-smoke.sh` · `./bin/waf-smoke.sh` · `./bin/waf-authz-smoke.sh` · `./bin/network-firewall-fms-smoke.sh`
 | Route 53 hosted zones + records | **Partial** — public A/alias/CNAME + dig in-emulator · `./bin/route53-smoke.sh` · [docs/r53.md](docs/r53.md) · console [#245](https://github.com/kgz/awsl/issues/245) · host dig / API GW alias [#300](https://github.com/kgz/awsl/issues/300) |
 | WAFv2 / CloudFront | **Backlog** (likely control-plane first) |
 | TGW / VPN / PrivateLink / Lattice | **Backlog** |

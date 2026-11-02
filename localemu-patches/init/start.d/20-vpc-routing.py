@@ -155,18 +155,41 @@ def _patch_lambda() -> None:
             LOG.debug("lambda subnet network attach failed", exc_info=True)
         return networks
 
+    def _lambda_sg_ids(self) -> tuple[list[str], list[str]]:
+        function_version = getattr(self, "function_version", None)
+        config = getattr(function_version, "config", None)
+        vpc_config = getattr(config, "vpc_config", None) if config is not None else None
+        if vpc_config is None:
+            return [], []
+        subnet_ids = list(getattr(vpc_config, "subnet_ids", None) or [])
+        sg_ids = list(getattr(vpc_config, "security_group_ids", None) or [])
+        return subnet_ids, sg_ids
+
     def start(self, *args, **kwargs):
         # Route/iptables sync uses a privileged alpine netns sidecar
         # (localemu/awsbox-rt via _sh_netns) — Lambda containers stay
-        # non-privileged (#230).
+        # non-privileged (#230). SG_IN/SG_OUT use the same sidecar (#237).
         subnet_id, account_id, region = _lambda_subnet(self)
         result = original_start(self, *args, **kwargs)
         try:
             name = getattr(self, "container_name", None)
             if subnet_id and name:
                 sync_workload(name, subnet_id, account_id, region)
+                subnet_ids, sg_ids = _lambda_sg_ids(self)
+                from localemu.services.ec2.docker.sg_enforcement import (
+                    attach_container,
+                )
+
+                attach_container(
+                    name,
+                    subnet_ids=subnet_ids or [subnet_id],
+                    sg_ids=sg_ids,
+                    account_id=account_id,
+                    region=region,
+                    kind="lambda",
+                )
         except Exception:
-            LOG.warning("vpc route sync after Lambda start failed", exc_info=True)
+            LOG.warning("vpc route/SG sync after Lambda start failed", exc_info=True)
         return result
 
     def stop(self, *args, **kwargs):
@@ -185,6 +208,18 @@ def _patch_lambda() -> None:
                         DOCKER_CLIENT.inspect_container(name)
                     except Exception:
                         unregister_workload(name)
+                        try:
+                            from localemu.services.ec2.docker.sg_enforcement import (
+                                release_container,
+                            )
+
+                            release_container(name)
+                        except Exception:
+                            LOG.debug(
+                                "lambda SG release failed for %s",
+                                name,
+                                exc_info=True,
+                            )
             except Exception:
                 LOG.debug("lambda workload stop cleanup failed", exc_info=True)
         return result
@@ -194,11 +229,13 @@ def _patch_lambda() -> None:
     DockerRuntimeExecutor.stop = stop
 
 
-def _patch_vpc_endpoint() -> None:
+def _wrap_create_vpc_endpoint() -> None:
     """Re-sync route tables after CreateVpcEndpoint installs prefix-list routes."""
     from moto.ec2.models.vpcs import VPCBackend
     from localemu.services.ec2.docker.vpc_routing import sync_route_table, sync_vpc
 
+    if getattr(VPCBackend.create_vpc_endpoint, "_awsbox_vpc_endpoint_wrapped", False):
+        return
     original = VPCBackend.create_vpc_endpoint
 
     def create_vpc_endpoint(self, *args, **kwargs):
@@ -216,7 +253,62 @@ def _patch_vpc_endpoint() -> None:
             LOG.warning("vpc route sync after CreateVpcEndpoint failed", exc_info=True)
         return endpoint
 
+    create_vpc_endpoint._awsbox_vpc_endpoint_wrapped = True
     VPCBackend.create_vpc_endpoint = create_vpc_endpoint
+
+
+def _ensure_ec2_docker_vm(provider) -> None:
+    """Start DockerVmManager when apply_patches aborted early."""
+    if getattr(provider, "_vm_manager", None) is not None:
+        return
+    import os
+
+    from localemu.services.ec2.docker.vm_manager import DockerVmManager
+    from localemu.utils.docker_utils import DOCKER_CLIENT
+
+    vm_mode = os.environ.get("EC2_VM_MANAGER", "docker").lower()
+    if vm_mode != "docker" or not DOCKER_CLIENT.has_docker():
+        return
+    provider._vm_manager = DockerVmManager()
+    LOG.info(
+        "EC2 Docker backend enabled (awsbox recovery after apply_patches). "
+        "RunInstances will create real containers."
+    )
+
+
+def _patch_vpc_endpoint() -> None:
+    """Defer moto wraps until after Ec2Provider.init; keep Docker VM alive.
+
+    Several start.d scripts replace moto ``create_*`` methods with plain
+    functions. LocalEmu's ``apply_patches`` then fails with
+    ``TypeError: instance must not be None``, aborting ``on_after_init``
+    before ``DockerVmManager`` starts — RunInstances stay state-only.
+    Catch that, still start the Docker backend, then install our endpoint wrap.
+    """
+    from localemu.services.ec2.provider import Ec2Provider
+
+    original_after = Ec2Provider.on_after_init
+
+    def on_after_init(self):
+        try:
+            original_after(self)
+        except TypeError as exc:
+            if "instance must not be None" not in str(exc):
+                raise
+            LOG.warning(
+                "Ec2Provider.apply_patches failed (%s); recovering Docker VM backend",
+                exc,
+            )
+            try:
+                _ensure_ec2_docker_vm(self)
+            except Exception:
+                LOG.warning("EC2 Docker backend recovery failed", exc_info=True)
+        try:
+            _wrap_create_vpc_endpoint()
+        except Exception:
+            LOG.warning("vpc endpoint route sync wrap failed", exc_info=True)
+
+    Ec2Provider.on_after_init = on_after_init
 
 
 def _patch_container_restart() -> None:

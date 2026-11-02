@@ -102,7 +102,7 @@
 106	backlog	PrivateLink polish
 107	backlog	VPC Lattice
 108	backlog	Global Accelerator
-109	backlog	Network Firewall + Firewall Manager
+109	in-review	Network Firewall + Firewall Manager
 # Account / FinOps
 110	backlog	IAM Identity Center stub
 111	backlog	STS AssumeRole polish
@@ -196,7 +196,7 @@
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
-237	backlog	Debt: VPC Lambda SG enforcement (from #205)
+237	in-review	Debt: VPC Lambda SG enforcement (from #205)
 258	done	v1: VPC Interface endpoint private DNS
 269	done	v1: ECS tasks reach emulator endpoint
 270	done	v1: no-default-route for non-root containers
@@ -206,7 +206,7 @@
 271	done	v1: awsvpc not on default docker bridge
 282	backlog	Debt: SG iptables install needs egress (from #271)
 266	done	v1: CreateEventSourceMapping checks Lambda role
-285	backlog	Debt: ESM post-create role revoke stops polling (from #266)
+285	in-review	Debt: ESM post-create role revoke stops polling (from #266)
 241	backlog	Debt: ELBv2 console (from #203)
 242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
@@ -276,3 +276,13 @@
 408	backlog	Debt: residual console awsbox copy (from #305)
 407	done	Debt: GitHub repo rename (done — kgz/stackwrangler)
 381	done	Public OSS THIRD_PARTY + disclaimer
+438	backlog	Debt: Network Firewall console (from #109)
+439	backlog	Debt: Firewall Manager console (from #109)
+440	backlog	Debt: Network Firewall / FMS authz smoke (from #109)
+441	backlog	Debt: Network Firewall packet filtering (from #109)
+442	backlog	Debt: Firewall Manager org enforcement (from #109)
+448	in-review	SNS FilterPolicy value limits (empty list, >150 combinations)
+445	in-review	SQS→Lambda ReportBatchItemFailures smoke
+446	in-review	Smoke: ESM enable/disable stops polling; re-enable drains
+447	in-review	ReservedConcurrentExecutions smoke (direct + ESM)
+453	backlog	Debt: ESM ScalingConfig.MaximumConcurrency vs reserved (from #447)

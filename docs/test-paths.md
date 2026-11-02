@@ -154,7 +154,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./bin/sg-enforcement-smoke.sh` |
 | RDS on a subnet allows 5432 only from SG A | happy | covered | `./bin/sg-enforcement-smoke.sh` |
 | NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
-| VPC Lambda traffic filtered by its security groups | sad/other | missing | [#237](https://github.com/kgz/awsl/issues/237) |
+| VPC Lambda traffic filtered by its security groups | sad/other | covered | `./bin/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) · [#237](https://github.com/kgz/awsl/issues/237) |
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./bin/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./bin/labels-smoke.sh` |
 | Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./bin/labels-smoke.sh` |
@@ -176,6 +176,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | ACM console | ui | missing | [#333](https://github.com/kgz/awsl/issues/333) |
 | ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
 | WAFv2 create WebACL + associate API GW stage; get/list association | happy | covered | `./bin/waf-smoke.sh` · [waf.md](waf.md) |
+| Network Firewall create rule group + firewall policy; describe/list | happy | covered | `./bin/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |
+| Firewall Manager put/get/list policy stub | happy | covered | `./bin/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |
+| Network Firewall packet filtering | happy | missing | [#441](https://github.com/kgz/stackwrangler/issues/441) · [network-firewall.md](network-firewall.md) |
+| Firewall Manager org policy enforcement | happy | missing | [#442](https://github.com/kgz/stackwrangler/issues/442) · [network-firewall.md](network-firewall.md) |
 | **WAFv2 deny-user CreateWebACL → AccessDenied** | sad/authz | covered | `./bin/waf-authz-smoke.sh` |
 | WAFv2 rule evaluation blocks/allows HTTP | happy | missing | [#326](https://github.com/kgz/awsl/issues/326) · [waf.md](waf.md) |
 | WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |
@@ -205,11 +209,23 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | SQS VisibilityTimeout < function timeout → CreateEventSourceMapping refused | sad/other | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | ESM MaximumConcurrency < 2 → CreateEventSourceMapping refused | sad/other | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
+| Lambda role loses SQS poll perms after ESM create → polling stops / LastProcessingResult or State | sad/authz | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
+| Lambda role re-granted SQS poll perms → ESM resumes and queued message consumed | happy | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
+| SQS → Lambda ReportBatchItemFailures: 1 of 3 fails → 2 deleted, 1 redelivered → DLQ | happy | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
+| SQS → Lambda empty batchItemFailures deletes whole batch | happy | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
+| SQS → Lambda unknown itemIdentifier fails whole batch → DLQ | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
+| SQS → Lambda without ReportBatchItemFailures ignores response body | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
+| SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./bin/sqs-lambda-esm-enable-smoke.sh` |
+| Lambda `PutFunctionConcurrency` reserved=1 → second concurrent sync invoke `TooManyRequestsException` (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
+| Lambda reserved concurrency 0 → every sync invoke throttled (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
+| SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
+| ESM `ScalingConfig.MaximumConcurrency` vs reserved concurrency (lower wins) | sad/other | missing | [#453](https://github.com/kgz/awsl/issues/453) |
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./bin/sns-max-message-size-smoke.sh` |
 | SNS large-topic (>256 KiB) subscribe: http/email/sms/application → InvalidParameter; sqs/lambda/firehose ok; Set refused with http sub | sad/happy | covered | `./bin/sns-max-message-size-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS FilterPolicy limits (empty/`>5` keys/`>150` combinations; both scopes; 150-value happy) | happy+sad | covered | `./bin/sns-filter-policy-limits-smoke.sh` |
 | SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS with `KmsMasterKeyId=alias/aws/sqs` → not delivered | sad | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue CMK without `sns.amazonaws.com` `kms:GenerateDataKey` + `kms:Decrypt` → not delivered | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |

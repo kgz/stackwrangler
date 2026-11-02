@@ -172,12 +172,16 @@ cmd_write() {
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
 		echo "apprunner ="
 		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "network-firewall ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "fms ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
 	} >> "$CONFIG_FILE"
 
 	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true
 	sed -i '1{/^$/d}' "$CONFIG_FILE" 2>/dev/null || true
 
-	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, LocalEmu services (incl. waf/batch/asg/beanstalk/apprunner) ${IAM_ENDPOINT} (region ${REGION})"
+	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, LocalEmu services (incl. waf/nfw/fms/batch/asg/beanstalk/apprunner) ${IAM_ENDPOINT} (region ${REGION})"
 }
 
 cmd_remove() {
