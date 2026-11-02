@@ -102,7 +102,7 @@
 106	backlog	PrivateLink polish
 107	backlog	VPC Lattice
 108	backlog	Global Accelerator
-109	in-progress	Network Firewall + Firewall Manager
+109	in-review	Network Firewall + Firewall Manager
 # Account / FinOps
 110	backlog	IAM Identity Center stub
 111	backlog	STS AssumeRole polish
