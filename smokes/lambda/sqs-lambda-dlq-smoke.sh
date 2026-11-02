@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
 # SQS -> Lambda event source mapping: success path (Lambda writes S3 object, message deleted),
 # redrive to DLQ (maxReceiveCount 2, Lambda always throws), sad/authz path
-# (execution role without SQS read perms -> CreateEventSourceMapping refused), and
-# AWS-parity rejects: visibility < function timeout, MaximumConcurrency < 2 (#363).
+# (execution role without SQS read perms -> CreateEventSourceMapping refused),
+# AWS-parity rejects: visibility < function timeout, MaximumConcurrency < 2 (#363),
+# and post-create role revoke stops polling / surfaces LastProcessingResult (#285).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
 
-EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
-REGION="${AWSBOX_REGION:-us-east-1}"
+EP="${STACKWRANGLER_IAM_ENDPOINT:-${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}}"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 TS="$(date +%s)"
 P="awsbox-esm-${TS}"
 BUCKET="${P}"
-KEEP="${AWSBOX_AUTHZ_KEEP:-0}"
+KEEP="${STACKWRANGLER_AUTHZ_KEEP:-${AWSBOX_AUTHZ_KEEP:-0}}"
 TMP="$(mktemp -d)"
 
-export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
-export AWS_SECRET_ACCESS_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 export AWS_DEFAULT_REGION="$REGION"
 
 aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }
@@ -247,4 +248,54 @@ echo "$OUT" | grep -q 'InvalidParameterValueException' || fail "expected Invalid
 echo "$OUT" | grep -qi 'MaximumConcurrency\|maximumConcurrency\|concurrency' || fail "error does not mention MaximumConcurrency: $OUT"
 ok "MaximumConcurrency=1: CreateEventSourceMapping refused"
 
-echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC refusal (${P})"
+# ---- 6. post-create revoke: drop SQS poll perms -> stop consume / LastProcessingResult (#285) ----
+mkrole "${P}-revoke" '["sqs:ReceiveMessage","sqs:DeleteMessage","sqs:GetQueueAttributes","s3:PutObject","logs:*"]'
+RVARN="$(aws iam get-role --role-name "${P}-revoke" --query Role.Arn --output text)"
+Q6="$(mkqueue "${P}-revoke" '{"VisibilityTimeout":"30"}')"
+mkfn "${P}-revoke" "$TMP/ok.zip" "$RVARN"
+U6="$(aws lambda create-event-source-mapping --function-name "${P}-revoke" \
+	--event-source-arn "$(qarn "$Q6")" --batch-size 1 --query UUID --output text)"
+UUIDS+=("$U6")
+wait_esm_enabled "$U6"
+aws sqs send-message --queue-url "$Q6" --message-body "pre-revoke-${TS}" >/dev/null
+n=1
+for _ in $(seq 1 45); do
+	n="$(qcount "$Q6")"
+	[[ "$n" == "0" ]] && break
+	sleep 2
+done
+[[ "$n" == "0" ]] || fail "pre-revoke message was not consumed (count=${n})"
+ok "revoke setup: mapping Enabled and message invoked"
+
+# Strip SQS actions; leave S3/logs so the function could still write if polled
+aws iam put-role-policy --role-name "${P}-revoke" --policy-name inline --policy-document \
+	'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:PutObject","logs:*"],"Resource":"*"}]}' >/dev/null
+
+aws sqs send-message --queue-url "$Q6" --message-body "post-revoke-${TS}" >/dev/null
+# Wait long enough that a still-polling mapping would have drained the queue, and
+# prefer seeing LastProcessingResult / State reflect the authz failure.
+saw_authz=""
+for _ in $(seq 1 45); do
+	lpr="$(aws lambda get-event-source-mapping --uuid "$U6" --query LastProcessingResult --output text 2>/dev/null || true)"
+	st="$(aws lambda get-event-source-mapping --uuid "$U6" --query State --output text 2>/dev/null || true)"
+	if echo "$lpr" | grep -qi 'ReceiveMessage\|execution role\|AccessDenied\|PROBLEM'; then
+		saw_authz=1
+		break
+	fi
+	if [[ "$st" != "Enabled" && "$st" != "Enabling" && "$st" != "Creating" ]]; then
+		saw_authz=1
+		break
+	fi
+	sleep 2
+done
+# Extra settle so a late poll cannot sneak the message out after we saw authz
+sleep 5
+n="$(qcount "$Q6")"
+[[ "$n" != "0" ]] || fail "post-revoke message was consumed despite stripped SQS perms (count=${n})"
+if [[ -n "$saw_authz" ]]; then
+	ok "post-revoke: polling stopped; mapping reports authz failure (LastProcessingResult/State)"
+else
+	ok "post-revoke: polling stopped (message still in queue; LastProcessingResult unchanged)"
+fi
+
+echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC refusal, post-create revoke (${P})"

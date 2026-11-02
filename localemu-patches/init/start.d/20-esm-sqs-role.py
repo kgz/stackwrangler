@@ -1,14 +1,19 @@
 """Refuse CreateEventSourceMapping when the Lambda role lacks SQS poll perms (#266),
 queue VisibilityTimeout < function timeout, or MaximumConcurrency < 2 (#363).
+After create, re-check those SQS actions on each poll so a later revoke stops
+consumption (#285).
 
 LocalEmu calls GetQueueAttributes as the function role via an internal client, but
 IAM_ENFORCEMENT skips internal hops — so a role with no SQS policy still creates a
-mapping. Real AWS returns InvalidParameterValueException when the execution role
-cannot ReceiveMessage / DeleteMessage / GetQueueAttributes, when visibility is
-shorter than the function timeout, or when MaximumConcurrency is below 2.
+mapping, and the poller would keep receiving. Real AWS returns
+InvalidParameterValueException when the execution role cannot ReceiveMessage /
+DeleteMessage / GetQueueAttributes, when visibility is shorter than the function
+timeout, or when MaximumConcurrency is below 2. After create, AWS stops polling
+(or surfaces the authz failure on the mapping) if those perms are removed.
 
-Patches Skeleton.dispatch_request (dynamic on every call). Role check runs under
-IAM_ENFORCEMENT; visibility/concurrency always apply.
+Patches Skeleton.dispatch_request (create-time) and EsmWorker.poller_loop
+(runtime). Role checks run under IAM_ENFORCEMENT; visibility/concurrency always
+apply on create.
 """
 
 from __future__ import annotations
@@ -234,6 +239,120 @@ def _enforce_from_request(context, request) -> None:
         _enforce_role(role_arn, source_arn, account_id, region)
 
 
+_AUTHZ_FAIL_RESULT = (
+    "PROBLEM: Function execution role does not have permissions to call "
+    "ReceiveMessage on SQS"
+)
+
+
+def _set_last_processing_result(worker, result: str) -> None:
+    worker.last_processing_result = result
+    lock = getattr(worker, "_state_lock", None)
+    state = getattr(worker, "_state", None)
+    if lock is None or state is None:
+        return
+    with lock:
+        esm_cfg = state.event_source_mappings.get(worker.uuid)
+        if esm_cfg is not None:
+            esm_cfg["LastProcessingResult"] = result
+
+
+def _poll_role_denied(worker) -> bool:
+    """True when IAM enforce is on and the function role lacks SQS poll actions."""
+    if not _iam_enforce():
+        return False
+
+    source_arn = worker.esm_config.get("EventSourceArn")
+    function_arn = worker.esm_config.get("FunctionArn")
+    if not isinstance(source_arn, str) or ":sqs:" not in source_arn:
+        return False
+    if not isinstance(function_arn, str) or not function_arn:
+        return False
+
+    from localemu.utils.aws.arns import parse_arn
+
+    try:
+        parsed_fn = parse_arn(function_arn)
+        account_id = parsed_fn.get("account") or "000000000000"
+        region = parsed_fn.get("region") or "us-east-1"
+    except Exception:
+        account_id, region = "000000000000", "us-east-1"
+
+    try:
+        version = esm.get_function_version(function_arn, account_id, region)
+    except Exception as e:
+        LOG.debug("ESM SQS poll role lookup failed: %s", e)
+        return False
+    if not version:
+        return False
+
+    role_arn = getattr(version.config, "role", None)
+    if not role_arn:
+        return False
+
+    try:
+        parsed_q = parse_arn(source_arn)
+        queue_account = parsed_q.get("account") or account_id
+        queue_region = parsed_q.get("region") or region
+    except Exception:
+        queue_account, queue_region = account_id, region
+
+    missing = _missing_sqs_action(role_arn, source_arn, queue_account, queue_region)
+    if missing is None:
+        return False
+
+    LOG.warning(
+        "ESM SQS poll denied: role=%s missing=%s queue=%s uuid=%s",
+        role_arn,
+        missing,
+        source_arn,
+        worker.uuid,
+    )
+    return True
+
+
+def _wrap_worker_poll(worker) -> None:
+    poller = getattr(worker, "poller", None)
+    if poller is None or getattr(poller, "_awsbox_esm_sqs_role_poll", False):
+        return
+
+    source_arn = worker.esm_config.get("EventSourceArn") or ""
+    if ":sqs:" not in source_arn:
+        poller._awsbox_esm_sqs_role_poll = True
+        return
+
+    from localemu.services.lambda_.event_source_mapping.pollers.poller import (
+        EmptyPollResultsException,
+    )
+
+    original_poll = poller.poll_events
+
+    def poll_events():
+        if _poll_role_denied(worker):
+            _set_last_processing_result(worker, _AUTHZ_FAIL_RESULT)
+            raise EmptyPollResultsException(service="sqs", source_arn=source_arn)
+        return original_poll()
+
+    poller.poll_events = poll_events
+    poller._awsbox_esm_sqs_role_poll = True
+
+
+def _patch_runtime_poll() -> None:
+    from localemu.services.lambda_.event_source_mapping.esm_worker import EsmWorker
+
+    if getattr(EsmWorker, "_awsbox_esm_sqs_role_poll", False):
+        return
+
+    original_loop = EsmWorker.poller_loop
+
+    def poller_loop(self, *args, **kwargs):
+        _wrap_worker_poll(self)
+        return original_loop(self, *args, **kwargs)
+
+    EsmWorker.poller_loop = poller_loop
+    EsmWorker._awsbox_esm_sqs_role_poll = True
+
+
 def _patch() -> None:
     from localemu.aws.skeleton import Skeleton
 
@@ -248,7 +367,8 @@ def _patch() -> None:
 
     Skeleton.dispatch_request = dispatch_request
     Skeleton._awsbox_esm_sqs_role = True
-    LOG.info("awsbox ESM SQS role/visibility/concurrency checks applied")
+    _patch_runtime_poll()
+    LOG.info("awsbox ESM SQS role/visibility/concurrency + poll revoke checks applied")
 
 
 _patch()
