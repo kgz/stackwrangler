@@ -216,6 +216,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | SQS → Lambda unknown itemIdentifier fails whole batch → DLQ | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda without ReportBatchItemFailures ignores response body | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./bin/sqs-lambda-esm-enable-smoke.sh` |
+| Lambda `PutFunctionConcurrency` reserved=1 → second concurrent sync invoke `TooManyRequestsException` (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
+| Lambda reserved concurrency 0 → every sync invoke throttled (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
+| SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
+| ESM `ScalingConfig.MaximumConcurrency` vs reserved concurrency (lower wins) | sad/other | missing | [#453](https://github.com/kgz/awsl/issues/453) |
 | SNS create/publish | happy | covered | `./bin/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./bin/sns-authz-smoke.sh` |
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./bin/sns-max-message-size-smoke.sh` |

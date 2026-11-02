@@ -284,3 +284,5 @@
 448	in-review	SNS FilterPolicy value limits (empty list, >150 combinations)
 445	in-review	SQS→Lambda ReportBatchItemFailures smoke
 446	in-review	Smoke: ESM enable/disable stops polling; re-enable drains
+447	in-review	ReservedConcurrentExecutions smoke (direct + ESM)
+453	backlog	Debt: ESM ScalingConfig.MaximumConcurrency vs reserved (from #447)
