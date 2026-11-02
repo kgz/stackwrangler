@@ -281,3 +281,4 @@
 440	backlog	Debt: Network Firewall / FMS authz smoke (from #109)
 441	backlog	Debt: Network Firewall packet filtering (from #109)
 442	backlog	Debt: Firewall Manager org enforcement (from #109)
+448	in-review	SNS FilterPolicy value limits (empty list, >150 combinations)
