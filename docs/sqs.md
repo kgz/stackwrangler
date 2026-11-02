@@ -17,5 +17,5 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | SNS → SQS delivery respects queue policy (`aws:SourceArn`) | Working (`sns-sqs-fanout-smoke.sh`) |
 | SNS → SQS refuses `KmsMasterKeyId=alias/aws/sqs` | Working (`sns-sqs-fanout-smoke.sh`; use SQS-managed SSE or a CMK that allows SNS) |
 | SNS → SQS CMK must Allow `sns.amazonaws.com` `kms:GenerateDataKey` and `kms:Decrypt` | Working (`sns-sqs-fanout-smoke.sh`; missing grant is a silent drop, grant delivers) |
-| SQS → Lambda ESM + DLQ | Working (`sqs-lambda-dlq-smoke.sh`; create refuses role without ReceiveMessage/DeleteMessage/GetQueueAttributes when `IAM_ENFORCEMENT=1`; VisibilityTimeout < function timeout; MaximumConcurrency < 2; post-create revoke stops poll / LastProcessingResult [#285](https://github.com/kgz/awsl/issues/285)) |
+| SQS → Lambda ESM + DLQ | Working (`sqs-lambda-dlq-smoke.sh`; create refuses role without ReceiveMessage/DeleteMessage/GetQueueAttributes when `IAM_ENFORCEMENT=1`; VisibilityTimeout < function timeout; MaximumConcurrency < 2; post-create revoke stops poll + LastProcessingResult/State, re-grant resumes [#285](https://github.com/kgz/awsl/issues/285)) |
 | Console | Not wired — Debt from #64 → [#167](https://github.com/kgz/awsl/issues/167) |

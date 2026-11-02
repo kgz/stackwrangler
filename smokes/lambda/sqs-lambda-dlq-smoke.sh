@@ -3,7 +3,8 @@
 # redrive to DLQ (maxReceiveCount 2, Lambda always throws), sad/authz path
 # (execution role without SQS read perms -> CreateEventSourceMapping refused),
 # AWS-parity rejects: visibility < function timeout, MaximumConcurrency < 2 (#363),
-# and post-create role revoke stops polling / surfaces LastProcessingResult (#285).
+# post-create role revoke stops polling + LastProcessingResult/State authz (#285),
+# and re-grant resumes consumption of the queued message.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -272,8 +273,9 @@ aws iam put-role-policy --role-name "${P}-revoke" --policy-name inline --policy-
 	'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:PutObject","logs:*"],"Resource":"*"}]}' >/dev/null
 
 aws sqs send-message --queue-url "$Q6" --message-body "post-revoke-${TS}" >/dev/null
-# Wait long enough that a still-polling mapping would have drained the queue, and
-# prefer seeing LastProcessingResult / State reflect the authz failure.
+# Must see LastProcessingResult and/or State reflect authz failure (not only undeleted msgs).
+lpr=""
+st=""
 saw_authz=""
 for _ in $(seq 1 45); do
 	lpr="$(aws lambda get-event-source-mapping --uuid "$U6" --query LastProcessingResult --output text 2>/dev/null || true)"
@@ -282,20 +284,29 @@ for _ in $(seq 1 45); do
 		saw_authz=1
 		break
 	fi
-	if [[ "$st" != "Enabled" && "$st" != "Enabling" && "$st" != "Creating" ]]; then
+	if [[ -n "$st" && "$st" != "None" && "$st" != "Enabled" && "$st" != "Enabling" && "$st" != "Creating" ]]; then
 		saw_authz=1
 		break
 	fi
 	sleep 2
 done
+[[ -n "$saw_authz" ]] || fail "post-revoke: expected LastProcessingResult/State authz failure (lpr='${lpr}' state='${st}')"
 # Extra settle so a late poll cannot sneak the message out after we saw authz
 sleep 5
 n="$(qcount "$Q6")"
 [[ "$n" != "0" ]] || fail "post-revoke message was consumed despite stripped SQS perms (count=${n})"
-if [[ -n "$saw_authz" ]]; then
-	ok "post-revoke: polling stopped; mapping reports authz failure (LastProcessingResult/State)"
-else
-	ok "post-revoke: polling stopped (message still in queue; LastProcessingResult unchanged)"
-fi
+ok "post-revoke: polling stopped; mapping reports authz failure (LastProcessingResult/State)"
 
-echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC refusal, post-create revoke (${P})"
+# ---- 7. re-grant SQS poll perms -> mapping resumes and queued message is consumed ----
+aws iam put-role-policy --role-name "${P}-revoke" --policy-name inline --policy-document \
+	'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["sqs:ReceiveMessage","sqs:DeleteMessage","sqs:GetQueueAttributes","s3:PutObject","logs:*"],"Resource":"*"}]}' >/dev/null
+n=1
+for _ in $(seq 1 45); do
+	n="$(qcount "$Q6")"
+	[[ "$n" == "0" ]] && break
+	sleep 2
+done
+[[ "$n" == "0" ]] || fail "re-grant: queued message not consumed after SQS perms restored (count=${n})"
+ok "re-grant: mapping resumed and queued message consumed"
+
+echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC refusal, post-create revoke + re-grant (${P})"
