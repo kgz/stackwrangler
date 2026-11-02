@@ -210,6 +210,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./bin/sns-max-message-size-smoke.sh` |
 | SNS large-topic (>256 KiB) subscribe: http/email/sms/application → InvalidParameter; sqs/lambda/firehose ok; Set refused with http sub | sad/happy | covered | `./bin/sns-max-message-size-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./bin/sns-sqs-fanout-smoke.sh` |
+| SNS FilterPolicy limits (empty/`>5` keys/`>150` combinations; both scopes; 150-value happy) | happy+sad | covered | `./bin/sns-filter-policy-limits-smoke.sh` |
 | SNS → SQS queue policy not allowing topic / missing policy → not delivered; unsubscribe stops delivery | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS with `KmsMasterKeyId=alias/aws/sqs` → not delivered | sad | covered | `./bin/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue CMK without `sns.amazonaws.com` `kms:GenerateDataKey` + `kms:Decrypt` → not delivered | sad/authz | covered | `./bin/sns-sqs-fanout-smoke.sh` |
