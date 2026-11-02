@@ -276,13 +276,12 @@ def _sync_container(
     # Probe only — never apt/yum/apk install. Lambda Amazon Linux (and other
     # private images) hang for minutes on package managers without egress,
     # which burns LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT (#369). Route filter
-    # uses the privileged alpine netns sidecar when iptables is missing;
-    # in-container SG enforcement stays off (docs/lambda-vpc.md).
+    # and SG_IN/SG_OUT (#237) use the privileged alpine netns sidecar when
+    # iptables is missing from the workload image.
     has_iptables = _container_has_iptables(container)
     if not has_iptables:
         LOG.info(
-            "container %s has no iptables; VPC routes via netns sidecar "
-            "(in-container SG enforcement off)",
+            "container %s has no iptables; VPC routes via netns sidecar",
             container,
         )
     _netns.sidecar = not has_iptables

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Security group enforcement (#205).
-# Target allows TCP 8080 only from SG A: A (EC2 and ECS) connects, B is refused.
+# Security group enforcement (#205 / #237).
+# Target allows TCP 8080 only from SG A: A (EC2, ECS, VPC Lambda) connects, B is refused.
 # Revoke/authorize without recreating the target flips the result.
 # A prefix list and a CIDR of A's address do the same.
 # RDS allows 5432 only from SG A.
+# VPC Lambda egress follows SG_OUT the same way as an ECS awsvpc task.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -20,11 +21,12 @@ export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
 export AWS_SECRET_ACCESS_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
 export AWS_DEFAULT_REGION="$REGION"
 
-VPC="" SUB="" SG_T="" SG_A="" SG_B="" SG_RDS=""
+VPC="" SUB="" SG_T="" SG_A="" SG_B="" SG_RDS="" SG_L=""
 INST_T="" INST_A="" INST_B=""
 CLUSTER="" FAMILY="" TASK_A="" TASK_B=""
 RDS_ID="" SUBNET_GROUP="" PL=""
-WORKDIR=""
+FN_A="" FN_B="" FN_L="" ROLE_NAME="awsbox-sg-lambda-basic"
+WORKDIR="" ZIP=""
 
 aws() {
 	command aws --endpoint-url "$EP" --region "$REGION" "$@"
@@ -32,6 +34,9 @@ aws() {
 
 cleanup() {
 	[[ "$KEEP" == "1" ]] && return 0
+	[[ -n "$FN_A" ]] && aws lambda delete-function --function-name "$FN_A" >/dev/null 2>&1 || true
+	[[ -n "$FN_B" ]] && aws lambda delete-function --function-name "$FN_B" >/dev/null 2>&1 || true
+	[[ -n "$FN_L" ]] && aws lambda delete-function --function-name "$FN_L" >/dev/null 2>&1 || true
 	[[ -n "$TASK_A" ]] && aws ecs stop-task --cluster "$CLUSTER" --task "$TASK_A" >/dev/null 2>&1 || true
 	[[ -n "$TASK_B" ]] && aws ecs stop-task --cluster "$CLUSTER" --task "$TASK_B" >/dev/null 2>&1 || true
 	[[ -n "$INST_T" ]] && aws ec2 terminate-instances --instance-ids "$INST_T" >/dev/null 2>&1 || true
@@ -45,10 +50,12 @@ cleanup() {
 	[[ -n "$SG_A" ]] && aws ec2 delete-security-group --group-id "$SG_A" >/dev/null 2>&1 || true
 	[[ -n "$SG_B" ]] && aws ec2 delete-security-group --group-id "$SG_B" >/dev/null 2>&1 || true
 	[[ -n "$SG_RDS" ]] && aws ec2 delete-security-group --group-id "$SG_RDS" >/dev/null 2>&1 || true
+	[[ -n "$SG_L" ]] && aws ec2 delete-security-group --group-id "$SG_L" >/dev/null 2>&1 || true
 	[[ -n "$PL" ]] && aws ec2 delete-managed-prefix-list --prefix-list-id "$PL" >/dev/null 2>&1 || true
 	[[ -n "$SUB" ]] && aws ec2 delete-subnet --subnet-id "$SUB" >/dev/null 2>&1 || true
 	[[ -n "$VPC" ]] && aws ec2 delete-vpc --vpc-id "$VPC" >/dev/null 2>&1 || true
 	[[ -n "$WORKDIR" ]] && rm -rf "$WORKDIR"
+	[[ -n "$ZIP" ]] && rm -f "$ZIP"
 }
 trap cleanup EXIT
 
@@ -148,8 +155,8 @@ nohup python3 /var/lib/localemu/awsbox-sg.py >/var/log/awsbox-sg.log 2>&1 &
 exit 0
 EOF
 
-VPC="$(aws ec2 create-vpc --cidr-block 10.205.0.0/16 --query Vpc.VpcId --output text)"
-SUB="$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block 10.205.1.0/24 --query Subnet.SubnetId --output text)"
+VPC="$(aws ec2 create-vpc --cidr-block 10.237.0.0/16 --query Vpc.VpcId --output text)"
+SUB="$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block 10.237.1.0/24 --query Subnet.SubnetId --output text)"
 SG_T="$(aws ec2 create-security-group --group-name "awsbox-sg-t-${TS}" --description target --vpc-id "$VPC" --query GroupId --output text)"
 SG_A="$(aws ec2 create-security-group --group-name "awsbox-sg-a-${TS}" --description caller-a --vpc-id "$VPC" --query GroupId --output text)"
 SG_B="$(aws ec2 create-security-group --group-name "awsbox-sg-b-${TS}" --description caller-b --vpc-id "$VPC" --query GroupId --output text)"
@@ -245,6 +252,82 @@ ECS_B="$(ecs_name "$TASK_B")"
 expect_open "$ECS_A" "$IP_T" "ECS awsvpc in SG A allowed"
 expect_closed "$ECS_B" "$IP_T" "ECS awsvpc in SG B refused"
 
+ROLE_ARN="arn:aws:iam::000000000000:role/${ROLE_NAME}"
+TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+aws iam get-role --role-name "$ROLE_NAME" >/dev/null 2>&1 \
+	|| aws iam create-role --role-name "$ROLE_NAME" --assume-role-policy-document "$TRUST" >/dev/null
+
+ZIP="${WORKDIR}/lambda-sg.zip"
+python3 - "$ZIP" <<'PY'
+import sys, zipfile
+code = b"""const net = require("net");
+exports.handler = async (e) => {
+  const host = e.host, port = Number(e.port), timeoutMs = Number(e.timeoutMs || 3000);
+  return await new Promise((resolve) => {
+    const s = net.connect({ host, port }, () => { s.end(); resolve("open"); });
+    s.setTimeout(timeoutMs, () => { s.destroy(); resolve("closed"); });
+    s.on("error", (err) => {
+      resolve(err && err.code === "ECONNREFUSED" ? "open" : "closed");
+    });
+  });
+};
+"""
+with zipfile.ZipFile(sys.argv[1], "w", compression=zipfile.ZIP_DEFLATED) as z:
+    z.writestr("index.js", code)
+PY
+
+create_lambda() {
+	local name="$1" sg="$2"
+	aws lambda create-function --function-name "$name" --runtime nodejs20.x --role "$ROLE_ARN" \
+		--handler index.handler --zip-file "fileb://${ZIP}" --timeout 15 \
+		--vpc-config "SubnetIds=${SUB},SecurityGroupIds=${sg}" >/dev/null
+	for _ in $(seq 1 60); do
+		[[ "$(aws lambda get-function --function-name "$name" --query Configuration.State --output text)" == "Active" ]] && return 0
+		sleep 2
+	done
+	echo "FAIL: Lambda ${name} not Active" >&2
+	exit 1
+}
+
+lambda_tcp() {
+	local name="$1" ip="$2" out
+	out="$(mktemp)"
+	# VPC Lambda cold start + netns SG sidecar can exceed the default CLI read timeout.
+	aws --cli-read-timeout 180 lambda invoke --function-name "$name" \
+		--cli-binary-format raw-in-base64-out \
+		--payload "{\"host\":\"${ip}\",\"port\":${PORT},\"timeoutMs\":3000}" "$out" >/dev/null
+	python3 -c 'import json,sys; print(json.load(open(sys.argv[1])))' "$out"
+	rm -f "$out"
+}
+
+expect_lambda() {
+	local name="$1" ip="$2" want="$3" label="$4"
+	local got
+	got="$(lambda_tcp "$name" "$ip")"
+	if [[ "$got" != "$want" ]]; then
+		echo "FAIL: $label expected $want, got $got (lambda $name -> $ip:$PORT)" >&2
+		exit 1
+	fi
+	echo "ok  $label"
+}
+
+FN_A="awsbox-sg-a-${TS}"
+FN_B="awsbox-sg-b-${TS}"
+create_lambda "$FN_A" "$SG_A"
+create_lambda "$FN_B" "$SG_B"
+expect_lambda "$FN_A" "$IP_T" open "VPC Lambda in SG A allowed"
+expect_lambda "$FN_B" "$IP_T" closed "VPC Lambda in SG B refused"
+
+# Egress: Lambda SG may only leave toward the target; other VPC IPs are DROP.
+SG_L="$(aws ec2 create-security-group --group-name "awsbox-sg-l-${TS}" --description lambda-egress --vpc-id "$VPC" --query GroupId --output text)"
+aws ec2 authorize-security-group-ingress --group-id "$SG_T" --protocol tcp --port "$PORT" --source-group "$SG_L" >/dev/null
+aws ec2 revoke-security-group-egress --group-id "$SG_L" --ip-permissions '[{"IpProtocol":"-1","IpRanges":[{"CidrIp":"0.0.0.0/0"}]}]' >/dev/null
+aws ec2 authorize-security-group-egress --group-id "$SG_L" --protocol tcp --port "$PORT" --cidr "${IP_T}/32" >/dev/null
+FN_L="awsbox-sg-l-${TS}"
+create_lambda "$FN_L" "$SG_L"
+expect_lambda "$FN_L" "$IP_T" open "VPC Lambda egress allows target"
+expect_lambda "$FN_L" "$IP_A" closed "VPC Lambda egress refuses other VPC IP"
+
 SUBNET_GROUP="awsbox-sg-${TS}"
 RDS_ID="awsboxsg${TS}"
 aws rds create-db-subnet-group \
@@ -283,6 +366,8 @@ expect_closed "$(ctr "$INST_A")" "$IP_T" "after revoke, EC2 A refused without re
 expect_open "$(ctr "$INST_B")" "$IP_T" "after authorize, EC2 B allowed without recreate"
 expect_closed "$ECS_A" "$IP_T" "after revoke, ECS A refused"
 expect_open "$ECS_B" "$IP_T" "after authorize, ECS B allowed"
+expect_lambda "$FN_A" "$IP_T" closed "after revoke, VPC Lambda A refused"
+expect_lambda "$FN_B" "$IP_T" open "after authorize, VPC Lambda B allowed"
 
 aws ec2 revoke-security-group-ingress --group-id "$SG_T" --protocol tcp --port "$PORT" --source-group "$SG_B" >/dev/null
 PL="$(aws ec2 create-managed-prefix-list \
@@ -302,4 +387,4 @@ aws ec2 authorize-security-group-ingress --group-id "$SG_T" --protocol tcp --por
 expect_open "$(ctr "$INST_A")" "$IP_T" "CIDR allows A"
 expect_closed "$(ctr "$INST_B")" "$IP_T" "CIDR refuses B"
 
-echo "OK: sg enforcement (${INST_T} / ${ECS_A} / ${RDS_ID})"
+echo "OK: sg enforcement (${INST_T} / ${ECS_A} / ${RDS_ID} / ${FN_A})"

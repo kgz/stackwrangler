@@ -154,7 +154,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./bin/sg-enforcement-smoke.sh` |
 | RDS on a subnet allows 5432 only from SG A | happy | covered | `./bin/sg-enforcement-smoke.sh` |
 | NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
-| VPC Lambda traffic filtered by its security groups | sad/other | missing | [#237](https://github.com/kgz/awsl/issues/237) |
+| VPC Lambda traffic filtered by its security groups | sad/other | covered | `./bin/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) · [#237](https://github.com/kgz/awsl/issues/237) |
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./bin/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./bin/labels-smoke.sh` |
 | Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./bin/labels-smoke.sh` |

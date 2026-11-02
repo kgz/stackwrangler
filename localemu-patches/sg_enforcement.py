@@ -1,8 +1,11 @@
-"""Security group iptables for ECS awsvpc tasks and RDS containers.
+"""Security group iptables for ECS awsvpc tasks, RDS, and VPC Lambda.
 
 EC2 already programs SG_IN / SG_OUT from moto rules plus AddressIndex
 membership. This module registers the other workload ENIs in that index,
 runs the same apply, and refreshes rules when an SG or prefix list changes.
+
+Lambda (and any image without iptables) gets SG_IN / SG_OUT via the alpine
+netns sidecar used for VPC routes — never apt/yum into the workload image.
 """
 
 from __future__ import annotations
@@ -42,7 +45,9 @@ def install() -> None:
     _patch_prefix_lists()
     _patch_rds()
     _patch_rds_caps()
-    LOG.info("awsbox SG enforcement installed (ECS awsvpc + RDS + prefix lists)")
+    LOG.info(
+        "awsbox SG enforcement installed (ECS awsvpc + RDS + VPC Lambda + prefix lists)"
+    )
 
 
 def attach_container(
@@ -285,14 +290,72 @@ def _remember(container, eni_id, account_id, region, sg_ids, kind) -> None:
 
 def _apply(container: str, sg_ids: list[str], account_id: str, region: str) -> bool:
     try:
-        from localemu.services.ec2.docker.sg_iptables import apply_sg_to_container
-
-        return bool(
-            apply_sg_to_container(container, sg_ids, account_id, region)
+        from localemu.services.ec2.docker import sg_iptables
+        from localemu.services.ec2.docker.vpc_routing import (
+            _container_has_iptables,
+            _sh_netns,
         )
+
+        # Images that already have iptables (EC2, many ECS/RDS) stay in-container.
+        # Lambda Amazon Linux has none — never ensure_iptables/apt (#369); program
+        # the same SG_IN/SG_OUT script through the privileged alpine netns sidecar.
+        if _container_has_iptables(container):
+            ok = bool(
+                sg_iptables.apply_sg_to_container(
+                    container, sg_ids, account_id, region
+                )
+            )
+        else:
+            in_rules, out_rules = sg_iptables._collect_rules(
+                sg_ids, account_id, region
+            )
+            script = sg_iptables._build_apply_script(in_rules, out_rules)
+            _sh_netns(container, script)
+            LOG.debug(
+                "Container %s: applied SG via netns sidecar (%d in, %d out)",
+                container,
+                len(in_rules),
+                len(out_rules),
+            )
+            ok = True
     except Exception:
         LOG.warning("SG apply failed for %s (%s)", container, sg_ids, exc_info=True)
         return False
+    with _lock:
+        wl = _workloads.get(container)
+    if ok and wl is not None and wl.kind == "lambda":
+        _allow_lambda_control_plane(container)
+    return ok
+
+
+def _allow_lambda_control_plane(container: str) -> None:
+    """Permit LocalEmu → runtime API; AWS does not put that path through the ENI SG."""
+    try:
+        from localemu.services.ec2.docker.vpc_endpoint import _localemu_gateway
+        from localemu.services.ec2.docker.vpc_routing import _sh_netns
+
+        parts = [
+            "iptables -C SG_IN -s 127.0.0.0/8 -j ACCEPT 2>/dev/null || "
+            "iptables -I SG_IN 1 -s 127.0.0.0/8 -j ACCEPT",
+        ]
+        gw_ip, _gw_net = _localemu_gateway()
+        if gw_ip:
+            parts.append(
+                f"iptables -C SG_IN -s {gw_ip}/32 -j ACCEPT 2>/dev/null || "
+                f"iptables -I SG_IN 1 -s {gw_ip}/32 -j ACCEPT"
+            )
+        # Bridge gateway used when the compose network is not the self-IP path.
+        parts.append(
+            "iptables -C SG_IN -s 172.17.0.1/32 -j ACCEPT 2>/dev/null || "
+            "iptables -I SG_IN 1 -s 172.17.0.1/32 -j ACCEPT"
+        )
+        _sh_netns(container, "; ".join(parts))
+    except Exception:
+        LOG.warning(
+            "Lambda control-plane SG_IN allow failed for %s",
+            container,
+            exc_info=True,
+        )
 
 
 def _refresh_referencers(sg_ids: list[str], account_id: str, region: str) -> None:
