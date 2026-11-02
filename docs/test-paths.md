@@ -176,6 +176,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | ACM console | ui | missing | [#333](https://github.com/kgz/awsl/issues/333) |
 | ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
 | WAFv2 create WebACL + associate API GW stage; get/list association | happy | covered | `./bin/waf-smoke.sh` · [waf.md](waf.md) |
+| Network Firewall create rule group + firewall policy; describe/list | happy | covered | `./bin/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |
+| Firewall Manager put/get/list policy stub | happy | covered | `./bin/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |
+| Network Firewall packet filtering | happy | missing | [#441](https://github.com/kgz/stackwrangler/issues/441) · [network-firewall.md](network-firewall.md) |
+| Firewall Manager org policy enforcement | happy | missing | [#442](https://github.com/kgz/stackwrangler/issues/442) · [network-firewall.md](network-firewall.md) |
 | **WAFv2 deny-user CreateWebACL → AccessDenied** | sad/authz | covered | `./bin/waf-authz-smoke.sh` |
 | WAFv2 rule evaluation blocks/allows HTTP | happy | missing | [#326](https://github.com/kgz/awsl/issues/326) · [waf.md](waf.md) |
 | WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |

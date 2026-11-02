@@ -23,7 +23,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 |-----|----------|
 | `smokes/lambda/` | `lambda-*`, `sqs-lambda-dlq-smoke.sh` |
 | `smokes/messaging/` | `sqs-*`, `sns-*`, `events-*`, `sfn-*`, `kinesis-*` |
-| `smokes/networking/` | `vpc-*`, `sg-*`, `elbv2-*`, `route53-*`, `r53-*`, `vpce-*`, `egress-*`, `waf-*` |
+| `smokes/networking/` | `vpc-*`, `sg-*`, `elbv2-*`, `route53-*`, `r53-*`, `vpce-*`, `egress-*`, `waf-*`, `network-firewall-*` |
 | `smokes/compute/` | `ecs-*`, `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
 | `smokes/apigw/` | `apigw-*` |
 | `smokes/data/` | `dynamodb-*`, `rds-*` |
