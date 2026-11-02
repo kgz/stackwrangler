@@ -3,7 +3,7 @@
 # Target allows TCP 8080 only from SG A: A (EC2, ECS, VPC Lambda) connects, B is refused.
 # Revoke/authorize without recreating the target flips the result.
 # A prefix list and a CIDR of A's address do the same.
-# RDS allows 5432 only from SG A.
+# RDS allows 5432 only from SG A (EC2 and VPC Lambda).
 # VPC Lambda egress follows SG_OUT the same way as an ECS awsvpc task.
 set -euo pipefail
 
@@ -290,22 +290,22 @@ create_lambda() {
 }
 
 lambda_tcp() {
-	local name="$1" ip="$2" out
+	local name="$1" ip="$2" port="${3:-$PORT}" out
 	out="$(mktemp)"
 	# VPC Lambda cold start + netns SG sidecar can exceed the default CLI read timeout.
 	aws --cli-read-timeout 180 lambda invoke --function-name "$name" \
 		--cli-binary-format raw-in-base64-out \
-		--payload "{\"host\":\"${ip}\",\"port\":${PORT},\"timeoutMs\":3000}" "$out" >/dev/null
+		--payload "{\"host\":\"${ip}\",\"port\":${port},\"timeoutMs\":3000}" "$out" >/dev/null
 	python3 -c 'import json,sys; print(json.load(open(sys.argv[1])))' "$out"
 	rm -f "$out"
 }
 
 expect_lambda() {
-	local name="$1" ip="$2" want="$3" label="$4"
+	local name="$1" ip="$2" want="$3" label="$4" port="${5:-$PORT}"
 	local got
-	got="$(lambda_tcp "$name" "$ip")"
+	got="$(lambda_tcp "$name" "$ip" "$port")"
 	if [[ "$got" != "$want" ]]; then
-		echo "FAIL: $label expected $want, got $got (lambda $name -> $ip:$PORT)" >&2
+		echo "FAIL: $label expected $want, got $got (lambda $name -> $ip:$port)" >&2
 		exit 1
 	fi
 	echo "ok  $label"
@@ -359,6 +359,9 @@ done
 }
 expect_rds "$(ctr "$INST_A")" "$RDS_IP" open "RDS allows SG A"
 expect_rds "$(ctr "$INST_B")" "$RDS_IP" closed "RDS refuses SG B"
+# Same DB SG ingress (source SG A): VPC Lambda A connects on 5432, B is refused.
+expect_lambda "$FN_A" "$RDS_IP" open "VPC Lambda in SG A reaches RDS" 5432
+expect_lambda "$FN_B" "$RDS_IP" closed "VPC Lambda in SG B refused by RDS" 5432
 
 aws ec2 revoke-security-group-ingress --group-id "$SG_T" --protocol tcp --port "$PORT" --source-group "$SG_A" >/dev/null
 aws ec2 authorize-security-group-ingress --group-id "$SG_T" --protocol tcp --port "$PORT" --source-group "$SG_B" >/dev/null
