@@ -8,6 +8,8 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 _PRESET_EP="${AWSBOX_IAM_ENDPOINT-}"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
 [[ -n "$_PRESET_EP" ]] && AWSBOX_IAM_ENDPOINT="$_PRESET_EP"
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 REGION="${AWSBOX_REGION:-us-east-1}"

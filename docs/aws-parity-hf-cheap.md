@@ -21,6 +21,19 @@ Short-lived create → assert → delete for HF tickets that stay **free-tier / 
 
 Ask before running the **real** side (repo cost rule). Local-only is fine anytime the stack is up.
 
+## Local credential isolation
+
+Local smokes source `smokes/lib/local-emu-env.sh`, which:
+
+- maps `STACKWRANGLER_*` → `AWSBOX_*`
+- points credentials at an empty/temp file (not `~/.aws`)
+- disables instance metadata
+- refuses non-loopback `AWSBOX_IAM_ENDPOINT`
+- refuses access keys that look like real IAM keys (`AKIA…` / `ASIA…`)
+
+Real side of this script sets `AWSBOX_ALLOW_REAL_AWS=1` and still requires explicit approval per the repo cost rule.
+
+
 ## Covered on real AWS
 
 | Ticket | Asserts | Not asserted on real (still local) |

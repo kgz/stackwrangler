@@ -134,6 +134,9 @@ run_side() {
 }
 
 if [[ "${AWSBOX_PARITY_SKIP_LOCAL:-0}" != "1" ]]; then
+	echo "======== LOCAL ========"
+	# shellcheck disable=SC1091
+	source "$ROOT/smokes/lib/local-emu-env.sh"
 	export AWS_ACCESS_KEY_ID="$LOCAL_KEY"
 	export AWS_SECRET_ACCESS_KEY="$LOCAL_SECRET"
 	export AWS_DEFAULT_REGION="$LOCAL_REGION"
@@ -144,6 +147,7 @@ if [[ "${AWSBOX_PARITY_SKIP_LOCAL:-0}" != "1" ]]; then
 fi
 
 if [[ "${AWSBOX_PARITY_SKIP_REAL:-0}" != "1" ]]; then
+	export AWSBOX_ALLOW_REAL_AWS=1
 	unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN
 	unset AWS_PROFILE AWS_DEFAULT_PROFILE
 	export AWS_DEFAULT_REGION="$REAL_REGION"

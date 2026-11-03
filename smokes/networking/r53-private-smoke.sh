@@ -12,6 +12,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
 
 HOST_PORT="${AWSBOX_R53_HOST_PORT:-24566}"
 EP="${AWSBOX_R53_ENDPOINT:-http://127.0.0.1:${HOST_PORT}}"

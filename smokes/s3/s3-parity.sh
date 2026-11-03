@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
-# Run day-to-day aws s3 / s3api checks against profile `local`.
+# Run day-to-day aws s3 / s3api checks against local SeaweedFS (:8333).
+# Does not use --profile / ~/.aws — see smokes/lib/local-emu-env.sh.
 # Usage: ./bin/s3-parity.sh
 set -euo pipefail
 
-PROFILE="${AWSBOX_PROFILE:-local}"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
+S3_EP="${AWSBOX_ENDPOINT:-http://127.0.0.1:8333}"
+REGION="${AWSBOX_REGION:-us-east-1}"
 PREFIX="awsbox-parity-$(date +%s)"
 BUCKET="${PREFIX}-b"
 BUCKET2="${PREFIX}-b2"
 MP_BUCKET="${PREFIX}-mp"
 WORKDIR="$(mktemp -d)"
-trap 'rm -rf "$WORKDIR"; aws --profile "$PROFILE" s3 rb "s3://${BUCKET}" --force >/dev/null 2>&1 || true; aws --profile "$PROFILE" s3 rb "s3://${BUCKET2}" --force >/dev/null 2>&1 || true; aws --profile "$PROFILE" s3 rb "s3://${MP_BUCKET}" --force >/dev/null 2>&1 || true' EXIT
+trap 'rm -rf "$WORKDIR"; aws --endpoint-url "$S3_EP" --region "$REGION" s3 rb "s3://${BUCKET}" --force >/dev/null 2>&1 || true; aws --endpoint-url "$S3_EP" --region "$REGION" s3 rb "s3://${BUCKET2}" --force >/dev/null 2>&1 || true; aws --endpoint-url "$S3_EP" --region "$REGION" s3 rb "s3://${MP_BUCKET}" --force >/dev/null 2>&1 || true' EXIT
 
-AWS=(aws --profile "$PROFILE")
+AWS=(aws --endpoint-url "$S3_EP" --region "$REGION")
 pass=0
 fail=0
 gap=0
@@ -42,7 +47,7 @@ run() {
 	return 0
 }
 
-echo "# S3 parity — profile \`$PROFILE\`"
+echo "# S3 parity — endpoint \`$S3_EP\`"
 echo
 echo "Generated: $(date -Iseconds)  ·  prefix \`$PREFIX\`"
 echo

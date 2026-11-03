@@ -11,6 +11,8 @@ BOOT="$ROOT/examples/terraform/awsbox-backend/bootstrap"
 APP="$ROOT/examples/terraform/awsbox-backend/app"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
 
 if [[ "${AWSBOX_TERRAFORM_BACKEND_SMOKE:-}" != "1" ]]; then
 	echo "refusing: set AWSBOX_TERRAFORM_BACKEND_SMOKE=1 to opt in" >&2

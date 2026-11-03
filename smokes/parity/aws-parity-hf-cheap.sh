@@ -47,6 +47,9 @@ trap run_cleanup EXIT
 # --- Local (ticket smokes) ---
 if [[ "${AWSBOX_PARITY_SKIP_LOCAL:-0}" != "1" ]]; then
 	echo "======== LOCAL ========"
+	# Isolate from ~/.aws; map STACKWRANGLER_* → AWSBOX_* for child smokes.
+	# shellcheck disable=SC1091
+	source "$ROOT/smokes/lib/local-emu-env.sh"
 	for s in \
 		dynamodb-depth-smoke \
 		events-schedule-smoke \
@@ -67,6 +70,8 @@ fi
 if [[ "${AWSBOX_PARITY_SKIP_REAL:-0}" != "1" ]]; then
 	echo "======== REAL (${REAL_REGION}) ========"
 	echo "NOTE: creates short-lived resources; teardown on EXIT unless AWSBOX_PARITY_KEEP=1"
+	# Explicit opt-in: real side must not inherit the local-emu guard.
+	export AWSBOX_ALLOW_REAL_AWS=1
 	unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN
 	unset AWS_PROFILE AWS_DEFAULT_PROFILE
 	export AWS_DEFAULT_REGION="$REAL_REGION"
