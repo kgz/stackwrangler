@@ -17,6 +17,22 @@ The value is passed through as LocalEmu's `LAMBDA_DOCKER_FLAGS`, so any `docker 
 
 A function then reaches a service listening on your machine at `http://internal-nlb.example:<port>/`. The service must listen on `0.0.0.0` (or the Docker bridge), not only `127.0.0.1`.
 
+## SQS QueueUrl host (`sqs.<region>.localhost`)
+
+`CreateQueue` / `GetQueueUrl` / CFN `!Ref` return URLs like
+`http://sqs.us-east-1.localhost:4566/000000000000/<queue>`. On the host,
+`*.localhost` resolves to loopback. Inside a Lambda (or ECS) container it does
+not — AWS SDK v3 then fails with `getaddrinfo ENOTFOUND sqs.us-east-1.localhost`
+when `SendMessage` uses that URL from env (the usual `QUEUE_URL=!Ref Queue`
+pattern).
+
+awsbox injects `--add-host=sqs.<region>.localhost:<LocalEmu docker IP>` into
+Lambda containers (and the same mapping for ECS tasks). The target is LocalEmu's
+address on the compose network, not `host-gateway`, because compose publishes
+`:4566` on `127.0.0.1` only. No `.env` change is required for the default region.
+
+Smoke: `./bin/sqs-lambda-queueurl-smoke.sh` (see [sqs.md](sqs.md)).
+
 ## Smoke
 
 ```bash

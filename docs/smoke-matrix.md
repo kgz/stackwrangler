@@ -65,6 +65,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/<name>.sh` sti
 | RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail | `rds-smoke.sh`, `rds-authz-smoke.sh` |
 | RDS MySQL / Aurora MySQL | yes | **yes** (wrong password) | reader read-only | list/detail · create [#145](https://github.com/kgz/awsl/issues/145) | `rds-mysql-smoke.sh` |
 | SQS | yes | **yes** (deny SendMessage; MessageRetentionPeriod > 14d) | — | no → [#167](https://github.com/kgz/awsl/issues/167) | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |
+| Lambda SendMessage via CreateQueue QueueUrl | yes (SDK v3 + `sqs.<region>.localhost`) | — | ENOTFOUND without host inject | — | `sqs-lambda-queueurl-smoke.sh` · [#459](https://github.com/kgz/awsl/issues/459) |
 | SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ; re-grant after revoke resumes) | **yes** (role without SQS; VT < timeout; MaximumConcurrency < 2; post-create SQS perm revoke → LPR/State) | — | — | `sqs-lambda-dlq-smoke.sh` (needs `boto3`) |
 | SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ) | **yes** (role without SQS; VT < timeout; MaximumConcurrency < 2) | — | — | `sqs-lambda-dlq-smoke.sh` (needs `boto3`) |
 | SQS → Lambda ReportBatchItemFailures | yes (batch of 3, 1 failure → 2 deleted + 1 redelivered → DLQ; empty `batchItemFailures` deletes all) | — | **yes** (unknown `itemIdentifier` fails whole batch → DLQ; without `FunctionResponseTypes` response ignored) | — | `sqs-lambda-batch-failures-smoke.sh` (needs `boto3`) |

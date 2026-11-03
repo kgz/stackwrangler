@@ -287,3 +287,4 @@
 447	done	ReservedConcurrentExecutions smoke (direct + ESM)
 453	backlog	Debt: ESM ScalingConfig.MaximumConcurrency vs reserved (from #447)
 449	backlog	Debt: ESM clears LPR after SQS role re-grant (from #285)
+459	in-review	SQS QueueUrl host resolves inside Lambda/ECS
