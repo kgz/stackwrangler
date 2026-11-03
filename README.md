@@ -161,11 +161,12 @@ Smokes: `./bin/apigw-smoke.sh` · `./bin/apigw-authz-smoke.sh` · `./bin/apigw-r
 | CloudFormation | **Partial** — failed create rolls back and delete-stack removes resources ([#212](https://github.com/kgz/awsl/issues/212)); in-place rollback / Snapshot [#228](https://github.com/kgz/awsl/issues/228); stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Serverless Framework v3 | **Partial** — `examples/serverless-v3-rest` · [docs/serverless-awsbox.md](docs/serverless-awsbox.md) · authorizer http-event [#328](https://github.com/kgz/awsl/issues/328) · domain-manager [#329](https://github.com/kgz/awsl/issues/329) · sad smoke [#330](https://github.com/kgz/awsl/issues/330) |
+| Serverless Framework v4 | **Partial** — `examples/serverless-v4-sns-sqs` · [docs/serverless-awsbox.md](docs/serverless-awsbox.md) · needs `SERVERLESS_ACCESS_KEY` / `SERVERLESS_LICENSE_KEY` · sad smoke [#460](https://github.com/kgz/awsl/issues/460) · Lambda→SQS QueueUrl [#459](https://github.com/kgz/awsl/issues/459) |
 | Pulumi / Ansible examples | **Backlog** |
 | CodeDeploy | **CLI + smoke** — ECS blue/green + Lambda canary DG (control plane) · `./bin/codedeploy-smoke.sh` · slice `examples/serverless-v3-rest/slices/codedeploy/` · alias weight [#340](https://github.com/kgz/awsl/issues/340) · authz/console [#341](https://github.com/kgz/awsl/issues/341) |
 | CodePipeline / Build / Artifact | **Backlog** |
 
-Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`, `./bin/serverless-v3-smoke.sh`, `./bin/codedeploy-smoke.sh`
+Smokes: `./bin/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`, `./bin/serverless-v3-smoke.sh`, `./bin/serverless-v4-smoke.sh`, `./bin/codedeploy-smoke.sh`
 
 
 ## Org staging path (target)

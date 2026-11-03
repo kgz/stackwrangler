@@ -1,0 +1,11 @@
+{
+  "name": "awsbox-serverless-v4-sns-sqs",
+  "private": true,
+  "description": "Serverless Framework v4 SNS→SQS fixture for awsbox (#458)",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "serverless": "^4.46.0"
+  }
+}
