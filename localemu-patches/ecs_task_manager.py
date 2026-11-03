@@ -936,11 +936,22 @@ class DockerTaskManager:
                     )
                 # #459: SDK v3 uses QueueUrl host (sqs.<region>.localhost); map
                 # it to the same LocalEmu address AWS_ENDPOINT_URL already uses
-                # (_gw_host). host-gateway misses compose's 127.0.0.1:4566 bind.
-                _emu_dns = getattr(_le_config.LOCALEMU_HOST, "host", None) or "localhost"
-                additional_flags_parts.append(
-                    f"--add-host sqs.{region}.{_emu_dns}:{_gw_host}"
-                )
+                # (_gw_host). Docker --add-host requires an IP — skip when
+                # _emulator_endpoint_target fell back to host.docker.internal.
+                try:
+                    import ipaddress as _ipaddress
+
+                    _ipaddress.ip_address(_gw_host)
+                    _sqs_add_host_ok = True
+                except ValueError:
+                    _sqs_add_host_ok = False
+                if _sqs_add_host_ok:
+                    _emu_dns = (
+                        getattr(_le_config.LOCALEMU_HOST, "host", None) or "localhost"
+                    )
+                    additional_flags_parts.append(
+                        f"--add-host sqs.{region}.{_emu_dns}:{_gw_host}"
+                    )
                 if network_mode == "awsvpc":
                     awsvpc_cfg = (network_configuration or {}).get(
                         "awsvpcConfiguration"
