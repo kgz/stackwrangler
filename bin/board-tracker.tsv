@@ -287,5 +287,5 @@
 447	done	ReservedConcurrentExecutions smoke (direct + ESM)
 453	backlog	Debt: ESM ScalingConfig.MaximumConcurrency vs reserved (from #447)
 449	backlog	Debt: ESM clears LPR after SQS role re-grant (from #285)
-458	in-progress	Serverless Framework v4 deploy against awsbox
+458	in-review	Serverless Framework v4 deploy against awsbox
 460	backlog	Debt: Serverless v4 smoke sad path (from #458)
