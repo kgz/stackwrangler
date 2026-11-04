@@ -1,0 +1,139 @@
+/* Completeness progress — grey-rose, no mermaid chart junk */
+.sw-progress {
+  margin: 1.25rem 0 1.75rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+}
+
+.sw-progress__headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.sw-progress__pct {
+  font-size: 2rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--vp-c-brand-1);
+}
+
+.sw-progress__label {
+  font-size: 0.9rem;
+  color: var(--vp-c-text-2);
+}
+
+.sw-progress__track {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--vp-c-bg-alt);
+  margin-bottom: 0.85rem;
+}
+
+.sw-progress__seg {
+  height: 100%;
+}
+
+.sw-progress__seg--working {
+  background: #6a9e7f;
+  width: 21.875%; /* 14/64 */
+}
+
+.sw-progress__seg--partial {
+  background: #b48aa0;
+  width: 46.875%; /* 30/64 */
+}
+
+.sw-progress__seg--stub {
+  background: #8a7a70;
+  width: 10.9375%; /* 7/64 */
+}
+
+.sw-progress__seg--backlog {
+  background: #5a5a5a;
+  width: 20.3125%; /* 13/64 */
+}
+
+.sw-progress__legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--vp-c-text-2);
+}
+
+@media (min-width: 640px) {
+  .sw-progress__legend {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.sw-progress__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sw-progress__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sw-progress__dot--working {
+  background: #6a9e7f;
+}
+.sw-progress__dot--partial {
+  background: #b48aa0;
+}
+.sw-progress__dot--stub {
+  background: #8a7a70;
+}
+.sw-progress__dot--backlog {
+  background: #5a5a5a;
+}
+
+.sw-progress__meters {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.sw-progress__meter {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr 2.75rem;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.85rem;
+  color: var(--vp-c-text-2);
+}
+
+.sw-progress__meter-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--vp-c-bg-alt);
+  overflow: hidden;
+}
+
+.sw-progress__meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--vp-c-brand-1);
+}
+
+.sw-progress__meter strong {
+  color: var(--vp-c-text-1);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
