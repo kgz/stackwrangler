@@ -16,7 +16,7 @@ Invoking this skill approves, for the tickets named in this turn: branch, commit
 
 ## Stop line
 
-Each ticket ends as an open PR. Passing tickets merge into `batch/<date-or-name>` so they can be tested together. Conflicts are reported and left unresolved. Nothing merges to the default branch until the user says so in a later turn.
+Each ticket ends as an open PR. Passing tickets merge into `batch/<date-or-name>` so they can be tested together. Orchestrator resolves ordinary conflicts; ask only when messy/semantic. Nothing merges to the default branch until the user says so in a later turn.
 
 ## 1. Scope
 
@@ -118,7 +118,7 @@ DATE=$(date +%F)
 git branch "batch/$DATE" "origin/$BASE"   # or batch/<name> if the user gave one
 ```
 
-Merge each surviving ticket branch in with `git merge --no-ff`. On conflict, `git merge --abort`, leave that ticket off the branch, and comment the conflicting files on its PR. Do not resolve conflicts in this skill. Push `batch/…` and do not open a PR from it. When a ticket lands on the batch branch, comment that branch name on its PR.
+Merge each surviving ticket branch in with `git merge --no-ff`. On conflict, the **orchestrator resolves** it (typical: union `bin/board-tracker.tsv` by issue number; keep both sides' docs/smoke rows; prefer incoming for that ticket's code). Abort and ask the user only when the conflict is messy or semantic (unclear which behaviour to keep). Comment on the PR when resolved or when blocked. Push `batch/…` and do not open a PR from it. When a ticket lands on the batch branch, comment that branch name on its PR.
 
 ## 7. Report
 
