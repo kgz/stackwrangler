@@ -301,3 +301,5 @@
 416	done	Public OSS: split public AGENTS vs owner board workflow
 403	in-review	Public OSS docs site (VitePress / Runa-style)
 425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
+412	in-review	Public OSS: branch protection — only kgz merges main
+431	backlog	Debt: enable branch protection after public/Pro (from #412)
