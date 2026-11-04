@@ -299,6 +299,7 @@
 475	done	ESM poller ExpiredToken / credential refresh
 477	backlog	Debt: stream ESM cred-refresh smoke (from #475)
 416	done	Public OSS: split public AGENTS vs owner board workflow
+433	in-review	Debt: scope stackwrangler-board.mdc (not alwaysApply global)
 403	done	Public OSS docs site (VitePress / Runa-style)
 425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
 412	done	Public OSS: branch protection — only kgz merges main
