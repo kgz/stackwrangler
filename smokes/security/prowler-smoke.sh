@@ -121,7 +121,7 @@ except OSError as e:
 PY
 	then
 		echo "hint: ./bin/awsbox-hosts print   # exact /etc/hosts line" >&2
-		echo "hint: ./bin/awsbox-hosts apply   # sudo append (see docs/prowler.md for WSL)" >&2
+		echo "hint: ./bin/awsbox-hosts apply   # sudo append (see docs/prowler.md)" >&2
 		echo "hint: AWSBOX_PROWLER_ENDPOINT=http://…  # override (e.g. local dnsmasq wildcard)" >&2
 		exit 1
 	fi
