@@ -20,11 +20,13 @@ Each ticket ends as an open PR. Passing tickets merge into `batch/<date-or-name>
 
 ## 1. Scope
 
-Take only what this turn names: issue numbers, an epic's sub-issues, or one board column (`ready`, `in-progress`). Do not pull a whole board.
+Take only what this turn names: issue numbers, an epic's sub-issues, or a status column when the user has project access (`ready`, `in-progress`). Do not pull a whole board.
 
 If an issue is assigned to someone other than `gh api user -q .login`, skip it and say so.
 
-Read the repo workflow before spawning anyone: `AGENTS.md`, `.cursor/rules/`, and the header of any `bin/board-status.sh` and `docs/gap-check.md`. Obey that flow. Do not invent statuses or scripts the repo does not have.
+Read the repo workflow before spawning anyone: `AGENTS.md`, `.cursor/rules/`, and `docs/gap-check.md`. Obey that flow. Do not invent statuses or scripts the repo does not have.
+
+**Board ops** (`bin/board-status.sh`, Agent field, private GitHub project): require maintainer project access. Skip board claiming when the session cannot see the project; public `AGENTS.md` does not require it. Owner-local Cursor rules/skills may still drive the board.
 
 ## 2. Models
 
@@ -68,9 +70,9 @@ Work only in <absolute worktree path>. Every shell command uses that working dir
 Issue: #<n>
 <title and body, verbatim>
 
-Repo rules to follow (from AGENTS.md and the board docs):
+Repo rules to follow (from AGENTS.md and .cursor/rules):
 - Branch is already feature/<issue>-<slug>, based on origin/<base>.
-- Move the board to in-progress before editing, and to in-review when the PR is open, using only the repo's script (if bin/board-status.sh exists: ./bin/board-status.sh in-progress <n>, then in-review). If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
+- Board claiming is maintainer-only (private project). If the orchestrator said you have project access and bin/board-status.sh exists: move in-progress before editing and in-review when the PR is open; if bin/board-tracker.tsv has a row, match expected status. Do not run board-audit --apply. If you lack project access, skip board scripts.
 - Do not mark the ticket done.
 - Run the tests the ticket and the repo docs require. If a gap-check script exists, run ./bin/gap-check.sh <n> and file any Debt ticket it requires before the PR.
 - Commit with a short message about why. No Co-authored-by or agent attribution.
@@ -104,7 +106,7 @@ Open must-fix items from round 3:
 
 You decide each `potential-follow-up`. File a backlog ticket only when the gap is real and uncovered (this repo: `Debt: … (from #<n>)` when it matches gap-check). Skip it when it is already filed, out of scope, or not worth tracking. Comment the decision on the PR: filed as `#N`, or skipped, with the reason. Potential follow-ups do not fail the review and do not block the batch.
 
-Move the board to in-review when the PR is open. Leave it there.
+When board access is available, move the board to in-review when the PR is open. Leave it there.
 
 ## 6. Batch branch
 
