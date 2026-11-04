@@ -257,6 +257,13 @@ def _set_last_processing_result(worker, result: str) -> None:
             esm_cfg["LastProcessingResult"] = result
 
 
+def _clear_authz_failure_result(worker) -> None:
+    """AWS clears the stuck PROBLEM once SQS polling succeeds again after re-grant."""
+    if getattr(worker, "last_processing_result", None) != _AUTHZ_FAIL_RESULT:
+        return
+    _set_last_processing_result(worker, "OK")
+
+
 def _poll_role_denied(worker) -> bool:
     """True when IAM enforce is on and the function role lacks SQS poll actions."""
     if not _iam_enforce():
@@ -331,7 +338,14 @@ def _wrap_worker_poll(worker) -> None:
         if _poll_role_denied(worker):
             _set_last_processing_result(worker, _AUTHZ_FAIL_RESULT)
             raise EmptyPollResultsException(service="sqs", source_arn=source_arn)
-        return original_poll()
+        try:
+            result = original_poll()
+        except EmptyPollResultsException:
+            # ReceiveMessage succeeded (empty queue) — clear stuck authz PROBLEM (#449).
+            _clear_authz_failure_result(worker)
+            raise
+        _clear_authz_failure_result(worker)
+        return result
 
     poller.poll_events = poll_events
     poller._awsbox_esm_sqs_role_poll = True
