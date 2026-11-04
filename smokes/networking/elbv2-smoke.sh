@@ -9,9 +9,9 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
-REGION="${AWSBOX_REGION:-us-east-1}"
-KEY="${AWSBOX_ACCESS_KEY:-awsbox}"
-SECRET="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
+KEY="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+SECRET="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 TS="$(date +%s)"
 KEEP="${AWSBOX_ELBV2_KEEP:-0}"
 NLB_PORT=443

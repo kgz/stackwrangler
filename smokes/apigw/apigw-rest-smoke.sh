@@ -14,7 +14,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
-REGION="${AWSBOX_REGION:-us-east-1}"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 ACCOUNT="000000000000"
 TS="$(date +%s)"
 EX="$ROOT/examples/serverless-v3-rest/slices/apigw-authz"
@@ -29,8 +29,8 @@ API_ID=""
 DOMAIN="api-${TS}.example.test"
 BASE_PATH="partner"
 
-export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
-export AWS_SECRET_ACCESS_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 export AWS_DEFAULT_REGION="$REGION"
 
 aws() {

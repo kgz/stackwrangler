@@ -10,8 +10,8 @@ EX="$ROOT/examples/cloudformation/s3-lambda"
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
-KEY="${AWSBOX_ACCESS_KEY:-awsbox}"
-SECRET="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+KEY="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+SECRET="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 TS="$(date +%s)"
 BUCKET="awsbox-cfn-${TS}"
 FN="awsbox-cfn-writer-${TS}"
@@ -20,7 +20,7 @@ STACK="awsbox-cfn-s3-lambda-${TS}"
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
-export AWS_DEFAULT_REGION="${AWSBOX_REGION:-us-east-1}"
+export AWS_DEFAULT_REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 
 aws() {
 	command aws --endpoint-url "$EP" "$@"

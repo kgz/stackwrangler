@@ -6,20 +6,20 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck disable=SC1091
-[[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+source "$ROOT/bin/stackwrangler-env.sh"
 
 VPC_ID="${1:?vpc-id}"
 SUBNET_ID="${2:?subnet-id}"
 SG_ID="${3:?security-group-id}"
-REGION="${AWSBOX_REGION:-us-east-1}"
-EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
+REGION="${STACKWRANGLER_REGION}"
+EP="${STACKWRANGLER_IAM_ENDPOINT}"
 TS="$(date +%s)"
 CLUSTER="awsbox-egress-bridge-${TS}"
 FAMILY="awsbox-egress-bridge-${TS}"
 TASK_ARN=""
 
-export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
-export AWS_SECRET_ACCESS_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY}"
+export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY}"
 export AWS_DEFAULT_REGION="$REGION"
 
 aws() {

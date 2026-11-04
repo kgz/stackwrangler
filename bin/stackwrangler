@@ -12,20 +12,9 @@ IAM_ENDPOINT_DEFAULT="http://127.0.0.1:4566"
 CONSOLE_PID_FILE="$ROOT/.awsbox/console.pid"
 
 
-# STACKWRANGLER_* wins; else AWSBOX_* (old .env); else default.
-sw_env() {
-	local sw_name="$1" ab_name="$2" default="${3:-}"
-	local sw_val ab_val
-	sw_val="${!sw_name-}"
-	ab_val="${!ab_name-}"
-	if [[ -n "$sw_val" ]]; then
-		printf '%s' "$sw_val"
-	elif [[ -n "$ab_val" ]]; then
-		printf '%s' "$ab_val"
-	else
-		printf '%s' "$default"
-	fi
-}
+STACKWRANGLER_ENV_DEFER=1
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-env.sh"
 
 load_root_env() {
 	if [[ -f "$ROOT/.env" ]]; then
