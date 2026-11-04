@@ -1,21 +1,23 @@
 import { expect, test } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
+import { e2eCreds } from './helpers/env'
 
-const EP = process.env.AWSBOX_IAM_ENDPOINT || 'http://127.0.0.1:4566'
-const KEY = process.env.AWSBOX_ACCESS_KEY || 'awsbox'
-const SECRET = process.env.AWSBOX_SECRET_KEY || 'awsboxawsbox'
+const EP = e2eCreds.iamEndpoint
+const KEY = e2eCreds.accessKey
+const SECRET = e2eCreds.secretKey
+const REGION = e2eCreds.region
 
 function aws(args: string[]): string {
   return execFileSync(
     'aws',
-    ['--endpoint-url', EP, '--region', 'us-east-1', ...args],
+    ['--endpoint-url', EP, '--region', REGION, ...args],
     {
       encoding: 'utf8',
       env: {
         ...process.env,
         AWS_ACCESS_KEY_ID: KEY,
         AWS_SECRET_ACCESS_KEY: SECRET,
-        AWS_DEFAULT_REGION: 'us-east-1',
+        AWS_DEFAULT_REGION: REGION,
       },
     },
   )
