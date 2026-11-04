@@ -567,14 +567,14 @@ echo "ok   Lambda wrote S3 marker for ${MSG}"
 
 # FilterPolicy kind=keep: drop body must never appear (settle briefly for late delivery).
 sleep 5
-aws s3 cp "s3://${RESULTS_BUCKET}/got/" "$OUT/got-after-drop/" --recursive >/dev/null 2>&1 || true
+aws s3 cp "s3://${RESULTS_BUCKET}/got/" "$OUT/got-after-drop/" --recursive >/dev/null
 if grep -rq -- "$DROP_MSG" "$OUT/got" "$OUT/got-after-drop" 2>/dev/null; then
 	echo "error: filter-drop message ${DROP_MSG} appeared under results (FilterPolicy leak)" >&2
 	grep -r -- "$DROP_MSG" "$OUT/got" "$OUT/got-after-drop" >&2 || true
 	exit 1
 fi
 got_n="$(find "$OUT/got-after-drop" -type f 2>/dev/null | wc -l | tr -d ' ')"
-if [[ "${got_n:-0}" -gt 1 ]]; then
+if [[ "${got_n:-0}" -ne 1 ]]; then
 	echo "error: expected one S3 marker after keep+drop publish, found ${got_n}" >&2
 	ls -la "$OUT/got-after-drop" >&2 || true
 	exit 1
