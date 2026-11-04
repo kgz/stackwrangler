@@ -19,7 +19,16 @@ Start a run (shows in OD UI):
 
 Visual refs: `refs/`. Paint with grey rose, not AWS orange / sky blue / smile.
 
-Daemon must mount this repo (already in `~/tools/open-design/deploy/docker-compose.wsl.yml`):
+Daemon (Linux-first). From `~/tools/open-design/deploy`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+```
+
+Mount this repo into the daemon (add a volume bind in a local compose overlay if
+`docker-compose.linux.yml` does not already include it). Prefer a Linux-named
+local overlay for new setups; some hosts still keep a personal overlay named
+`docker-compose.wsl.yml`:
 
 ```
 /home/mat/projects/awsl:/home/mat/projects/awsl:rw
