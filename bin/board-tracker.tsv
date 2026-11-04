@@ -296,4 +296,4 @@
 467	in-review	aws-redirect Expect 100-continue deadlock
 468	in-review	stackwrangler sls yarn/npm workspace CLI
 469	in-review	stackwrangler sls non-root container user
-475	in-progress	ESM poller ExpiredToken / credential refresh
+475	in-review	ESM poller ExpiredToken / credential refresh
