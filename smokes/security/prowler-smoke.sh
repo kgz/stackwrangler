@@ -97,7 +97,7 @@ PY
 	fi
 	if [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]]; then
 		echo "error: ENDPOINT host '${host}' breaks S3 Control (<account-id>.${host} will not resolve)" >&2
-		echo "hint: default is http://awsbox.localhost:4566 — run: ./bin/awsbox-hosts print|apply" >&2
+		echo "hint: default is http://awsbox.localhost:4566 — run: ./bin/stackwrangler-hosts print|apply" >&2
 		echo "hint: or set AWSBOX_PROWLER_ENDPOINT to a host that supports <account-id>.<host>" >&2
 		exit 1
 	fi
@@ -120,8 +120,8 @@ except OSError as e:
     sys.exit(1)
 PY
 	then
-		echo "hint: ./bin/awsbox-hosts print   # exact /etc/hosts line" >&2
-		echo "hint: ./bin/awsbox-hosts apply   # sudo append (see docs/prowler.md)" >&2
+		echo "hint: ./bin/stackwrangler-hosts print   # exact /etc/hosts line" >&2
+		echo "hint: ./bin/stackwrangler-hosts apply   # sudo append (see docs/prowler.md)" >&2
 		echo "hint: AWSBOX_PROWLER_ENDPOINT=http://…  # override (e.g. local dnsmasq wildcard)" >&2
 		exit 1
 	fi

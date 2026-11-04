@@ -2,7 +2,7 @@
 
 Bootstrap creates a **state bucket** and **DynamoDB lock table** (local state). The app workspace uses an S3 backend via `backend_override.tf` and creates a tiny SNS topic.
 
-Full notes: [docs/terraform-awsbox.md](../../../docs/terraform-awsbox.md).
+Full notes: [docs/terraform-stackwrangler.md](../../../docs/terraform-stackwrangler.md).
 
 ```bash
 ./bin/awsbox up

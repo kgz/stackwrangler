@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+# Write / remove AWS shared profile `local` for the local stack.
+# Usage:
+#   ./bin/stackwrangler-profile write [--force]
+#   ./bin/stackwrangler-profile remove
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PROFILE_NAME="local"
+SERVICES_NAME="stackwrangler"
+MARKER="# stackwrangler-managed"
+LEGACY_MARKER="# awsbox-managed"
+LEGACY_SERVICES_NAME="awsbox"
+
+STACKWRANGLER_ENV_DEFER=1
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-env.sh"
+
+if [[ -n "${AWS_SHARED_CREDENTIALS_FILE:-}" ]]; then
+	CREDS_FILE="$AWS_SHARED_CREDENTIALS_FILE"
+	CONFIG_FILE="${AWS_CONFIG_FILE:-$(dirname "$CREDS_FILE")/config}"
+else
+	mkdir -p "$HOME/.aws"
+	CREDS_FILE="$HOME/.aws/credentials"
+	CONFIG_FILE="${AWS_CONFIG_FILE:-$HOME/.aws/config}"
+fi
+
+
+load_env() {
+	if [[ -f "$ROOT/.env" ]]; then
+		set -a
+		# shellcheck disable=SC1091
+		source "$ROOT/.env"
+		set +a
+	elif [[ -f "$ROOT/.env.example" ]]; then
+		set -a
+		# shellcheck disable=SC1091
+		source "$ROOT/.env.example"
+		set +a
+	fi
+	ACCESS_KEY="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
+	SECRET_KEY="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
+	REGION="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
+	ENDPOINT="$(sw_env STACKWRANGLER_ENDPOINT AWSBOX_ENDPOINT http://127.0.0.1:8333)"
+	IAM_ENDPOINT="$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT http://127.0.0.1:4566)"
+}
+
+profile_exists() {
+	[[ -f "$CREDS_FILE" ]] && grep -q "^\[${PROFILE_NAME}\]" "$CREDS_FILE"
+}
+
+is_managed() {
+	[[ -f "$CREDS_FILE" ]] || return 1
+	awk -v p="[${PROFILE_NAME}]" -v m="$MARKER" -v lm="$LEGACY_MARKER" '
+		$0 == p { inp=1; next }
+		inp && /^\[/ { exit }
+		inp && (index($0, m) || index($0, lm)) { found=1; exit }
+		END { exit found ? 0 : 1 }
+	' "$CREDS_FILE"
+}
+
+strip_profile_creds() {
+	local f="$1"
+	[[ -f "$f" ]] || return 0
+	awk -v p="[${PROFILE_NAME}]" '
+		$0 == p { skip=1; next }
+		skip && /^\[/ { skip=0 }
+		!skip { print }
+	' "$f" > "${f}.awsbox.tmp"
+	mv "${f}.awsbox.tmp" "$f"
+}
+
+strip_profile_config() {
+	local f="$1"
+	[[ -f "$f" ]] || return 0
+	awk -v p="[profile ${PROFILE_NAME}]" -v s="[services ${SERVICES_NAME}]" -v ls="[services ${LEGACY_SERVICES_NAME}]" '
+		$0 == p || $0 == s || $0 == ls { skip=1; next }
+		skip && /^\[/ { skip=0 }
+		!skip { print }
+	' "$f" > "${f}.awsbox.tmp"
+	mv "${f}.awsbox.tmp" "$f"
+}
+
+cmd_write() {
+	local force=0
+	[[ "${1:-}" == "--force" ]] && force=1
+
+	load_env
+	mkdir -p "$(dirname "$CREDS_FILE")"
+	touch "$CREDS_FILE" "$CONFIG_FILE"
+
+	if profile_exists && ! is_managed; then
+		if [[ "$force" -ne 1 ]]; then
+			echo "error: profile '${PROFILE_NAME}' exists and is not stackwrangler-managed; pass --force to overwrite" >&2
+			exit 1
+		fi
+	fi
+
+	strip_profile_creds "$CREDS_FILE"
+	strip_profile_config "$CONFIG_FILE"
+
+	{
+		echo ""
+		echo "[${PROFILE_NAME}]"
+		echo "$MARKER"
+		echo "aws_access_key_id = ${ACCESS_KEY}"
+		echo "aws_secret_access_key = ${SECRET_KEY}"
+	} >> "$CREDS_FILE"
+
+	{
+		echo ""
+		echo "[profile ${PROFILE_NAME}]"
+		echo "$MARKER"
+		echo "region = ${REGION}"
+		echo "output = json"
+		echo "services = ${SERVICES_NAME}"
+		echo ""
+		echo "[services ${SERVICES_NAME}]"
+		echo "$MARKER"
+		echo "s3 ="
+		echo "    endpoint_url = ${ENDPOINT}"
+		echo "    addressing_style = path"
+		echo "    signature_version = s3v4"
+		echo "iam ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "sts ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "lambda ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "logs ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "apigateway ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "apigatewayv2 ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "ecs ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "ec2 ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "cloudformation ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "transfer ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "rds ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "route53 ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "acm ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "elbv2 ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "wafv2 ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "waf ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "batch ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "autoscaling ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "application-autoscaling ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "elasticbeanstalk ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "apprunner ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "network-firewall ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+		echo "fms ="
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
+	} >> "$CONFIG_FILE"
+
+	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true
+	sed -i '1{/^$/d}' "$CONFIG_FILE" 2>/dev/null || true
+
+	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, LocalEmu services (incl. waf/nfw/fms/batch/asg/beanstalk/apprunner) ${IAM_ENDPOINT} (region ${REGION})"
+}
+
+cmd_remove() {
+	if ! profile_exists; then
+		echo "profile '${PROFILE_NAME}' not present"
+		exit 0
+	fi
+	if ! is_managed; then
+		echo "error: profile '${PROFILE_NAME}' is not stackwrangler-managed; refusing to remove" >&2
+		exit 1
+	fi
+	strip_profile_creds "$CREDS_FILE"
+	strip_profile_config "$CONFIG_FILE"
+	echo "removed profile '${PROFILE_NAME}'"
+}
+
+case "${1:-}" in
+	write)
+		shift
+		cmd_write "${1:-}"
+		;;
+	remove)
+		cmd_remove
+		;;
+	*)
+		echo "Usage: $0 write [--force] | remove" >&2
+		exit 1
+		;;
+esac

@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Ensure / document hosts for S3 Control virtual-host form (Prowler / boto3).
+# Usage:
+#   ./bin/stackwrangler-hosts check   # exit 0 if names resolve (AF_INET)
+#   ./bin/stackwrangler-hosts print   # print /etc/hosts lines
+#   ./bin/stackwrangler-hosts apply   # append lines via sudo if missing (optional)
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck disable=SC1091
+[[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+
+ACCOUNT_ID="${AWSBOX_ACCOUNT_ID:-000000000000}"
+HOST="${AWSBOX_PROWLER_HOST:-awsbox.localhost}"
+MARKER="# awsbox-managed (prowler / s3control)"
+
+hosts_line() {
+	echo "127.0.0.1 ${HOST} ${ACCOUNT_ID}.${HOST} ${MARKER}"
+}
+
+resolve_ok() {
+	AWSBOX_CHECK_HOST="$HOST" AWSBOX_CHECK_ACCOUNT="$ACCOUNT_ID" python3 - <<'PY'
+import os, socket, sys
+
+host = os.environ["AWSBOX_CHECK_HOST"]
+account = os.environ["AWSBOX_CHECK_ACCOUNT"]
+for name in (host, f"{account}.{host}"):
+    try:
+        socket.getaddrinfo(name, 4566, socket.AF_INET)
+    except OSError:
+        sys.exit(1)
+sys.exit(0)
+PY
+}
+
+cmd_check() {
+	if resolve_ok; then
+		echo "ok: ${HOST} and ${ACCOUNT_ID}.${HOST} resolve (AF_INET)"
+		return 0
+	fi
+	echo "missing: ${HOST} / ${ACCOUNT_ID}.${HOST} do not resolve (AF_INET)" >&2
+	echo "add to /etc/hosts (see docs/prowler.md; Windows via WSL: same doc):" >&2
+	hosts_line >&2
+	echo "or: ./bin/stackwrangler-hosts apply" >&2
+	echo "or: AWSBOX_PROWLER_ENDPOINT=http://… (override)" >&2
+	return 1
+}
+
+cmd_print() {
+	hosts_line
+}
+
+cmd_apply() {
+	if resolve_ok; then
+		echo "ok: already resolves; nothing to do"
+		return 0
+	fi
+	local line
+	line="$(hosts_line)"
+	if grep -qF "$MARKER" /etc/hosts 2>/dev/null; then
+		echo "error: ${MARKER} already in /etc/hosts but names still do not resolve" >&2
+		echo "fix or replace that line, then retry" >&2
+		grep -nF "$MARKER" /etc/hosts >&2 || true
+		exit 1
+	fi
+	echo "appending to /etc/hosts (needs sudo):"
+	echo "  ${line}"
+	if ! printf '%s\n' "$line" | sudo tee -a /etc/hosts >/dev/null; then
+		echo "error: could not write /etc/hosts" >&2
+		echo "On Windows via WSL, /etc/hosts may be regenerated — set [network] generateHosts=false in /etc/wsl.conf," >&2
+		echo "     or add the same line to the Windows hosts file (C:\\Windows\\System32\\drivers\\etc\\hosts). See docs/prowler.md." >&2
+		exit 1
+	fi
+	if resolve_ok; then
+		echo "ok: hosts applied"
+		return 0
+	fi
+	echo "error: wrote /etc/hosts but names still do not resolve" >&2
+	exit 1
+}
+
+case "${1:-}" in
+	check) cmd_check ;;
+	print) cmd_print ;;
+	apply) cmd_apply ;;
+	*)
+		echo "Usage: $0 check | print | apply" >&2
+		exit 1
+		;;
+esac

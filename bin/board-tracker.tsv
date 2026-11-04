@@ -268,6 +268,7 @@
 416	done	Public OSS: split public AGENTS vs owner board workflow
 423	in-review	Debt: align console e2e credential defaults to STACKWRANGLER_* (from #405)
 425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
+427	in-review	Debt: rename leftover awsbox doc/example/helper paths (from #415)
 431	backlog	Debt: enable branch protection after public/Pro (from #412)
 433	in-review	Debt: scope stackwrangler-board.mdc (not alwaysApply global)
 435	backlog	Debt: execute public flip + secret scanning (from #413)

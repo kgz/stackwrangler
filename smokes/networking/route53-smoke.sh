@@ -257,7 +257,7 @@ echo "ok private zone create ${PRIV_ZONE_ID}"
 
 # --- optional profile local list (endpoint override; profile still supplies keys) ---
 if [[ "$PROFILE_CHECK" == "1" ]]; then
-	"$ROOT/bin/awsbox-profile" write --force >/dev/null
+	"$ROOT/bin/stackwrangler-profile" write --force >/dev/null
 	LIST_OUT="$(AWS_PROFILE=local aws --endpoint-url "$EP" route53 list-hosted-zones \
 		--query "length(HostedZones[?Id=='${ZONE_ID}'])" --output text)"
 	[[ "$LIST_OUT" == "1" ]] || fail "profile local list-hosted-zones did not include public zone"

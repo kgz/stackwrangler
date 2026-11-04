@@ -145,7 +145,7 @@ services:
   # Transparent AWS DNS + TLS redirect for Serverless v4 (and similar SDK v2 paths).
   # Opt in: docker compose --profile aws-redirect up -d aws-redirect
   # Clients: --dns <aws-redirect IP>, NODE_EXTRA_CA_CERTS=.awsbox/aws-redirect/ca.crt
-  # See tools/aws-endpoint-redirect/ and docs/serverless-awsbox.md (#464).
+  # See tools/aws-endpoint-redirect/ and docs/serverless-stackwrangler.md (#464).
   aws-redirect:
     profiles: ["aws-redirect"]
     build:

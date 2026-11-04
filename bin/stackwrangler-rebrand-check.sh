@@ -74,7 +74,7 @@ EOF
 unset STACKWRANGLER_ACCESS_KEY STACKWRANGLER_SECRET_KEY STACKWRANGLER_REGION \
 	STACKWRANGLER_ENDPOINT STACKWRANGLER_IAM_ENDPOINT || true
 
-./bin/awsbox-profile write --force >/dev/null
+./bin/stackwrangler-profile write --force >/dev/null
 
 grep -q '^aws_access_key_id = onlyawsbox$' "$AWS_SHARED_CREDENTIALS_FILE" \
 	|| fail "profile access key not resolved from AWSBOX_*"
@@ -99,7 +99,7 @@ AWSBOX_REGION=eu-west-1
 STACKWRANGLER_ENDPOINT=http://127.0.0.1:8333
 STACKWRANGLER_IAM_ENDPOINT=http://127.0.0.1:4566
 EOF
-./bin/awsbox-profile write --force >/dev/null
+./bin/stackwrangler-profile write --force >/dev/null
 grep -q '^aws_access_key_id = newkey$' "$AWS_SHARED_CREDENTIALS_FILE" \
 	|| fail "STACKWRANGLER_* should win over AWSBOX_*"
 grep -qv 'onlyawsbox' "$AWS_SHARED_CREDENTIALS_FILE" \

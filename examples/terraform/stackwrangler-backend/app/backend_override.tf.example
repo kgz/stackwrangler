@@ -3,7 +3,7 @@
 terraform {
   backend "s3" {
     bucket         = "STATE_BUCKET"
-    key            = "awsbox-backend/app.tfstate"
+    key            = "stackwrangler-backend/app.tfstate"
     region         = "us-east-1"
     dynamodb_table = "LOCK_TABLE"
     encrypt        = true
