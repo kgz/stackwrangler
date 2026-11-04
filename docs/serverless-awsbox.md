@@ -5,26 +5,27 @@ Use Serverless Framework against LocalEmu (`:4566`), not SeaweedFS S3.
 ## Endpoint + profile
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up
 ./bin/awsbox-profile write --force
 
-export AWS_ENDPOINT_URL="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 export AWS_ACCESS_KEY_ID=awsbox
 export AWS_SECRET_ACCESS_KEY=awsboxawsbox
 export AWS_DEFAULT_REGION=us-east-1
 ```
 
-`AWS_ENDPOINT_URL` must point at LocalEmu for **all** SDK calls, including the deployment bucket. Profile `local` alone sends S3 to SeaweedFS (`:8333`); Lambda/CFN would not see those artifacts.
+For **host** AWS CLI / SDK v3 calls against LocalEmu:
 
-You can still pass `--aws-profile local` for credentials if you prefer, but keep `AWS_ENDPOINT_URL` set.
+```bash
+export AWS_ENDPOINT_URL="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
+```
+
+`AWS_ENDPOINT_URL` must point at LocalEmu for those clients (including deployment-bucket prep). Profile `local` alone sends S3 to SeaweedFS (`:8333`).
 
 Optional S3-specific endpoint (virtual-hosted style clients):
 
 ```bash
 export AWS_ENDPOINT_URL_S3=http://s3.localhost.localstack.cloud:4566
 ```
-
-(`s3.localhost.localstack.cloud` resolves to `127.0.0.1` on the awsbox host hosts file / typical LocalStack DNS mapping.)
 
 ## v3
 
@@ -54,26 +55,46 @@ v4 requires authentication for **all** CLI commands, including `serverless packa
 | Method | Env | Who | Offline? |
 |--------|-----|-----|----------|
 | Dashboard Access Key | `SERVERLESS_ACCESS_KEY` | Free individuals / orgs under $2M revenue; CI | No — CLI validates against Serverless Inc |
-| License Key | `SERVERLESS_LICENSE_KEY` | Paid subscription only | No — still phones home to validate the key (disables Dashboard features) |
+| License Key | `SERVERLESS_LICENSE_KEY` | Paid subscription | No — still phones home to validate the key |
+| Maintainer local alias | `SERVERLESS_LOCAL_ONLY_LICENCE_KEY` | Mapped to `SERVERLESS_LICENSE_KEY` when the latter is unset (`./bin/stackwrangler sls` + smoke) | No |
 | Interactive `serverless login` | (stores local access key) | Local machines | No |
 
-Put the key in the environment (or `.env` sourced by smokes). Do **not** commit keys. Optional: store a License Key in the **target** account as SSM `/serverless-framework/license-key` (Framework auto-reads it) — against LocalEmu that still needs a real key value and network to validate.
+Put the key in the environment (or `.env` sourced by smokes). Do **not** commit keys. See [`.env.example`](../.env.example) for the variable names.
 
 Fake / empty keys fail with `Forbidden`.
 
-### Custom endpoint route (preferred)
+### Deploy path: aws-redirect (required for `deploy` / `remove`)
 
-1. Export `SERVERLESS_ACCESS_KEY` or `SERVERLESS_LICENSE_KEY`
-2. Export `AWS_ENDPOINT_URL=http://127.0.0.1:4566` (and credentials as above)
-3. `npx serverless deploy --stage local` from each service dir
+Serverless Framework v4’s deploy path uses the AWS SDK **v2** bundled under `~/.serverless/releases/…/aws-sdk`. That SDK **ignores** `AWS_ENDPOINT_URL`, so `sts.amazonaws.com` / `cloudformation.<region>.amazonaws.com` would hit **real AWS**. Fake awsbox keys then fail with an invalid-token error; real keys on the machine would land in a real account.
 
-`AWS_ENDPOINT_URL` alone is enough for the awsbox path (SDK v3 honors it). The smoke also sets `AWS_ENDPOINT_URL_S3` for clients that prefer virtual-hosted S3 URLs.
+Use the transparent redirect instead:
 
-### Fallback: `package` then CloudFormation
-
-If `deploy` mis-routes to real AWS despite `AWS_ENDPOINT_URL`:
+1. Compose profile `aws-redirect` — dual-role container under [`tools/aws-endpoint-redirect/`](../tools/aws-endpoint-redirect/): dnsmasq (AWS hostnames → proxy IP; everything else upstream) + TLS `:443` with **dynamic leaf certs per SNI** signed by `.awsbox/aws-redirect/ca.crt`, forwarding HTTP to LocalEmu `:4566` with the client `Host` kept.
+2. Wrapper: `./bin/stackwrangler sls` (also `./bin/awsbox sls`) runs the CLI in a Node container on that network with `--dns <aws-redirect>`, `NODE_EXTRA_CA_CERTS`, fake keys, **no** `AWS_ENDPOINT_URL`, **no** `~/.aws` mount.
+3. Fail closed: AWS names never resolve to public IPs. If the TLS edge is down, clients get a connection error — not real AWS.
 
 ```bash
+./bin/stackwrangler up
+# starts aws-redirect on first use
+export SERVERLESS_ACCESS_KEY=…   # or SERVERLESS_LICENSE_KEY / SERVERLESS_LOCAL_ONLY_LICENCE_KEY
+
+cd examples/serverless-v4-sns-sqs && npm i
+aws s3 mb s3://awsbox-sls4-deploy --endpoint-url http://127.0.0.1:4566
+aws ssm put-parameter --name /demo/sls4/dev/app-name --type String --value my-app \
+  --overwrite --endpoint-url http://127.0.0.1:4566
+
+./bin/stackwrangler sls --cwd examples/serverless-v4-sns-sqs/topic -- deploy --stage local
+./bin/stackwrangler sls --cwd examples/serverless-v4-sns-sqs/consumer -- deploy --stage local
+```
+
+Manual compose (optional): `docker compose --profile aws-redirect up -d aws-redirect`.
+
+### Fallback: `package` then CloudFormation (no redirect)
+
+`serverless package` makes no AWS control-plane calls. Packaging on the host, then deploying the template with the AWS CLI against LocalEmu, still works when you cannot use the redirect container:
+
+```bash
+export AWS_ENDPOINT_URL=http://127.0.0.1:4566
 npx serverless package --stage local
 # Upload .serverless/*.zip to the LocalEmu deployment bucket, then:
 aws cloudformation deploy \
@@ -83,7 +104,7 @@ aws cloudformation deploy \
   --endpoint-url "$AWS_ENDPOINT_URL"
 ```
 
-`package` still needs a valid Access/License key. Prefer fixing the endpoint env over this path.
+`package` still needs a valid Access/License key (licence host is not AWS DNS). Prefer `./bin/stackwrangler sls` for deploy/remove.
 
 ### Lambda → SQS from inside the function
 

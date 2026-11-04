@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-# Deploy examples/serverless-v4-sns-sqs (topic + consumer) against LocalEmu:
-# deploy both → SNS publish → Lambda S3 marker → redeploy consumer → remove.
+# Deploy examples/serverless-v4-sns-sqs (topic + consumer) via aws-redirect
+# (DNS + TLS → LocalEmu). No AWS_ENDPOINT_URL on the Serverless path (#464).
+#
+# DNS log asserts AWS names → proxy IP only. We do not prove "only the
+# Serverless licence host left the machine" (would need packet capture);
+# non-AWS names resolve upstream by design.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 EX="$ROOT/examples/serverless-v4-sns-sqs"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+# Maintainer shell may export SERVERLESS_LOCAL_ONLY_LICENCE_KEY only.
+if [[ -z "${SERVERLESS_LICENSE_KEY:-}" && -n "${SERVERLESS_LOCAL_ONLY_LICENCE_KEY:-}" ]]; then
+	export SERVERLESS_LICENSE_KEY="$SERVERLESS_LOCAL_ONLY_LICENCE_KEY"
+fi
 # shellcheck disable=SC1091
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
@@ -32,15 +40,15 @@ REMOVED=0
 TOPIC_DEPLOYED=0
 CONSUMER_DEPLOYED=0
 BUCKET_CREATED=0
-SLS_TIMEOUT_SECS="${AWSBOX_SLS_TIMEOUT_SECS:-180}"
+SLS_TIMEOUT_SECS="${AWSBOX_SLS_TIMEOUT_SECS:-300}"
+COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
+DNS_LOG_HOST="$OUT/dnsmasq-queries.log"
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
 export AWS_DEFAULT_REGION="$REGION"
-# Force every SDK call (incl. S3 artifacts) onto LocalEmu — not SeaweedFS via profile local.
+# Host-side aws CLI / asserts still talk to LocalEmu directly.
 export AWS_ENDPOINT_URL="$EP"
-# Helps virtual-hosted S3 clients that ignore path-style (resolves to 127.0.0.1 here).
-export AWS_ENDPOINT_URL_S3="${AWSBOX_SLS4_S3_ENDPOINT:-http://s3.localhost.localstack.cloud:4566}"
 export AWSBOX_SLS4_DEPLOY_BUCKET="$DEPLOY_BUCKET"
 export AWSBOX_SLS4_SUFFIX="$SUFFIX"
 export AWSBOX_SLS4_TOPIC_SERVICE="$TOPIC_SERVICE"
@@ -59,25 +67,77 @@ require_sls_auth() {
 		return 0
 	fi
 	echo "error: Serverless Framework v4 needs auth for every command (incl. package)." >&2
-	echo "  Free / under-\$2M: export SERVERLESS_ACCESS_KEY=… (Dashboard → Settings → Access Keys)" >&2
-	echo "  Paid subscription: export SERVERLESS_LICENSE_KEY=…" >&2
-	echo "  Neither is offline — the CLI validates against Serverless Inc." >&2
+	echo "  Free / under-\$2M: export SERVERLESS_ACCESS_KEY=…" >&2
+	echo "  Paid / local maintainer: SERVERLESS_LICENSE_KEY or SERVERLESS_LOCAL_ONLY_LICENCE_KEY" >&2
 	echo "  See docs/serverless-awsbox.md" >&2
 	exit 1
 }
 
-# Run serverless in a service dir; succeed if the log shows the expected marker even when the CLI hangs.
-sls_run() {
+redirect_id() {
+	"${COMPOSE[@]}" --profile aws-redirect ps -q aws-redirect 2>/dev/null | head -1
+}
+
+redirect_ip() {
+	local id
+	id="$(redirect_id)"
+	[[ -n "$id" ]] || return 1
+	docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$id" | awk 'NF{print; exit}'
+}
+
+fetch_dns_log() {
+	local id
+	id="$(redirect_id)"
+	[[ -n "$id" ]] || return 1
+	docker exec "$id" cat /var/log/aws-redirect-dnsmasq.log >"$DNS_LOG_HOST" 2>/dev/null || true
+}
+
+# Assert AWS A answers in the dnsmasq log are only the redirect IP (fail-closed).
+# Limitation: this is DNS answers only — we do not packet-capture egress. Non-AWS
+# names (Serverless licence host, npm, etc.) resolve upstream by design; the log
+# cannot prove "only the licence host left the machine" without brittle capture.
+assert_dns_fail_closed() {
+	local ip bad
+	ip="$(redirect_ip)"
+	[[ -n "$ip" ]] || {
+		echo "error: aws-redirect IP unknown for DNS assert" >&2
+		return 1
+	}
+	fetch_dns_log
+	[[ -s "$DNS_LOG_HOST" ]] || {
+		echo "error: empty dnsmasq query log" >&2
+		return 1
+	}
+	# dnsmasq --log-queries: "config <name> is <ip>" for address=/…/ answers.
+	bad="$(
+		grep -E 'config .*(amazonaws\.com|amazonaws\.com\.cn|api\.aws|aws\.amazon\.com) is [0-9.]+' "$DNS_LOG_HOST" \
+			| grep -Ev " is (${ip}|0\\.0\\.0\\.0)$" || true
+	)"
+	if [[ -n "$bad" ]]; then
+		echo "error: dnsmasq answered an AWS hostname with a non-proxy IP:" >&2
+		echo "$bad" >&2
+		return 1
+	fi
+	if ! grep -Eq "config .*(sts|cloudformation|ssm|s3|sns|sqs|lambda).*amazonaws\\.com is ${ip}" "$DNS_LOG_HOST"; then
+		if ! grep -Eq "config .*amazonaws\\.com is ${ip}" "$DNS_LOG_HOST"; then
+			echo "error: dnsmasq log has no AWS→proxy answers (ip=${ip})" >&2
+			tail -n 80 "$DNS_LOG_HOST" >&2 || true
+			return 1
+		fi
+	fi
+	echo "ok   DNS log: AWS hostnames → ${ip} only (egress allowlist not asserted; see smoke header)"
+}
+
+# Run serverless via ./bin/stackwrangler sls (container + aws-redirect DNS/TLS).
+sls_run_timed() {
 	local dir="$1"
 	local marker="$2"
 	local log="$3"
 	shift 3
 	set +e
 	(
-		cd "$dir"
 		timeout --signal=KILL "${SLS_TIMEOUT_SECS}" \
-			stdbuf -oL -eL \
-			npx serverless "$@" --stage "$STAGE"
+			env -u AWS_ENDPOINT_URL -u AWS_ENDPOINT_URL_S3 \
+			"$ROOT/bin/stackwrangler" sls --cwd "$dir" -- "$@" --stage "$STAGE"
 	) >"$log" 2>&1
 	local rc=$?
 	set -e
@@ -90,6 +150,87 @@ sls_run() {
 	return 1
 }
 
+stop_tls_proxy() {
+	local id
+	id="$(redirect_id)"
+	[[ -n "$id" ]] || return 1
+	# Slim image has no pkill — kill via pid file, then any leftover tls_proxy.py.
+	docker exec -i "$id" python3 - <<'PY' || true
+import os, signal, pathlib
+pid_path = pathlib.Path("/var/run/aws-redirect-tls.pid")
+if pid_path.exists():
+    try:
+        os.kill(int(pid_path.read_text().strip()), signal.SIGTERM)
+    except (ProcessLookupError, ValueError):
+        pass
+    pid_path.unlink(missing_ok=True)
+for proc in pathlib.Path("/proc").iterdir():
+    if not proc.name.isdigit():
+        continue
+    try:
+        cmd = (proc / "cmdline").read_bytes().replace(b"\0", b" ").decode()
+    except OSError:
+        continue
+    if "tls_proxy.py" in cmd:
+        try:
+            os.kill(int(proc.name), signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+PY
+	sleep 1
+}
+
+start_tls_proxy_again() {
+	"${COMPOSE[@]}" --profile aws-redirect up -d --force-recreate aws-redirect >/dev/null
+	local i id
+	for i in $(seq 1 60); do
+		id="$(redirect_id)"
+		if [[ -n "$id" ]] && docker exec "$id" /opt/aws-redirect/healthcheck.sh >/dev/null 2>&1; then
+			return 0
+		fi
+		sleep 1
+	done
+	echo "error: aws-redirect did not recover after TLS restart (DNS+TLS healthcheck)" >&2
+	return 1
+}
+
+negative_tls_down() {
+	echo "==> negative: DNS up, TLS proxy stopped → connection error (not real AWS)"
+	local log="$OUT/negative-tls-down.log"
+	local id ip network
+	id="$(redirect_id)"
+	ip="$(redirect_ip)"
+	network="$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$id" | awk 'NF{print; exit}')"
+	stop_tls_proxy
+	set +e
+	(
+		timeout --signal=KILL 30 docker run --rm \
+			--network "$network" \
+			--dns "$ip" \
+			node:20-bookworm \
+			node -e 'require("https").get("https://sts.us-east-1.amazonaws.com/",(r)=>{console.log("status",r.statusCode);process.exit(0)}).on("error",(e)=>{console.error(String(e));process.exit(1)})'
+	) >"$log" 2>&1
+	local rc=$?
+	set -e
+	start_tls_proxy_again
+	if grep -qiE 'security token included in the request is invalid|InvalidClientTokenId|UnrecognizedClientException|SignatureDoesNotMatch' "$log"; then
+		echo "error: negative check hit real AWS auth error instead of connection failure" >&2
+		cat "$log" >&2
+		return 1
+	fi
+	if [[ "$rc" -eq 0 ]]; then
+		echo "error: negative check expected connection failure, got HTTP success" >&2
+		cat "$log" >&2
+		return 1
+	fi
+	if ! grep -qiE 'ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|socket hang up|connect ECONNREFUSED|Client network socket disconnected|connect ETIMEDOUT|AggregateError' "$log"; then
+		echo "error: negative check missing connection-error marker" >&2
+		cat "$log" >&2
+		return 1
+	fi
+	echo "ok   TLS down → connection error (rc=${rc})"
+}
+
 cleanup() {
 	if [[ "$KEEP" == "1" ]]; then
 		return 0
@@ -97,16 +238,16 @@ cleanup() {
 	if [[ "$REMOVED" != "1" ]]; then
 		if [[ "$CONSUMER_DEPLOYED" == "1" ]]; then
 			(
-				cd "$EX/consumer"
-				timeout --signal=KILL 90 stdbuf -oL -eL \
-					npx serverless remove --stage "$STAGE" --verbose
+				timeout --signal=KILL 90 \
+					env -u AWS_ENDPOINT_URL -u AWS_ENDPOINT_URL_S3 \
+					"$ROOT/bin/stackwrangler" sls --cwd "$EX/consumer" -- remove --stage "$STAGE" --verbose
 			) >"$OUT/remove-consumer-cleanup.log" 2>&1 || true
 		fi
 		if [[ "$TOPIC_DEPLOYED" == "1" ]]; then
 			(
-				cd "$EX/topic"
-				timeout --signal=KILL 90 stdbuf -oL -eL \
-					npx serverless remove --stage "$STAGE" --verbose
+				timeout --signal=KILL 90 \
+					env -u AWS_ENDPOINT_URL -u AWS_ENDPOINT_URL_S3 \
+					"$ROOT/bin/stackwrangler" sls --cwd "$EX/topic" -- remove --stage "$STAGE" --verbose
 			) >"$OUT/remove-topic-cleanup.log" 2>&1 || true
 		fi
 	fi
@@ -114,6 +255,9 @@ cleanup() {
 		aws s3 rb "s3://${DEPLOY_BUCKET}" --force >/dev/null 2>&1 || true
 		aws ssm delete-parameter --name "/demo/sls4/${SUFFIX}/app-name" >/dev/null 2>&1 || true
 		aws ssm delete-parameter --name "/demo/sls4/${SUFFIX}/topic-arn" >/dev/null 2>&1 || true
+	fi
+	if [[ "$KEEP" != "1" ]]; then
+		"${COMPOSE[@]}" --profile aws-redirect rm -sf aws-redirect >/dev/null 2>&1 || true
 	fi
 	[[ -d "$OUT" ]] && rm -rf "$OUT"
 }
@@ -123,13 +267,24 @@ mkdir -p "$OUT"
 require_sls_auth
 
 if ! aws sts get-caller-identity >/dev/null 2>&1; then
-	echo "error: LocalEmu not reachable at ${EP} (./bin/awsbox up)" >&2
+	echo "error: LocalEmu not reachable at ${EP} (./bin/stackwrangler up)" >&2
 	exit 1
 fi
 
 if [[ ! -d "$EX/node_modules/serverless" ]]; then
 	(cd "$EX" && npm install --no-fund --no-audit)
 fi
+
+echo "==> ensure aws-redirect (DNS + TLS)"
+"$ROOT/bin/stackwrangler" sls --cwd "$EX/topic" -- --version >/dev/null
+REDIRECT_IP="$(redirect_ip)"
+echo "ok   aws-redirect at ${REDIRECT_IP}"
+
+# Clear query log so asserts cover this run.
+RID="$(redirect_id)"
+docker exec "$RID" sh -c ': > /var/log/aws-redirect-dnsmasq.log' || true
+
+negative_tls_down
 
 aws s3 mb "s3://${DEPLOY_BUCKET}" >/dev/null
 BUCKET_CREATED=1
@@ -139,8 +294,8 @@ aws ssm put-parameter \
 	--value "awsbox-sls4-smoke" \
 	--overwrite >/dev/null
 
-echo "==> serverless deploy topic"
-sls_run "$EX/topic" 'Service deployed|Stack create finished|CREATE_COMPLETE' \
+echo "==> serverless deploy topic (via aws-redirect, no AWS_ENDPOINT_URL)"
+sls_run_timed "$EX/topic" 'Service deployed|Stack create finished|CREATE_COMPLETE' \
 	"$OUT/deploy-topic.log" deploy --verbose
 TOPIC_DEPLOYED=1
 
@@ -158,8 +313,8 @@ fi
 }
 echo "ok   TopicArn=${TOPIC_ARN}"
 
-echo "==> serverless deploy consumer"
-sls_run "$EX/consumer" 'Service deployed|Stack create finished|CREATE_COMPLETE' \
+echo "==> serverless deploy consumer (ssm + Fn::ImportValue via redirect)"
+sls_run_timed "$EX/consumer" 'Service deployed|Stack create finished|CREATE_COMPLETE' \
 	"$OUT/deploy-consumer.log" deploy --verbose
 CONSUMER_DEPLOYED=1
 
@@ -177,7 +332,6 @@ aws sns publish \
 	--message "$MSG" \
 	--message-attributes "kind={DataType=String,StringValue=keep}" >/dev/null
 
-# Drop should not land (filter). Ignore failure to deliver.
 aws sns publish \
 	--topic-arn "$TOPIC_ARN" \
 	--message "drop-${TS}" \
@@ -213,7 +367,7 @@ echo "ok   Lambda wrote S3 marker for ${MSG}"
 
 echo "==> serverless deploy consumer (2 / redeploy)"
 export AWSBOX_SLS4_REDEPLOY_MARK="redeploy-${TS}"
-sls_run "$EX/consumer" 'Updating CloudFormation stack|UPDATE_IN_PROGRESS|UPDATE_COMPLETE|Service deployed' \
+sls_run_timed "$EX/consumer" 'Updating CloudFormation stack|UPDATE_IN_PROGRESS|UPDATE_COMPLETE|Service deployed' \
 	"$OUT/deploy-consumer2.log" deploy --verbose --force
 if grep -qiE 'No changes to deploy' "$OUT/deploy-consumer2.log"; then
 	echo "error: consumer redeploy was a no-op (No changes to deploy)" >&2
@@ -246,9 +400,9 @@ grep -q "redeploy-${TS}" "$OUT/got2/"* || {
 }
 
 echo "==> serverless remove (consumer then topic)"
-sls_run "$EX/consumer" 'Service removed|Removing service|Stack removal finished|Successfully removed|removing' \
+sls_run_timed "$EX/consumer" 'Service removed|Removing service|Stack removal finished|Successfully removed|removing' \
 	"$OUT/remove-consumer.log" remove --verbose
-sls_run "$EX/topic" 'Service removed|Removing service|Stack removal finished|Successfully removed|removing' \
+sls_run_timed "$EX/topic" 'Service removed|Removing service|Stack removal finished|Successfully removed|removing' \
 	"$OUT/remove-topic.log" remove --verbose
 REMOVED=1
 
@@ -262,4 +416,6 @@ for stack in "$CONSUMER_STACK" "$TOPIC_STACK"; do
 	fi
 done
 
-echo "OK: serverless v4 topic+consumer deploy/publish/redeploy/remove (${TOPIC_STACK} → ${CONSUMER_STACK})"
+assert_dns_fail_closed
+
+echo "OK: serverless v4 topic+consumer via aws-redirect (${TOPIC_STACK} → ${CONSUMER_STACK})"

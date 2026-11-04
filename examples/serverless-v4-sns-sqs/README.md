@@ -1,13 +1,13 @@
 # serverless-v4-sns-sqs (replication fixture)
 
-Dummy [Serverless Framework v4](https://www.serverless.com/) project that deploys an SNS topic stack plus an SQS-triggered consumer against awsbox LocalEmu. Parent ticket: [#458](https://github.com/kgz/awsl/issues/458).
+Dummy [Serverless Framework v4](https://www.serverless.com/) project that deploys an SNS topic stack plus an SQS-triggered consumer against awsbox LocalEmu. Parent ticket: [#458](https://github.com/kgz/awsl/issues/458). Deploy redirect: [#464](https://github.com/kgz/awsl/issues/464).
 
 | Path | Shape |
 |------|--------|
 | `topic/serverless.yml` | SNS topic, SSM `/demo/sls4/…/topic-arn`, CFN `Export` of TopicArn |
 | `consumer/serverless.yml` | `deploymentMethod: direct`, named deploy bucket, `build.esbuild` (`exclude: ["@aws-sdk/*"]`), `${ssm:…}`, native `iamRoleStatements`, SQS ESM Lambda, filtered raw SNS→SQS via `!ImportValue` |
 
-No `serverless-localstack` plugin — point the CLI at LocalEmu with `AWS_ENDPOINT_URL` (see [docs/serverless-awsbox.md](../../docs/serverless-awsbox.md)).
+v4 `deploy` ignores `AWS_ENDPOINT_URL` (bundled AWS SDK v2). Use `./bin/stackwrangler sls` so DNS+TLS redirect hits LocalEmu — see [docs/serverless-awsbox.md](../../docs/serverless-awsbox.md).
 
 ## Auth (required)
 
@@ -17,30 +17,34 @@ Every v4 CLI command (including `package`) needs Dashboard auth or a License Key
 # Free / under-$2M org: Dashboard Access Key (Settings → Access Keys)
 export SERVERLESS_ACCESS_KEY=…
 
-# Paid subscription License Key (not free-tier)
+# Paid subscription License Key
 export SERVERLESS_LICENSE_KEY=…
+
+# Maintainer alias (mapped to SERVERLESS_LICENSE_KEY when unset)
+export SERVERLESS_LOCAL_ONLY_LICENCE_KEY=…
 ```
 
-## Manual deploy
+## Manual deploy (redirect)
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up
 ./bin/awsbox-profile write --force
 
-export AWS_ENDPOINT_URL="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
-export AWS_ACCESS_KEY_ID=awsbox
-export AWS_SECRET_ACCESS_KEY=awsboxawsbox
-export AWS_DEFAULT_REGION=us-east-1
-
 cd examples/serverless-v4-sns-sqs && npm i
-aws s3 mb s3://awsbox-sls4-deploy --endpoint-url "$AWS_ENDPOINT_URL"
+aws s3 mb s3://awsbox-sls4-deploy --endpoint-url http://127.0.0.1:4566
 aws ssm put-parameter --name /demo/sls4/dev/app-name --type String --value my-app \
-  --overwrite --endpoint-url "$AWS_ENDPOINT_URL"
+  --overwrite --endpoint-url http://127.0.0.1:4566
 
-(cd topic && npx serverless deploy --stage local)
+./bin/stackwrangler sls --cwd topic -- deploy --stage local
 export AWSBOX_SLS4_TOPIC_EXPORT=awsbox-sls4-topic-local-TopicArn
-(cd consumer && npx serverless deploy --stage local)
+./bin/stackwrangler sls --cwd consumer -- deploy --stage local
 ```
+
+(`./bin/awsbox sls` is the same shim.)
+
+## Fallback without redirect
+
+`serverless package` then `aws cloudformation deploy --endpoint-url http://127.0.0.1:4566` — see docs.
 
 ## Smoke
 
@@ -48,6 +52,6 @@ export AWSBOX_SLS4_TOPIC_EXPORT=awsbox-sls4-topic-local-TopicArn
 ./bin/serverless-v4-smoke.sh
 ```
 
-Deploy topic → deploy consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy consumer → remove both.
+Negative (TLS down) → connection error; DNS log asserts AWS names → proxy only; deploy topic → consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy → remove.
 
 **Note:** This path is host SNS publish → SQS → Lambda ESM → S3. It does not exercise Lambda→SQS `SendMessage` with `sqs.<region>.localhost` QueueUrls ([#459](https://github.com/kgz/awsl/issues/459)).
