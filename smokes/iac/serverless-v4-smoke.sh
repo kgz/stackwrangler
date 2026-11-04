@@ -296,6 +296,34 @@ assert_consumer_zip_ge_2mb() {
 	echo "ok   consumer zip ${max} bytes (≥2 MiB; Expect: 100-continue path)"
 }
 
+# stackwrangler sls must not leave root-owned files under the project (#469).
+assert_host_owned() {
+	local dir="$1"
+	local label="${2:-$dir}"
+	local uid gid bad
+	uid="$(id -u)"
+	gid="$(id -g)"
+	[[ -d "$dir" ]] || {
+		echo "error: expected ${label} after sls write" >&2
+		return 1
+	}
+	bad="$(find "$dir" \( ! -uid "$uid" -o ! -gid "$gid" \) -print 2>/dev/null | head -20 || true)"
+	if [[ -n "$bad" ]]; then
+		echo "error: ${label} has files not owned by ${uid}:${gid} (invoking user):" >&2
+		echo "$bad" >&2
+		ls -la "$dir" >&2 || true
+		return 1
+	fi
+	# Host-side cleanup must work without sudo / another container.
+	rm -rf "${dir}.ownership-check"
+	cp -a "$dir" "${dir}.ownership-check"
+	rm -rf "${dir}.ownership-check" || {
+		echo "error: could not delete copy of ${label} as invoking user" >&2
+		return 1
+	}
+	echo "ok   ${label} owned by ${uid}:${gid} (host-deletable)"
+}
+
 cleanup() {
 	rm -f "$EX/consumer/src/pad-blob.js"
 	if [[ "$KEEP" == "1" ]]; then
@@ -360,10 +388,16 @@ aws ssm put-parameter \
 	--value "awsbox-sls4-smoke" \
 	--overwrite >/dev/null
 
+echo "==> serverless package topic (ownership before deploy)"
+sls_run_timed "$EX/topic" 'Service packaged|Packaging service|✔ Service packaged' \
+	"$OUT/package-topic.log" package --verbose
+assert_host_owned "$EX/topic/.serverless" "topic/.serverless (after package)"
+
 echo "==> serverless deploy topic (via aws-redirect, no AWS_ENDPOINT_URL)"
 sls_run_timed "$EX/topic" 'Service deployed|Stack create finished|CREATE_COMPLETE' \
 	"$OUT/deploy-topic.log" deploy --verbose
 TOPIC_DEPLOYED=1
+assert_host_owned "$EX/topic/.serverless" "topic/.serverless (after deploy)"
 
 TOPIC_ARN="$(aws cloudformation describe-stacks --stack-name "$TOPIC_STACK" \
 	--query "Stacks[0].Outputs[?OutputKey=='TopicArn'].OutputValue | [0]" \
@@ -388,6 +422,7 @@ sls_run_timed "$EX/consumer" 'Service deployed|Stack create finished|CREATE_COMP
 	"$OUT/deploy-consumer.log" deploy --verbose
 CONSUMER_DEPLOYED=1
 assert_consumer_zip_ge_2mb
+assert_host_owned "$EX/consumer/.serverless" "consumer/.serverless (after deploy)"
 
 RESULTS_BUCKET="${CONSUMER_SERVICE}-${STAGE}-results-${SUFFIX}"
 aws s3api head-bucket --bucket "$RESULTS_BUCKET" >/dev/null 2>&1 || {

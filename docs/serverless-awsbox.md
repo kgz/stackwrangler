@@ -71,7 +71,7 @@ Serverless Framework v4’s deploy path uses the AWS SDK **v2** bundled under `~
 Use the transparent redirect instead:
 
 1. Compose profile `aws-redirect` — dual-role container under [`tools/aws-endpoint-redirect/`](../tools/aws-endpoint-redirect/): dnsmasq (AWS hostnames → proxy IP; everything else upstream) + TLS `:443` with **dynamic leaf certs per SNI** signed by `.awsbox/aws-redirect/ca.crt`, forwarding HTTP to LocalEmu `:4566` with the client `Host` kept.
-2. Wrapper: `./bin/stackwrangler sls` (also `./bin/awsbox sls`) runs the CLI in a Node container on that network with `--dns <aws-redirect>`, `NODE_EXTRA_CA_CERTS`, fake keys, **no** `AWS_ENDPOINT_URL`, **no** `~/.aws` mount.
+2. Wrapper: `./bin/stackwrangler sls` (also `./bin/awsbox sls`) runs the CLI in a Node container on that network with `--dns <aws-redirect>`, `NODE_EXTRA_CA_CERTS`, fake keys, **no** `AWS_ENDPOINT_URL`, **no** `~/.aws` mount. The container runs as the host user (`--user $(id -u):$(id -g)`) with `HOME` on `.awsbox/sls-home` (Framework download cache) so `.serverless/` and build output are not root-owned on the project mount ([#469](https://github.com/kgz/awsl/issues/469)).
 3. Fail closed: AWS names never resolve to public IPs. If the TLS edge is down, clients get a connection error — not real AWS.
 
 ```bash
