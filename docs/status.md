@@ -13,7 +13,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | **Console chrome** | Nav / empty page only |
 | **Sidecar** | Real bytes via stackwrangler container, not native service listen |
 | **Backlog** | Ticketed, not started |
-| **Local smokes** | Proven with `./bin/*-smoke.sh` (no GitHub Actions e2e) |
+| **Local smokes** | Proven with `./smokes/<area>/*-smoke.sh` (no GitHub Actions e2e) |
 
 
 ## Platform / core

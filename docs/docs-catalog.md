@@ -55,7 +55,7 @@ docs-site/guide/interactions/
 ## Prove it
 
 \`\`\`bash
-./bin/<smoke>.sh
+./smokes/<area>/<smoke>.sh
 \`\`\`
 
 ## Console
