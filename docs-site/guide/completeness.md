@@ -1,100 +1,163 @@
 # Completeness / status
 
-Honest depth across the hosting footprint. Pulled from the [README status matrix](https://github.com/kgz/stackwrangler/blob/main/README.md) and [`docs/version-plan.md`](https://github.com/kgz/stackwrangler/blob/main/docs/version-plan.md). Stubs are stubs — we do not pretend they are shipped.
+Honest depth vs the [Vision](./vision) bar (data plane + authz, not catalogue theatre). For *why* this bar exists, see [Why](./why). Source of truth for row-level notes: [README status matrix](https://github.com/kgz/stackwrangler/blob/main/README.md). Stubs stay stubs.
+
+## Vision progress
+
+Weighted across **64** README-matrix areas (Working ≈ 1.0 → Backlog = 0). Recompute when the matrix moves — do not invent a prettier number.
+
+<div class="sw-progress" aria-label="Vision depth summary">
+  <div class="sw-progress__headline">
+    <span class="sw-progress__pct">46%</span>
+    <span class="sw-progress__label">weighted vision depth · 64 areas</span>
+  </div>
+  <div class="sw-progress__track" role="img" aria-label="Catalogue mix: 14 working-ish, 30 partial, 7 stub, 13 backlog">
+    <span class="sw-progress__seg sw-progress__seg--working"></span>
+    <span class="sw-progress__seg sw-progress__seg--partial"></span>
+    <span class="sw-progress__seg sw-progress__seg--stub"></span>
+    <span class="sw-progress__seg sw-progress__seg--backlog"></span>
+  </div>
+  <ul class="sw-progress__legend">
+    <li><span class="sw-progress__dot sw-progress__dot--working"></span>Working-ish · 14</li>
+    <li><span class="sw-progress__dot sw-progress__dot--partial"></span>Partial / CLI · 30</li>
+    <li><span class="sw-progress__dot sw-progress__dot--stub"></span>Stub / chrome · 7</li>
+    <li><span class="sw-progress__dot sw-progress__dot--backlog"></span>Backlog · 13</li>
+  </ul>
+  <div class="sw-progress__meters">
+    <div class="sw-progress__meter">
+      <span>Catalogue</span>
+      <div class="sw-progress__meter-bar"><div class="sw-progress__meter-fill" style="width:46%"></div></div>
+      <strong>46%</strong>
+    </div>
+    <div class="sw-progress__meter">
+      <span>Org-path hops</span>
+      <div class="sw-progress__meter-bar"><div class="sw-progress__meter-fill" style="width:52%"></div></div>
+      <strong>52%</strong>
+    </div>
+  </div>
+</div>
+
+Org-path (Transfer → Lambda → S3 → ECS → RDS + VPC) is ahead of the full catalogue because those hops partly exist — the single end-to-end smoke is still backlog.
 
 ## Legend
 
 | Tag | Meaning |
 |-----|---------|
-| **Working** | Data plane + CLI smoke + console for the happy path |
-| **Partial** | Works with known gaps (dual backends, bridge, limited authz) |
+| **Working** | Data plane + CLI smoke + console (or CLI-first with smoke) for the happy path |
+| **Partial** | Works with known gaps (dual backends, bridge, limited authz, thin console) |
 | **Control plane** | `create-*` / `describe-*` OK; little/no real traffic |
 | **Sidecar** | Real bytes via a stackwrangler container, not native service listen |
-| **Backlog** | Ticketed, not started |
+| **Backlog** | Ticketed or named, not started |
 | **Console chrome** | Nav / empty page only |
 
-## Hosting footprint (overview)
+## Currently implemented
+
+What you can actually exercise after `./bin/stackwrangler up` (happy path). Caveats stay in Gaps.
+
+### Platform
+
+| Area | Depth |
+|------|--------|
+| `./bin/stackwrangler up` + profile `local` | **Working** |
+| Console shell (grey rose) | **Working** |
+| Console labels (`STACKWRANGLER_LABELS`) | **Working** |
+| Custom resource IDs + account in ARNs | **Working** |
+| IAM enforcement on LocalEmu | **Partial** (on — deepen continuously) |
+
+### Storage, compute, data plane
+
+| Area | Depth |
+|------|--------|
+| S3 general purpose (SeaweedFS UI + LocalEmu for IaC/events) | **Working** UI · **Partial** dual-brain |
+| Lambda (Docker invoke, console Create/detail) | **Working** |
+| DynamoDB / SQS / SNS / EventBridge / Step Functions / Kinesis | **Working** (CLI smokes; console often thin/Debt) |
+| CloudWatch Logs (basic) | **Working** |
+| Transfer Family (native SFTP → S3) | **Partial** · **Sidecar** |
+| EC2 / ECS / ECR | **Partial** · ECR registry **sidecar** |
+| RDS Postgres / MySQL (Docker DB) | **Partial** · **Sidecar** |
+| VPC / SG / ELBv2 / Route 53 (public + private) | **Partial** with smokes |
+| WAFv2 (API GW associate; not real edge WAF) | **Partial** thin |
+| API Gateway HTTP + REST | **Partial** |
+| KMS / Secrets Manager / ACM | **Partial** |
+| Multi-account + OIDC assume | **CLI + smoke** |
+
+### IaC against the same account
+
+| Tool | Depth |
+|------|--------|
+| Terraform (S3+Lambda + S3 backend/lock) | **Working** |
+| CDK / SAM samples | **Working** |
+| CloudFormation | **Partial** |
+| Serverless Framework v3 | **Partial** |
+| CodeDeploy (ECS blue/green + Lambda canary control plane) | **CLI + smoke** |
+
+### Hosting footprint
 
 ```mermaid
 flowchart TB
   subgraph working [Working / strong Partial]
-    S3["S3 UI + objects<br/>Working UI · Partial vs LocalEmu"]
-    LAMBDA["Lambda<br/>Working"]
-    CFN["CFN / CDK / SAM / TF<br/>Working path"]
-    IAM["IAM / STS<br/>Partial · enforcement on"]
+    S3["S3 UI + objects"]
+    LAMBDA["Lambda"]
+    MSG["SQS · SNS · EB · DDB · SFN · Kinesis"]
+    CFN["TF / CDK / SAM"]
+    IAM["IAM / STS enforcement on"]
   end
 
   subgraph partial [Partial · data plane with gaps]
-    ECS["ECS / EC2<br/>Partial"]
-    XFER["Transfer Family<br/>Partial · SFTP sidecar"]
-    RDS["RDS<br/>Partial · Postgres sidecar"]
-    NET["VPC / ELBv2 / SG / R53<br/>Partial"]
-    MSG["SQS / SNS / EventBridge<br/>Partial → Working smokes"]
-  end
-
-  subgraph sidecar [Sidecar]
-    SW["SeaweedFS :8333"]
-    SFTP["atmoz/sftp"]
-    ECRR["distribution/registry ECR"]
-    PG["Postgres for RDS-shaped"]
+    ECS["ECS / EC2 / ECR"]
+    XFER["Transfer · SFTP sidecar"]
+    RDS["RDS · DB sidecar"]
+    NET["VPC / ELBv2 / SG / R53"]
+    APIGW["API Gateway"]
   end
 
   subgraph stubs [Control plane / chrome / backlog]
-    BATCH["Batch / Beanstalk / App Runner<br/>Control plane"]
-    EMPTY["S3 specialty / Lens / Access Points<br/>Console chrome"]
-    BL["EKS · ElastiCache · SES · Cognito · Metrics<br/>Backlog"]
+    BATCH["Batch / Beanstalk / App Runner"]
+    EMPTY["S3 specialty / Lens / Access Points"]
+    BL["EKS · ElastiCache · SES · Cognito · CloudFront · Metrics depth"]
   end
 
-  S3 --- SW
-  XFER --- SFTP
-  RDS --- PG
-  ECS -.-> ECRR
+  S3 --- SW["SeaweedFS :8333"]
+  XFER --- SFTP["atmoz/sftp"]
+  RDS --- PG["Postgres / MySQL containers"]
+  ECS -.-> ECRR["distribution/registry"]
 ```
 
-## Platform
+## Gaps & TODO
 
-| Area | Status |
-|------|--------|
-| `./bin/stackwrangler up` + profile `local` | **Working** |
-| Console shell (grey rose) | **Working** |
-| Dual S3 (SeaweedFS + LocalEmu) | **Documented split** · Partial until unify |
-| IAM enforcement | **Partial** |
+Open work that blocks calling the vision “done”. Prefer Debt tickets over silent Partial forever.
 
-## Storage & objects
+### Product blockers (high)
 
-| Service | Status |
-|---------|--------|
-| S3 general purpose | **Working** (UI) · **Partial** (vs LocalEmu for events) |
-| S3 specialty / Access Points / Lens | **Console chrome** |
-| Transfer Family | **Partial** · **Sidecar** SFTP |
-| EFS / FSx / EBS | **Backlog** |
+| Gap | Why it matters | Track |
+|-----|----------------|--------|
+| Dual S3 (SeaweedFS `:8333` vs LocalEmu `:4566`) | Easy to point CLI/console/Lambda at different brains | [Concepts](./concepts) · unify later |
+| Org-path **one E2E smoke** (Transfer → Lambda → S3 → ECS → RDS) | Vision demo path still not one script | [#90](https://github.com/kgz/stackwrangler/issues/90) / [#91](https://github.com/kgz/stackwrangler/issues/91) |
+| IAM / workload-role **depth** | Authz must match AWS beyond the S3 deny lab | [#144](https://github.com/kgz/stackwrangler/issues/144) · resource-policy smokes exist |
+| Transfer console / LOGICAL / IdP / AS2 | SFTP bytes Partial; console & fidelity incomplete | [#321](https://github.com/kgz/stackwrangler/issues/321) · [#322](https://github.com/kgz/stackwrangler/issues/322) · [#314](https://github.com/kgz/stackwrangler/issues/314) |
+| ECS awsvpc / bridge / NLB fidelity | Org networking surprises | [#268](https://github.com/kgz/stackwrangler/issues/268) · [#247](https://github.com/kgz/stackwrangler/issues/247) · [#203](https://github.com/kgz/stackwrangler/issues/203) |
+| RDS create / Aurora / failover console | Sidecar DB ≠ full RDS product surface | [#145](https://github.com/kgz/stackwrangler/issues/145) · [#225](https://github.com/kgz/stackwrangler/issues/225) |
+| Console depth on Partial services | List-only or disabled Create → Debt | gap-check before `done` |
 
-## Compute & containers
+### Control plane / chrome (not “shipped”)
 
-| Service | Status |
-|---------|--------|
-| Lambda | **Working** (authz depth ongoing) |
-| EC2 / ECS | **Partial** |
-| ECR | **Partial** · registry sidecar |
-| Batch / Beanstalk / App Runner | **Control plane** |
-| EKS | **Backlog** |
+- Batch / Elastic Beanstalk / App Runner — **Control plane** stubs
+- S3 specialty buckets / Access Points / Lens — **Console chrome**
+- Metrics / Alarms / SSM / CloudTrail / Orgs — often **read-empty** for scanners
 
-## Networking, data, messaging, security
+### Backlog (named, not started or thin)
 
-| Domain | Typical depth |
-|--------|----------------|
-| VPC / SG / ELBv2 / private R53 | **Partial** with smokes |
-| RDS / Aurora-shaped | **Partial** · DB sidecar |
-| DynamoDB / SQS / SNS / EventBridge / SFN / Kinesis | Smokes present · treat as **Partial→Working** per README |
-| KMS / Secrets / ACM / WAFv2 | Mixed · see README |
-| CloudFront / Cognito / Metrics / SES / ElastiCache | **Backlog** or thin |
+- EKS · ElastiCache · EFS / FSx / EBS
+- CloudFront · TGW / VPN / PrivateLink / Lattice
+- Cognito · IAM Identity Center · SES / MSK / AppSync
+- X-Ray / deeper observability
+- Pulumi / Ansible examples · CodePipeline / CodeBuild / CodeArtifact
+- Architecture map console canvas — [#389](https://github.com/kgz/stackwrangler/issues/389) (experimental; not on `main` yet)
 
-## Architecture map (experimental)
+### How we keep this honest
 
-Coming with [#389](https://github.com/kgz/stackwrangler/issues/389): an experimental console canvas that draws a live one-account platform topology (NLB/ALB → edge → Lambda/S3/ECS → RDS, plus honesty edges such as surprise IAM Allows). Seed scripts and design notes land with that change — they are **not** on `main` yet.
-
-A product screenshot belongs here once that page ships — we do **not** use AWS console recon images as stand-ins.
+If a merge leaves a bridge, disabled console action, or happy-only smoke, file a **Debt:** ticket before calling the parent done ([docs/gap-check.md](https://github.com/kgz/stackwrangler/blob/main/docs/gap-check.md)).
 
 ## Version cuts
 
-Product cuts (`v0.0.2`, `v0.0.3`, `v0.1.0` org path, …) are planned in [`docs/version-plan.md`](https://github.com/kgz/stackwrangler/blob/main/docs/version-plan.md). Catalogue milestones are orthogonal to depth: **execution order follows data-plane value**, not milestone number.
+Product cuts (`v0.0.2`, `v0.0.3`, …) live in [`docs/version-plan.md`](https://github.com/kgz/stackwrangler/blob/main/docs/version-plan.md). Catalogue milestones are orthogonal to depth: **execution order follows data-plane value**, not milestone number.

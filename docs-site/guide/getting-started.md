@@ -2,7 +2,7 @@
 
 Bring up a local AWS-shaped account, open the console, and talk to it with the AWS CLI.
 
-**Not affiliated with Amazon Web Services.** stackwrangler is independent OSS: test locally, then deploy to real AWS.
+**Not affiliated with Amazon Web Services.** stackwrangler is independent OSS: test locally, then deploy to real AWS. New here? Start with [Why](./why).
 
 ## Prerequisites
 

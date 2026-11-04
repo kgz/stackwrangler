@@ -10,8 +10,11 @@ hero:
       text: Get started
       link: /guide/getting-started
     - theme: alt
-      text: Vision
-      link: /guide/vision
+      text: Why
+      link: /guide/why
+    - theme: alt
+      text: Completeness
+      link: /guide/completeness
     - theme: alt
       text: GitHub
       link: https://github.com/kgz/stackwrangler
@@ -37,4 +40,4 @@ cd stackwrangler
 aws --profile local s3 ls
 ```
 
-See [Getting Started](/guide/getting-started), [Completeness](/guide/completeness), and [Concepts](/guide/concepts).
+See [Why](/guide/why), [Getting Started](/guide/getting-started), [Completeness](/guide/completeness), and [Concepts](/guide/concepts).
