@@ -2,7 +2,7 @@
 # Sad path: ECS taskRoleArn with no S3 perms → PutObject AccessDenied.
 # RunTask mints task-role session creds (LocalEmu); we assert with those keys.
 # (In-container 169.254.170.2 DNAT is broken under compose — Debt if fixed upstream.)
-# Happy counterpart: ./bin/ecs-smoke.sh
+# Happy counterpart: ./smokes/compute/ecs-smoke.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -91,7 +91,7 @@ aws ecs register-task-definition \
 SUBNET="$(aws ec2 describe-subnets --query 'Subnets[0].SubnetId' --output text)"
 SG="$(aws ec2 describe-security-groups --query 'SecurityGroups[0].GroupId' --output text)"
 [[ -n "$SUBNET" && "$SUBNET" != "None" && -n "$SG" && "$SG" != "None" ]] || {
-	echo "FAIL: need at least one subnet + security group (run ./bin/ecs-smoke.sh once)" >&2
+	echo "FAIL: need at least one subnet + security group (run ./smokes/compute/ecs-smoke.sh once)" >&2
 	exit 1
 }
 NET="awsvpcConfiguration={subnets=[${SUBNET}],securityGroups=[${SG}],assignPublicIp=ENABLED}"

@@ -5,7 +5,7 @@
 Honest coverage grid. Update when adding or closing a smoke.  
 **Sad path** = deliberate expected failure that must exit 0 only when the failure is observed.
 
-Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/<name>.sh` still runs them. Script names in the table are the file name, not the directory.
+Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smokes/<area>/<name>.sh`. Script names in the table are the file name, not the directory.
 
 | Surface | Happy | Sad (authz / deny) | Sad (other) | Console e2e | Script |
 |---------|-------|--------------------|-------------|-------------|--------|

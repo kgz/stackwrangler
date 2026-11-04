@@ -4,7 +4,7 @@ Launches a **real Docker-backed** EC2 instance (`ami-ubuntu-22.04`) with user-da
 
 ```bash
 ./bin/awsbox up --force
-./bin/ec2-smoke.sh
+./smokes/compute/ec2-smoke.sh
 ```
 
 Host cannot always reach the private IP; smoke verifies via the Docker container.

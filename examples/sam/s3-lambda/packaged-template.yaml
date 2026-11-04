@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Packaged SAM-equivalent for LocalEmu (no Transform). Used by ./bin/sam-smoke.sh.
+Description: Packaged SAM-equivalent for LocalEmu (no Transform). Used by ./smokes/iac/sam-smoke.sh.
 
 Parameters:
   BucketName:

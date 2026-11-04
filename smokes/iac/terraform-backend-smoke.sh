@@ -2,7 +2,7 @@
 # Opt-in: bootstrap S3 state + DynamoDB lock on LocalEmu, apply app workspace,
 # assert second plan is no-change. Aborts if a real-AWS STS canary succeeds.
 #
-#   AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh
+#   AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh
 #
 set -euo pipefail
 

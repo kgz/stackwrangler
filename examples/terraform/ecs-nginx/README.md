@@ -4,7 +4,7 @@ Registers a Fargate-style task that runs **real nginx** via LocalEmu’s Docker 
 
 ```bash
 ./bin/awsbox up --force
-./bin/ecs-smoke.sh
+./smokes/compute/ecs-smoke.sh
 ```
 
 Smoke: `terraform apply` → `run-task` → curl the host-mapped port.

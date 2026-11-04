@@ -26,10 +26,10 @@ Happy smokes prove bytes move. **Fidelity smokes** prove the *awkward* path matc
 | Gap | Why it matters | Status |
 |-----|----------------|--------|
 | ECS task↔task on same host via service VIP / NAT hairpin | Classic “works across AZs, fails same host” | Debt — track under networking fidelity epic |
-| Private subnet route table (no default, peering, NAT, GW endpoints) | Workload cannot reach a public host / S3 until a route says so | Covered · `./bin/vpc-routing-smoke.sh` · `./bin/vpc-egress-smoke.sh` |
+| Private subnet route table (no default, peering, NAT, GW endpoints) | Workload cannot reach a public host / S3 until a route says so | Covered · `./smokes/networking/vpc-routing-smoke.sh` · `./smokes/networking/vpc-egress-smoke.sh` |
 | Dual S3 brains | Wrong endpoint “succeeds” | Documented split · unify [#162](https://github.com/kgz/awsl/issues/162) |
 | ECS task-role via 169.254 DNAT under compose | In-container SDK path | [#154](https://github.com/kgz/awsl/issues/154) |
 | NLB preserves client IP for the target security group | Target SG must see the caller, not the balancer | [#236](https://github.com/kgz/awsl/issues/236) |
-| VPC Lambda security groups | Function traffic follows its groups via netns sidecar iptables | covered · `./bin/sg-enforcement-smoke.sh` · [#237](https://github.com/kgz/awsl/issues/237) |
+| VPC Lambda security groups | Function traffic follows its groups via netns sidecar iptables | covered · `./smokes/networking/sg-enforcement-smoke.sh` · [#237](https://github.com/kgz/awsl/issues/237) |
 
 Add rows as Debts land; keep this file short.

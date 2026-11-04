@@ -1,6 +1,6 @@
 # Route 53 private hosted zones
 
-Public zones + CLI records smoke: [r53.md](r53.md) · `./bin/route53-smoke.sh`.
+Public zones + CLI records smoke: [r53.md](r53.md) · `./smokes/networking/route53-smoke.sh`.
 
 Workloads on a VPC Docker network resolve that VPC's private hosted zones. A second VPC does not.
 
@@ -25,7 +25,7 @@ EC2, ECS `awsvpc`, and Lambda `VpcConfig` get that `--dns` address from the VPCE
 ## Smoke
 
 ```bash
-./bin/r53-private-smoke.sh
+./smokes/networking/r53-private-smoke.sh
 ```
 
 Uses host port `24566` (`AWSBOX_R53_HOST_PORT`) so it does not take over a stack already bound to `:4566`. `AWSBOX_R53_RECREATE=0` skips the force-recreate when the stack is already warm; `AWSBOX_R53_KEEP=1` leaves resources.
@@ -35,8 +35,8 @@ Uses host port `24566` (`AWSBOX_R53_HOST_PORT`) so it does not take over a stack
 On unmodified `beta/full-flow-v1`, EC2 containers do not start while `init/start.d/20-mirror-resource-ids.py` is loaded ([#299](https://github.com/kgz/awsl/issues/299)), so the EC2 step fails there. Same gate as the ELBv2 smoke: the smoke is not in `bin/e2e.sh`. Either:
 
 ```bash
-AWSBOX_R53_COMPOSE_OVERRIDE=/path/to/override.yml ./bin/r53-private-smoke.sh   # blank 20-mirror-resource-ids.py and 20-custom-ids.py
-AWSBOX_R53_SKIP_EC2=1 ./bin/r53-private-smoke.sh                                # ECS-only, skips the EC2 check
+AWSBOX_R53_COMPOSE_OVERRIDE=/path/to/override.yml ./smokes/networking/r53-private-smoke.sh   # blank 20-mirror-resource-ids.py and 20-custom-ids.py
+AWSBOX_R53_SKIP_EC2=1 ./smokes/networking/r53-private-smoke.sh                                # ECS-only, skips the EC2 check
 ```
 
 Override file:

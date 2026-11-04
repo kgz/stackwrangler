@@ -56,4 +56,4 @@ Trust statements honour:
 
 Organizations (OU, SCP) are not evaluated. A bucket or key policy that grants the other account is [#233](https://github.com/kgz/awsl/issues/233).
 
-Smoke: `./bin/multi-account-smoke.sh`. Lambda trust `aws:SourceAccount` / `aws:SourceArn`: `./bin/lambda-trust-condition-smoke.sh`, `./bin/lambda-trust-sourcearn-smoke.sh`.
+Smoke: `./smokes/security/multi-account-smoke.sh`. Lambda trust `aws:SourceAccount` / `aws:SourceArn`: `./smokes/lambda/lambda-trust-condition-smoke.sh`, `./smokes/lambda/lambda-trust-sourcearn-smoke.sh`.

@@ -21,5 +21,5 @@ flowchart LR
 ## Prove it
 
 ```bash
-./bin/apigw-nlb-ecs-smoke.sh
+./smokes/apigw/apigw-nlb-ecs-smoke.sh
 ```

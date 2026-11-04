@@ -1,4 +1,4 @@
-# Sourced by bin/transfer-connector-smoke.sh: deploy the slice handler without the Serverless CLI.
+# Sourced by smokes/transfer/transfer-connector-smoke.sh: deploy the slice handler without the Serverless CLI.
 # Needs: aws(), TS, TMP, SLICE, ROLES, FNS from the caller.
 
 LAMBDA_TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'

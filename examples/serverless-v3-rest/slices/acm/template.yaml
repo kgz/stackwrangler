@@ -1,5 +1,5 @@
 # ACM certificate + API custom domain + ALB HTTPS listener shape (#74).
-# Smoke: ./bin/acm-smoke.sh applies the same shape via CLI.
+# Smoke: ./smokes/security/acm-smoke.sh applies the same shape via CLI.
 AWSTemplateFormatVersion: "2010-09-09"
 Description: awsbox ACM slice — DNS-validated cert for api.example.test
 

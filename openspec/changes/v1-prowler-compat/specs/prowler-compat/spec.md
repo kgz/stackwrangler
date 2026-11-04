@@ -2,11 +2,11 @@
 
 ### Requirement: Isolated Prowler smoke
 
-The system SHALL provide `./bin/prowler-smoke.sh` that runs Prowler against LocalEmu using an isolated AWS config (dummy awsbox credentials and local endpoint only, via `env -i` or equivalent) so no call can use the operator's real AWS credentials. The smoke SHALL run with `--log-level ERROR` (or equivalent) and report the distinct failing API calls.
+The system SHALL provide `./smokes/security/prowler-smoke.sh` that runs Prowler against LocalEmu using an isolated AWS config (dummy awsbox credentials and local endpoint only, via `env -i` or equivalent) so no call can use the operator's real AWS credentials. The smoke SHALL run with `--log-level ERROR` (or equivalent) and report the distinct failing API calls.
 
 #### Scenario: Smoke completes against local stack
 
-- **WHEN** LocalEmu is up and `./bin/prowler-smoke.sh` is run
+- **WHEN** LocalEmu is up and `./smokes/security/prowler-smoke.sh` is run
 - **THEN** Prowler finishes without contacting real AWS and prints the distinct failing API call names
 
 ### Requirement: Failing-API baseline ratchet
@@ -16,7 +16,7 @@ The system SHALL keep a checked-in baseline of distinct failing API calls (or th
 #### Scenario: Regression increases failures
 
 - **WHEN** a new API call fails that was not in the baseline set / count
-- **THEN** `./bin/prowler-smoke.sh` exits non-zero
+- **THEN** `./smokes/security/prowler-smoke.sh` exits non-zero
 
 ### Requirement: S3 Control reachability and public-access reads
 

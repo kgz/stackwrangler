@@ -1,5 +1,5 @@
 # WAFv2 WebACL + association shape for awsbox (#55).
-# Smoke: ./bin/waf-smoke.sh applies this via CLI (CFN WAFv2 providers not in LocalEmu yet).
+# Smoke: ./smokes/networking/waf-smoke.sh applies this via CLI (CFN WAFv2 providers not in LocalEmu yet).
 # Rule evaluation is not real edge WAF — control-plane / association only.
 AWSTemplateFormatVersion: "2010-09-09"
 Description: awsbox WAFv2 slice — rate rule + managed-style block, associate to REST stage

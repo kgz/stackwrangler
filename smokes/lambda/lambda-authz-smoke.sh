@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sad path: Lambda execution role without s3:PutObject → AccessDenied on put.
-# Happy counterpart remains ./bin/lambda-smoke.sh / cfn-smoke (role with s3).
+# Happy counterpart remains ./smokes/lambda/lambda-smoke.sh / cfn-smoke (role with s3).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

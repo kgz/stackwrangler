@@ -14,6 +14,6 @@ Inbound SFTP lands objects in S3. Native SSH key path is smoked; LOGICAL / IdP /
 ## Prove it
 
 ```bash
-./bin/transfer-key-smoke.sh
-./bin/transfer-dataplane-smoke.sh
+./smokes/transfer/transfer-key-smoke.sh
+./smokes/transfer/transfer-dataplane-smoke.sh
 ```

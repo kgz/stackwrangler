@@ -4,5 +4,5 @@ Thin CDK wrapper of the same S3 + Lambda writer. Synth → CloudFormation deploy
 
 ```bash
 ./bin/awsbox up --force
-./bin/cdk-smoke.sh
+./smokes/iac/cdk-smoke.sh
 ```

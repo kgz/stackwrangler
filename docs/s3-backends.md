@@ -17,7 +17,7 @@ awsbox runs **two** S3 APIs on purpose until a later unify. Do not expect one bu
 ## Smoke
 
 ```bash
-./bin/s3-dual-endpoint-smoke.sh   # create on each; assert the other cannot see it
+./smokes/s3/s3-dual-endpoint-smoke.sh   # create on each; assert the other cannot see it
 ```
 
 Exit 0 only while the stores stay separate. If this starts failing, something merged the backends — update this doc before celebrating.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sad path: Transfer user role with no S3 perms → PutObject AccessDenied.
 # Sidecar dataplane uses admin keys; this asserts the workload principal shape.
-# Happy: ./bin/transfer-smoke.sh
+# Happy: ./smokes/transfer/transfer-smoke.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

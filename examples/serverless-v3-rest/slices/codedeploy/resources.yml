@@ -1,4 +1,4 @@
-# CodeDeploy slice shapes (#98). Applied conceptually by ./bin/codedeploy-smoke.sh
+# CodeDeploy slice shapes (#98). Applied conceptually by ./smokes/compute/codedeploy-smoke.sh
 # (CLI create-*); kept here so the serverless-v3-rest fixture can absorb them later (#185).
 AWSTemplateFormatVersion: "2010-09-09"
 Description: awsbox CodeDeploy ECS blue/green + Lambda canary deployment groups

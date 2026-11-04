@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Create hello Lambda (if missing) and invoke it.
-# Usage: ./bin/lambda-smoke.sh [function-name]
+# Usage: ./smokes/lambda/lambda-smoke.sh [function-name]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

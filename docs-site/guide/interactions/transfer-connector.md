@@ -13,5 +13,5 @@ Outbound connector (`StartFileTransfer`) pushes from S3 to a remote SFTP. Lambda
 ## Prove it
 
 ```bash
-./bin/transfer-connector-smoke.sh
+./smokes/transfer/transfer-connector-smoke.sh
 ```
