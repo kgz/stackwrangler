@@ -4,7 +4,8 @@
 # Default: print blocker checklist + current privacy (never flips).
 #   ./bin/make-public.sh --prep     → topics, description, try secret scanning (still private)
 #   CONFIRM_PUBLIC=yes ./bin/make-public.sh --flip
-#     → visibility=public + secret scanning / push protection, then remind branch protection
+#     → visibility=public + secret scanning / push protection + private
+#       vulnerability reporting (#420), then remind branch protection
 #
 # Do NOT run --flip until README scrub (#402/#411), protection *script* (#412), and
 # open public-ready blockers are green — see docs/public-release.md.
@@ -145,6 +146,22 @@ if [[ "$DO_FLIP" -eq 1 ]]; then
 	# Scanning is free on public; enable again in case --prep was skipped / failed private.
 	DO_PREP=1
 	apply_meta
+
+	echo "=== Flip: private vulnerability reporting (#420) ==="
+	# GitHub only exposes this setting on public repos (PUT 404 while private).
+	set +e
+	vuln_out="$(gh api -X PUT "repos/${FULL}/private-vulnerability-reporting" 2>&1)"
+	vuln_ec=$?
+	set -e
+	if [[ "$vuln_ec" -ne 0 ]]; then
+		echo "$vuln_out" >&2
+		echo "warning: could not enable private vulnerability reporting." >&2
+		echo "         Enable in Settings → Advanced Security, or re-run:" >&2
+		echo "         gh api -X PUT repos/${FULL}/private-vulnerability-reporting" >&2
+	else
+		echo "private vulnerability reporting enabled"
+		echo "report form: https://github.com/${FULL}/security/advisories/new"
+	fi
 
 	echo
 	echo "*** NEXT (do not skip): apply branch protection immediately ***"
