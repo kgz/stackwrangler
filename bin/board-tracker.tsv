@@ -1,11 +1,15 @@
 # issue	expected_board	notes
 # expected_board: backlog | ready | in-progress | in-review | done
 1	done	epic — v1 + IaC/ECS/EC2 + v2 empty states
-10	done	v1 S3 epic
-8	done	SeaweedFS stack
-9	done	s3 CLI parity
+2	done	superseded
+3	done	superseded
 4	done	console frame
 5	done	S3 buckets UI
+6	done	superseded
+7	done	superseded
+8	done	SeaweedFS stack
+9	done	s3 CLI parity
+10	done	v1 S3 epic
 13	done	sidebar chrome
 14	done	bucket polish
 15	done	v2 specialty buckets (empty states)
@@ -16,10 +20,6 @@
 20	done	v1 API Gateway
 21	done	v1 CloudWatch Logs
 22	done	v1 Lambda deploy/invoke
-2	done	superseded
-3	done	superseded
-6	done	superseded
-7	done	superseded
 23	done	obj preview (Open / click name)
 26	done	e2e playwright+cli
 29	done	row select empty/delete
@@ -27,14 +27,10 @@
 37	done	terraform s3+lambda iac
 38	done	ECS Fargate sample
 39	done	EC2 sample
-# v1.5 CFN
 47	done	enable CFN on LocalEmu + profile
 48	done	CFN S3+Lambda example + cfn-smoke
 49	done	CDK sample over local CFN
 50	done	SAM sample over local CFN
-88	done	CloudFormation stacks console UI
-130	done	CFN console visual parity
-# v1 Networking
 51	backlog	VPC / AZs / SG polish
 52	backlog	ALB
 53	backlog	NLB
@@ -43,13 +39,11 @@
 56	done	Route 53 zones
 57	backlog	Route 53 Resolver
 58	backlog	CloudFront stub
-# v1 Data
 59	done	DynamoDB happy+authz
 60	done	RDS / Aurora
 61	backlog	ElastiCache / MemoryDB / DAX
 62	backlog	EFS / FSx / EBS
 63	backlog	other DB stubs
-# v1 Messaging
 64	done	SQS
 65	done	SNS happy+authz
 66	done	EventBridge happy+authz
@@ -57,67 +51,54 @@
 68	done	Kinesis happy+authz
 69	backlog	MSK + MQ
 70	backlog	SES + AppSync
-# v1 Security
 71	done	KMS happy+authz
 72	done	Secrets Manager happy+authz
 73	backlog	Cognito
 74	done	ACM
 75	backlog	detection stubs
-# v1 Observability
 76	backlog	CW Metrics + Alarms
 77	backlog	SSM
 78	backlog	CloudTrail + Config
 79	backlog	Orgs / Quotas / RG
 80	backlog	X-Ray
-# v1 Containers
 81	backlog	ECR
 82	backlog	EKS
 83	done	Batch / Beanstalk / App Runner / ASG
-# v1 Analytics
 84	backlog	OpenSearch
 85	backlog	Athena + Glue + Lake Formation
 86	backlog	QuickSight / EMR / DataBrew
-# Org staging / multi-service IaC
+88	done	CloudFormation stacks console UI
 90	backlog	Epic: org-scale local staging for multi-service IaC
 91	backlog	Learning path: Transfer/SFTP → Lambda → S3 → ECS → RDS
 92	done	Console nav: link ECS + EC2
-# CFN console write path
 93	backlog	Create stack wizard
 94	backlog	Update stack + change sets
 95	backlog	StackSets + nested stacks
-# Developer tools
 96	backlog	CodePipeline
 97	backlog	CodeBuild
 98	done	CodeDeploy
 99	backlog	CodeArtifact (+ CodeCommit)
-# Data movement
 100	done	Transfer Family (SFTP)
-135	done	Transfer SFTP data plane (bytes → S3)
 101	backlog	AWS Backup
 102	backlog	DMS
 103	backlog	DataSync stub
-# Enterprise connectivity
 104	backlog	Transit Gateway
 105	backlog	VPN stubs
 106	backlog	PrivateLink polish
 107	backlog	VPC Lattice
 108	backlog	Global Accelerator
 109	done	Network Firewall + Firewall Manager
-# Account / FinOps
 110	backlog	IAM Identity Center stub
 111	backlog	STS AssumeRole polish
 112	backlog	Cost Explorer / Budgets stubs
 113	backlog	RAM
 114	backlog	Service Catalog
 115	backlog	AppConfig
-# AI / ML
 116	backlog	Bedrock stub
 117	backlog	SageMaker stub
 118	backlog	Rekognition/Textract/Comprehend/Translate stubs
-# Containers console
 119	done	ECS console UI
 120	done	EC2 console UI
-# Niche IaC / automation
 121	backlog	MWAA stub
 122	backlog	Amplify stub
 123	backlog	Lightsail stub
@@ -127,7 +108,9 @@
 127	backlog	Pinpoint stub
 128	backlog	Pulumi sample
 129	backlog	Ansible playbook example
+130	done	CFN console visual parity
 133	done	Vision fully-working / LocalStack lesson
+135	done	Transfer SFTP data plane (bytes → S3)
 137	done	Console Transfer servers UI
 138	done	Console RDS databases UI
 141	done	Transfer native SFTP auth — drop sidecar
@@ -145,6 +128,9 @@
 163	done	Real-AWS CFN S3+Lambda parity
 165	done	Real-AWS CFN Lambda AccessDenied parity
 167	backlog	Debt: SQS console (from #64)
+169	done	Logs PutLogEvents AccessDenied
+170	done	API GW CreateApi AccessDenied
+171	done	EC2 RunInstances AccessDenied
 172	backlog	Debt: SNS console (from #65)
 173	backlog	Debt: EventBridge console (from #66)
 174	backlog	Debt: DynamoDB console (from #59)
@@ -152,9 +138,6 @@
 176	backlog	Debt: Secrets console (from #72)
 177	backlog	Debt: KMS console (from #71)
 178	backlog	Debt: Kinesis console (from #68)
-169	done	Logs PutLogEvents AccessDenied
-170	done	API GW CreateApi AccessDenied
-171	done	EC2 RunInstances AccessDenied
 180	backlog	Epic: settings/topology fidelity (hairpin etc)
 181	backlog	Debt: ECS same-host hairpin fidelity
 182	done	Real-AWS parity batch10 messaging/data
@@ -165,82 +148,87 @@
 189	backlog	Debt: console REST APIs (from #184)
 190	done	Debt: REST authorizer Deny 401 vs 403 (from #184)
 191	done	Debt: REST custom domain routing (from #184)
+193	done	v1: resource-based policy evaluation
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
 201	done	v1: ECS taskdef secrets / host ports / failed-start status
-215	done	v1: Console labels for local display names
-211	done	v1: ECR push/pull + ECS task images
-214	done	v1: Same IDs as a real account / custom resource IDs
-193	done	v1: resource-based policy evaluation
 203	done	v1: ELBv2 data plane
 204	done	v1: VPC routing fidelity
 205	done	v1: Security group enforcement
 206	done	v1: Route 53 private hosted zones
-245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
 207	done	v1: ECS services on EC2
 208	done	v1: EC2 instance fidelity IMDS/SSM
 209	done	v1: IAM OIDC AssumeRoleWithWebIdentity
 210	done	v1: RDS MySQL / Aurora MySQL
+211	done	v1: ECR push/pull + ECS task images
 212	done	v1: CFN rollback + delete cleanup
 213	done	v1: multi-account cross-account AssumeRole
+214	done	v1: Same IDs as a real account / custom resource IDs
+215	done	v1: Console labels for local display names
 216	done	v1: mirror real account fixture (scaffold)
-257	done	v1: Document Terraform against awsbox (backend/lock)
-220	backlog	Debt: real-account mirror read path (from #216)
-256	done	v1: mirror/fixture tags for TF data sources
 217	backlog	Debt: ECR console (from #211)
 218	backlog	Debt: docker push via repositoryUri hostname (from #211)
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
+220	backlog	Debt: real-account mirror read path (from #216)
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
-258	done	v1: VPC Interface endpoint private DNS
-269	done	v1: ECS tasks reach emulator endpoint
-270	done	v1: no-default-route for non-root containers
-265	done	v1: SNS→SQS respects queue resource policy
-267	done	v1: REST VPC_LINK via NLB
-268	done	v1: ECS awsvpc task IP in subnet CIDR
-271	done	v1: awsvpc not on default docker bridge
-282	backlog	Debt: SG iptables install needs egress (from #271)
-266	done	v1: CreateEventSourceMapping checks Lambda role
-285	done	Debt: ESM post-create role revoke stops polling (from #266)
 241	backlog	Debt: ELBv2 console (from #203)
 242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
+245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
+247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+256	done	v1: mirror/fixture tags for TF data sources
+257	done	v1: Document Terraform against awsbox (backend/lock)
+258	done	v1: VPC Interface endpoint private DNS
+265	done	v1: SNS→SQS respects queue resource policy
+266	done	v1: CreateEventSourceMapping checks Lambda role
+267	done	v1: REST VPC_LINK via NLB
+268	done	v1: ECS awsvpc task IP in subnet CIDR
+269	done	v1: ECS tasks reach emulator endpoint
+270	done	v1: no-default-route for non-root containers
+271	done	v1: awsvpc not on default docker bridge
+282	backlog	Debt: SG iptables install needs egress (from #271)
+285	done	Debt: ESM post-create role revoke stops polling (from #266)
+294	done	API Gateway usage plans
+295	done	Transfer connectors
+296	done	DynamoDB depth
+297	done	EventBridge schedule
 299	backlog	Debt: mirror resource-id patch breaks EC2 provider patches (from #203)
 300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)
-247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
+304	done	Design: S3 console missing UI via Open Design web-clone
+305	done	Rebrand awsbox to stackwrangler
+306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
+307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)
 310	backlog	Debt: Console for API Gateway API keys and usage plans (from #294)
 311	backlog	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
 313	backlog	Debt: Transfer connectors console UI (from #295)
 314	backlog	Debt: Transfer connectors: RetrieveFilePaths and AS2 (from #295)
 315	in-review	Debt: Transfer connectors need paramiko installed at boot (from #295)
-306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
-307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 317	backlog	Debt: EventBridge schedule cadence beyond rate(1 minute) and non-wildcard cron (from #297)
+319	done	Design: built console services via Open Design web-clone
 321	backlog	Debt: Transfer console user+key (from #141)
 322	backlog	Debt: Transfer LOGICAL/IdP/SFTP-byte authz (from #141)
 324	backlog	Debt: WAFv2 console (from #55)
 325	backlog	Debt: CFN AWS::WAFv2 (from #55)
 326	backlog	Debt: WAFv2 rule evaluation (from #55)
-333	backlog	Debt: ACM console (from #74)
-339	backlog	Debt: ACM DNS validation automation (from #74)
-334	backlog	Debt: Batch/Beanstalk/App Runner/ASG authz (from #83)
-335	backlog	Debt: Batch/Beanstalk/App Runner dataplane (from #83)
-337	backlog	Debt: Batch/Beanstalk/App Runner/ASG console (from #83)
 328	backlog	Debt: Serverless http authorizer CFN PutMethod (from #185)
 329	backlog	Debt: serverless-domain-manager (from #185)
 330	backlog	Debt: Serverless v3 smoke sad path (from #185)
-344	backlog	Debt: Serverless endpoint override without editing serverless.yml (from #185)
+333	backlog	Debt: ACM console (from #74)
+334	backlog	Debt: Batch/Beanstalk/App Runner/ASG authz (from #83)
+335	backlog	Debt: Batch/Beanstalk/App Runner dataplane (from #83)
+337	backlog	Debt: Batch/Beanstalk/App Runner/ASG console (from #83)
+339	backlog	Debt: ACM DNS validation automation (from #74)
 340	backlog	Debt: CodeDeploy Lambda canary alias weight (from #98)
 341	backlog	Debt: CodeDeploy authz smoke + console (from #98)
-304	done	Design: S3 console missing UI via Open Design web-clone
-319	done	Design: built console services via Open Design web-clone
+344	backlog	Debt: Serverless endpoint override without editing serverless.yml (from #185)
 347	done	Implement S3 console from #304 OD mocks
 349	done	Implement built console services from #319 OD mocks
 350	backlog	Epic: console full UI create/detail
@@ -250,15 +238,10 @@
 354	backlog	Debt: HTTP API detail routes/stages
 355	backlog	Debt: S3 console disabled controls (from #347)
 357	backlog	Debt: service console disabled controls (from #349)
-294	done	API Gateway usage plans
-295	done	Transfer connectors
-296	done	DynamoDB depth
-297	done	EventBridge schedule
 360	done	ECS awsvpc detach bridge staticmethod
-367	backlog	Debt: UpdateEventSourceMapping VT/MC (from #363)
 363	done	SQS/ESM validation: VT vs timeout, MaximumConcurrency>=2, retention 60-14d
 364	done	API Gateway HTTP_PROXY form-urlencoded body passthrough
-389	in-progress	Experimental live architecture map (nice-to-have)
+367	backlog	Debt: UpdateEventSourceMapping VT/MC (from #363)
 369	done	batch/2026-10-27
 370	done	batch/2026-10-27
 371	done	batch/2026-10-27
@@ -266,52 +249,53 @@
 373	done	batch/2026-10-27
 374	done	batch/2026-10-27
 375	done	batch/2026-10-27
+377	done	Debt: retire bin smoke wrappers
+378	done	batch/2026-10-27-bugs
+381	done	Public OSS THIRD_PARTY + disclaimer
+384	done	batch/2026-10-27-bugs
 386	done	IGW attach keep localemu-vpc network (from #369)
 387	done	SNS large-topic subscribe protocol limits (from #373)
-378	done	batch/2026-10-27-bugs
-384	done	batch/2026-10-27-bugs
-305	done	Rebrand awsbox to stackwrangler
+389	in-progress	Experimental live architecture map (nice-to-have)
+401	done	ECS list-clusters omits INACTIVE
+402	done	Public OSS product README (Runa-shaped)
+403	done	Public OSS docs site (VitePress / Runa-style)
 405	done	Debt: align smoke/bin credential defaults to STACKWRANGLER_* (from #305)
 406	done	Debt: retarget internal docs CLI examples to stackwrangler (from #305)
-408	done	Debt: residual console awsbox copy (from #305)
 407	done	Debt: GitHub repo rename (done — kgz/stackwrangler)
-381	done	Public OSS THIRD_PARTY + disclaimer
+408	done	Debt: residual console awsbox copy (from #305)
+412	done	Public OSS: branch protection — only kgz merges main
+413	in-review	Public OSS: flip repository visibility to public
+416	done	Public OSS: split public AGENTS vs owner board workflow
+423	in-review	Debt: align console e2e credential defaults to STACKWRANGLER_* (from #405)
+425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
+431	backlog	Debt: enable branch protection after public/Pro (from #412)
+433	in-review	Debt: scope stackwrangler-board.mdc (not alwaysApply global)
+435	backlog	Debt: execute public flip + secret scanning (from #413)
 438	backlog	Debt: Network Firewall console (from #109)
 439	backlog	Debt: Firewall Manager console (from #109)
 440	backlog	Debt: Network Firewall / FMS authz smoke (from #109)
 441	backlog	Debt: Network Firewall packet filtering (from #109)
 442	backlog	Debt: Firewall Manager org enforcement (from #109)
-448	done	SNS FilterPolicy value limits (empty list, >150 combinations)
 445	done	SQS→Lambda ReportBatchItemFailures smoke
 446	done	Smoke: ESM enable/disable stops polling; re-enable drains
 447	done	ReservedConcurrentExecutions smoke (direct + ESM)
-453	done	ESM MaxConcurrency vs reserved
+448	done	SNS FilterPolicy value limits (empty list, >150 combinations)
 449	done	ESM LPR clear after re-grant
+453	done	ESM MaxConcurrency vs reserved
 458	done	Serverless Framework v4 deploy against awsbox
 459	done	SQS QueueUrl host resolves inside Lambda/ECS
 460	backlog	Debt: Serverless v4 smoke sad path (from #458)
 464	done	Serverless v4 deploy: transparent AWS endpoint redirect
 466	in-review	Debt: aws-redirect DNS/TLS-down in test-paths (from #464)
-470	done	CFN delete part-created stack skips never-created resources
 467	done	aws-redirect Expect 100-continue deadlock
 468	done	stackwrangler sls yarn/npm workspace CLI
 469	done	stackwrangler sls non-root container user
+470	done	CFN delete part-created stack skips never-created resources
 475	done	ESM poller ExpiredToken / credential refresh
 477	backlog	Debt: stream ESM cred-refresh smoke (from #475)
-416	done	Public OSS: split public AGENTS vs owner board workflow
-433	in-review	Debt: scope stackwrangler-board.mdc (not alwaysApply global)
-403	done	Public OSS docs site (VitePress / Runa-style)
-425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
-412	done	Public OSS: branch protection — only kgz merges main
-431	backlog	Debt: enable branch protection after public/Pro (from #412)
-402	done	Public OSS product README (Runa-shaped)
-413	in-review	Public OSS: flip repository visibility to public
-435	backlog	Debt: execute public flip + secret scanning (from #413)
 483	backlog	Doc: architecture map console screenshot (from docs-catalog)
 484	backlog	Doc: Kinesis/SFN/DynamoDB interaction pages (from docs-catalog)
 485	backlog	Doc: Serverless local deploy interaction page (from docs-catalog)
 486	backlog	Doc: SQS→Lambda ESM name exact smokes (from docs-catalog)
-377	done	Debt: retire bin smoke wrappers
 491	done	Public OSS: drop WSL-centric copy; Linux primary
-401	done	ECS list-clusters omits INACTIVE
 495	in-review	Debt: Linux-first OD start hints (from #491)
