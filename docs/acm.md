@@ -7,7 +7,7 @@ LocalEmu `acm` on `:4566` (`SERVICES` includes `acm`; profile `local` has `acm` 
 ## Smokes
 
 ```bash
-./bin/awsbox up --force
+./bin/stackwrangler up --force
 ./bin/acm-smoke.sh
 ```
 

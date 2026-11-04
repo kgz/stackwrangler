@@ -11,7 +11,7 @@ Lambdas that run in a VPC usually call private services by an internal hostname 
 AWSBOX_LAMBDA_DOCKER_FLAGS=--add-host=host.docker.internal:host-gateway --add-host=internal-nlb.example:host-gateway
 ```
 
-Restart the emulator after changing it: `./bin/awsbox up --force`.
+Restart the emulator after changing it: `./bin/stackwrangler up --force`.
 
 The value is passed through as LocalEmu's `LAMBDA_DOCKER_FLAGS`, so any `docker run` flag works (for example `--network <name>` to join another compose network). `host-gateway` needs Docker 20.10+.
 

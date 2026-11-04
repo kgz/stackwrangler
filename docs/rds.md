@@ -3,7 +3,7 @@
 LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL container via Docker.
 
 ```bash
-./bin/awsbox up --force
+./bin/stackwrangler up --force
 ./bin/rds-smoke.sh          # Postgres
 ./bin/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
 ```

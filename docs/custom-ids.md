@@ -9,7 +9,7 @@ The account id embedded in ARNs comes from the access key:
 | `AWSBOX_ACCOUNT_IDS` | Comma-separated `access_key=012345678901`. This key uses this account. |
 | `AWSBOX_ACCOUNT_ID` | 12 digits. Used when the key is not in the map and would otherwise be `000000000000`. |
 
-Per-key entries win. Restart `./bin/awsbox up` after changing either value. STS `GetCallerIdentity` and resource `OwnerId` fields return that account. The console account chip is `VITE_AWS_ACCOUNT_ID` ([#215](https://github.com/kgz/awsl/issues/215)), not this env.
+Per-key entries win. Restart `./bin/stackwrangler up` after changing either value. STS `GetCallerIdentity` and resource `OwnerId` fields return that account. The console account chip is `VITE_AWS_ACCOUNT_ID` ([#215](https://github.com/kgz/awsl/issues/215)), not this env.
 
 Patch: `localemu-patches/init/start.d/20-custom-ids.py` (mounted with the other start scripts). Moto already honours `_custom_id_` for REST APIs via `@moto_id`; the patch wires the types that never consulted that helper.
 

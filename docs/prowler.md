@@ -5,9 +5,9 @@ Run [Prowler](https://docs.prowler.com/) against LocalEmu so a stack staged on a
 ## Smoke (preferred)
 
 ```bash
-./bin/awsbox up
-./bin/awsbox-hosts check    # or: ./bin/awsbox hosts check
-# if missing: ./bin/awsbox-hosts apply   # or add the printed line yourself
+./bin/stackwrangler up
+./bin/stackwrangler hosts check
+# if missing: ./bin/stackwrangler hosts apply   # or add the printed line yourself
 ./bin/prowler-smoke.sh
 ```
 
@@ -27,13 +27,13 @@ boto3 addresses S3 Control as `http://<account-id>.<endpoint-host>:4566/…`. Th
 On many hosts, RFC 6761 synthesises `*.localhost` → `127.0.0.1`. **WSL2 and some minimal Debian/Ubuntu images do not** (`hosts: files dns` in `nsswitch.conf`, no synthetic localhost). Then:
 
 ```bash
-./bin/awsbox-hosts print
+./bin/stackwrangler hosts print
 # → 127.0.0.1 awsbox.localhost 000000000000.awsbox.localhost # awsbox-managed (prowler / s3control)
 
-./bin/awsbox-hosts apply    # sudo tee -a /etc/hosts
+./bin/stackwrangler hosts apply    # sudo tee -a /etc/hosts
 ```
 
-`./bin/awsbox up` warns when the names do not resolve (stack still starts; only Prowler/S3 Control virtual-host needs them).
+`./bin/stackwrangler up` warns when the names do not resolve (stack still starts; only Prowler/S3 Control virtual-host needs them).
 
 ### WSL notes
 
@@ -73,7 +73,7 @@ Do **not** point `AWS_ENDPOINT_URL` at `http://127.0.0.1:4566` for Prowler — b
 | `localemu-patches/ecs_task_manager.py` / `ecs_provider.py` | ECS secrets `valueFrom`, host ports, failed-start status (#201) |
 | `localemu-patches/ecs_ec2_services.py` | EC2 container instances, service replacement, bridge target registration, CodeDeploy blue/green (#207) + Lambda deploy Succeeded control plane (#98) |
 | `localemu/localemu@sha256:…` (pinned) | Avoid silent break of file mounts on `:latest` drift |
-| `./bin/awsbox-hosts` | Check / print / apply loopback hosts for S3 Control |
+| `./bin/stackwrangler hosts` | Check / print / apply loopback hosts for S3 Control |
 
 Unset account public-access block returns `NoSuchPublicAccessBlockConfiguration` (like AWS). Use `put-public-access-block` to stage the “configured” case for S3 public-access checks.
 

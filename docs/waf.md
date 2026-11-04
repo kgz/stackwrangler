@@ -7,14 +7,14 @@ LocalEmu `wafv2` (moto) + `waf` (classic list stub) on `:4566`.
 ## Smokes
 
 ```bash
-./bin/awsbox up --force
+./bin/stackwrangler up --force
 ./bin/waf-smoke.sh          # create WebACL + associate + get/list
 ./bin/waf-authz-smoke.sh    # deny CreateWebACL
 ```
 
 ## Profile
 
-`./bin/awsbox-profile write --force` sends `wafv2` / `waf` to the LocalEmu endpoint.
+`./bin/stackwrangler up --force` writes profile `local`, which sends `wafv2` / `waf` to the LocalEmu endpoint.
 
 ## Slice
 

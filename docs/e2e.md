@@ -16,7 +16,7 @@ Standard for browser e2e on React apps: real Chromium, file upload, traces on fa
 No GitHub Actions — run smokes locally (free-tier friendly).
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up   # ./bin/awsbox is a shim to the same CLI
 ./bin/e2e.sh          # parity + Playwright (starts Vite if needed)
 # or separately:
 ./bin/s3-parity.sh

@@ -9,8 +9,8 @@ Synthetic topology fixtures for the local emulator. This pass applies a VPC, sub
 ./bin/awsl apply testdata/mirror/synthetic-vpc.json
 ./bin/awsl apply testdata/mirror/tagged-vpc.json
 # same entry points:
-./bin/awsbox mirror dry-run
-./bin/awsbox apply testdata/mirror/synthetic-vpc.json
+./bin/stackwrangler mirror dry-run
+./bin/stackwrangler apply testdata/mirror/synthetic-vpc.json
 ```
 
 `mirror` without `dry-run` exits 2. It does not call AWS and does not write a fixture.
@@ -46,7 +46,7 @@ Unknown fields are rejected, including `secret`, `password`, `environment`, and 
 
 ## Ids and tags
 
-Apply sends tag `awsbox:resource-id` set to the fixture id. LocalEmu's start hook `localemu-patches/init/start.d/20-mirror-resource-ids.py` uses that tag as the VPC, subnet, route table, or security group id. Recreate the emulator after pulling the hook (`./bin/awsbox up` recreates when the compose spec changes; a container started from an older tree will not pin ids).
+Apply sends tag `awsbox:resource-id` set to the fixture id. LocalEmu's start hook `localemu-patches/init/start.d/20-mirror-resource-ids.py` uses that tag as the VPC, subnet, route table, or security group id. Recreate the emulator after pulling the hook (`./bin/stackwrangler up` recreates when the compose spec changes; a container started from an older tree will not pin ids).
 
 `describe-vpcs` / `describe-subnets` / `describe-route-tables` / `describe-security-groups` then return the fixture ids, CIDRs, and tags. A second `apply` of the same fixture is a no-op for matching shape and re-applies any missing tags / subnet associations.
 

@@ -272,8 +272,8 @@
 384	done	batch/2026-10-27-bugs
 305	done	Rebrand awsbox to stackwrangler
 405	backlog	Debt: align smoke/bin credential defaults to STACKWRANGLER_* (from #305)
-406	backlog	Debt: retarget internal docs CLI examples to stackwrangler (from #305)
-408	in-review	Debt: residual console awsbox copy (from #305)
+406	in-review	Debt: retarget internal docs CLI examples to stackwrangler (from #305)
+408	done	Debt: residual console awsbox copy (from #305)
 407	done	Debt: GitHub repo rename (done — kgz/stackwrangler)
 381	done	Public OSS THIRD_PARTY + disclaimer
 438	backlog	Debt: Network Firewall console (from #109)

@@ -4,7 +4,7 @@ Requires `SERVICES` including: `sqs,sns,events,dynamodb,stepfunctions,secretsman
 
 ```bash
 docker compose up -d --force-recreate localstack
-# or: ./bin/awsbox up --force
+# or: ./bin/stackwrangler up --force
 ```
 
 | Surface | Happy | Sad |
