@@ -93,35 +93,11 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 
 ### Hosting footprint
 
-```mermaid
-flowchart TB
-  subgraph working [Working / strong Partial]
-    S3["S3 UI + objects"]
-    LAMBDA["Lambda"]
-    MSG["SQS · SNS · EB · DDB · SFN · Kinesis"]
-    CFN["TF / CDK / SAM"]
-    IAM["IAM / STS enforcement on"]
-  end
+Three honesty bands (same colours as the progress bar). Solid links = same-process path; dashed = **sidecar** (SeaweedFS, registry, SFTP, Postgres/MySQL).
 
-  subgraph partial [Partial · data plane with gaps]
-    ECS["ECS / EC2 / ECR"]
-    XFER["Transfer · SFTP sidecar"]
-    RDS["RDS · DB sidecar"]
-    NET["VPC / ELBv2 / SG / R53"]
-    APIGW["API Gateway"]
-  end
-
-  subgraph stubs [Control plane / chrome / backlog]
-    BATCH["Batch / Beanstalk / App Runner"]
-    EMPTY["S3 specialty / Lens / Access Points"]
-    BL["EKS · ElastiCache · SES · Cognito · CloudFront · Metrics depth"]
-  end
-
-  S3 --- SW["SeaweedFS :8333"]
-  XFER --- SFTP["atmoz/sftp"]
-  RDS --- PG["Postgres / MySQL containers"]
-  ECS -.-> ECRR["distribution/registry"]
-```
+<ClientOnly>
+  <G6Diagram name="hosting-footprint" />
+</ClientOnly>
 
 ## Gaps & TODO
 

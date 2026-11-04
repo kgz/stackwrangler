@@ -1,0 +1,15 @@
+# Console docs screenshots
+
+Produced by `./bin/docs-capture.sh` (Playwright project `docs-capture`).  
+PNG paths are under `docs/assets/console/` (docs-site serves them via `public/assets` symlink). Keep this registry **outside** `public/` so VitePress does not treat it as a page.
+
+| File | Console URL | Seed / note |
+|------|-------------|-------------|
+| `home-s3-buckets.png` | `/` | Optional: `aws --profile local s3 mb s3://docs-demo-bucket` |
+| `empty-specialty-buckets.png` | `/directory-buckets` | Empty chrome is honest |
+| `lambda-functions.png` | `/lambda` | Optional: seed a tiny function for non-empty list |
+| `cloudformation-stacks.png` | `/cloudformation` | List page; empty OK if honest |
+| `ecs-clusters.png` | `/ecs` | List page |
+| `ec2-instances.png` | `/ec2` | List page |
+
+No seed for a new shot → file **Doc:**; do not invent images or use `design/**/refs/` AWS recon PNGs.

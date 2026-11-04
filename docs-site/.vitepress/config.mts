@@ -28,6 +28,7 @@ export default withMermaid(
         { text: 'Completeness', link: '/guide/completeness' },
         { text: 'Console tour', link: '/guide/console-tour' },
         { text: 'Concepts', link: '/guide/concepts' },
+        { text: 'Interactions', link: '/guide/interactions/' },
         {
           text: 'GitHub',
           link: 'https://github.com/kgz/stackwrangler',
@@ -44,6 +45,52 @@ export default withMermaid(
               { text: 'Completeness / status', link: '/guide/completeness' },
               { text: 'Console tour', link: '/guide/console-tour' },
               { text: 'Concepts', link: '/guide/concepts' },
+              { text: 'Interactions', link: '/guide/interactions/' },
+            ],
+          },
+          {
+            text: 'Interactions',
+            items: [
+              { text: 'Catalog', link: '/guide/interactions/' },
+              { text: 'SNS → SQS', link: '/guide/interactions/sns-to-sqs' },
+              {
+                text: 'EventBridge → Lambda',
+                link: '/guide/interactions/events-to-lambda',
+              },
+              {
+                text: 'API GW → NLB → ECS',
+                link: '/guide/interactions/apigw-nlb-ecs',
+              },
+              {
+                text: 'Lambda → Secrets → HTTP',
+                link: '/guide/interactions/lambda-secrets-http',
+              },
+              {
+                text: 'Transfer SFTP → S3',
+                link: '/guide/interactions/transfer-sftp-s3',
+              },
+              { text: 'Dual S3', link: '/guide/interactions/dual-s3' },
+              { text: 'IAM deny', link: '/guide/interactions/iam-deny' },
+              {
+                text: 'Lambda VPC → host',
+                link: '/guide/interactions/lambda-vpc-host',
+              },
+              {
+                text: 'SQS → Lambda',
+                link: '/guide/interactions/sqs-to-lambda',
+              },
+              {
+                text: 'ECS → ECR pull',
+                link: '/guide/interactions/ecs-ecr-pull',
+              },
+              {
+                text: 'SNS large topic',
+                link: '/guide/interactions/sns-large-topic',
+              },
+              {
+                text: 'Transfer connector',
+                link: '/guide/interactions/transfer-connector',
+              },
             ],
           },
         ],

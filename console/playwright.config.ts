@@ -16,7 +16,21 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: '**/e2e/docs/**',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'docs-capture',
+      testMatch: '**/e2e/docs/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+      },
+    },
+  ],
   webServer: {
     command: 'yarn dev --host 127.0.0.1 --port 3000',
     url: baseURL,
@@ -24,3 +38,4 @@ export default defineConfig({
     timeout: 120_000,
   },
 })
+

@@ -1,6 +1,6 @@
 # Post-ticket gap check (cheap)
 
-Run **before** marking a ticket `done` / merging the PR. Goal: no half-baked CLI/UI ships without a **Debt:** follow-up on the board.
+Run **before** marking a ticket `done` / merging the PR. Goal: no half-baked CLI/UI ships without a **Debt:** follow-up, and no silent docs gaps without a **Doc:** follow-up (or docs shipped in the PR). See [docs-catalog.md](docs-catalog.md).
 
 ```bash
 ./bin/gap-check.sh <issue-num>   # prints checklist + heuristic hits
@@ -24,6 +24,11 @@ For the shipped surface, list anything that is **not** fully Working:
 | **Smokes** | happy path only; no deliberate failure case — update [smoke-matrix.md](smoke-matrix.md) |
 | **Smoke matrix** | row missing or Sad column empty with no Debt link |
 | **Path rubric** | scenario not listed in [test-paths.md](test-paths.md) |
+| **Public docs** | New Working/Partial surface ships with no docs-site or [interactions](../docs-site/guide/interactions/) page, and this PR did not add one → `Doc:` |
+| **Screenshot** | Console/UI change needs a product shot and [docs-capture](docs-catalog.md) was skipped → `Doc:` |
+| **Interaction edge** | New cross-service path with no catalog entry under `docs-site/guide/interactions/` → `Doc:` (or add the page in this PR) |
+
+Prefer shipping docs in the parent PR. File **Doc:** only when blocked. Same “no half-baked without follow-up” bar as Debt.
 
 ## Debt ticket shape
 
@@ -36,6 +41,23 @@ Board: backlog
 Tracker: bin/board-tracker.tsv
 Link from docs and/or README status row
 ```
+
+## Doc: ticket shape
+
+```text
+Title: Doc: <short gap> (from #<parent>)
+Body: Why / Goal / Acceptance / Related #<parent>
+  - pages to add/update
+  - edges to document
+  - screenshots required
+Milestone: same area as parent
+Label: $(cat docs/CURRENT_RELEASE)
+Board: backlog
+Tracker: bin/board-tracker.tsv
+Link from catalog index or parent PR
+```
+
+Full template + capture commands: [docs-catalog.md](docs-catalog.md).
 
 ## Examples we already needed
 

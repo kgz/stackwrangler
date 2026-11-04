@@ -68,7 +68,8 @@ Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 
 1. Walk the checklist in `docs/gap-check.md`
 2. For every Partial / disabled Create / sidecar / “use CLI smoke” / authz hole / AWS console UI left out of v1 **without** an open Debt ticket → create `Debt: … (from #<n>)`, label `$(cat docs/CURRENT_RELEASE)`, link from README or service doc. Console debt designs use Open Design `web-clone`
-3. Mention new Debt issues in the PR body
+3. Prefer shipping docs in the PR; if blocked on public docs / screenshot / interaction edge → `Doc: … (from #<n>)` per [docs/docs-catalog.md](docs/docs-catalog.md) (skill `docs-catalog`)
+4. Mention new Debt / Doc issues in the PR body
 
 Do **not** treat the parent as finished until gaps are ticketed (or explicitly N/A in the PR).
 
