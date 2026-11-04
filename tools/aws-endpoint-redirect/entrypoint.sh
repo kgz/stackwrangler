@@ -51,12 +51,17 @@ log-queries
 log-facility=${DNS_LOG}
 # Non-AWS → upstream (Serverless licence host, npm, etc.)
 server=${UPSTREAM_DNS}
-# AWS API hostnames → this TLS edge (never public IPs).
+# Never forward AWS suffixes upstream (blocks A and AAAA to public AWS).
+# address=/…/<IPv4> alone still lets AAAA fall through to real dualstack.
+local=/amazonaws.com/
+local=/amazonaws.com.cn/
+local=/api.aws/
+local=/aws.amazon.com/
+# IPv4 A → this TLS edge (AAAA under local= → NXDOMAIN / no public addrs).
 address=/amazonaws.com/${PROXY_IP}
 address=/amazonaws.com.cn/${PROXY_IP}
 address=/api.aws/${PROXY_IP}
 address=/aws.amazon.com/${PROXY_IP}
-# Anything else under these trees is already covered by the suffixes above.
 EOF
 
 : >"$DNS_LOG"

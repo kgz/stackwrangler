@@ -91,40 +91,65 @@ fetch_dns_log() {
 	docker exec "$id" cat /var/log/aws-redirect-dnsmasq.log >"$DNS_LOG_HOST" 2>/dev/null || true
 }
 
-# Assert AWS A answers in the dnsmasq log are only the redirect IP (fail-closed).
-# Limitation: this is DNS answers only — we do not packet-capture egress. Non-AWS
-# names (Serverless licence host, npm, etc.) resolve upstream by design; the log
-# cannot prove "only the licence host left the machine" without brittle capture.
+# Assert AWS DNS is fail-closed for A and AAAA (no public AWS addrs).
+# Limitation: DNS answers only — we do not packet-capture egress. Non-AWS
+# names (Serverless licence host, npm, etc.) resolve upstream by design.
 assert_dns_fail_closed() {
-	local ip bad
+	local ip id bad aaaa dual
 	ip="$(redirect_ip)"
-	[[ -n "$ip" ]] || {
-		echo "error: aws-redirect IP unknown for DNS assert" >&2
+	id="$(redirect_id)"
+	[[ -n "$ip" && -n "$id" ]] || {
+		echo "error: aws-redirect IP/id unknown for DNS assert" >&2
 		return 1
 	}
+
+	# Live probe: dualstack AAAA must not be a public AWS IPv6 (local= → empty/NXDOMAIN).
+	dual="$(docker exec "$id" dig +short +time=2 +tries=1 @"$ip" AAAA s3.dualstack.us-east-1.amazonaws.com 2>/dev/null || true)"
+	if printf '%s\n' "$dual" | grep -Eq '^[0-9a-fA-F:]+$' && printf '%s\n' "$dual" | grep -Eqv '^(::|::1)$'; then
+		echo "error: dualstack AAAA returned a public-looking IPv6 (fail-open):" >&2
+		echo "$dual" >&2
+		return 1
+	fi
+	# A still hits the proxy.
+	if ! docker exec "$id" dig +short +time=2 +tries=1 @"$ip" A s3.dualstack.us-east-1.amazonaws.com 2>/dev/null | grep -qx "$ip"; then
+		echo "error: dualstack A did not resolve to proxy ${ip}" >&2
+		return 1
+	fi
+
 	fetch_dns_log
 	[[ -s "$DNS_LOG_HOST" ]] || {
 		echo "error: empty dnsmasq query log" >&2
 		return 1
 	}
-	# dnsmasq --log-queries: "config <name> is <ip>" for address=/…/ answers.
+	# IPv4 config answers must be proxy (or 0.0.0.0).
 	bad="$(
-		grep -E 'config .*(amazonaws\.com|amazonaws\.com\.cn|api\.aws|aws\.amazon\.com) is [0-9.]+' "$DNS_LOG_HOST" \
+		grep -E '(config|reply) .*(amazonaws\.com|amazonaws\.com\.cn|api\.aws|aws\.amazon\.com) is [0-9.]+' "$DNS_LOG_HOST" \
 			| grep -Ev " is (${ip}|0\\.0\\.0\\.0)$" || true
 	)"
 	if [[ -n "$bad" ]]; then
-		echo "error: dnsmasq answered an AWS hostname with a non-proxy IP:" >&2
+		echo "error: dnsmasq answered an AWS hostname with a non-proxy IPv4:" >&2
 		echo "$bad" >&2
+		return 1
+	fi
+	# AAAA / IPv6 answers in the log must not be public (no reply/config … is <v6>).
+	aaaa="$(
+		grep -Ei '(config|reply) .*(amazonaws\.com|amazonaws\.com\.cn|api\.aws|aws\.amazon\.com) is [0-9a-f:]+' "$DNS_LOG_HOST" \
+			| grep -E ' is [0-9a-fA-F]*:[0-9a-fA-F:]+' \
+			| grep -Ev ' is (::|::1)$' || true
+	)"
+	if [[ -n "$aaaa" ]]; then
+		echo "error: dnsmasq answered an AWS hostname with a public-looking AAAA:" >&2
+		echo "$aaaa" >&2
 		return 1
 	fi
 	if ! grep -Eq "config .*(sts|cloudformation|ssm|s3|sns|sqs|lambda).*amazonaws\\.com is ${ip}" "$DNS_LOG_HOST"; then
 		if ! grep -Eq "config .*amazonaws\\.com is ${ip}" "$DNS_LOG_HOST"; then
-			echo "error: dnsmasq log has no AWS→proxy answers (ip=${ip})" >&2
+			echo "error: dnsmasq log has no AWS→proxy A answers (ip=${ip})" >&2
 			tail -n 80 "$DNS_LOG_HOST" >&2 || true
 			return 1
 		fi
 	fi
-	echo "ok   DNS log: AWS hostnames → ${ip} only (egress allowlist not asserted; see smoke header)"
+	echo "ok   DNS fail-closed: A→${ip}, dualstack AAAA not public (egress allowlist not asserted)"
 }
 
 # Run serverless via ./bin/stackwrangler sls (container + aws-redirect DNS/TLS).

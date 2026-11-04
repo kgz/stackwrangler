@@ -5,10 +5,10 @@ Transparent AWS endpoint redirect for tools that ignore `AWS_ENDPOINT_URL`
 
 Compose profile: `aws-redirect`. One dual-role container:
 
-1. **dnsmasq** — `*.amazonaws.com`, `*.amazonaws.com.cn`, `*.api.aws`,
-   `aws.amazon.com` → this container’s IP; everything else → upstream DNS.
-   Query log at `/var/log/aws-redirect-dnsmasq.log` (fail-closed: AWS names
-   never resolve to public IPs).
+1. **dnsmasq** — `local=/…/` so AWS suffixes are never forwarded (A **and**
+   AAAA; stops dualstack public IPv6), plus `address=/…/<proxy-ipv4>` for A
+   → this TLS edge. Everything else → upstream DNS. Query log at
+   `/var/log/aws-redirect-dnsmasq.log`.
 2. **TLS edge** (`:443`) — dynamic leaf cert per SNI, signed by a local CA
    under `.awsbox/aws-redirect/`, HTTP forward to LocalEmu `:4566` with the
    client `Host` header kept.
