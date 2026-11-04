@@ -194,6 +194,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN failed update → `UPDATE_ROLLBACK_COMPLETE` (not `UPDATE_COMPLETE`) | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN part-created stack delete skips never-created GetAtt deps → `DELETE_COMPLETE`, redeploy | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` (#470) |
 | CFN failed update reverts in-place resource changes | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./bin/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
