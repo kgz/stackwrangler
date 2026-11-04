@@ -216,7 +216,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS VisibilityTimeout < function timeout → CreateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | ESM MaximumConcurrency < 2 → CreateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role loses SQS poll perms after ESM create → polling stops / LastProcessingResult or State | sad/authz | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
-| Lambda role re-granted SQS poll perms → ESM resumes and queued message consumed | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
+| Lambda role re-granted SQS poll perms → ESM resumes, message consumed, LastProcessingResult cleared | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | SQS → Lambda ReportBatchItemFailures: 1 of 3 fails → 2 deleted, 1 redelivered → DLQ | happy | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda empty batchItemFailures deletes whole batch | happy | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda unknown itemIdentifier fails whole batch → DLQ | sad/other | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |

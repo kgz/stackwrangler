@@ -4,7 +4,7 @@
 # (execution role without SQS read perms -> CreateEventSourceMapping refused),
 # AWS-parity rejects: visibility < function timeout, MaximumConcurrency < 2 (#363),
 # post-create role revoke stops polling + LastProcessingResult/State authz (#285),
-# and re-grant resumes consumption of the queued message.
+# and re-grant resumes consumption and clears the stuck LastProcessingResult (#449).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -309,6 +309,22 @@ for _ in $(seq 1 45); do
 	sleep 2
 done
 [[ "$n" == "0" ]] || fail "re-grant: queued message not consumed after SQS perms restored (count=${n})"
-ok "re-grant: mapping resumed and queued message consumed"
+# After consume resumes, LastProcessingResult must leave the stuck PROBLEM string (#449).
+lpr=""
+lpr_cleared=""
+for _ in $(seq 1 45); do
+	lpr="$(aws lambda get-event-source-mapping --uuid "$U6" --query LastProcessingResult --output text 2>/dev/null || true)"
+	if [[ -z "$lpr" || "$lpr" == "None" || "$lpr" == "OK" ]]; then
+		lpr_cleared=1
+		break
+	fi
+	if ! echo "$lpr" | grep -qi 'PROBLEM\|ReceiveMessage\|AccessDenied\|execution role'; then
+		lpr_cleared=1
+		break
+	fi
+	sleep 2
+done
+[[ -n "$lpr_cleared" ]] || fail "re-grant: LastProcessingResult still stuck on authz failure (lpr='${lpr}')"
+ok "re-grant: mapping resumed, queued message consumed, LastProcessingResult cleared"
 
 echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC refusal, post-create revoke + re-grant (${P})"
