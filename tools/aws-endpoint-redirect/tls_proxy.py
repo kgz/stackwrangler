@@ -161,6 +161,9 @@ async def _pipe_request(
     for h in filtered:
         up_w.write(h)
     up_w.write(b"\r\n")
+    # Flush headers before waiting on the body so Expect: 100-continue
+    # can be answered while we are still blocked on client_r.read.
+    await up_w.drain()
 
     cl_raw = _header_value(headers, b"content-length")
     te_raw = _header_value(headers, b"transfer-encoding")
@@ -172,6 +175,7 @@ async def _pipe_request(
                 break
             up_w.write(chunk)
             remaining -= len(chunk)
+            await up_w.drain()
     elif te_raw is not None and b"chunked" in te_raw.lower():
         while True:
             size_line = await client_r.readline()
@@ -188,6 +192,7 @@ async def _pipe_request(
             up_w.write(data)
             crlf = await client_r.readexactly(2)
             up_w.write(crlf)
+            await up_w.drain()
     await up_w.drain()
 
 
@@ -216,8 +221,13 @@ async def _handle(
         await client_w.wait_closed()
         return
     try:
-        await _pipe_request(client_r, up_w)
-        await _pipe_response(up_r, client_w)
+        # Full-duplex: relay interim 100 Continue (and the final response)
+        # while still reading the request body. Sequential pipe deadlocks
+        # when the client holds the body for Expect: 100-continue (#467).
+        await asyncio.gather(
+            _pipe_request(client_r, up_w),
+            _pipe_response(up_r, client_w),
+        )
     except (asyncio.IncompleteReadError, ConnectionResetError, BrokenPipeError) as exc:
         LOG.debug("proxy session %s ended: %s", peer, exc)
     finally:

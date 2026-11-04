@@ -89,14 +89,21 @@ aws ssm put-parameter --name /demo/sls4/dev/app-name --type String --value my-ap
 
 Manual compose (optional): `docker compose --profile aws-redirect up -d aws-redirect`.
 
-### Fallback: `package` then CloudFormation (no redirect)
+### Fallback: `package` via redirect, then CloudFormation (AWS CLI)
 
-`serverless package` makes no AWS control-plane calls. Packaging on the host, then deploying the template with the AWS CLI against LocalEmu, still works when you cannot use the redirect container:
+Prefer `./bin/stackwrangler sls -- … deploy`. If deploy hangs on S3 artifact upload (historically: aws-redirect deadlocked on `Expect: 100-continue` for zips ≳1 MB — fixed in [#467](https://github.com/kgz/awsl/issues/467)), or you need a path that never uses SDK v2 PutObject through the TLS edge:
+
+1. Package through the redirect (same DNS/TLS container; `package` does not upload):
+2. Upload `.serverless/*.zip` with the host AWS CLI against LocalEmu.
+3. `aws cloudformation deploy` with `--endpoint-url`.
 
 ```bash
+./bin/stackwrangler up
+export SERVERLESS_ACCESS_KEY=…   # or LICENSE / LOCAL_ONLY alias
 export AWS_ENDPOINT_URL=http://127.0.0.1:4566
-npx serverless package --stage local
-# Upload .serverless/*.zip to the LocalEmu deployment bucket, then:
+
+./bin/stackwrangler sls --cwd examples/serverless-v4-sns-sqs/topic -- package --stage local
+# Upload .serverless/*.zip to the deployment bucket (aws s3 cp … --endpoint-url "$AWS_ENDPOINT_URL"), then:
 aws cloudformation deploy \
   --template-file .serverless/cloudformation-template-update-stack.json \
   --stack-name <service>-local \
@@ -104,7 +111,7 @@ aws cloudformation deploy \
   --endpoint-url "$AWS_ENDPOINT_URL"
 ```
 
-`package` still needs a valid Access/License key (licence host is not AWS DNS). Prefer `./bin/stackwrangler sls` for deploy/remove.
+`package` still needs a valid Access/License key (licence host is not AWS DNS). `./bin/stackwrangler sls -- … deploy` treats a CLI exit 0 with no `Service deployed` / stack-complete marker as failure.
 
 ### Lambda → SQS from inside the function
 

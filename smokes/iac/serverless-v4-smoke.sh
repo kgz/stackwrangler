@@ -256,7 +256,48 @@ negative_tls_down() {
 	echo "ok   TLS down → connection error (rc=${rc})"
 }
 
+# Write optional ≥2 MiB pad so consumer zip triggers SDK v2 Expect: 100-continue (#467).
+# Use high-entropy bytes so deflate cannot shrink the artifact under ~1 MiB.
+ensure_large_consumer_pad() {
+	local pad="$EX/consumer/src/pad-blob.js"
+	python3 - "$pad" <<'PY'
+import base64
+import secrets
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+raw = secrets.token_bytes(2_200_000)
+b64 = base64.b64encode(raw).decode("ascii")
+path.write_text(
+    "// high-entropy pad for #467 — do not commit\n"
+    "module.exports = Buffer.from(" + repr(b64) + ", 'base64')\n",
+    encoding="utf-8",
+)
+print(path.stat().st_size)
+PY
+}
+
+assert_consumer_zip_ge_2mb() {
+	local z max=0 size
+	shopt -s nullglob
+	for z in "$EX/consumer/.serverless"/*.zip; do
+		size="$(wc -c <"$z" | tr -d ' ')"
+		if [[ "$size" -gt "$max" ]]; then
+			max="$size"
+		fi
+	done
+	shopt -u nullglob
+	if [[ "$max" -lt 2097152 ]]; then
+		echo "error: consumer Lambda zip ${max} bytes; need ≥2097152 for Expect: 100-continue smoke (#467)" >&2
+		ls -la "$EX/consumer/.serverless"/*.zip 2>/dev/null >&2 || true
+		return 1
+	fi
+	echo "ok   consumer zip ${max} bytes (≥2 MiB; Expect: 100-continue path)"
+}
+
 cleanup() {
+	rm -f "$EX/consumer/src/pad-blob.js"
 	if [[ "$KEEP" == "1" ]]; then
 		return 0
 	fi
@@ -338,10 +379,15 @@ fi
 }
 echo "ok   TopicArn=${TOPIC_ARN}"
 
+echo "==> pad consumer Lambda (≥2 MiB zip → Expect: 100-continue on S3 upload)"
+PAD_BYTES="$(ensure_large_consumer_pad)"
+echo "ok   wrote consumer/src/pad-blob.js (${PAD_BYTES} bytes source)"
+
 echo "==> serverless deploy consumer (ssm + Fn::ImportValue via redirect)"
 sls_run_timed "$EX/consumer" 'Service deployed|Stack create finished|CREATE_COMPLETE' \
 	"$OUT/deploy-consumer.log" deploy --verbose
 CONSUMER_DEPLOYED=1
+assert_consumer_zip_ge_2mb
 
 RESULTS_BUCKET="${CONSUMER_SERVICE}-${STAGE}-results-${SUFFIX}"
 aws s3api head-bucket --bucket "$RESULTS_BUCKET" >/dev/null 2>&1 || {

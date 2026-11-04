@@ -42,9 +42,11 @@ export AWSBOX_SLS4_TOPIC_EXPORT=awsbox-sls4-topic-local-TopicArn
 
 (`./bin/awsbox sls` is the same shim.)
 
-## Fallback without redirect
+## Fallback: package via redirect, CFN via AWS CLI
 
-`serverless package` then `aws cloudformation deploy --endpoint-url http://127.0.0.1:4566` — see docs.
+`./bin/stackwrangler sls --cwd … -- package`, upload `.serverless/*.zip`, then
+`aws cloudformation deploy --endpoint-url http://127.0.0.1:4566` — see docs
+(useful if deploy hangs on large S3 uploads).
 
 ## Smoke
 
