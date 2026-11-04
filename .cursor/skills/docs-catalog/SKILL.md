@@ -25,6 +25,27 @@ Read [docs/docs-catalog.md](../../../docs/docs-catalog.md) for ticket shape, pag
 3. Prove-it section: real `./bin/…-smoke.sh` from smoke-matrix / test-paths. No unsmoked claims.
 4. UI change → `./bin/docs-capture.sh` (console up on `:3000`). Register shots in `docs/console-shots.md`.
 5. Wire VitePress nav only if adding a new top-level section (seed already lists Interactions).
+6. After the PR exists (or after a docs push to an open PR), post a **separate** PR comment — not folded into the PR body or the implement/review notes. Use the template below.
+
+## PR comment (required)
+
+One dedicated comment on the PR (`gh pr comment`), titled exactly `## Docs`. Do not merge this into Summary / Test plan / Worker / Review comments.
+
+```markdown
+## Docs
+
+### Areas added / updated
+- `docs-site/guide/interactions/<slug>.md` — <one-line what changed>
+- `docs-site/guide/interactions/index.md` — row for <edge>
+- `docs/console-shots.md` / `docs/assets/console/<shot>.png` — <if any>
+- README / other — <if any>
+
+### Follow-up tickets
+- #N — Doc: … (from #<parent>) — <why blocked>
+- none
+```
+
+List every docs-site / README / capture path you touched. If you filed no `Doc:` tickets, write `none` under Follow-up tickets (do not omit the section).
 
 ## Voice
 

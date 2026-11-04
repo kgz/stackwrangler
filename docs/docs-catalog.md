@@ -77,6 +77,15 @@ Shot registry: [console-shots.md](console-shots.md). No seed for a shot → file
 
 Skill: `.cursor/skills/docs-catalog/SKILL.md`.
 
+## PR comment
+
+Agents using the skill must post a **separate** PR comment (`## Docs`) listing:
+
+1. **Areas added / updated** — paths under `docs-site/`, shots, README, etc., each with a one-line note
+2. **Follow-up tickets** — every `Doc: …` filed from this work, or `none`
+
+Do not fold that into the PR body or Worker/Review comments.
+
 ## Diagrams (AntV G6)
 
 Product topology / “server” diagrams use **G6**, not Mermaid:
