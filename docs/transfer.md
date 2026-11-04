@@ -88,7 +88,7 @@ With a `LoggingRole` (needs `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs
 
 ### Smoke
 
-`./smokes/transfer/transfer-connector-smoke.sh` runs the replication slice [`examples/serverless-v3-rest/slices/transfer-out/`](../examples/serverless-v3-rest/slices/transfer-out): a Lambda creates the tenant connector at runtime, trusts the host key, and sends an S3 object to the compose `sftp` container (`sftp://sftp:22`, user from `AWSBOX_SFTP_USER` / `AWSBOX_SFTP_PASS`).
+`./smokes/transfer/transfer-connector-smoke.sh` runs the replication slice [`examples/serverless-v3-rest/slices/transfer-out/`](../examples/serverless-v3-rest/slices/transfer-out): a Lambda creates the tenant connector at runtime, trusts the host key, and sends an S3 object to the compose `sftp` container (`sftp://sftp:22`, user from `AWSBOX_SFTP_USER` / `AWSBOX_SFTP_PASS`, defaults match the `legacy-sftp` profile). The smoke drops LocalEmu public egress (iptables) and still imports vendored `paramiko` (#315).
 
 Sad paths: access role without `s3:GetObject`, without the secret, without `kms:Decrypt`, trust scoped to another account, wrong host key, Lambda role without `iam:PassRole`.
 
@@ -99,7 +99,7 @@ Sad paths: access role without `s3:GetObject`, without the secret, without `kms:
 | S3 source | LocalEmu S3 on `:4566` (not the SeaweedFS endpoint) — [#143](https://github.com/kgz/awsl/issues/143) |
 | Retrieve / AS2 | `RetrieveFilePaths` and `As2Config` connectors are not supported |
 | State | Connectors and transfer results live in LocalEmu memory (lost on restart) |
-| SFTP client | `paramiko` is pip-installed into LocalEmu on boot (needs network) |
+| SFTP client | `paramiko` wheels under `localemu-patches/wheels/` (no PyPI at boot; #315) |
 | Console | No connectors UI |
 | Real AWS | `StartFileTransfer` is asynchronous there too; failure detail comes from results and logs |
 

@@ -11,19 +11,18 @@ TestConnection) and an SFTP data plane for StartFileTransfer:
 * Transfers run in the background; results are read with ListFileTransferResults.
 * With a LoggingRole, events land in CloudWatch Logs group /aws/transfer/<connector-id>.
 
-The SFTP client (paramiko) is pip-installed into the LocalEmu venv on first use.
+The SFTP client (paramiko) is loaded from wheels mounted at /opt/awsbox/wheels (#315).
 """
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import json
 import logging
 import posixpath
 import re
 import secrets
-import subprocess
-import sys
 import threading
 import time
 
@@ -32,7 +31,6 @@ LOG = logging.getLogger("localemu.awsbox.transfer_connectors")
 _LOCK = threading.RLock()
 _CONNECTORS: dict[tuple[str, str], dict[str, dict]] = {}
 _TRANSFERS: dict[str, dict] = {}
-_PARAMIKO_LOCK = threading.Lock()
 _SERVICE = "transfer.amazonaws.com"
 
 
@@ -53,32 +51,19 @@ def _error(code: str, message: str, status: int = 400):
 
 def _paramiko():
     try:
-        import paramiko
-
-        return paramiko
-    except ImportError:
-        pass
-    with _PARAMIKO_LOCK:
-        try:
-            import paramiko
-
-            return paramiko
-        except ImportError:
-            pass
-        proc = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--quiet", "paramiko"],
-            capture_output=True,
-            text=True,
-            timeout=300,
+        spec = importlib.util.spec_from_file_location(
+            "awsbox_paramiko_vendor", "/opt/awsbox/paramiko_vendor.py"
         )
-        if proc.returncode != 0:
-            raise _TransferFailure(
-                "SFTP_CLIENT_UNAVAILABLE",
-                "paramiko could not be installed in LocalEmu: " + proc.stderr.strip()[-300:],
-            )
-        import paramiko
-
-        return paramiko
+        if spec is None or spec.loader is None:
+            raise ImportError("paramiko_vendor missing")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.ensure_paramiko()
+    except Exception as exc:
+        raise _TransferFailure(
+            "SFTP_CLIENT_UNAVAILABLE",
+            f"paramiko not available from vendored wheels: {exc}",
+        ) from exc
 
 
 def _connectors(account: str, region: str) -> dict[str, dict]:

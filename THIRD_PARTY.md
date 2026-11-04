@@ -22,6 +22,16 @@ Pinned digests / tags live in `docker-compose.yml` and `localemu-patches/IMAGE_D
 
 ---
 
+## Vendored Python wheels (LocalEmu mounts)
+
+| Component | SPDX | Upstream | Notes |
+|-----------|------|----------|--------|
+| **paramiko** (+ bcrypt, cryptography, PyNaCl, cffi, pycparser) | LGPL-2.1-or-later (paramiko) · Apache-2.0 / BSD-style deps | [paramiko/paramiko](https://github.com/paramiko/paramiko) | Wheels in `localemu-patches/wheels/` for Transfer SFTP client/server (#315). Unpacked at runtime into `/var/lib/awsbox/paramiko-site`. |
+
+Pin / regenerate: `localemu-patches/wheels/README.md`.
+
+---
+
 ## LocalEmu Apache NOTICE (redistribution)
 
 LocalEmu is Apache-2.0 and ships a root **NOTICE** that preserves LocalStack / Atlassian lineage. **If you redistribute LocalEmu binaries, source, or a derivative that includes their NOTICE**, you must keep a readable copy of that attribution (Apache-2.0 §4(d)).

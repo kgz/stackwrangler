@@ -19,8 +19,10 @@ source "$ROOT/smokes/lib/local-emu-env.sh"
 
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
-SFTP_USER="${AWSBOX_SFTP_USER:-awsbox}"
-SFTP_PASS="${AWSBOX_SFTP_PASS:-awsboxpass}"
+# Match docker-compose legacy-sftp service (atmoz command user:pass).
+SFTP_USER="${AWSBOX_SFTP_USER:-stackwrangler}"
+SFTP_PASS="${AWSBOX_SFTP_PASS:-stackwranglerpass}"
+SFTP_HOME="/home/${SFTP_USER}/upload"
 SFTP_URL="${AWSBOX_SFTP_CONNECTOR_URL:-sftp://sftp:22}"
 TS="$(date +%s)"
 KEEP="${AWSBOX_TRANSFER_KEEP:-0}"
@@ -34,6 +36,8 @@ ROLES=()
 FNS=()
 SECRET_ID="awsbox/transfer-out/${TS}/sftp"
 LOG_ROLE="awsbox-xfer-log-${TS}"
+EGRESS_BLOCKED=0
+LOCALEMU_DEFAULT_GW=""
 
 export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
 export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
@@ -41,7 +45,47 @@ export AWS_DEFAULT_REGION="$REGION"
 
 aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }
 
+restore_localemu_egress() {
+	[[ "$EGRESS_BLOCKED" == 1 ]] || return 0
+	if [[ -n "$LOCALEMU_DEFAULT_GW" ]]; then
+		docker compose exec -T -u root localstack \
+			ip route add default via "$LOCALEMU_DEFAULT_GW" >/dev/null 2>&1 || true
+	fi
+	EGRESS_BLOCKED=0
+}
+
+# Drop LocalEmu public egress (delete default route). Compose bridge / RFC1918 stays.
+block_localemu_egress() {
+	LOCALEMU_DEFAULT_GW="$(
+		docker compose exec -T -u root localstack \
+			ip route | awk '/^default/ {print $3; exit}' | tr -d '\r\n'
+	)"
+	[[ -n "$LOCALEMU_DEFAULT_GW" ]]
+	docker compose exec -T -u root localstack ip route del default
+	EGRESS_BLOCKED=1
+}
+
+assert_no_outbound() {
+	# Public HTTPS must fail once the default route is gone (#315).
+	if docker compose exec -T localstack sh -c \
+		'python3 -c "import urllib.request; urllib.request.urlopen(\"https://pypi.org\", timeout=3)"' \
+		>/dev/null 2>&1; then
+		return 1
+	fi
+	# Vendored paramiko must still import without pip/PyPI.
+	docker compose exec -T localstack python3 -c '
+from importlib.util import spec_from_file_location, module_from_spec
+spec = spec_from_file_location("awsbox_paramiko_vendor", "/opt/awsbox/paramiko_vendor.py")
+mod = module_from_spec(spec)
+spec.loader.exec_module(mod)
+p = mod.ensure_paramiko()
+assert p.__version__
+print("paramiko", p.__version__, "ok-offline")
+'
+}
+
 cleanup() {
+	restore_localemu_egress
 	rm -rf "$TMP"
 	[[ "$KEEP" == "1" ]] && return 0
 	for c in "${CONNECTORS[@]:-}"; do
@@ -61,7 +105,7 @@ cleanup() {
 	aws secretsmanager delete-secret --secret-id "$SECRET_ID" --force-delete-without-recovery >/dev/null 2>&1 || true
 	[[ -n "${KEY_ID:-}" ]] && aws kms schedule-key-deletion --key-id "$KEY_ID" --pending-window-in-days 7 >/dev/null 2>&1 || true
 	aws s3 rb "s3://${BUCKET}" --force >/dev/null 2>&1 || true
-	sftp_sh "rm -f /home/awsbox/upload/*-${TS}*" >/dev/null 2>&1 || true
+	sftp_sh "rm -f ${SFTP_HOME}/*-${TS}*" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -70,12 +114,17 @@ check() { # label status(0 = pass)
 }
 
 cd "$ROOT"
-docker compose up -d sftp >/dev/null
-sftp_sh() { docker compose exec -T sftp sh -c "$1"; }
+docker compose --profile legacy-sftp up -d sftp >/dev/null
+sftp_sh() { docker compose --profile legacy-sftp exec -T sftp sh -c "$1"; }
 for _ in $(seq 1 30); do
 	sftp_sh true 2>/dev/null && break
 	sleep 1
 done
+
+# #315: prove StartFileTransfer works with LocalEmu cut off from the public internet.
+block_localemu_egress
+assert_no_outbound
+check "LocalEmu has no public egress; vendored paramiko imports" $?
 
 ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
 CONNECTOR_ARN_GLOB="arn:aws:transfer:${REGION}:${ACCOUNT}:connector/*"
@@ -167,8 +216,8 @@ wait_result() { # connector-id transfer-id -> prints JSON of the first result on
 	echo "$out"
 	return 1
 }
-remote_has() { sftp_sh "cat /home/awsbox/upload/$(basename "$OBJ_KEY")" 2>/dev/null | grep -q "awsbox transfer out ${TS}"; }
-remote_clear() { sftp_sh "rm -f /home/awsbox/upload/$(basename "$OBJ_KEY")" >/dev/null 2>&1 || true; }
+remote_has() { sftp_sh "cat ${SFTP_HOME}/$(basename "$OBJ_KEY")" 2>/dev/null | grep -q "awsbox transfer out ${TS}"; }
+remote_clear() { sftp_sh "rm -f ${SFTP_HOME}/$(basename "$OBJ_KEY")" >/dev/null 2>&1 || true; }
 sad() { # label role-arn expected-regex [host-key-override]
 	local c t r
 	c="$(aws transfer create-connector --url "$SFTP_URL" --access-role "$2" \
