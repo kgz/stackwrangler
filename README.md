@@ -4,7 +4,7 @@
 
 One **local AWS-shaped account** — real APIs, console on localhost, IaC against profile `local`. Learn and stage without a cloud bill.
 
-North star: [docs/vision.md](docs/vision.md) · Docs: [docs-site/](docs-site/) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) · Board: [Project #8](https://github.com/users/kgz/projects/8/views/1) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`) · [Contributing](CONTRIBUTING.md) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
+North star: [docs/vision.md](docs/vision.md) · Docs: [docs-site/](docs-site/) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) · Release: [docs/versioning.md](docs/versioning.md) (`v0.0.1`) · [Contributing](CONTRIBUTING.md) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
 
 ```bash
 ./bin/stackwrangler up
@@ -206,21 +206,3 @@ Coming from `beta/full-flow-v1`, `./bin/stackwrangler up` removes this checkout'
 Ports bind to `127.0.0.1` on WSL. Use Docker Desktop with WSL integration (or engine in WSL).
 
 
-## Board & workflow
-
-```bash
-./bin/board-status.sh designing <n>     # web UI — Open Design first
-./bin/board-status.sh in-progress <n>
-./bin/gap-check.sh <n>    # before done — Partial/UI stubs → Debt tickets
-./bin/board-audit.sh
-./bin/setup-github-board.sh
-
-Lifecycle: **Backlog** → **Ready** → **Designing** → **In progress** → **In review** → **Done**.
-
-Gap rubric: [docs/gap-check.md](docs/gap-check.md) ·  
-**Is this path tested?** → [docs/test-paths.md](docs/test-paths.md) · grid: [docs/smoke-matrix.md](docs/smoke-matrix.md).  
-New smokes: [docs/smokes.md](docs/smokes.md) (`smokes/<area>/`; `./bin/…` wrappers still work).  
-Closing a ticket that leaves a bridge, disabled console action, or happy-only smoke must open a **Debt:** follow-up the same day.
-
-OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
-Console mocks: `design/awsbox-console/` · theme `design/awsbox/` (rename → [#421](https://github.com/kgz/stackwrangler/issues/421)) · `./bin/od-design-run.sh --issue <n> "…"` (web-clone for real AWS screens). Full Create/detail UI tracker: [#350](https://github.com/kgz/awsl/issues/350).
