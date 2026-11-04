@@ -35,7 +35,7 @@ Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plu
 | Area | Status | Notes |
 |------|--------|--------|
 | `./bin/stackwrangler up` + profile `local` | **Working** | Compose + managed AWS profile |
-| Console shell (grey rose) | **Working** | Chrome from `design/awsbox-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
+| Console shell (grey rose) | **Working** | Chrome from `design/awsbox-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) · dir rename [#421](https://github.com/kgz/stackwrangler/issues/421) |
 | Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [docs/labels.md](docs/labels.md) · `./bin/labels-smoke.sh` |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [docs/s3-backends.md](docs/s3-backends.md) · smoke `./bin/s3-dual-endpoint-smoke.sh` |
 | IAM enforcement | **Partial** | resource policies `./bin/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
@@ -223,4 +223,4 @@ New smokes: [docs/smokes.md](docs/smokes.md) (`smokes/<area>/`; `./bin/…` wrap
 Closing a ticket that leaves a bridge, disabled console action, or happy-only smoke must open a **Debt:** follow-up the same day.
 
 OpenSpec: `/opsx-propose` · `/opsx-apply` · `/opsx-explore`  
-Console mocks: `design/awsbox-console/` · theme `design/awsbox/` · `./bin/od-design-run.sh --issue <n> "…"` (web-clone for real AWS screens). Full Create/detail UI tracker: [#350](https://github.com/kgz/awsl/issues/350).
+Console mocks: `design/awsbox-console/` · theme `design/awsbox/` (rename → [#421](https://github.com/kgz/stackwrangler/issues/421)) · `./bin/od-design-run.sh --issue <n> "…"` (web-clone for real AWS screens). Full Create/detail UI tracker: [#350](https://github.com/kgz/awsl/issues/350).

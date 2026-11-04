@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Add all open repo issues to GitHub Project #8 (Backlog).
+# Add all open repo issues to GitHub Project #8 (Backlog) for stackwrangler.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -7,7 +7,7 @@ cd "$ROOT"
 
 chmod +x bin/board-status.sh
 
-issues=$(gh api "repos/kgz/awsl/issues?state=open&per_page=100" --jq '.[].number')
+issues=$(gh api "repos/kgz/stackwrangler/issues?state=open&per_page=100" --jq '.[].number')
 if [[ -z "$issues" ]]; then
   echo "No open issues."
   exit 0
