@@ -341,6 +341,290 @@ cmd_console() {
 	exec yarn dev --host 127.0.0.1 --port 3000
 }
 
+# True when container DNS answers AWS → self and TLS :443 accepts a handshake.
+aws_redirect_tls_ready() {
+	local id="$1"
+	docker exec "$id" /opt/aws-redirect/healthcheck.sh >/dev/null 2>&1
+}
+
+# Ensure aws-redirect (DNS + TLS edge) is up; print only its IPv4 on stdout.
+# Does not treat DNS-only as ready — TLS can be down while dnsmasq still answers.
+ensure_aws_redirect() {
+	load_root_env
+	mkdir -p "$ROOT/.awsbox/aws-redirect"
+	"${COMPOSE[@]}" --profile aws-redirect up -d --build aws-redirect >&2
+	local i id ip health
+	for i in $(seq 1 90); do
+		id="$("${COMPOSE[@]}" --profile aws-redirect ps -q aws-redirect 2>/dev/null | head -1 || true)"
+		if [[ -n "$id" ]]; then
+			ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$id" 2>/dev/null | awk 'NF{print; exit}')"
+			health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$id" 2>/dev/null || true)"
+			if [[ -n "$ip" ]] && aws_redirect_tls_ready "$id"; then
+				# Prefer compose healthy, but accept an explicit TLS probe during start_period.
+				if [[ "$health" == "healthy" || "$health" == "starting" || -z "$health" ]]; then
+					printf '%s\n' "$ip"
+					return 0
+				fi
+			fi
+		fi
+		sleep 1
+	done
+	echo "error: aws-redirect did not become ready (DNS+TLS; compose profile aws-redirect)" >&2
+	"${COMPOSE[@]}" --profile aws-redirect logs --tail 80 aws-redirect >&2 || true
+	return 1
+}
+
+# True if package.json looks like a yarn/npm workspace root.
+sls_is_workspace_root() {
+	local pj="$1/package.json"
+	[[ -f "$pj" ]] || return 1
+	# npm/yarn: "workspaces": [ ... ] or "workspaces": { "packages": [ ... ] }
+	grep -q '"workspaces"' "$pj"
+}
+
+# Dir that owns the real serverless install for a .bin/serverless path (follow symlinks).
+sls_serverless_owner() {
+	local bin="$1"
+	local real d
+	if [[ -L "$bin" ]]; then
+		real="$(readlink -f "$bin" 2>/dev/null || true)"
+	elif [[ -e "$bin" ]]; then
+		real="$(readlink -f "$bin" 2>/dev/null || printf '%s' "$bin")"
+	else
+		return 1
+	fi
+	[[ -n "$real" ]] || return 1
+	d="$(dirname "$real")"
+	while [[ -n "$d" && "$d" != "/" ]]; do
+		if [[ -d "$d/node_modules/serverless" || -e "$d/node_modules/.bin/serverless" ]]; then
+			# Prefer the directory whose node_modules actually contains the package
+			# (not a nested package that only has a hoisted .bin symlink).
+			if [[ -d "$d/node_modules/serverless" ]]; then
+				printf '%s\n' "$d"
+				return 0
+			fi
+		fi
+		d="$(dirname "$d")"
+	done
+	return 1
+}
+
+# Mount root for stackwrangler sls: package dir, or yarn/npm workspace root when
+# .bin/serverless (or node_modules) is hoisted above the package.
+sls_package_root() {
+	local start="$1"
+	local d="$1"
+	local found=""
+	while [[ -n "$d" && "$d" != "/" ]]; do
+		if [[ -e "$d/node_modules/.bin/serverless" || -d "$d/node_modules/serverless" ]]; then
+			found="$d"
+			break
+		fi
+		d="$(dirname "$d")"
+	done
+	[[ -n "$found" ]] || {
+		printf '%s\n' "$start"
+		return 0
+	}
+
+	local owner=""
+	if [[ -e "$found/node_modules/.bin/serverless" ]]; then
+		owner="$(sls_serverless_owner "$found/node_modules/.bin/serverless" || true)"
+	fi
+	if [[ -z "$owner" && -L "$found/node_modules/serverless" ]]; then
+		owner="$(sls_serverless_owner "$found/node_modules/serverless" || true)"
+	fi
+	if [[ -n "$owner" && "$owner" != "$found" ]]; then
+		case "$found" in
+			"$owner"|"$owner"/*)
+				printf '%s\n' "$owner"
+				return 0
+				;;
+		esac
+	fi
+
+	# workspaces in an ancestor package.json (sibling packages live under that root).
+	d="$found"
+	while [[ -n "$d" && "$d" != "/" ]]; do
+		if sls_is_workspace_root "$d"; then
+			case "$found" in
+				"$d"|"$d"/*)
+					printf '%s\n' "$d"
+					return 0
+					;;
+			esac
+		fi
+		d="$(dirname "$d")"
+	done
+
+	printf '%s\n' "$found"
+}
+
+# Map maintainer-only env name → Framework's SERVERLESS_LICENSE_KEY when unset.
+resolve_serverless_auth_env() {
+	if [[ -z "${SERVERLESS_LICENSE_KEY:-}" && -n "${SERVERLESS_LOCAL_ONLY_LICENCE_KEY:-}" ]]; then
+		export SERVERLESS_LICENSE_KEY="$SERVERLESS_LOCAL_ONLY_LICENCE_KEY"
+	fi
+}
+
+# Run Serverless CLI in a container on the aws-redirect DNS/TLS path (no AWS_ENDPOINT_URL).
+# Usage: stackwrangler sls [--cwd DIR] [--] deploy|remove|package …
+cmd_sls() {
+	load_root_env
+	resolve_serverless_auth_env
+	if [[ -z "${SERVERLESS_LICENSE_KEY:-}" && -z "${SERVERLESS_ACCESS_KEY:-}" ]]; then
+		echo "error: Serverless Framework v4 needs SERVERLESS_ACCESS_KEY, SERVERLESS_LICENSE_KEY," >&2
+		echo "  or SERVERLESS_LOCAL_ONLY_LICENCE_KEY (mapped to LICENSE_KEY). See docs/serverless-awsbox.md" >&2
+		exit 1
+	fi
+
+	local cwd="$PWD"
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			--cwd)
+				cwd="$2"
+				shift 2
+				;;
+			--)
+				shift
+				break
+				;;
+			*)
+				break
+				;;
+		esac
+	done
+	if [[ ! -d "$cwd" ]]; then
+		echo "error: sls cwd not a directory: ${cwd}" >&2
+		exit 1
+	fi
+	cwd="$(cd "$cwd" && pwd)"
+
+	local dns_ip network ca_host redirect_id pkg_root rel work_dir
+	dns_ip="$(ensure_aws_redirect)"
+	redirect_id="$("${COMPOSE[@]}" --profile aws-redirect ps -q aws-redirect | head -1)"
+	network="$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$redirect_id" | awk 'NF{print; exit}')"
+	[[ -n "$network" ]] || {
+		echo "error: could not resolve compose network for aws-redirect" >&2
+		exit 1
+	}
+	ca_host="$ROOT/.awsbox/aws-redirect/ca.crt"
+	if [[ ! -f "$ca_host" ]]; then
+		local i
+		for i in $(seq 1 20); do
+			[[ -f "$ca_host" ]] && break
+			sleep 0.5
+		done
+	fi
+	[[ -f "$ca_host" ]] || {
+		echo "error: missing ${ca_host} (aws-redirect CA)" >&2
+		exit 1
+	}
+
+	pkg_root="$(sls_package_root "$cwd")"
+	rel="${cwd#"$pkg_root"}"
+	rel="${rel#/}"
+	work_dir="/work"
+	[[ -n "$rel" ]] && work_dir="/work/${rel}"
+
+	local key secret region image sls_home host_uid host_gid
+	key="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
+	secret="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
+	region="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
+	image="${STACKWRANGLER_SLS_IMAGE:-${AWSBOX_SLS_IMAGE:-node:20-bookworm}}"
+	# Persist Framework download + npm cache across runs; must be writable by --user.
+	sls_home="${STACKWRANGLER_SLS_HOME:-${AWSBOX_SLS_HOME:-$ROOT/.awsbox/sls-home}}"
+	mkdir -p "$sls_home"
+	host_uid="$(id -u)"
+	host_gid="$(id -g)"
+
+	# Fake keys only; no ~/.aws; no AWS_ENDPOINT_URL — DNS+TLS does the redirect.
+	# Licence / access key still phones home (non-AWS host resolves upstream).
+	# Run as host uid:gid so .serverless / build output are not root-owned on the mount (#469).
+	local -a docker_env=(
+		-e "HOME=/sls-home"
+		-e "npm_config_cache=/sls-home/.npm"
+		-e "AWS_ACCESS_KEY_ID=${key}"
+		-e "AWS_SECRET_ACCESS_KEY=${secret}"
+		-e "AWS_DEFAULT_REGION=${region}"
+		-e "AWS_REGION=${region}"
+		-e "NODE_EXTRA_CA_CERTS=/awsbox-ca/ca.crt"
+		-e "SLS_TELEMETRY_DISABLED=1"
+		-e "SLS_INTERACTIVE_SETUP_ENABLE=0"
+		-e "CI=1"
+	)
+	# Drop any inherited endpoint override so SDK v2 cannot mix modes.
+	docker_env+=(-e "AWS_ENDPOINT_URL=" -e "AWS_ENDPOINT_URL_S3=")
+	[[ -n "${SERVERLESS_LICENSE_KEY:-}" ]] && docker_env+=(-e "SERVERLESS_LICENSE_KEY=${SERVERLESS_LICENSE_KEY}")
+	[[ -n "${SERVERLESS_ACCESS_KEY:-}" ]] && docker_env+=(-e "SERVERLESS_ACCESS_KEY=${SERVERLESS_ACCESS_KEY}")
+	# Forward smoke/fixture knobs (topic/consumer/workspace) into the container.
+	local name
+	while IFS= read -r name; do
+		[[ -n "$name" ]] || continue
+		docker_env+=(-e "${name}=${!name}")
+	done < <(compgen -e | grep -E '^(AWSBOX_SLS4_|STACKWRANGLER_SLS4_)' || true)
+
+	local -a sls_cmd=(npx serverless)
+	if [[ -x "$pkg_root/node_modules/.bin/serverless" ]]; then
+		if [[ -n "$rel" ]]; then
+			sls_cmd=(node "/work/node_modules/serverless/run.js")
+		else
+			sls_cmd=(./node_modules/.bin/serverless)
+		fi
+	fi
+
+	local -a docker_run=(
+		docker run --rm -i
+		--user "${host_uid}:${host_gid}"
+		--network "$network"
+		--dns "$dns_ip"
+		"${docker_env[@]}"
+		-v "${ca_host}:/awsbox-ca/ca.crt:ro"
+		-v "${sls_home}:/sls-home"
+		-v "${pkg_root}:/work"
+		-w "$work_dir"
+		"$image"
+		"${sls_cmd[@]}" "$@"
+	)
+
+	# First non-flag arg is the Framework subcommand (deploy, remove, package, …).
+	local subcmd="" arg
+	for arg in "$@"; do
+		case "$arg" in
+			-*) ;;
+			*)
+				subcmd="$arg"
+				break
+				;;
+		esac
+	done
+
+	# SDK v2 + Expect: 100-continue can hang then exit 0 with no stack (#467).
+	# For deploy, require a success marker even when the CLI exit code is 0.
+	if [[ "$subcmd" == "deploy" ]]; then
+		local log rc
+		log="$(mktemp "${TMPDIR:-/tmp}/stackwrangler-sls-deploy.XXXXXX")"
+		set +e
+		"${docker_run[@]}" >"$log" 2>&1
+		rc=$?
+		set -e
+		cat "$log"
+		if [[ "$rc" -ne 0 ]]; then
+			rm -f "$log"
+			exit "$rc"
+		fi
+		if ! grep -qiE 'Service deployed|Stack create finished|CREATE_COMPLETE|UPDATE_COMPLETE|No changes to deploy' "$log"; then
+			echo "error: serverless deploy exited 0 without a deploy success marker (no \"Service deployed\" / stack complete)" >&2
+			rm -f "$log"
+			exit 1
+		fi
+		rm -f "$log"
+		return 0
+	fi
+
+	exec "${docker_run[@]}"
+}
+
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 case "${1:-}" in
 	up)
@@ -357,6 +641,10 @@ case "${1:-}" in
 	console)
 		cmd_console
 		;;
+	sls)
+		shift
+		cmd_sls "$@"
+		;;
 	hosts)
 		shift
 		exec "$ROOT/bin/awsbox-hosts" "$@"
@@ -365,7 +653,7 @@ case "${1:-}" in
 		exec "$ROOT/bin/awsl-mirror.sh" "$@"
 		;;
 	*)
-		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | hosts … | mirror … | apply <fixture>" >&2
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | sls [--cwd DIR] -- … | hosts … | mirror … | apply <fixture>" >&2
 		exit 1
 		;;
 esac

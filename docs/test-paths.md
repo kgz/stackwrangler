@@ -187,13 +187,15 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./bin/serverless-v3-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./bin/serverless-v3-smoke.sh` |
-| Serverless v4 topic+consumer deploy → SNS publish → SQS ESM Lambda → redeploy → remove | happy | covered | `./bin/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
+| Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./bin/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |
 | Serverless v4 `${ssm:…}` + cross-stack `Fn::ImportValue` SNS→SQS | happy | covered | `./bin/serverless-v4-smoke.sh` |
+| Serverless v4 yarn workspace: `--cwd packages/service` mounts workspace root, sibling import bundles | happy | covered | `./bin/serverless-v4-workspace-smoke.sh` · [#468](https://github.com/kgz/awsl/issues/468) |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
 | Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./bin/cfn-lifecycle-smoke.sh` |
 | CFN failed update → `UPDATE_ROLLBACK_COMPLETE` (not `UPDATE_COMPLETE`) | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
+| CFN part-created stack delete skips never-created GetAtt deps → `DELETE_COMPLETE`, redeploy | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` (#470) |
 | CFN failed update reverts in-place resource changes | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./bin/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
@@ -219,6 +221,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | SQS → Lambda unknown itemIdentifier fails whole batch → DLQ | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda without ReportBatchItemFailures ignores response body | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./bin/sqs-lambda-esm-enable-smoke.sh` |
+| SQS → Lambda ESM keeps delivering past STS session expiry (short `AWSBOX_STS_ASSUME_ROLE_DURATION`) | happy | covered | `./bin/sqs-lambda-esm-cred-refresh-smoke.sh` |
+| SQS → Lambda ESM role deleted after create → `LastProcessingResult` PROBLEM (not stuck `None`) | sad/other | covered | `./bin/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | Lambda `PutFunctionConcurrency` reserved=1 → second concurrent sync invoke `TooManyRequestsException` (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
 | Lambda reserved concurrency 0 → every sync invoke throttled (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |

@@ -1,0 +1,11 @@
+{
+  "name": "awsbox-serverless-v4-workspace",
+  "private": true,
+  "description": "Yarn workspace fixture: service imports sibling package (#468)",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

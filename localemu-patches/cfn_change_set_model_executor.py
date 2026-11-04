@@ -25,6 +25,7 @@ from localemu.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
     NodeResource,
+    Nothing,
     is_nothing,
 )
 from localemu.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -244,6 +245,21 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             reason=reason,
         )
 
+    def _never_created_resource(self, logical_id: str) -> bool:
+        """True when AWS would treat the resource as already gone on stack delete."""
+        resolved = self._change_set.stack.resolved_resources.get(logical_id) or {}
+        status = resolved.get("ResourceStatus")
+        physical = resolved.get("PhysicalResourceId")
+        created = status in (
+            ResourceStatus.CREATE_COMPLETE,
+            ResourceStatus.UPDATE_COMPLETE,
+        )
+        return status in (
+            ResourceStatus.CREATE_FAILED,
+            ResourceStatus.DELETE_COMPLETE,
+            ResourceStatus.DELETE_SKIPPED,
+        ) or (not physical and not created)
+
     def _defer_action(self, name: str, action: DeferredAction):
         self._deferred_actions.append(Deferred(name=name, action=action))
 
@@ -309,6 +325,30 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             resolved_resources=after_resolved_resources,
         )
 
+    def _deployed_property_value_of(
+        self, resource_logical_id: str, property_name: str, resolved_resources: dict
+    ):
+        # On delete, Refs/GetAtt to never-created resources must not fail preprocessing
+        # of other resources that still need to be removed.
+        if (
+            self._change_set.stack.status == StackStatus.DELETE_IN_PROGRESS
+            and self._never_created_resource(resource_logical_id)
+        ):
+            return None
+        try:
+            return super()._deployed_property_value_of(
+                resource_logical_id=resource_logical_id,
+                property_name=property_name,
+                resolved_resources=resolved_resources,
+            )
+        except RuntimeError as e:
+            if (
+                self._change_set.stack.status == StackStatus.DELETE_IN_PROGRESS
+                and "No deployed instances of resource" in str(e)
+            ):
+                return None
+            raise
+
     def _after_resource_physical_id(self, resource_logical_id: str) -> str:
         after_resolved_resources = self.resources
         return self._resource_physical_resource_id_from(
@@ -340,6 +380,19 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         Overrides the default preprocessing for NodeResource objects by annotating the
         `after` delta with the physical resource ID, if side effects resulted in an update.
         """
+        # Part-created stacks leave never-created resources in the template. Resolving
+        # their properties (Refs/GetAtt to other missing resources) would DELETE_FAILED;
+        # AWS skips them as already deleted.
+        if (
+            self._change_set.stack.status == StackStatus.DELETE_IN_PROGRESS
+            and self._never_created_resource(node_resource.name)
+        ):
+            resource_type = node_resource.type_.value
+            if not isinstance(resource_type, str):
+                resource_type = str(resource_type)
+            self._skip_delete(node_resource.name, resource_type, "Resource was not created")
+            return PreprocEntityDelta(before=Nothing, after=Nothing)
+
         try:
             delta = super().visit_node_resource(node_resource=node_resource)
         except Exception as e:
@@ -553,18 +606,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     self._skip_delete(name, before.resource_type, "DeletionPolicy Retain")
                     return
 
-                resolved = self._change_set.stack.resolved_resources.get(name) or {}
-                status = resolved.get("ResourceStatus")
-                physical = resolved.get("PhysicalResourceId")
-                created = status in (
-                    ResourceStatus.CREATE_COMPLETE,
-                    ResourceStatus.UPDATE_COMPLETE,
-                )
-                if status in (
-                    ResourceStatus.CREATE_FAILED,
-                    ResourceStatus.DELETE_COMPLETE,
-                    ResourceStatus.DELETE_SKIPPED,
-                ) or (not physical and not created):
+                if self._never_created_resource(name):
                     self._skip_delete(name, before.resource_type, "Resource was not created")
                     return
 
