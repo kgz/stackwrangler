@@ -132,6 +132,31 @@ services:
       - "127.0.0.1:${STACKWRANGLER_LEGACY_SFTP_HOST_PORT:-${AWSBOX_LEGACY_SFTP_HOST_PORT:-2223}}:22"
     command: stackwrangler:stackwranglerpass:1001:1001:upload
 
+  # Transparent AWS DNS + TLS redirect for Serverless v4 (and similar SDK v2 paths).
+  # Opt in: docker compose --profile aws-redirect up -d aws-redirect
+  # Clients: --dns <aws-redirect IP>, NODE_EXTRA_CA_CERTS=.awsbox/aws-redirect/ca.crt
+  # See tools/aws-endpoint-redirect/ and docs/serverless-awsbox.md (#464).
+  aws-redirect:
+    profiles: ["aws-redirect"]
+    build:
+      context: ./tools/aws-endpoint-redirect
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      LOCALEMU_URL: http://localstack:4566
+      AWS_REDIRECT_CERT_DIR: /certs
+    volumes:
+      - ./.awsbox/aws-redirect:/certs
+    # DNS + TLS stay on the compose network (sls wrapper uses --dns). No host publish.
+    # Ready = AWS DNS → self AND TLS :443 accepts (not DNS alone; TLS can die while DNS stays).
+    healthcheck:
+      test: ["CMD", "/opt/aws-redirect/healthcheck.sh"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
   # Docker distribution registry. Push/pull 127.0.0.1:5000/<repo>:<tag>.
   # ECS/Lambda amazonaws.com ECR URIs are rewritten to this address (#211, #218).
   ecr-registry:
