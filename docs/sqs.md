@@ -7,6 +7,7 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 ./smokes/messaging/sqs-smoke.sh
 ./smokes/messaging/sqs-authz-smoke.sh
 ./smokes/lambda/sqs-lambda-queueurl-smoke.sh   # Lambda SendMessage via CreateQueue QueueUrl (#459)
+./smokes/compute/ecs-sqs-queueurl-smoke.sh     # ECS SendMessage via CreateQueue QueueUrl (#463)
 ./smokes/lambda/sqs-lambda-dlq-smoke.sh   # needs python3 boto3
 ./smokes/lambda/sqs-lambda-batch-failures-smoke.sh   # ReportBatchItemFailures; needs python3 boto3
 ./smokes/lambda/sqs-lambda-esm-enable-smoke.sh
@@ -16,7 +17,7 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | Area | Status |
 |------|--------|
 | create / send / receive / delete | Working (smoke) |
-| QueueUrl `sqs.<region>.localhost` from Lambda/ECS | Working — `--add-host` to LocalEmu docker IP (`sqs-lambda-queueurl-smoke.sh`; [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459)) |
+| QueueUrl `sqs.<region>.localhost` from Lambda/ECS | Working — `--add-host` to LocalEmu docker IP (`sqs-lambda-queueurl-smoke.sh`, `ecs-sqs-queueurl-smoke.sh`; [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459) · [#463](https://github.com/kgz/awsl/issues/463)) |
 | MessageRetentionPeriod outside 60–1209600 | Working — `InvalidAttributeValue` (`sqs-smoke.sh`) |
 | MessageRetentionPeriod expiry | Working when `SQS_ENABLE_MESSAGE_RETENTION_PERIOD=1` in compose (`sqs-lambda-esm-enable-smoke.sh`) |
 | Deny-user SendMessage | Working (`sqs-authz-smoke.sh`) |
