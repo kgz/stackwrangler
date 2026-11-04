@@ -313,4 +313,4 @@
 377	done	Debt: retire bin smoke wrappers
 491	done	Public OSS: drop WSL-centric copy; Linux primary
 401	done	ECS list-clusters omits INACTIVE
-423	in-progress	Debt: align console e2e credential defaults to STACKWRANGLER_* (from #405)
+423	in-review	Debt: align console e2e credential defaults to STACKWRANGLER_* (from #405)
