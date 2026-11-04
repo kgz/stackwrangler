@@ -313,4 +313,4 @@
 377	done	Debt: retire bin smoke wrappers
 491	done	Public OSS: drop WSL-centric copy; Linux primary
 401	done	ECS list-clusters omits INACTIVE
-427	in-progress	Debt: rename leftover awsbox doc/example/helper paths (from #415)
+427	in-review	Debt: rename leftover awsbox doc/example/helper paths (from #415)
