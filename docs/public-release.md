@@ -38,6 +38,7 @@ CONFIRM_PUBLIC=yes ./bin/make-public.sh --prep --flip
 
 - Visibility → public
 - Secret scanning + push protection (and Dependabot alerts if the API allows)
+- Private vulnerability reporting (`PUT …/private-vulnerability-reporting` — #420; GitHub only allows this once public)
 - Topics: `aws`, `local-development`, `iac`, … (no LocalStack affiliation implication)
 - Description confirmed; homepage optional until docs site (#403)
 
@@ -45,8 +46,9 @@ CONFIRM_PUBLIC=yes ./bin/make-public.sh --prep --flip
 
 1. `./bin/setup-branch-protection.sh` (#431) — minimize the unprotected window
 2. `gh api repos/kgz/stackwrangler --jq .private` → `false`
-3. Confirm `kgz/awsl` redirect / clone URL
-4. Confirm basic clone + `./bin/stackwrangler up` needs no Actions/Pages secrets
+3. Confirm private vulnerability reporting: Advisories form at `https://github.com/kgz/stackwrangler/security/advisories/new` (matches [SECURITY.md](../SECURITY.md))
+4. Confirm `kgz/awsl` redirect / clone URL
+5. Confirm basic clone + `./bin/stackwrangler up` needs no Actions/Pages secrets
 
 ## Related
 

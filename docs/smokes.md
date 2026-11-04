@@ -32,7 +32,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/lambda/` | `lambda-*`, `sqs-lambda-dlq-smoke.sh`, `sqs-lambda-batch-failures-smoke.sh`, `sqs-lambda-esm-enable-smoke.sh`, `sqs-lambda-esm-cred-refresh-smoke.sh`, `sqs-lambda-queueurl-smoke.sh` |
 | `smokes/messaging/` | `sqs-*`, `sns-*`, `events-*`, `sfn-*`, `kinesis-*` |
 | `smokes/networking/` | `vpc-*`, `sg-*`, `elbv2-*`, `route53-*`, `r53-*`, `vpce-*`, `egress-*`, `waf-*`, `network-firewall-*` |
-| `smokes/compute/` | `ecs-*`, `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
+| `smokes/compute/` | `ecs-*` (incl. `ecs-sqs-queueurl-smoke.sh`), `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
 | `smokes/apigw/` | `apigw-*` |
 | `smokes/data/` | `dynamodb-*`, `rds-*` |
 | `smokes/transfer/` | `transfer-*` |

@@ -9,7 +9,7 @@
 #   source "$ROOT/bin/stackwrangler-env.sh"
 #
 # Set STACKWRANGLER_ENV_DEFER=1 before sourcing to only define sw_env (no
-# .env load / exports) — used by bin/awsbox-profile and bin/stackwrangler.
+# .env load / exports) — used by bin/stackwrangler-profile and bin/stackwrangler.
 #
 # Set STACKWRANGLER_ENV_SKIP_DOTENV=1 to resolve from the current environment
 # only (caller already sourced .env, or wants process env to win).

@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const baseURL = process.env.AWSBOX_CONSOLE_URL || 'http://127.0.0.1:3000'
+const baseURL =
+  process.env.STACKWRANGLER_CONSOLE_URL ||
+  process.env.AWSBOX_CONSOLE_URL ||
+  'http://127.0.0.1:3000'
 
 export default defineConfig({
   testDir: './e2e',

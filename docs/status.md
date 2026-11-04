@@ -55,7 +55,7 @@ Smokes: `./smokes/s3/s3-parity.sh`, `./smokes/s3/s3-dual-endpoint-smoke.sh`, `./
 | Auto Scaling / Application Auto Scaling | ASG create/set-desired/describe · register scalable target | — | **CLI + smoke** · real ECS hosts [#207](https://github.com/kgz/awsl/issues/207) · authz [#334](https://github.com/kgz/awsl/issues/334) · console [#337](https://github.com/kgz/awsl/issues/337) · [batch-stubs.md](batch-stubs.md) |
 | EKS | — | — | **Backlog** |
 
-Smokes: Lambda via console/CLI · `./smokes/lambda/lambda-vpc-smoke.sh` · `./smokes/compute/ecs-smoke.sh` · `./smokes/compute/ecs-authz-smoke.sh` · `./smokes/compute/ecs-taskdef-smoke.sh` · `./smokes/compute/ecs-host-creds-smoke.sh` · `./smokes/compute/ecs-ec2-smoke.sh` · `./smokes/compute/ec2-smoke.sh` · `./smokes/compute/ec2-imds-smoke.sh` · `./smokes/compute/ec2-authz-smoke.sh` · `./smokes/compute/ecr-smoke.sh` · `./smokes/networking/vpc-routing-smoke.sh` · `./smokes/networking/vpc-egress-smoke.sh` · `./smokes/networking/sg-enforcement-smoke.sh` · `./smokes/networking/vpce-private-dns-smoke.sh` · `./smokes/networking/elbv2-smoke.sh` · `./smokes/compute/autoscaling-smoke.sh` · `./smokes/compute/application-autoscaling-smoke.sh` · `./smokes/compute/batch-smoke.sh` · `./smokes/compute/elasticbeanstalk-smoke.sh` · `./smokes/compute/apprunner-smoke.sh`
+Smokes: Lambda via console/CLI · `./smokes/lambda/lambda-vpc-smoke.sh` · `./smokes/compute/ecs-smoke.sh` · `./smokes/compute/ecs-authz-smoke.sh` · `./smokes/compute/ecs-taskdef-smoke.sh` · `./smokes/compute/ecs-host-creds-smoke.sh` · `./smokes/compute/ecs-sqs-queueurl-smoke.sh` · `./smokes/compute/ecs-ec2-smoke.sh` · `./smokes/compute/ec2-smoke.sh` · `./smokes/compute/ec2-imds-smoke.sh` · `./smokes/compute/ec2-authz-smoke.sh` · `./smokes/compute/ecr-smoke.sh` · `./smokes/networking/vpc-routing-smoke.sh` · `./smokes/networking/vpc-egress-smoke.sh` · `./smokes/networking/sg-enforcement-smoke.sh` · `./smokes/networking/vpce-private-dns-smoke.sh` · `./smokes/networking/elbv2-smoke.sh` · `./smokes/compute/autoscaling-smoke.sh` · `./smokes/compute/application-autoscaling-smoke.sh` · `./smokes/compute/batch-smoke.sh` · `./smokes/compute/elasticbeanstalk-smoke.sh` · `./smokes/compute/apprunner-smoke.sh`
 
 
 ## Networking
@@ -141,10 +141,10 @@ Smokes: `./smokes/apigw/apigw-smoke.sh` · `./smokes/apigw/apigw-authz-smoke.sh`
 | Tool | Status |
 |------|--------|
 | Terraform S3+Lambda | **Working** (`examples/terraform/…`, local apply) |
-| Terraform S3 backend + lock | **Working** ([terraform-awsbox.md](terraform-awsbox.md), `examples/terraform/awsbox-backend/`) |
+| Terraform S3 backend + lock | **Working** ([terraform-stackwrangler.md](terraform-stackwrangler.md), `examples/terraform/stackwrangler-backend/`) |
 | CloudFormation | **Partial** — failed create rolls back and delete-stack removes resources ([#212](https://github.com/kgz/awsl/issues/212)); in-place rollback / Snapshot [#228](https://github.com/kgz/awsl/issues/228); stacks UI; write path [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) · audit [#147](https://github.com/kgz/awsl/issues/147) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
-| Serverless Framework v3 | **Partial** — `examples/serverless-v3-rest` · [serverless-awsbox.md](serverless-awsbox.md) · authorizer http-event [#328](https://github.com/kgz/awsl/issues/328) · domain-manager [#329](https://github.com/kgz/awsl/issues/329) · sad smoke [#330](https://github.com/kgz/awsl/issues/330) |
+| Serverless Framework v3 | **Partial** — `examples/serverless-v3-rest` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · authorizer http-event [#328](https://github.com/kgz/awsl/issues/328) · domain-manager [#329](https://github.com/kgz/awsl/issues/329) · sad smoke [#330](https://github.com/kgz/awsl/issues/330) |
 | Pulumi / Ansible examples | **Backlog** |
 | CodeDeploy | **CLI + smoke** — ECS blue/green + Lambda canary DG (control plane) · `./smokes/compute/codedeploy-smoke.sh` · slice `examples/serverless-v3-rest/slices/codedeploy/` · alias weight [#340](https://github.com/kgz/awsl/issues/340) · authz/console [#341](https://github.com/kgz/awsl/issues/341) |
 | CodePipeline / Build / Artifact | **Backlog** |

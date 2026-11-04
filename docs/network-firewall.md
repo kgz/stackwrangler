@@ -15,7 +15,7 @@ LocalEmu `network-firewall` (stub_providers for policy/rule-group; moto fallthro
 
 ## Profile
 
-`./bin/awsbox-profile write --force` sends `network-firewall` / `fms` to the LocalEmu endpoint.
+`./bin/stackwrangler-profile write --force` sends `network-firewall` / `fms` to the LocalEmu endpoint.
 
 ## Limits
 

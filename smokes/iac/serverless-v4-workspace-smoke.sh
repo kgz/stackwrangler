@@ -51,7 +51,7 @@ require_sls_auth() {
 		return 0
 	fi
 	echo "error: Serverless Framework v4 needs auth (SERVERLESS_ACCESS_KEY / LICENSE_KEY)." >&2
-	echo "  See docs/serverless-awsbox.md" >&2
+	echo "  See docs/serverless-stackwrangler.md" >&2
 	exit 1
 }
 

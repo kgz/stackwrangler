@@ -13,6 +13,11 @@
 #   OD_WEB_URL          default: http://127.0.0.1:7456
 #   OD_AGENT_ID         default: cursor-agent
 #   OD_MODEL            default: auto
+#
+# Daemon (Linux-first). From ~/tools/open-design/deploy:
+#   docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+# Optional local bind-mount overlay for this repo (and other trees) may still be
+# named docker-compose.wsl.yml on some hosts — append -f that file if you use it.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -71,7 +76,8 @@ fi
 
 if ! curl -sf --max-time 2 "$DAEMON/api/daemon/status" >/dev/null; then
 	echo "Open Design daemon not reachable at $DAEMON" >&2
-	echo "Start it: cd ~/tools/open-design/deploy && docker compose -f docker-compose.yml -f docker-compose.wsl.yml up -d" >&2
+	echo "Start it: cd ~/tools/open-design/deploy && docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d" >&2
+	echo "(Optional local bind-mount overlay: append -f docker-compose.wsl.yml if that file holds your repo mounts.)" >&2
 	exit 1
 fi
 

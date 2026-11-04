@@ -7,7 +7,7 @@ Dummy [Serverless Framework v4](https://www.serverless.com/) project that deploy
 | `topic/serverless.yml` | SNS topic, SSM `/demo/sls4/…/topic-arn`, CFN `Export` of TopicArn |
 | `consumer/serverless.yml` | `deploymentMethod: direct`, named deploy bucket, `build.esbuild` (`exclude: ["@aws-sdk/*"]`), `${ssm:…}`, native `iamRoleStatements`, SQS ESM Lambda, filtered raw SNS→SQS via `!ImportValue` |
 
-v4 `deploy` ignores `AWS_ENDPOINT_URL` (bundled AWS SDK v2). Use `./bin/stackwrangler sls` so DNS+TLS redirect hits LocalEmu — see [docs/serverless-awsbox.md](../../docs/serverless-awsbox.md).
+v4 `deploy` ignores `AWS_ENDPOINT_URL` (bundled AWS SDK v2). Use `./bin/stackwrangler sls` so DNS+TLS redirect hits LocalEmu — see [docs/serverless-stackwrangler.md](../../docs/serverless-stackwrangler.md).
 
 ## Auth (required)
 
@@ -28,7 +28,7 @@ export SERVERLESS_LOCAL_ONLY_LICENCE_KEY=…
 
 ```bash
 ./bin/stackwrangler up
-./bin/awsbox-profile write --force
+./bin/stackwrangler-profile write --force
 
 cd examples/serverless-v4-sns-sqs && npm i
 aws s3 mb s3://awsbox-sls4-deploy --endpoint-url http://127.0.0.1:4566
@@ -54,6 +54,7 @@ export AWSBOX_SLS4_TOPIC_EXPORT=awsbox-sls4-topic-local-TopicArn
 ./smokes/iac/serverless-v4-smoke.sh
 ```
 
-Negative (TLS down) → connection error; DNS log asserts AWS names → proxy only; deploy topic → consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy → remove.
+Happy: deploy topic → consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy → remove.
+Sad ([#460](https://github.com/kgz/awsl/issues/460)): missing auth; host aws without `AWS_ENDPOINT_URL` refuses real AWS; TLS-down connection error; missing `Fn::ImportValue` deploy fails; filter-drop never reaches S3. DNS log asserts AWS names → proxy only.
 
 **Note:** This path is host SNS publish → SQS → Lambda ESM → S3. It does not exercise Lambda→SQS `SendMessage` with `sqs.<region>.localhost` QueueUrls ([#459](https://github.com/kgz/awsl/issues/459)).

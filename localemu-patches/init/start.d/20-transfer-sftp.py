@@ -11,53 +11,33 @@ Host port: compose publishes AWSBOX_SFTP_HOST_PORT → AWSBOX_TRANSFER_SFTP_PORT
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import json
 import logging
 import os
 import posixpath
 import socket
-import subprocess
-import sys
 import threading
 import time
 
 LOG = logging.getLogger("localemu.awsbox.transfer_sftp")
 
 _SERVICE = "transfer.amazonaws.com"
-_PARAMIKO_LOCK = threading.Lock()
 _HOST_KEY = None
 _LISTEN_PORT = int(os.environ.get("AWSBOX_TRANSFER_SFTP_PORT") or "2222")
 _ENDPOINT_HOST = (os.environ.get("AWSBOX_TRANSFER_SFTP_HOST") or "127.0.0.1").strip()
 
 
 def _paramiko():
-    try:
-        import paramiko
-
-        return paramiko
-    except ImportError:
-        pass
-    with _PARAMIKO_LOCK:
-        try:
-            import paramiko
-
-            return paramiko
-        except ImportError:
-            pass
-        proc = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--quiet", "paramiko"],
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(
-                "paramiko install failed: " + (proc.stderr or proc.stdout or "")[-300:]
-            )
-        import paramiko
-
-        return paramiko
+    spec = importlib.util.spec_from_file_location(
+        "awsbox_paramiko_vendor", "/opt/awsbox/paramiko_vendor.py"
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("paramiko_vendor missing at /opt/awsbox/paramiko_vendor.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.ensure_paramiko()
 
 
 def _host_key():

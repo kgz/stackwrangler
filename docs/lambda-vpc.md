@@ -31,7 +31,9 @@ Lambda containers (and the same mapping for ECS tasks). The target is LocalEmu's
 address on the compose network, not `host-gateway`, because compose publishes
 `:4566` on `127.0.0.1` only. No `.env` change is required for the default region.
 
-Smoke: `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` (see [sqs.md](sqs.md)).
+Smokes: `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` (Lambda) ·
+`./smokes/compute/ecs-sqs-queueurl-smoke.sh` (ECS bridge task, same host inject)
+(see [sqs.md](sqs.md)).
 
 ## Smoke
 

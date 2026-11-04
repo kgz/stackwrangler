@@ -186,11 +186,14 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |
 | CFN `AWS::WAFv2::WebACL` / Association deploy | happy | missing | [#325](https://github.com/kgz/awsl/issues/325) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh` |
-| Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
+| Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` |
-| Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |
+| Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |
 | Serverless v4 `${ssm:…}` + cross-stack `Fn::ImportValue` SNS→SQS | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` |
+| Serverless v4 sad: missing auth; host aws without `AWS_ENDPOINT_URL` refuses real AWS; TLS-down; missing `Fn::ImportValue` deploy fails; SNS filter-drop absent from S3 | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [#460](https://github.com/kgz/awsl/issues/460) |
 | Serverless v4 yarn workspace: `--cwd packages/service` mounts workspace root, sibling import bundles | happy | covered | `./smokes/iac/serverless-v4-workspace-smoke.sh` · [#468](https://github.com/kgz/awsl/issues/468) |
+| aws-redirect DNS: AWS suffixes (A + dualstack AAAA) resolve only to the proxy — no public A/AAAA | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
+| aws-redirect TLS edge down → connection error (not real AWS auth) | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
 | Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./smokes/iac/cfn-lifecycle-smoke.sh` |
@@ -210,6 +213,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS MessageRetentionPeriod > 14d → InvalidAttributeValue | sad/other | covered | `./smokes/messaging/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./smokes/messaging/sqs-authz-smoke.sh` |
 | Lambda SendMessage using CreateQueue / !Ref QueueUrl (`sqs.<region>.localhost`) | happy | covered | `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459) |
+| ECS SendMessage using CreateQueue QueueUrl (`sqs.<region>.localhost`, bridge task) | happy | covered | `./smokes/compute/ecs-sqs-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#463](https://github.com/kgz/awsl/issues/463) |
 | SQS → Lambda event source mapping invokes Lambda, message deleted | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | SQS redrive (maxReceiveCount 2) to DLQ on Lambda failure | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
@@ -228,6 +232,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Lambda reserved concurrency 0 → every sync invoke throttled (429) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` vs reserved concurrency (lower wins) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
+| ESM `ScalingConfig.MaximumConcurrency` alone (reserved unset) → in-flight ≤ MaximumConcurrency | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./smokes/messaging/sns-max-message-size-smoke.sh` |
@@ -317,7 +322,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Create VPC/subnet/SG with `_custom_id_` + account id in OwnerId/STS/ARNs | happy | covered | `./smokes/account/custom-id-smoke.sh` · [custom-ids.md](custom-ids.md) |
 | Create route table, IGW, peering, instance, LB/TG suffix, REST/HTTP API, hosted zone, ECS cluster ARN with `_custom_id_` | happy | covered | `./smokes/account/custom-id-smoke.sh` |
 | `_custom_id_` value fails the id format check | sad/other | covered | `./smokes/account/custom-id-smoke.sh` |
-| Terraform bootstrap state bucket + DynamoDB lock, then remote-state apply | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` · [terraform-awsbox.md](terraform-awsbox.md) |
+| Terraform bootstrap state bucket + DynamoDB lock, then remote-state apply | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
 | Terraform second plan no-change with S3 backend on LocalEmu | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
 | Terraform backend smoke canary: real AWS STS succeeds → abort | sad/other | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
 

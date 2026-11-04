@@ -17,7 +17,7 @@ Dummy [Serverless Framework v3](https://www.serverless.com/) project that mimics
 
 ```bash
 ./bin/awsbox up
-./bin/awsbox-profile write --force   # credentials for profile local
+./bin/stackwrangler-profile write --force   # credentials for profile local
 
 # All Serverless AWS calls (including S3 artifacts) must hit LocalEmu, not SeaweedFS.
 # Profile `local` sends S3 to :8333 — override with AWS_ENDPOINT_URL.
