@@ -64,7 +64,8 @@ User relies on the agent to not lose half-baked follow-ups (especially UI stubs)
 
 1. Walk the checklist in `docs/gap-check.md`
 2. For every Partial / disabled Create / sidecar / “use CLI smoke” / authz hole / AWS console UI left out of v1 **without** an open Debt ticket → create `Debt: … (from #<n>)`, label `$(cat docs/CURRENT_RELEASE)`, link from README or service doc. Console debt designs use Open Design `web-clone` (`./bin/od-design-run.sh`)
-3. Mention new Debt issues in the PR body
+3. Prefer shipping docs in the PR; if blocked on public docs / screenshot / interaction edge → `Doc: … (from #<n>)` per `docs/docs-catalog.md` (skill `docs-catalog`; Agent `cursor-batch-docs`)
+4. Mention new Debt / Doc issues in the PR body
 
 Do **not** treat the parent as finished until gaps are ticketed (or explicitly N/A in the PR).
 

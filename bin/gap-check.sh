@@ -10,7 +10,7 @@ cd "$ROOT"
 echo "=== stackwrangler gap-check ${PARENT:+(parent #${PARENT})} ==="
 echo
 echo "Rubric: docs/gap-check.md"
-echo "Answer each; open Debt: tickets for any NO / PARTIAL without an existing follow-up."
+echo "Answer each; open Debt: / Doc: tickets for any NO / PARTIAL without an existing follow-up (or ship docs in this PR)."
 echo
 cat <<'EOF'
 [ ] Data plane real for what we claimed?
@@ -21,9 +21,12 @@ cat <<'EOF'
 [ ] Dead controls: unwired = disabled + title="To implement" (+ Debt if v1); never-ship = omitted; no enabled no-ops?
 [ ] No silent sidecar/bridge without Debt ticket + docs link?
 [ ] README/docs status row links a Debt issue for Partial/Sidecar?
-[ ] Tracker + board backlog updated for any new Debt tickets?
+[ ] Tracker + board backlog updated for any new Debt / Doc: tickets?
 [ ] docs/smoke-matrix.md updated (happy + sad columns)?
 [ ] docs/test-paths.md lists every new path (searchable)?
+[ ] Public docs: docs-site / interactions page updated in this PR, or Doc: filed?
+[ ] Screenshot: console/UI shot captured via ./bin/docs-capture.sh, or Doc: filed / N/A?
+[ ] Interaction edge: new cross-service path has catalog page, or Doc: filed?
 EOF
 echo
 
@@ -67,13 +70,21 @@ else
 fi
 
 echo
-echo "=== Open Debt: / gap-ish issues (sample) ==="
+echo "=== Open Debt: / Doc: issues (sample) ==="
 if command -v gh >/dev/null 2>&1; then
-	gh issue list --repo kgz/stackwrangler --state open --limit 30 --search 'Debt in:title' \
+	gh issue list --repo kgz/stackwrangler --state open --limit 20 --search 'Debt in:title' \
+		--json number,title --jq '.[] | "#\(.number) \(.title)"' 2>/dev/null || true
+	gh issue list --repo kgz/stackwrangler --state open --limit 20 --search 'Doc: in:title' \
 		--json number,title --jq '.[] | "#\(.number) \(.title)"' 2>/dev/null || true
 fi
 
 echo
+echo "=== Interactions catalog present? ==="
+[[ -f docs-site/guide/interactions/index.md ]] && echo "OK docs-site/guide/interactions/index.md" \
+	|| echo "MISSING docs-site/guide/interactions/index.md"
+[[ -f docs/docs-catalog.md ]] && echo "OK docs/docs-catalog.md" || echo "MISSING docs/docs-catalog.md"
+echo
+
 REL="$(cat "$(dirname "$0")/../docs/CURRENT_RELEASE" 2>/dev/null || echo v0.0.1)"
-echo "Done. If anything half-baked shipped in #${PARENT:-this PR}, file Debt: now — before board done."
-echo "Debt tickets: milestone + label ${REL} (docs/versioning.md)."
+echo "Done. If anything half-baked shipped in #${PARENT:-this PR}, file Debt: / Doc: now — before board done."
+echo "Debt/Doc tickets: milestone + label ${REL} (docs/versioning.md · docs/docs-catalog.md)."

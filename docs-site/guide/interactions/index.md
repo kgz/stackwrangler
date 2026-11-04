@@ -1,0 +1,31 @@
+# Interactions catalog
+
+Honest map of **what talks to what** in the local account. Coverage truth for scripts stays in [smoke-matrix](https://github.com/kgz/stackwrangler/blob/main/docs/smoke-matrix.md) and [test-paths](https://github.com/kgz/stackwrangler/blob/main/docs/test-paths.md). This catalog is the short narrative layer for humans and agents.
+
+**Status:** `shipped` · `partial` · `gap` · `not-valid`
+
+| Status | Meaning |
+|--------|---------|
+| shipped | Happy path smoked; claims match behaviour |
+| partial | Works with known gaps (issue links on the page) |
+| gap | Expected path not proven — do not market as ready |
+| not-valid | We do **not** claim this path |
+
+One edge per page. Rows not listed yet are **not catalogued** (still may have a smoke). How to add pages: [docs-catalog.md](https://github.com/kgz/stackwrangler/blob/main/docs/docs-catalog.md).
+
+Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/issues/483) · Kinesis/SFN/DynamoDB pages [#484](https://github.com/kgz/stackwrangler/issues/484) · Serverless deploy page [#485](https://github.com/kgz/stackwrangler/issues/485) · SQS→Lambda ESM detail [#486](https://github.com/kgz/stackwrangler/issues/486).
+
+| Edge | Status | Smoke | UI shot | Page |
+|------|--------|-------|---------|------|
+| SNS → SQS fan-out | shipped | `sns-sqs-fanout-smoke.sh` | — | [sns-to-sqs](./sns-to-sqs) |
+| EventBridge schedule → Lambda | shipped | `events-schedule-smoke.sh` | — | [events-to-lambda](./events-to-lambda) |
+| API GW REST → VPC link → NLB → ECS | partial | `apigw-nlb-ecs-smoke.sh` | — | [apigw-nlb-ecs](./apigw-nlb-ecs) |
+| Lambda → Secrets → OAuth HTTP | shipped | `lambda-secret-oauth-smoke.sh` | — | [lambda-secrets-http](./lambda-secrets-http) |
+| Transfer SFTP → S3 | partial | `transfer-dataplane-smoke.sh`, `transfer-key-smoke.sh` | — | [transfer-sftp-s3](./transfer-sftp-s3) |
+| Dual S3 (SeaweedFS + LocalEmu) | partial | `s3-dual-endpoint-smoke.sh` | [home-s3-buckets](/assets/console/home-s3-buckets.png) | [dual-s3](./dual-s3) |
+| IAM AccessDenied lab | shipped | `iam-access-denied.sh` | — | [iam-deny](./iam-deny) |
+| Lambda VPC → host service | partial | `lambda-vpc-smoke.sh` | — | [lambda-vpc-host](./lambda-vpc-host) |
+| SQS → Lambda (event source) | partial | see page | — | [sqs-to-lambda](./sqs-to-lambda) |
+| ECS task → ECR image pull | partial | `ecr-smoke.sh` | — | [ecs-ecr-pull](./ecs-ecr-pull) |
+| SNS large topic → SQS / Lambda | partial | `sns-max-message-size-smoke.sh` | — | [sns-large-topic](./sns-large-topic) |
+| Transfer connector S3 → remote SFTP | partial | `transfer-connector-smoke.sh` | — | [transfer-connector](./transfer-connector) |
