@@ -298,7 +298,8 @@ negative_import_value() {
 	echo "==> negative: consumer deploy with missing Fn::ImportValue export fails"
 	local bad_svc="awsbox-sls4-badimp-${TS}"
 	local bad_stack="${bad_svc}-${STAGE}"
-	local bad_export="awsbox-sls4-missing-${TS}-TopicArn"
+	# Name must not contain words our failure grep uses (no "missing"/"fail").
+	local bad_export="awsbox-sls4-noexport-${TS}-TopicArn"
 	local log="$OUT/negative-importvalue.log"
 	local prev_svc prev_export rc
 	prev_svc="${AWSBOX_SLS4_CONSUMER_SERVICE}"
@@ -325,22 +326,21 @@ negative_import_value() {
 	) >"$OUT/negative-importvalue-remove.log" 2>&1 || true
 	aws cloudformation delete-stack --stack-name "$bad_stack" >/dev/null 2>&1 || true
 
+	# Template dumps contain "Fn::ImportValue" even on success — never treat that
+	# alone as the sad-path failure signal.
 	if grep -qiE 'Service deployed|Stack create finished' "$log" \
-		&& ! grep -qiE 'CREATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|No export|Export .* not found|Unresolved resource dependencies|ImportValue' "$log"; then
-		echo "error: missing-ImportValue deploy looked successful" >&2
+		|| { grep -qiE 'CREATE_COMPLETE' "$log" && ! grep -qiE 'CREATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|ROLLBACK_IN_PROGRESS' "$log"; }; then
+		echo "error: missing-ImportValue deploy looked successful (must not pass)" >&2
 		sed 's/\x1b\[[0-9;]*[A-Za-z]//g' "$log" | tr -d '\r' | tail -80 >&2 || true
 		return 1
 	fi
-	if grep -qiE 'No export|Export .* not found|Unresolved resource dependencies|ImportValue|CREATE_FAILED|ROLLBACK|does not exist' "$log"; then
+	# Explicit missing-export / stack-failure markers only — not bare non-zero,
+	# and not the substring "ImportValue" from a dumped template.
+	if grep -qiE 'No export named|ExportNotFound|cannot find export|Could not find export|Unresolved resource dependencies|CREATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED' "$log"; then
 		echo "ok   missing ImportValue deploy failed as expected (rc=${rc})"
 		return 0
 	fi
-	# Wrapper may exit 1 with no Service deployed marker and a CFN error buried in output.
-	if [[ "$rc" -ne 0 ]] && ! grep -qiE 'Service deployed|CREATE_COMPLETE' "$log"; then
-		echo "ok   missing ImportValue deploy failed without success marker (rc=${rc})"
-		return 0
-	fi
-	echo "error: missing-ImportValue deploy did not show a failure marker" >&2
+	echo "error: missing-ImportValue deploy did not show a missing-export failure marker" >&2
 	sed 's/\x1b\[[0-9;]*[A-Za-z]//g' "$log" | tr -d '\r' | tail -80 >&2 || true
 	return 1
 }
@@ -535,7 +535,7 @@ aws sns publish \
 aws sns publish \
 	--topic-arn "$TOPIC_ARN" \
 	--message "$DROP_MSG" \
-	--message-attributes "kind={DataType=String,StringValue=drop}" >/dev/null || true
+	--message-attributes "kind={DataType=String,StringValue=drop}" >/dev/null
 
 echo "==> wait for Lambda → S3 marker"
 found=""
