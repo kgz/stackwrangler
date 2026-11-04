@@ -69,9 +69,9 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/<name>.sh` sti
 | SQS | yes | **yes** (deny SendMessage; MessageRetentionPeriod > 14d) | — | no → [#167](https://github.com/kgz/awsl/issues/167) | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |
 | Lambda SendMessage via CreateQueue QueueUrl | yes (SDK v3 + `sqs.<region>.localhost`) | — | ENOTFOUND without host inject | — | `sqs-lambda-queueurl-smoke.sh` · [#459](https://github.com/kgz/awsl/issues/459) |
 | SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ; re-grant after revoke resumes) | **yes** (role without SQS; VT < timeout; MaximumConcurrency < 2; post-create SQS perm revoke → LPR/State) | — | — | `sqs-lambda-dlq-smoke.sh` (needs `boto3`) |
-| SQS → Lambda mapping + DLQ | yes (message → Lambda → S3, deleted; redrive to DLQ) | **yes** (role without SQS; VT < timeout; MaximumConcurrency < 2) | — | — | `sqs-lambda-dlq-smoke.sh` (needs `boto3`) |
 | SQS → Lambda ReportBatchItemFailures | yes (batch of 3, 1 failure → 2 deleted + 1 redelivered → DLQ; empty `batchItemFailures` deletes all) | — | **yes** (unknown `itemIdentifier` fails whole batch → DLQ; without `FunctionResponseTypes` response ignored) | — | `sqs-lambda-batch-failures-smoke.sh` (needs `boto3`) |
 | SQS → Lambda ESM enable/disable | yes (Disabled holds messages; re-enable drains; retention drops expired) | — | Disabling/Enabling may be fleeting | — | `sqs-lambda-esm-enable-smoke.sh` |
+| SQS → Lambda ESM credential refresh | yes (short STS duration; deliver past expiry) | — | role deleted → `LastProcessingResult` PROBLEM | — | `sqs-lambda-esm-cred-refresh-smoke.sh` (needs `boto3` + `AWSBOX_STS_ASSUME_ROLE_DURATION`) · [#475](https://github.com/kgz/awsl/issues/475) |
 | Prowler | yes (scoped unused-services) | ratchet (failing API count) | S3 Control host | — | `prowler-smoke.sh` |
 | Account mirror | yes (synthetic apply) | n/a (local apply) | in-repo write + non-local endpoint | — | `mirror-smoke.sh` |
 | Terraform S3 backend + lock | yes (opt-in) | — | canary abort if real AWS STS succeeds | — | `terraform-backend-smoke.sh` (`AWSBOX_TERRAFORM_BACKEND_SMOKE=1`) |

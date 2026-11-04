@@ -221,6 +221,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | SQS → Lambda unknown itemIdentifier fails whole batch → DLQ | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda without ReportBatchItemFailures ignores response body | sad/other | covered | `./bin/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./bin/sqs-lambda-esm-enable-smoke.sh` |
+| SQS → Lambda ESM keeps delivering past STS session expiry (short `AWSBOX_STS_ASSUME_ROLE_DURATION`) | happy | covered | `./bin/sqs-lambda-esm-cred-refresh-smoke.sh` |
+| SQS → Lambda ESM role deleted after create → `LastProcessingResult` PROBLEM (not stuck `None`) | sad/other | covered | `./bin/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | Lambda `PutFunctionConcurrency` reserved=1 → second concurrent sync invoke `TooManyRequestsException` (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
 | Lambda reserved concurrency 0 → every sync invoke throttled (429) | sad/other | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./bin/lambda-reserved-concurrency-smoke.sh` |

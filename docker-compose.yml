@@ -58,6 +58,9 @@ services:
       # Extra `docker run` flags for Lambda containers, e.g. map internal hostnames
       # to the host: --add-host=internal-nlb.example:host-gateway (docs/lambda-vpc.md)
       LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
+      # Shorten STS AssumeRole sessions for ESM credential-refresh smoke (#475).
+      # Unset in normal use (LocalEmu default 3600s). Example: 120
+      AWSBOX_STS_ASSUME_ROLE_DURATION: ${STACKWRANGLER_STS_ASSUME_ROLE_DURATION:-${AWSBOX_STS_ASSUME_ROLE_DURATION:-}}
     ports:
       - "127.0.0.1:${STACKWRANGLER_LOCALEMU_HOST_PORT:-${AWSBOX_LOCALEMU_HOST_PORT:-4566}}:4566"
       - "127.0.0.1:${STACKWRANGLER_ECS_CREDS_PORT:-${AWSBOX_ECS_CREDS_PORT:-4571}}:${STACKWRANGLER_ECS_CREDS_PORT:-${AWSBOX_ECS_CREDS_PORT:-4571}}"
