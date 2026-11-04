@@ -24,6 +24,7 @@ aws() {
 
 STACKS=()
 QUEUES=()
+LOG_GROUPS=()
 
 cleanup() {
 	set +e
@@ -35,6 +36,9 @@ cleanup() {
 	done
 	for name in "${STACKS[@]+"${STACKS[@]}"}"; do
 		aws cloudformation delete-stack --stack-name "$name" >/dev/null 2>&1 || true
+	done
+	for name in "${LOG_GROUPS[@]+"${LOG_GROUPS[@]}"}"; do
+		aws logs delete-log-group --log-group-name "$name" >/dev/null 2>&1 || true
 	done
 }
 trap cleanup EXIT
@@ -211,4 +215,89 @@ if queue_exists "$DROP_QUEUE"; then
 	exit 1
 fi
 
-echo "OK: cfn lifecycle (rollback, delete, retain, update status)"
+# --- part-created stack: never-created GetAtt deps must not DELETE_FAILED (#470) ---
+PARTIAL_STACK="awsbox-cfn-life-partial-${TS}"
+PARTIAL_LG="/aws/lambda/awsbox-cfn-partial-${TS}"
+PARTIAL_QUEUE="awsbox-cfn-life-partial-q-${TS}"
+STACKS+=("$PARTIAL_STACK")
+QUEUES+=("$PARTIAL_QUEUE")
+LOG_GROUPS+=("$PARTIAL_LG")
+
+echo "==> pre-create log group ${PARTIAL_LG}"
+aws logs create-log-group --log-group-name "$PARTIAL_LG" >/dev/null
+
+cat >"/tmp/${PARTIAL_STACK}.yaml" <<EOF
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  GoodQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${PARTIAL_QUEUE}
+  ConflictLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: ${PARTIAL_LG}
+  RouterLambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: ConflictLogGroup
+    Properties:
+      GroupDescription: never created when log group conflicts
+      VpcId: !Ref PartialVpc
+  PartialVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.70.0.0/16
+  RouterLambdaIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: ConflictLogGroup
+    Properties:
+      GroupId: !GetAtt RouterLambdaSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: 10.0.0.0/8
+EOF
+
+echo "==> create-stack ${PARTIAL_STACK} (log group already exists)"
+aws cloudformation create-stack --stack-name "$PARTIAL_STACK" \
+	--template-body "file:///tmp/${PARTIAL_STACK}.yaml" >/dev/null
+PARTIAL_STATUS="$(wait_stack "$PARTIAL_STACK")"
+echo "partial create status=${PARTIAL_STATUS}"
+case "$PARTIAL_STATUS" in
+CREATE_FAILED | ROLLBACK_COMPLETE | ROLLBACK_FAILED) ;;
+*)
+	echo "FAIL: expected failed/rolled-back create, got ${PARTIAL_STATUS}" >&2
+	aws cloudformation describe-stack-events --stack-name "$PARTIAL_STACK" \
+		--query 'StackEvents[].[LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+		--output text 2>/dev/null | head -40 >&2 || true
+	exit 1
+	;;
+esac
+
+echo "==> delete-stack ${PARTIAL_STACK} (never-created GetAtt deps)"
+aws cloudformation delete-stack --stack-name "$PARTIAL_STACK" >/dev/null
+PARTIAL_DEL="$(wait_stack "$PARTIAL_STACK")"
+echo "partial delete status=${PARTIAL_DEL}"
+if [[ "$PARTIAL_DEL" != GONE && "$PARTIAL_DEL" != DELETE_COMPLETE ]]; then
+	echo "FAIL: delete of part-created stack ended ${PARTIAL_DEL}" >&2
+	aws cloudformation describe-stack-events --stack-name "$PARTIAL_STACK" \
+		--query 'StackEvents[?ResourceStatus==`DELETE_FAILED`].[LogicalResourceId,ResourceStatusReason]' \
+		--output text 2>/dev/null | head -40 >&2 || true
+	exit 1
+fi
+
+# Clear the conflict so redeploy can succeed.
+aws logs delete-log-group --log-group-name "$PARTIAL_LG" >/dev/null 2>&1 || true
+
+echo "==> redeploy ${PARTIAL_STACK}"
+aws cloudformation create-stack --stack-name "$PARTIAL_STACK" \
+	--template-body "file:///tmp/${PARTIAL_STACK}.yaml" >/dev/null
+PARTIAL_REDEPLOY="$(wait_stack "$PARTIAL_STACK")"
+echo "redeploy status=${PARTIAL_REDEPLOY}"
+[[ "$PARTIAL_REDEPLOY" == CREATE_COMPLETE ]]
+
+aws cloudformation delete-stack --stack-name "$PARTIAL_STACK" >/dev/null
+PARTIAL_DEL2="$(wait_stack "$PARTIAL_STACK")"
+[[ "$PARTIAL_DEL2" == GONE || "$PARTIAL_DEL2" == DELETE_COMPLETE ]]
+
+echo "OK: cfn lifecycle (rollback, delete, retain, update status, partial-create delete)"
