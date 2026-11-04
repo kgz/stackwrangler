@@ -299,3 +299,4 @@
 486	backlog	Doc: SQS→Lambda ESM name exact smokes (from docs-catalog)
 491	done	Public OSS: drop WSL-centric copy; Linux primary
 495	in-review	Debt: Linux-first OD start hints (from #491)
+498	in-review	Debt: smoke MaximumConcurrency without reserved (from #453)

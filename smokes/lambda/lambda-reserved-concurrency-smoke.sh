@@ -6,6 +6,8 @@
 #   before maxReceiveCount)
 # ScalingConfig.MaximumConcurrency vs reserved: the lower limit wins for
 # in-flight SQS→Lambda ESM invocations ([#453](https://github.com/kgz/awsl/issues/453)).
+# MaximumConcurrency alone (reserved unset) also caps in-flight
+# ([#498](https://github.com/kgz/awsl/issues/498)).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -366,7 +368,7 @@ exports.handler = async (event) => {
         fn_name: str,
         q_name: str,
         dlq_name: str,
-        reserved: int,
+        reserved: int | None,
         maximum_concurrency: int | None,
         message_count: int,
         expect_max: int,
@@ -380,9 +382,10 @@ exports.handler = async (event) => {
             timeout=60,
             env={"BUCKET": BUCKET, "MARKER_PREFIX": marker_prefix},
         )
-        lam.put_function_concurrency(
-            FunctionName=fn_name, ReservedConcurrentExecutions=reserved
-        )
+        if reserved is not None:
+            lam.put_function_concurrency(
+                FunctionName=fn_name, ReservedConcurrentExecutions=reserved
+            )
 
         dlq = sqs.create_queue(QueueName=dlq_name)["QueueUrl"]
         qurls.append(dlq)
@@ -418,9 +421,17 @@ exports.handler = async (event) => {
 
         peak = max_in_flight(marker_prefix, message_count)
         if peak > expect_max:
+            if reserved is not None and maximum_concurrency is not None:
+                bound = (
+                    f"min(reserved={reserved}, MaximumConcurrency={maximum_concurrency})"
+                    f"={expect_max}"
+                )
+            elif maximum_concurrency is not None:
+                bound = f"MaximumConcurrency={maximum_concurrency}"
+            else:
+                bound = f"reserved={reserved}"
             fail(
-                f"ESM {label}: in-flight concurrency {peak} exceeded "
-                f"min(reserved={reserved}, MaximumConcurrency={maximum_concurrency})={expect_max}"
+                f"ESM {label}: in-flight concurrency {peak} exceeded {bound}"
             )
         if require_peak is not None and peak < require_peak:
             fail(
@@ -468,6 +479,20 @@ exports.handler = async (event) => {
         message_count=6,
         expect_max=1,
         marker_prefix="mc5/",
+    )
+
+    # MaximumConcurrency=2, reserved unset → MC alone caps in-flight (#498)
+    run_esm_case(
+        label="MaximumConcurrency=2,reserved=unset",
+        fn_name=f"{P}-esm-mc-only",
+        q_name=f"{P}-q-mc-only",
+        dlq_name=f"{P}-dlq-mc-only",
+        reserved=None,
+        maximum_concurrency=2,
+        message_count=6,
+        expect_max=2,
+        require_peak=2,
+        marker_prefix="mc-only/",
     )
 
     ok("lambda-reserved-concurrency-smoke")
