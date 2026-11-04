@@ -1,0 +1,31 @@
+# Yarn-workspace service: imports @awsbox/ws-shared via esbuild (#468).
+service: ${env:AWSBOX_SLS4_WS_SERVICE, 'awsbox-sls4-ws'}
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'local'}
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
+  deploymentMethod: direct
+  deploymentBucket:
+    name: ${env:AWSBOX_SLS4_WS_DEPLOY_BUCKET, 'awsbox-sls4-ws-deploy'}
+  memorySize: 128
+  timeout: 10
+  environment:
+    GREET_NAME: ${env:AWSBOX_SLS4_WS_GREET_NAME, 'workspace'}
+
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: false
+    target: node20
+    platform: node
+    exclude:
+      - '@aws-sdk/*'
+
+functions:
+  greet:
+    handler: src/handler.handler
+    description: Imports sibling workspace package @awsbox/ws-shared

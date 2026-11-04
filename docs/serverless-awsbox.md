@@ -46,6 +46,7 @@ aws ssm put-parameter --name /demo/rest/dev/app-name --type String --value my-ap
 
 - Example: [examples/serverless-v4-sns-sqs](../examples/serverless-v4-sns-sqs/) (topic stack + SQS consumer)
 - Smoke: `./bin/serverless-v4-smoke.sh` (deploy topic → deploy consumer → SNS publish → Lambda S3 marker → redeploy → remove)
+- Yarn workspace: [examples/serverless-v4-workspace](../examples/serverless-v4-workspace/) — `stackwrangler sls --cwd packages/service` mounts the workspace root when `.bin/serverless` is hoisted ([#468](https://github.com/kgz/awsl/issues/468)); smoke `./bin/serverless-v4-workspace-smoke.sh`
 - Shape: `frameworkVersion: "4"`, `deploymentMethod: direct`, named `deploymentBucket`, built-in `build.esbuild` (`exclude: ["@aws-sdk/*"]`), native per-function `iamRoleStatements`, `${ssm:…}`, cross-stack `Fn::ImportValue` — **no** `serverless-localstack` / esbuild / iam-roles plugins
 
 ### Licence / auth (every command)
@@ -88,6 +89,14 @@ aws ssm put-parameter --name /demo/sls4/dev/app-name --type String --value my-ap
 ```
 
 Manual compose (optional): `docker compose --profile aws-redirect up -d aws-redirect`.
+
+### Yarn / npm workspaces
+
+`./bin/stackwrangler sls --cwd <package>` mounts the **workspace root** when the package’s `node_modules/.bin/serverless` (or `node_modules`) resolves above the package — yarn classic hoists that `.bin` as a symlink into the root — and sets the container workdir to the package. That keeps sibling workspace packages (e.g. `node_modules/@scope/*` → `packages/…`) resolvable for esbuild.
+
+Example: [examples/serverless-v4-workspace](../examples/serverless-v4-workspace/) (`packages/service` imports `@awsbox/ws-shared`). Smoke: `./bin/serverless-v4-workspace-smoke.sh`.
+
+Workaround if you prefer not to rely on detection: `--cwd <workspace root> -- deploy --config <package>/serverless.yml` (Serverless resolves `${file(…)}` and handlers relative to the config’s directory).
 
 ### Fallback: `package` via redirect, then CloudFormation (AWS CLI)
 

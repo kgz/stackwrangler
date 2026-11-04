@@ -374,17 +374,90 @@ ensure_aws_redirect() {
 	return 1
 }
 
-# Nearest ancestor that has node_modules/serverless (example package root).
-sls_package_root() {
-	local d="$1"
+# True if package.json looks like a yarn/npm workspace root.
+sls_is_workspace_root() {
+	local pj="$1/package.json"
+	[[ -f "$pj" ]] || return 1
+	# npm/yarn: "workspaces": [ ... ] or "workspaces": { "packages": [ ... ] }
+	grep -q '"workspaces"' "$pj"
+}
+
+# Dir that owns the real serverless install for a .bin/serverless path (follow symlinks).
+sls_serverless_owner() {
+	local bin="$1"
+	local real d
+	if [[ -L "$bin" ]]; then
+		real="$(readlink -f "$bin" 2>/dev/null || true)"
+	elif [[ -e "$bin" ]]; then
+		real="$(readlink -f "$bin" 2>/dev/null || printf '%s' "$bin")"
+	else
+		return 1
+	fi
+	[[ -n "$real" ]] || return 1
+	d="$(dirname "$real")"
 	while [[ -n "$d" && "$d" != "/" ]]; do
-		if [[ -x "$d/node_modules/.bin/serverless" || -d "$d/node_modules/serverless" ]]; then
-			printf '%s\n' "$d"
-			return 0
+		if [[ -d "$d/node_modules/serverless" || -e "$d/node_modules/.bin/serverless" ]]; then
+			# Prefer the directory whose node_modules actually contains the package
+			# (not a nested package that only has a hoisted .bin symlink).
+			if [[ -d "$d/node_modules/serverless" ]]; then
+				printf '%s\n' "$d"
+				return 0
+			fi
 		fi
 		d="$(dirname "$d")"
 	done
-	printf '%s\n' "$1"
+	return 1
+}
+
+# Mount root for stackwrangler sls: package dir, or yarn/npm workspace root when
+# .bin/serverless (or node_modules) is hoisted above the package.
+sls_package_root() {
+	local start="$1"
+	local d="$1"
+	local found=""
+	while [[ -n "$d" && "$d" != "/" ]]; do
+		if [[ -e "$d/node_modules/.bin/serverless" || -d "$d/node_modules/serverless" ]]; then
+			found="$d"
+			break
+		fi
+		d="$(dirname "$d")"
+	done
+	[[ -n "$found" ]] || {
+		printf '%s\n' "$start"
+		return 0
+	}
+
+	local owner=""
+	if [[ -e "$found/node_modules/.bin/serverless" ]]; then
+		owner="$(sls_serverless_owner "$found/node_modules/.bin/serverless" || true)"
+	fi
+	if [[ -z "$owner" && -L "$found/node_modules/serverless" ]]; then
+		owner="$(sls_serverless_owner "$found/node_modules/serverless" || true)"
+	fi
+	if [[ -n "$owner" && "$owner" != "$found" ]]; then
+		case "$found" in
+			"$owner"|"$owner"/*)
+				printf '%s\n' "$owner"
+				return 0
+				;;
+		esac
+	fi
+
+	# workspaces in an ancestor package.json (sibling packages live under that root).
+	d="$found"
+	while [[ -n "$d" && "$d" != "/" ]]; do
+		if sls_is_workspace_root "$d"; then
+			case "$found" in
+				"$d"|"$d"/*)
+					printf '%s\n' "$d"
+					return 0
+					;;
+			esac
+		fi
+		d="$(dirname "$d")"
+	done
+
+	printf '%s\n' "$found"
 }
 
 # Map maintainer-only env name → Framework's SERVERLESS_LICENSE_KEY when unset.
@@ -476,14 +549,12 @@ cmd_sls() {
 	docker_env+=(-e "AWS_ENDPOINT_URL=" -e "AWS_ENDPOINT_URL_S3=")
 	[[ -n "${SERVERLESS_LICENSE_KEY:-}" ]] && docker_env+=(-e "SERVERLESS_LICENSE_KEY=${SERVERLESS_LICENSE_KEY}")
 	[[ -n "${SERVERLESS_ACCESS_KEY:-}" ]] && docker_env+=(-e "SERVERLESS_ACCESS_KEY=${SERVERLESS_ACCESS_KEY}")
+	# Forward smoke/fixture knobs (topic/consumer/workspace) into the container.
 	local name
-	for name in AWSBOX_SLS4_DEPLOY_BUCKET AWSBOX_SLS4_SUFFIX AWSBOX_SLS4_TOPIC_SERVICE \
-		AWSBOX_SLS4_CONSUMER_SERVICE AWSBOX_SLS4_TOPIC_EXPORT AWSBOX_SLS4_REDEPLOY_MARK \
-		STACKWRANGLER_SLS4_DEPLOY_BUCKET STACKWRANGLER_SLS4_SUFFIX; do
-		if [[ -n "${!name-}" ]]; then
-			docker_env+=(-e "${name}=${!name}")
-		fi
-	done
+	while IFS= read -r name; do
+		[[ -n "$name" ]] || continue
+		docker_env+=(-e "${name}=${!name}")
+	done < <(compgen -e | grep -E '^(AWSBOX_SLS4_|STACKWRANGLER_SLS4_)' || true)
 
 	local -a sls_cmd=(npx serverless)
 	if [[ -x "$pkg_root/node_modules/.bin/serverless" ]]; then
