@@ -152,6 +152,16 @@ echo "==> serverless deploy via --cwd packages/service (workspace mount)"
 sls_run_timed 'Service deployed|Stack create finished|CREATE_COMPLETE' \
 	"$OUT/deploy.log" deploy --verbose
 DEPLOYED=1
+# Non-root container user (#469): project writes must be host-owned.
+uid="$(id -u)"
+gid="$(id -g)"
+bad="$(find "$SVC/.serverless" \( ! -uid "$uid" -o ! -gid "$gid" \) -print 2>/dev/null | head -20 || true)"
+[[ -z "$bad" ]] || {
+	echo "error: packages/service/.serverless not owned by ${uid}:${gid}:" >&2
+	echo "$bad" >&2
+	exit 1
+}
+echo "ok   packages/service/.serverless owned by ${uid}:${gid}"
 
 echo "==> invoke Lambda (sibling @awsbox/ws-shared bundled)"
 INV="$OUT/invoke.json"

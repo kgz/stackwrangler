@@ -527,15 +527,23 @@ cmd_sls() {
 	work_dir="/work"
 	[[ -n "$rel" ]] && work_dir="/work/${rel}"
 
-	local key secret region image
+	local key secret region image sls_home host_uid host_gid
 	key="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
 	secret="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
 	region="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
 	image="${STACKWRANGLER_SLS_IMAGE:-${AWSBOX_SLS_IMAGE:-node:20-bookworm}}"
+	# Persist Framework download + npm cache across runs; must be writable by --user.
+	sls_home="${STACKWRANGLER_SLS_HOME:-${AWSBOX_SLS_HOME:-$ROOT/.awsbox/sls-home}}"
+	mkdir -p "$sls_home"
+	host_uid="$(id -u)"
+	host_gid="$(id -g)"
 
 	# Fake keys only; no ~/.aws; no AWS_ENDPOINT_URL — DNS+TLS does the redirect.
 	# Licence / access key still phones home (non-AWS host resolves upstream).
+	# Run as host uid:gid so .serverless / build output are not root-owned on the mount (#469).
 	local -a docker_env=(
+		-e "HOME=/sls-home"
+		-e "npm_config_cache=/sls-home/.npm"
 		-e "AWS_ACCESS_KEY_ID=${key}"
 		-e "AWS_SECRET_ACCESS_KEY=${secret}"
 		-e "AWS_DEFAULT_REGION=${region}"
@@ -567,10 +575,12 @@ cmd_sls() {
 
 	local -a docker_run=(
 		docker run --rm -i
+		--user "${host_uid}:${host_gid}"
 		--network "$network"
 		--dns "$dns_ip"
 		"${docker_env[@]}"
 		-v "${ca_host}:/awsbox-ca/ca.crt:ro"
+		-v "${sls_home}:/sls-home"
 		-v "${pkg_root}:/work"
 		-w "$work_dir"
 		"$image"
