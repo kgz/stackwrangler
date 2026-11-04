@@ -187,7 +187,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./bin/serverless-v3-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./bin/serverless-v3-smoke.sh` |
-| Serverless v4 topic+consumer deploy → SNS publish → SQS ESM Lambda → redeploy → remove | happy | covered | `./bin/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
+| Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove | happy | covered | `./bin/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#467](https://github.com/kgz/awsl/issues/467) |
 | Serverless v4 `${ssm:…}` + cross-stack `Fn::ImportValue` SNS→SQS | happy | covered | `./bin/serverless-v4-smoke.sh` |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
 | Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |

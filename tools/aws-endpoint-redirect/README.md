@@ -11,7 +11,8 @@ Compose profile: `aws-redirect`. One dual-role container:
    `/var/log/aws-redirect-dnsmasq.log`.
 2. **TLS edge** (`:443`) — dynamic leaf cert per SNI, signed by a local CA
    under `.awsbox/aws-redirect/`, HTTP forward to LocalEmu `:4566` with the
-   client `Host` header kept.
+   client `Host` header kept. Request and response are piped **concurrently**
+   so `Expect: 100-continue` (S3 PutObject ≳1 MB) does not deadlock.
 
 Compose healthcheck (`healthcheck.sh`) requires DNS **and** a TLS `:443`
 handshake — DNS alone is not ready (TLS can exit while dnsmasq stays up).

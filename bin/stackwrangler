@@ -494,15 +494,54 @@ cmd_sls() {
 		fi
 	fi
 
-	exec docker run --rm -i \
-		--network "$network" \
-		--dns "$dns_ip" \
-		"${docker_env[@]}" \
-		-v "${ca_host}:/awsbox-ca/ca.crt:ro" \
-		-v "${pkg_root}:/work" \
-		-w "$work_dir" \
-		"$image" \
+	local -a docker_run=(
+		docker run --rm -i
+		--network "$network"
+		--dns "$dns_ip"
+		"${docker_env[@]}"
+		-v "${ca_host}:/awsbox-ca/ca.crt:ro"
+		-v "${pkg_root}:/work"
+		-w "$work_dir"
+		"$image"
 		"${sls_cmd[@]}" "$@"
+	)
+
+	# First non-flag arg is the Framework subcommand (deploy, remove, package, …).
+	local subcmd="" arg
+	for arg in "$@"; do
+		case "$arg" in
+			-*) ;;
+			*)
+				subcmd="$arg"
+				break
+				;;
+		esac
+	done
+
+	# SDK v2 + Expect: 100-continue can hang then exit 0 with no stack (#467).
+	# For deploy, require a success marker even when the CLI exit code is 0.
+	if [[ "$subcmd" == "deploy" ]]; then
+		local log rc
+		log="$(mktemp "${TMPDIR:-/tmp}/stackwrangler-sls-deploy.XXXXXX")"
+		set +e
+		"${docker_run[@]}" >"$log" 2>&1
+		rc=$?
+		set -e
+		cat "$log"
+		if [[ "$rc" -ne 0 ]]; then
+			rm -f "$log"
+			exit "$rc"
+		fi
+		if ! grep -qiE 'Service deployed|Stack create finished|CREATE_COMPLETE|UPDATE_COMPLETE|No changes to deploy' "$log"; then
+			echo "error: serverless deploy exited 0 without a deploy success marker (no \"Service deployed\" / stack complete)" >&2
+			rm -f "$log"
+			exit 1
+		fi
+		rm -f "$log"
+		return 0
+	fi
+
+	exec "${docker_run[@]}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
