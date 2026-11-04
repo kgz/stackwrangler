@@ -21,9 +21,9 @@ if [[ "${AWSBOX_TERRAFORM_BACKEND_SMOKE:-}" != "1" ]]; then
 fi
 
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
-KEY="${AWSBOX_ACCESS_KEY:-awsbox}"
-SECRET="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
-REGION="${AWSBOX_REGION:-us-east-1}"
+KEY="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+SECRET="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 SUFFIX="$(date +%s)-$$"
 STATE_BUCKET="awsbox-tf-state-${SUFFIX}"
 LOCK_TABLE="awsbox-tf-locks-${SUFFIX}"

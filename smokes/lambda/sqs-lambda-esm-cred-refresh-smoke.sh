@@ -12,7 +12,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
 EP="${STACKWRANGLER_IAM_ENDPOINT:-${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}}"
-REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
+REGION="${STACKWRANGLER_REGION:-${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}}"
 TS="$(date +%s)"
 P="awsbox-esm-cred-${TS}"
 BUCKET="${P}"

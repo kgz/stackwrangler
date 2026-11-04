@@ -4,6 +4,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+STACKWRANGLER_ENV_DEFER=1
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-env.sh"
 
 usage() {
 	cat <<EOF
@@ -154,10 +157,13 @@ cmd_apply() {
 		echo "unexpected arg: $2" >&2
 		exit 2
 	fi
-	local ep="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
+	local ep key secret
+	ep="$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT http://127.0.0.1:4566)"
+	key="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
+	secret="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
 	AWSBOX_MIRROR_ENDPOINT="$ep" \
-		AWSBOX_MIRROR_KEY="${AWSBOX_ACCESS_KEY:-awsbox}" \
-		AWSBOX_MIRROR_SECRET="${AWSBOX_SECRET_KEY:-awsboxawsbox}" \
+		AWSBOX_MIRROR_KEY="$key" \
+		AWSBOX_MIRROR_SECRET="$secret" \
 		python3 - "$fixture" <<'PY'
 import ipaddress
 import json

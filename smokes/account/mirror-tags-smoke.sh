@@ -49,7 +49,7 @@ CID="$(
 		-e PERSISTENCE=0 \
 		-e DEBUG=0 \
 		-e IAM_ENFORCEMENT=1 \
-		-e "ROOT_ACCESS_KEYS=${AWSBOX_ACCESS_KEY:-awsbox}" \
+		-e "ROOT_ACCESS_KEYS=${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}" \
 		-v "$ROOT/localemu-patches/init/start.d:/etc/localemu/init/start.d:ro" \
 		"$IMAGE"
 )"
@@ -79,8 +79,8 @@ docker logs "$CID" 2>&1 | grep -q 'mirror resource-id pin enabled' || {
 	fail "resource-id pin hook did not load"
 }
 
-export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
-export AWS_SECRET_ACCESS_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 export AWS_DEFAULT_REGION=us-east-1
 export AWS_EC2_METADATA_DISABLED=true
 unset AWS_PROFILE AWS_ENDPOINT_URL AWS_SESSION_TOKEN || true

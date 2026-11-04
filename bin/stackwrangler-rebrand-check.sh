@@ -106,4 +106,33 @@ grep -qv 'onlyawsbox' "$AWS_SHARED_CREDENTIALS_FILE" \
 	|| fail "legacy AWSBOX key should not remain when STACKWRANGLER is set"
 pass "STACKWRANGLER_* wins over AWSBOX_*"
 
+
+# --- smoke helper: STACKWRANGLER_* → AWSBOX_* → stackwrangler defaults ---
+unset STACKWRANGLER_ACCESS_KEY STACKWRANGLER_SECRET_KEY STACKWRANGLER_REGION \
+	STACKWRANGLER_ENDPOINT STACKWRANGLER_IAM_ENDPOINT \
+	AWSBOX_ACCESS_KEY AWSBOX_SECRET_KEY AWSBOX_REGION \
+	AWSBOX_ENDPOINT AWSBOX_IAM_ENDPOINT || true
+rm -f "$ROOT/.env"
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-env.sh"
+[[ "$STACKWRANGLER_ACCESS_KEY" == "stackwrangler" ]] \
+	|| fail "helper default access key (got: $STACKWRANGLER_ACCESS_KEY)"
+[[ "$STACKWRANGLER_SECRET_KEY" == "stackwranglerstackwrangler" ]] \
+	|| fail "helper default secret"
+[[ "$AWSBOX_ACCESS_KEY" == "stackwrangler" ]] \
+	|| fail "helper should mirror defaults onto AWSBOX_*"
+pass "stackwrangler-env.sh defaults without .env"
+
+cat >"$ROOT/.env" <<'EOF'
+AWSBOX_ACCESS_KEY=onlyawsbox
+AWSBOX_SECRET_KEY=onlyawsboxsecret
+EOF
+unset STACKWRANGLER_ACCESS_KEY STACKWRANGLER_SECRET_KEY \
+	AWSBOX_ACCESS_KEY AWSBOX_SECRET_KEY || true
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-env.sh"
+[[ "$STACKWRANGLER_ACCESS_KEY" == "onlyawsbox" ]] \
+	|| fail "helper should fall back to AWSBOX_* from .env"
+pass "stackwrangler-env.sh falls back to AWSBOX_*"
+
 echo "stackwrangler-rebrand-check: all ok"

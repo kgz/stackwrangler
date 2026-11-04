@@ -13,7 +13,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
 EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
-REGION="${AWSBOX_REGION:-us-east-1}"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 SFTP_HOST="${AWSBOX_SFTP_HOST:-127.0.0.1}"
 SFTP_PORT="${AWSBOX_SFTP_PORT:-${AWSBOX_SFTP_HOST_PORT:-2222}}"
 TS="$(date +%s)"
@@ -28,8 +28,8 @@ FN="awsbox-xfer-in-fn-${TS}"
 FN_ROLE="awsbox-xfer-in-fnrole-${TS}"
 MARKER="awsbox-xfer-in-marker-${TS}"
 
-export AWS_ACCESS_KEY_ID="${AWSBOX_ACCESS_KEY:-awsbox}"
-export AWS_SECRET_ACCESS_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 export AWS_DEFAULT_REGION="$REGION"
 
 aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }

@@ -9,9 +9,9 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
-REGION="${AWSBOX_REGION:-us-east-1}"
-ACCESS_KEY="${AWSBOX_ACCESS_KEY:-awsbox}"
-SECRET_KEY="${AWSBOX_SECRET_KEY:-awsboxawsbox}"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
+ACCESS_KEY="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+SECRET_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 ACCOUNT_ID="${AWSBOX_ACCOUNT_ID:-000000000000}"
 # Account-id virtual host form needs a wildcard host (not 127.0.0.1).
 # Default: RFC 6761 *.localhost → loopback (no third-party DNS).

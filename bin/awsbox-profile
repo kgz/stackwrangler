@@ -12,6 +12,10 @@ MARKER="# stackwrangler-managed"
 LEGACY_MARKER="# awsbox-managed"
 LEGACY_SERVICES_NAME="awsbox"
 
+STACKWRANGLER_ENV_DEFER=1
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-env.sh"
+
 if [[ -n "${AWS_SHARED_CREDENTIALS_FILE:-}" ]]; then
 	CREDS_FILE="$AWS_SHARED_CREDENTIALS_FILE"
 	CONFIG_FILE="${AWS_CONFIG_FILE:-$(dirname "$CREDS_FILE")/config}"
@@ -21,19 +25,6 @@ else
 	CONFIG_FILE="${AWS_CONFIG_FILE:-$HOME/.aws/config}"
 fi
 
-sw_env() {
-	local sw_name="$1" ab_name="$2" default="${3:-}"
-	local sw_val ab_val
-	sw_val="${!sw_name-}"
-	ab_val="${!ab_name-}"
-	if [[ -n "$sw_val" ]]; then
-		printf '%s' "$sw_val"
-	elif [[ -n "$ab_val" ]]; then
-		printf '%s' "$ab_val"
-	else
-		printf '%s' "$default"
-	fi
-}
 
 load_env() {
 	if [[ -f "$ROOT/.env" ]]; then

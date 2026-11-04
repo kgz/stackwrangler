@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
 source "$ROOT/smokes/lib/local-emu-env.sh"
 S3_EP="${AWSBOX_ENDPOINT:-http://127.0.0.1:8333}"
-REGION="${AWSBOX_REGION:-us-east-1}"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 PREFIX="awsbox-parity-$(date +%s)"
 BUCKET="${PREFIX}-b"
 BUCKET2="${PREFIX}-b2"
