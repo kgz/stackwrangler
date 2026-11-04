@@ -10,6 +10,8 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SLICE="$ROOT/examples/serverless-v3-rest/slices/dns"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
 
 HOST_PORT="${AWSBOX_R53Z_HOST_PORT:-${AWSBOX_LOCALEMU_HOST_PORT:-24556}}"
 EP="${AWSBOX_R53Z_ENDPOINT:-http://127.0.0.1:${HOST_PORT}}"

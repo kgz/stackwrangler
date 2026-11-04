@@ -1,0 +1,35 @@
+# SNS topic stack for awsbox Serverless Framework v4 (#458).
+# Exports TopicArn (CFN Export + SSM) for the consumer stack to import.
+service: ${env:AWSBOX_SLS4_TOPIC_SERVICE, 'awsbox-sls4-topic'}
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'local'}
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
+  deploymentMethod: direct
+  deploymentBucket:
+    name: ${env:AWSBOX_SLS4_DEPLOY_BUCKET, 'awsbox-sls4-deploy'}
+
+# No functions — resources only. build.esbuild unused here.
+
+resources:
+  Resources:
+    DemoTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-${self:provider.stage}-events
+    TopicArnParam:
+      Type: AWS::SSM::Parameter
+      Properties:
+        # LocalEmu reserves /awsbox* names.
+        Name: /demo/sls4/${env:AWSBOX_SLS4_SUFFIX, 'dev'}/topic-arn
+        Type: String
+        Value: !Ref DemoTopic
+  Outputs:
+    TopicArn:
+      Description: SNS topic ARN for cross-stack ImportValue
+      Value: !Ref DemoTopic
+      Export:
+        Name: ${self:service}-${self:provider.stage}-TopicArn

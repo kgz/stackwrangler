@@ -11,6 +11,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
 
 EP="${AWSBOX_IAM_ENDPOINT:-${STACKWRANGLER_IAM_ENDPOINT:-http://127.0.0.1:4566}}"
 REGION="${AWSBOX_REGION:-${STACKWRANGLER_REGION:-us-east-1}}"

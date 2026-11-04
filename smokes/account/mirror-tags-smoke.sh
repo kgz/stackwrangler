@@ -7,6 +7,8 @@ set -euo pipefail
 export PATH="/usr/bin:/bin:/usr/local/bin:${PATH:-}"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
 FIXTURE="$ROOT/testdata/mirror/tagged-vpc.json"
 IMAGE_DIGEST_FILE="${AWSBOX_LOCALEMU_DIGEST_FILE:-$ROOT/localemu-patches/IMAGE_DIGEST}"
 CID=""

@@ -5,6 +5,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
+# shellcheck disable=SC1091
 source "$ROOT/bin/awsbox"
 
 PREFIX="awsbox-371-sftp-port"

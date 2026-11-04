@@ -187,6 +187,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./bin/{cfn,cdk,sam}-smoke.sh` |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./bin/serverless-v3-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./bin/serverless-v3-smoke.sh` |
+| Serverless v4 topic+consumer deploy → SNS publish → SQS ESM Lambda → redeploy → remove | happy | covered | `./bin/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) |
+| Serverless v4 `${ssm:…}` + cross-stack `Fn::ImportValue` SNS→SQS | happy | covered | `./bin/serverless-v4-smoke.sh` |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
 | Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./bin/cfn-lifecycle-smoke.sh` |
@@ -204,6 +206,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). `./bin/…` paths belo
 | SQS send/receive/delete | happy | covered | `./bin/sqs-smoke.sh` |
 | SQS MessageRetentionPeriod > 14d → InvalidAttributeValue | sad/other | covered | `./bin/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./bin/sqs-authz-smoke.sh` |
+| Lambda SendMessage using CreateQueue / !Ref QueueUrl (`sqs.<region>.localhost`) | happy | covered | `./bin/sqs-lambda-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459) |
 | SQS → Lambda event source mapping invokes Lambda, message deleted | happy | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | SQS redrive (maxReceiveCount 2) to DLQ on Lambda failure | happy | covered | `./bin/sqs-lambda-dlq-smoke.sh` |
 | Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | covered | `./bin/sqs-lambda-dlq-smoke.sh` |

@@ -1,0 +1,112 @@
+# Consumer stack for awsbox Serverless Framework v4 (#458).
+# SQS-triggered Lambda; SNS→SQS via filtered raw subscription + !ImportValue.
+service: ${env:AWSBOX_SLS4_CONSUMER_SERVICE, 'awsbox-sls4-consumer'}
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'local'}
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
+  deploymentMethod: direct
+  deploymentBucket:
+    name: ${env:AWSBOX_SLS4_DEPLOY_BUCKET, 'awsbox-sls4-deploy'}
+  memorySize: 128
+  timeout: 30
+  environment:
+    STAGE: ${self:provider.stage}
+    # Resolved at deploy time against LocalEmu SSM (topic stack writes this).
+    TOPIC_ARN: ${ssm:/demo/sls4/${env:AWSBOX_SLS4_SUFFIX, 'dev'}/topic-arn}
+    APP_NAME: ${ssm:/demo/sls4/${env:AWSBOX_SLS4_SUFFIX, 'dev'}/app-name}
+    RESULTS_BUCKET: !Ref ResultsBucket
+    REDEPLOY_MARK: ${env:AWSBOX_SLS4_REDEPLOY_MARK, '0'}
+
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: false
+    target: node20
+    platform: node
+    exclude:
+      - '@aws-sdk/*'
+
+custom:
+  # Smoke sets AWSBOX_SLS4_TOPIC_EXPORT to "${topicService}-${stage}-TopicArn".
+  topicExport: ${env:AWSBOX_SLS4_TOPIC_EXPORT, 'awsbox-sls4-topic-local-TopicArn'}
+
+functions:
+  consume:
+    handler: src/handler.handler
+    description: SQS consumer — writes each record to RESULTS_BUCKET
+    events:
+      - sqs:
+          arn: !GetAtt EventsQueue.Arn
+          batchSize: 10
+    # Native in v4 (no serverless-iam-roles-per-function).
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource:
+          - !Sub '${ResultsBucket.Arn}/*'
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+        Resource: !Ref AppSecret
+
+resources:
+  Resources:
+    ResultsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${self:provider.stage}-results-${env:AWSBOX_SLS4_SUFFIX, 'dev'}
+
+    AppSecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: ${self:service}-${self:provider.stage}-app-${env:AWSBOX_SLS4_SUFFIX, 'dev'}
+        SecretString: '{"token":"smoke"}'
+
+    EventsDLQ:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-events-dlq-${env:AWSBOX_SLS4_SUFFIX, 'dev'}
+
+    EventsQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-events-${env:AWSBOX_SLS4_SUFFIX, 'dev'}
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt EventsDLQ.Arn
+          maxReceiveCount: 3
+
+    EventsQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref EventsQueue
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: AllowSnsFromImportedTopic
+              Effect: Allow
+              Principal:
+                Service: sns.amazonaws.com
+              Action: sqs:SendMessage
+              Resource: !GetAtt EventsQueue.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn:
+                    Fn::ImportValue: ${self:custom.topicExport}
+
+    TopicSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        TopicArn:
+          Fn::ImportValue: ${self:custom.topicExport}
+        Endpoint: !GetAtt EventsQueue.Arn
+        RawMessageDelivery: true
+        FilterPolicyScope: MessageAttributes
+        FilterPolicy: '{"kind":["keep"]}'
