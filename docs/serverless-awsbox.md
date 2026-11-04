@@ -45,7 +45,7 @@ aws ssm put-parameter --name /demo/rest/dev/app-name --type String --value my-ap
 ## v4
 
 - Example: [examples/serverless-v4-sns-sqs](../examples/serverless-v4-sns-sqs/) (topic stack + SQS consumer)
-- Smoke: `./smokes/iac/serverless-v4-smoke.sh` (deploy topic → deploy consumer → SNS publish → Lambda S3 marker → redeploy → remove)
+- Smoke: `./smokes/iac/serverless-v4-smoke.sh` (happy: deploy topic → consumer → SNS keep → Lambda S3 → redeploy → remove; sad [#460](https://github.com/kgz/awsl/issues/460): missing auth, host aws without `AWS_ENDPOINT_URL` refuses real AWS, TLS-down, missing `Fn::ImportValue`, filter-drop)
 - Yarn workspace: [examples/serverless-v4-workspace](../examples/serverless-v4-workspace/) — `stackwrangler sls --cwd packages/service` mounts the workspace root when `.bin/serverless` is hoisted ([#468](https://github.com/kgz/awsl/issues/468)); smoke `./smokes/iac/serverless-v4-workspace-smoke.sh`
 - Shape: `frameworkVersion: "4"`, `deploymentMethod: direct`, named `deploymentBucket`, built-in `build.esbuild` (`exclude: ["@aws-sdk/*"]`), native per-function `iamRoleStatements`, `${ssm:…}`, cross-stack `Fn::ImportValue` — **no** `serverless-localstack` / esbuild / iam-roles plugins
 
@@ -133,4 +133,4 @@ This fixture validates **host SNS publish → SQS → Lambda ESM → S3**. Produ
 | REQUEST authorizer via Serverless `http` + CFN `PutMethod` | [#328](https://github.com/kgz/awsl/issues/328) |
 | `serverless-domain-manager` | [#329](https://github.com/kgz/awsl/issues/329) |
 | Smoke sad path (v3) | [#330](https://github.com/kgz/awsl/issues/330) |
-| Smoke sad path (v4) | [#460](https://github.com/kgz/awsl/issues/460) |
+| Smoke sad path (v4) | covered in `serverless-v4-smoke.sh` ([#460](https://github.com/kgz/awsl/issues/460)) |

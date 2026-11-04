@@ -54,6 +54,7 @@ export AWSBOX_SLS4_TOPIC_EXPORT=awsbox-sls4-topic-local-TopicArn
 ./smokes/iac/serverless-v4-smoke.sh
 ```
 
-Negative (TLS down) → connection error; DNS log asserts AWS names → proxy only; deploy topic → consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy → remove.
+Happy: deploy topic → consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy → remove.
+Sad ([#460](https://github.com/kgz/awsl/issues/460)): missing auth; host aws without `AWS_ENDPOINT_URL` refuses real AWS; TLS-down connection error; missing `Fn::ImportValue` deploy fails; filter-drop never reaches S3. DNS log asserts AWS names → proxy only.
 
 **Note:** This path is host SNS publish → SQS → Lambda ESM → S3. It does not exercise Lambda→SQS `SendMessage` with `sqs.<region>.localhost` QueueUrls ([#459](https://github.com/kgz/awsl/issues/459)).

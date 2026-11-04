@@ -289,7 +289,7 @@
 449	done	ESM LPR clear after re-grant
 458	done	Serverless Framework v4 deploy against awsbox
 459	done	SQS QueueUrl host resolves inside Lambda/ECS
-460	backlog	Debt: Serverless v4 smoke sad path (from #458)
+460	in-progress	Debt: Serverless v4 smoke sad path (from #458)
 464	done	Serverless v4 deploy: transparent AWS endpoint redirect
 466	backlog	Debt: aws-redirect DNS/TLS-down in test-paths (from #464)
 470	done	CFN delete part-created stack skips never-created resources

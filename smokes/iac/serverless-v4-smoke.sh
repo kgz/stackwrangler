@@ -2,6 +2,11 @@
 # Deploy examples/serverless-v4-sns-sqs (topic + consumer) via aws-redirect
 # (DNS + TLS → LocalEmu). No AWS_ENDPOINT_URL on the Serverless path (#464).
 #
+# Happy: deploy topic+consumer → SNS keep → SQS→Lambda → redeploy → remove.
+# Sad (#460): missing auth (require_sls_auth); host aws without endpoint refuses
+# real AWS; TLS-down connection error; missing ImportValue deploy fails;
+# filter-drop message never reaches S3.
+#
 # DNS log asserts AWS names → proxy IP only. We do not prove "only the
 # Serverless licence host left the machine" (would need packet capture);
 # non-AWS names resolve upstream by design.
@@ -256,6 +261,90 @@ negative_tls_down() {
 	echo "ok   TLS down → connection error (rc=${rc})"
 }
 
+# Host aws without --endpoint-url / AWS_ENDPOINT_URL must not succeed against a
+# real account (fake LocalEmu keys → InvalidClientTokenId or similar).
+negative_host_aws_without_endpoint() {
+	echo "==> negative: host aws without AWS_ENDPOINT_URL refuses real AWS"
+	local log="$OUT/negative-no-endpoint.log" out rc
+	set +e
+	out="$(
+		env -u AWS_ENDPOINT_URL -u AWS_ENDPOINT_URL_S3 \
+			AWS_ACCESS_KEY_ID="$KEY" \
+			AWS_SECRET_ACCESS_KEY="$SECRET" \
+			AWS_DEFAULT_REGION="$REGION" \
+			AWS_CONFIG_FILE=/dev/null \
+			AWS_SHARED_CREDENTIALS_FILE=/dev/null \
+			AWS_EC2_METADATA_DISABLED=true \
+			command aws --region "$REGION" sts get-caller-identity 2>&1
+	)"
+	rc=$?
+	set -e
+	printf '%s\n' "$out" >"$log"
+	if [[ "$rc" -eq 0 ]]; then
+		echo "error: host aws without endpoint succeeded (would hit real AWS):" >&2
+		cat "$log" >&2
+		return 1
+	fi
+	if echo "$out" | grep -qiE 'Account[" ]*[:=].*[1-9][0-9]{11}'; then
+		echo "error: host aws without endpoint returned a real-looking Account id" >&2
+		cat "$log" >&2
+		return 1
+	fi
+	echo "ok   host aws without endpoint refused (rc=${rc})"
+}
+
+# Consumer deploy with a non-existent CFN export must fail (not CREATE_COMPLETE).
+negative_import_value() {
+	echo "==> negative: consumer deploy with missing Fn::ImportValue export fails"
+	local bad_svc="awsbox-sls4-badimp-${TS}"
+	local bad_stack="${bad_svc}-${STAGE}"
+	local bad_export="awsbox-sls4-missing-${TS}-TopicArn"
+	local log="$OUT/negative-importvalue.log"
+	local prev_svc prev_export rc
+	prev_svc="${AWSBOX_SLS4_CONSUMER_SERVICE}"
+	prev_export="${AWSBOX_SLS4_TOPIC_EXPORT}"
+	export AWSBOX_SLS4_CONSUMER_SERVICE="$bad_svc"
+	export AWSBOX_SLS4_TOPIC_EXPORT="$bad_export"
+	set +e
+	(
+		timeout --signal=KILL "${SLS_TIMEOUT_SECS}" \
+			env -u AWS_ENDPOINT_URL -u AWS_ENDPOINT_URL_S3 \
+			"$ROOT/bin/stackwrangler" sls --cwd "$EX/consumer" -- deploy --stage "$STAGE" --verbose
+	) >"$log" 2>&1
+	rc=$?
+	set -e
+	export AWSBOX_SLS4_CONSUMER_SERVICE="$prev_svc"
+	export AWSBOX_SLS4_TOPIC_EXPORT="$prev_export"
+	# Best-effort cleanup of a partial bad stack (KEEP=0 path too).
+	(
+		timeout --signal=KILL 90 \
+			env -u AWS_ENDPOINT_URL -u AWS_ENDPOINT_URL_S3 \
+			AWSBOX_SLS4_CONSUMER_SERVICE="$bad_svc" \
+			AWSBOX_SLS4_TOPIC_EXPORT="$bad_export" \
+			"$ROOT/bin/stackwrangler" sls --cwd "$EX/consumer" -- remove --stage "$STAGE" --verbose
+	) >"$OUT/negative-importvalue-remove.log" 2>&1 || true
+	aws cloudformation delete-stack --stack-name "$bad_stack" >/dev/null 2>&1 || true
+
+	if grep -qiE 'Service deployed|Stack create finished' "$log" \
+		&& ! grep -qiE 'CREATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|No export|Export .* not found|Unresolved resource dependencies|ImportValue' "$log"; then
+		echo "error: missing-ImportValue deploy looked successful" >&2
+		sed 's/\x1b\[[0-9;]*[A-Za-z]//g' "$log" | tr -d '\r' | tail -80 >&2 || true
+		return 1
+	fi
+	if grep -qiE 'No export|Export .* not found|Unresolved resource dependencies|ImportValue|CREATE_FAILED|ROLLBACK|does not exist' "$log"; then
+		echo "ok   missing ImportValue deploy failed as expected (rc=${rc})"
+		return 0
+	fi
+	# Wrapper may exit 1 with no Service deployed marker and a CFN error buried in output.
+	if [[ "$rc" -ne 0 ]] && ! grep -qiE 'Service deployed|CREATE_COMPLETE' "$log"; then
+		echo "ok   missing ImportValue deploy failed without success marker (rc=${rc})"
+		return 0
+	fi
+	echo "error: missing-ImportValue deploy did not show a failure marker" >&2
+	sed 's/\x1b\[[0-9;]*[A-Za-z]//g' "$log" | tr -d '\r' | tail -80 >&2 || true
+	return 1
+}
+
 # Write optional ≥2 MiB pad so consumer zip triggers SDK v2 Expect: 100-continue (#467).
 # Use high-entropy bytes so deflate cannot shrink the artifact under ~1 MiB.
 ensure_large_consumer_pad() {
@@ -379,6 +468,7 @@ RID="$(redirect_id)"
 docker exec "$RID" sh -c ': > /var/log/aws-redirect-dnsmasq.log' || true
 
 negative_tls_down
+negative_host_aws_without_endpoint
 
 aws s3 mb "s3://${DEPLOY_BUCKET}" >/dev/null
 BUCKET_CREATED=1
@@ -413,6 +503,9 @@ fi
 }
 echo "ok   TopicArn=${TOPIC_ARN}"
 
+# Before the happy consumer (and its ≥2 MiB pad): missing export must fail.
+negative_import_value
+
 echo "==> pad consumer Lambda (≥2 MiB zip → Expect: 100-continue on S3 upload)"
 PAD_BYTES="$(ensure_large_consumer_pad)"
 echo "ok   wrote consumer/src/pad-blob.js (${PAD_BYTES} bytes source)"
@@ -432,7 +525,8 @@ aws s3api head-bucket --bucket "$RESULTS_BUCKET" >/dev/null 2>&1 || {
 }
 
 MSG="keep-${TS}"
-echo "==> sns publish (filter keep)"
+DROP_MSG="drop-${TS}"
+echo "==> sns publish (filter keep + filter drop)"
 aws sns publish \
 	--topic-arn "$TOPIC_ARN" \
 	--message "$MSG" \
@@ -440,7 +534,7 @@ aws sns publish \
 
 aws sns publish \
 	--topic-arn "$TOPIC_ARN" \
-	--message "drop-${TS}" \
+	--message "$DROP_MSG" \
 	--message-attributes "kind={DataType=String,StringValue=drop}" >/dev/null || true
 
 echo "==> wait for Lambda → S3 marker"
@@ -470,6 +564,22 @@ grep -q 'awsbox-sls4-smoke' "$OUT/got/"* || {
 	exit 1
 }
 echo "ok   Lambda wrote S3 marker for ${MSG}"
+
+# FilterPolicy kind=keep: drop body must never appear (settle briefly for late delivery).
+sleep 5
+aws s3 cp "s3://${RESULTS_BUCKET}/got/" "$OUT/got-after-drop/" --recursive >/dev/null 2>&1 || true
+if grep -rq -- "$DROP_MSG" "$OUT/got" "$OUT/got-after-drop" 2>/dev/null; then
+	echo "error: filter-drop message ${DROP_MSG} appeared under results (FilterPolicy leak)" >&2
+	grep -r -- "$DROP_MSG" "$OUT/got" "$OUT/got-after-drop" >&2 || true
+	exit 1
+fi
+got_n="$(find "$OUT/got-after-drop" -type f 2>/dev/null | wc -l | tr -d ' ')"
+if [[ "${got_n:-0}" -gt 1 ]]; then
+	echo "error: expected one S3 marker after keep+drop publish, found ${got_n}" >&2
+	ls -la "$OUT/got-after-drop" >&2 || true
+	exit 1
+fi
+echo "ok   filter drop: ${DROP_MSG} absent from S3 (got_n=${got_n})"
 
 echo "==> serverless deploy consumer (2 / redeploy)"
 export AWSBOX_SLS4_REDEPLOY_MARK="redeploy-${TS}"
