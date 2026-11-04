@@ -2,17 +2,25 @@
 
 New smokes go under `smokes/<area>/`. `bin/` stays product and tooling (`awsbox`, `e2e.sh`, board scripts).
 
-`./bin/<name>.sh` is a thin wrapper so existing docs and `e2e.sh` keep working:
+Run a smoke by path:
 
 ```bash
-#!/usr/bin/env bash
-exec "$(cd "$(dirname "$0")/.." && pwd)/smokes/<area>/<name>.sh" "$@"
+./smokes/<area>/<name>.sh
 ```
+
+`./bin/e2e.sh` invokes the same set via `./smokes/<area>/…` directly.
 
 Inside a smoke, the repo root is two levels up:
 
 ```bash
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+```
+
+To resolve a basename to its path (used by parity drivers):
+
+```bash
+source "$ROOT/smokes/lib/smoke-path.sh"
+smoke_path lambda-smoke   # → $ROOT/smokes/lambda/lambda-smoke.sh
 ```
 
 ## Areas

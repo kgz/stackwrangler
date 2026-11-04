@@ -11,7 +11,7 @@ Smoke (does not require the parent Serverless project):
 
 ```bash
 ./bin/awsbox up
-./bin/codedeploy-smoke.sh
+./smokes/compute/codedeploy-smoke.sh
 ```
 
 `resources.yml` is the CFN shape the smoke exercises via CLI. Lambda canary **alias weight shift**: [#340](https://github.com/kgz/awsl/issues/340). Authz/console: [#341](https://github.com/kgz/awsl/issues/341).

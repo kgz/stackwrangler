@@ -24,5 +24,5 @@ aws s3 mb s3://awsbox-sls4-ws-deploy --endpoint-url http://127.0.0.1:4566
 ## Smoke
 
 ```bash
-./bin/serverless-v4-workspace-smoke.sh
+./smokes/iac/serverless-v4-workspace-smoke.sh
 ```

@@ -13,5 +13,5 @@ Create a user that is denied `s3:ListAllMyBuckets` (or equivalent). Call with th
 ## Prove it
 
 ```bash
-./bin/iam-access-denied.sh
+./smokes/security/iam-access-denied.sh
 ```

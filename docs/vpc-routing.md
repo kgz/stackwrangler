@@ -4,13 +4,13 @@ Subnet route tables control EC2 egress, ECS `awsvpc` / `bridge` tasks, and VPC L
 
 Gateway endpoints (S3 / DynamoDB) install a prefix-list route to `vpce-*`. Private workloads may reach those prefix-list destinations only when that route exists; packets are DNATed to the LocalEmu gateway so the service call succeeds. Without the route, the prefix-list CIDRs are dropped.
 
-ECS tasks still reach the injected `AWS_ENDPOINT_URL` (LocalEmu’s compose-network IP on `:4566`) without a default route: the task joins that network and the route filter allows the gateway `/32`. Host publish stays loopback-only for the CLI. Mapped `host.docker.internal` stays allowed so `./bin/lambda-vpc-smoke.sh` keeps working.
+ECS tasks still reach the injected `AWS_ENDPOINT_URL` (LocalEmu’s compose-network IP on `:4566`) without a default route: the task joins that network and the route filter allows the gateway `/32`. Host publish stays loopback-only for the CLI. Mapped `host.docker.internal` stays allowed so `./smokes/lambda/lambda-vpc-smoke.sh` keeps working.
 
 Route rules are re-applied after `docker start` (container restart / ECS resume). VPC Lambda containers stay **non-privileged**: iptables/route sync runs in a privileged alpine netns sidecar (`localemu/awsbox-rt`, `--network container:<workload>`). ECS `bridge` tasks keep docker0 for host ports and also join `localemu-vpc-<vpc-id>` (`./bin/vpc-egress-bridge-check.sh`).
 
 ```bash
-./bin/vpc-routing-smoke.sh          # EC2 private / peering / NAT (#204)
-./bin/vpc-egress-smoke.sh           # Lambda + gateway endpoints + bridge attach (#230)
+./smokes/networking/vpc-routing-smoke.sh          # EC2 private / peering / NAT (#204)
+./smokes/networking/vpc-egress-smoke.sh           # Lambda + gateway endpoints + bridge attach (#230)
 ```
 
 After pulling, recreate LocalEmu so the patch is mounted:
@@ -23,6 +23,6 @@ Workloads attach to the Docker network of the subnet's VPC (`localemu-vpc-<vpc-i
 
 `AttachInternetGateway` / `DetachInternetGateway` keep the same `localemu-vpc-*` Docker network (they do not delete+recreate to flip `--internal`). Egress still follows the subnet route table; the smoke asserts the bridge id is unchanged across attach/detach ([#386](https://github.com/kgz/awsl/issues/386)). See also [lambda-vpc.md](lambda-vpc.md).
 
-ECS `awsvpc` tasks pin an address from the subnet CIDR via `SubnetAllocator` (same as EC2/RDS). `DescribeTasks` attachment `privateIPv4Address` is that container address, so ip-type target registration from `describe-tasks` reaches the task (`./bin/apigw-nlb-ecs-smoke.sh`, [#268](https://github.com/kgz/awsl/issues/268)).
+ECS `awsvpc` tasks pin an address from the subnet CIDR via `SubnetAllocator` (same as EC2/RDS). `DescribeTasks` attachment `privateIPv4Address` is that container address, so ip-type target registration from `describe-tasks` reaches the task (`./smokes/apigw/apigw-nlb-ecs-smoke.sh`, [#268](https://github.com/kgz/awsl/issues/268)).
 
 Console route tables stay with [#146](https://github.com/kgz/awsl/issues/146).

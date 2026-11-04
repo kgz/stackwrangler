@@ -4,13 +4,13 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 
 ```bash
 ./bin/stackwrangler up --force   # after enabling sqs in compose
-./bin/sqs-smoke.sh
-./bin/sqs-authz-smoke.sh
-./bin/sqs-lambda-queueurl-smoke.sh   # Lambda SendMessage via CreateQueue QueueUrl (#459)
-./bin/sqs-lambda-dlq-smoke.sh   # needs python3 boto3
-./bin/sqs-lambda-batch-failures-smoke.sh   # ReportBatchItemFailures; needs python3 boto3
-./bin/sqs-lambda-esm-enable-smoke.sh
-./bin/sqs-lambda-esm-cred-refresh-smoke.sh   # needs AWSBOX_STS_ASSUME_ROLE_DURATION + recreate
+./smokes/messaging/sqs-smoke.sh
+./smokes/messaging/sqs-authz-smoke.sh
+./smokes/lambda/sqs-lambda-queueurl-smoke.sh   # Lambda SendMessage via CreateQueue QueueUrl (#459)
+./smokes/lambda/sqs-lambda-dlq-smoke.sh   # needs python3 boto3
+./smokes/lambda/sqs-lambda-batch-failures-smoke.sh   # ReportBatchItemFailures; needs python3 boto3
+./smokes/lambda/sqs-lambda-esm-enable-smoke.sh
+./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh   # needs AWSBOX_STS_ASSUME_ROLE_DURATION + recreate
 ```
 
 | Area | Status |

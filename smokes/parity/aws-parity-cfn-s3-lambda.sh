@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CFN S3+Lambda parity: LocalEmu then real AWS (default creds). Short-lived; always tear down.
-# Cost: free-tier / noise if delete succeeds. Usage: ./bin/aws-parity-cfn-s3-lambda.sh
+# Cost: free-tier / noise if delete succeeds. Usage: ./smokes/parity/aws-parity-cfn-s3-lambda.sh
 # Env: AWSBOX_PARITY_SKIP_LOCAL=1 | AWSBOX_PARITY_SKIP_REAL=1 | AWSBOX_PARITY_KEEP=1
 set -euo pipefail
 

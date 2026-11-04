@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Assert AccessDenied: deny-policy user cannot ListBuckets on LocalStack S3.
-# Usage: ./bin/iam-access-denied.sh
+# Usage: ./smokes/security/iam-access-denied.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

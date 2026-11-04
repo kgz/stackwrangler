@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Aurora MySQL cluster: writer via managed secret, reader is read-only.
 # Also a standalone mysql instance with ManageMasterUserPassword.
-# Happy: ./bin/rds-smoke.sh (Postgres)
+# Happy: ./smokes/data/rds-smoke.sh (Postgres)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

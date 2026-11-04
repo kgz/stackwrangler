@@ -3,7 +3,7 @@
 # Local: existing *-smoke.sh / *-authz-smoke.sh. Real: short-lived create→assert→delete.
 # Cost: free-tier/noise if teardown OK. KMS: CMK + 7-day pending delete (small prorate).
 # No successful EC2 RunInstances on real (deny-only).
-# Usage: ./bin/aws-parity-batch10.sh
+# Usage: ./smokes/parity/aws-parity-batch10.sh
 # Env: AWSBOX_PARITY_SKIP_LOCAL=1 | AWSBOX_PARITY_SKIP_REAL=1 | AWSBOX_PARITY_KEEP=1
 set -euo pipefail
 
@@ -84,6 +84,7 @@ if [[ "${AWSBOX_PARITY_SKIP_LOCAL:-0}" != "1" ]]; then
 	echo "======== LOCAL ========"
 	# shellcheck disable=SC1091
 	source "$ROOT/smokes/lib/local-emu-env.sh"
+	source "$ROOT/smokes/lib/smoke-path.sh"
 	for s in \
 		sns-smoke sns-authz-smoke \
 		events-smoke events-authz-smoke \
@@ -95,7 +96,7 @@ if [[ "${AWSBOX_PARITY_SKIP_LOCAL:-0}" != "1" ]]; then
 		logs-authz-smoke apigw-authz-smoke ec2-authz-smoke
 	do
 		echo "---- local ${s} ----"
-		if ! "$ROOT/bin/${s}.sh"; then
+		if ! "$(smoke_path "$s")"; then
 			fail "local ${s}"
 		fi
 	done

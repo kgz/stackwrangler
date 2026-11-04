@@ -5,7 +5,7 @@ Creates a **named bucket** and a **Lambda that writes into it** on LocalEmu (`:4
 ```bash
 # from repo root
 ./bin/awsbox up --force
-./bin/iac-smoke.sh
+./smokes/iac/iac-smoke.sh
 # or manually:
 cd examples/terraform/s3-lambda
 terraform init

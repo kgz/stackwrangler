@@ -8,8 +8,8 @@ LocalEmu `wafv2` (moto) + `waf` (classic list stub) on `:4566`.
 
 ```bash
 ./bin/stackwrangler up --force
-./bin/waf-smoke.sh          # create WebACL + associate + get/list
-./bin/waf-authz-smoke.sh    # deny CreateWebACL
+./smokes/networking/waf-smoke.sh          # create WebACL + associate + get/list
+./smokes/networking/waf-authz-smoke.sh    # deny CreateWebACL
 ```
 
 ## Profile

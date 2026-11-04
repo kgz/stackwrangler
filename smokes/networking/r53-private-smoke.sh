@@ -5,7 +5,7 @@
 # EC2 part: on unmodified beta, EC2 containers do not start while
 # start.d/20-mirror-resource-ids.py is loaded (#299). Run with
 #   AWSBOX_R53_COMPOSE_OVERRIDE=<compose file blanking 20-mirror-resource-ids.py
-#   and 20-custom-ids.py> ./bin/r53-private-smoke.sh
+#   and 20-custom-ids.py> ./smokes/networking/r53-private-smoke.sh
 # or set AWSBOX_R53_SKIP_EC2=1 to skip the EC2 step. Not part of bin/e2e.sh.
 set -euo pipefail
 

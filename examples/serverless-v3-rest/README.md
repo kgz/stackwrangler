@@ -11,7 +11,7 @@ Dummy [Serverless Framework v3](https://www.serverless.com/) project that mimics
 | S3 uploads bucket | Created by the `onObject` `s3` event (not in `cfn.yml`) |
 | `slices/<name>/` | Standalone services from later tickets (each has its own smoke) |
 
-`serverless-domain-manager` is **not** wired here ([#329](https://github.com/kgz/awsl/issues/329); custom domain via CLI: `./bin/apigw-rest-smoke.sh`). REQUEST authorizer on Serverless `http` events is deferred ([#328](https://github.com/kgz/awsl/issues/328)); the authorizer Lambda is still deployed for shape.
+`serverless-domain-manager` is **not** wired here ([#329](https://github.com/kgz/awsl/issues/329); custom domain via CLI: `./smokes/apigw/apigw-rest-smoke.sh`). REQUEST authorizer on Serverless `http` events is deferred ([#328](https://github.com/kgz/awsl/issues/328)); the authorizer Lambda is still deployed for shape.
 
 ## Against awsbox
 
@@ -39,7 +39,7 @@ npx serverless deploy --stage local
 Smoke (creates deploy bucket + SSM param, deploy → invoke → redeploy → remove):
 
 ```bash
-./bin/serverless-v3-smoke.sh
+./smokes/iac/serverless-v3-smoke.sh
 ```
 
 Slice status (parent + any `slices/*` present):
@@ -52,16 +52,16 @@ Slice status (parent + any `slices/*` present):
 
 | Slice | Ticket | Smoke |
 |-------|--------|-------|
-| _(parent)_ | [#185](https://github.com/kgz/awsl/issues/185) | `./bin/serverless-v3-smoke.sh` |
-| [api-keys](slices/api-keys/) | [#294](https://github.com/kgz/awsl/issues/294) | `./bin/apigw-usage-plan-smoke.sh` |
-| [transfer-out](slices/transfer-out/) | [#295](https://github.com/kgz/awsl/issues/295) | `./bin/transfer-connector-smoke.sh` |
-| [ddb](slices/ddb/) | [#296](https://github.com/kgz/awsl/issues/296) | `./bin/dynamodb-depth-smoke.sh` |
-| [schedule](slices/schedule/) | [#297](https://github.com/kgz/awsl/issues/297) | `./bin/events-schedule-smoke.sh` |
-| [apigw-authz](slices/apigw-authz/) | [#190](https://github.com/kgz/awsl/issues/190) | `./bin/apigw-rest-smoke.sh` |
-| [transfer-in](slices/transfer-in/) | [#141](https://github.com/kgz/awsl/issues/141) | `./bin/transfer-key-smoke.sh` |
-| [waf](slices/waf/) | [#55](https://github.com/kgz/awsl/issues/55) | `./bin/waf-smoke.sh` |
-| [dns](slices/dns/) | [#56](https://github.com/kgz/awsl/issues/56) | `./bin/route53-smoke.sh` |
-| [acm](slices/acm/) | [#74](https://github.com/kgz/awsl/issues/74) | `./bin/acm-smoke.sh` |
-| [asg](slices/asg/) | [#83](https://github.com/kgz/awsl/issues/83) | `./bin/autoscaling-smoke.sh` |
-| [codedeploy](slices/codedeploy/) | [#98](https://github.com/kgz/awsl/issues/98) | `./bin/codedeploy-smoke.sh` |
-| [egress](slices/egress/) | [#230](https://github.com/kgz/awsl/issues/230) | `./bin/vpc-egress-smoke.sh` |
+| _(parent)_ | [#185](https://github.com/kgz/awsl/issues/185) | `./smokes/iac/serverless-v3-smoke.sh` |
+| [api-keys](slices/api-keys/) | [#294](https://github.com/kgz/awsl/issues/294) | `./smokes/apigw/apigw-usage-plan-smoke.sh` |
+| [transfer-out](slices/transfer-out/) | [#295](https://github.com/kgz/awsl/issues/295) | `./smokes/transfer/transfer-connector-smoke.sh` |
+| [ddb](slices/ddb/) | [#296](https://github.com/kgz/awsl/issues/296) | `./smokes/data/dynamodb-depth-smoke.sh` |
+| [schedule](slices/schedule/) | [#297](https://github.com/kgz/awsl/issues/297) | `./smokes/messaging/events-schedule-smoke.sh` |
+| [apigw-authz](slices/apigw-authz/) | [#190](https://github.com/kgz/awsl/issues/190) | `./smokes/apigw/apigw-rest-smoke.sh` |
+| [transfer-in](slices/transfer-in/) | [#141](https://github.com/kgz/awsl/issues/141) | `./smokes/transfer/transfer-key-smoke.sh` |
+| [waf](slices/waf/) | [#55](https://github.com/kgz/awsl/issues/55) | `./smokes/networking/waf-smoke.sh` |
+| [dns](slices/dns/) | [#56](https://github.com/kgz/awsl/issues/56) | `./smokes/networking/route53-smoke.sh` |
+| [acm](slices/acm/) | [#74](https://github.com/kgz/awsl/issues/74) | `./smokes/security/acm-smoke.sh` |
+| [asg](slices/asg/) | [#83](https://github.com/kgz/awsl/issues/83) | `./smokes/compute/autoscaling-smoke.sh` |
+| [codedeploy](slices/codedeploy/) | [#98](https://github.com/kgz/awsl/issues/98) | `./smokes/compute/codedeploy-smoke.sh` |
+| [egress](slices/egress/) | [#230](https://github.com/kgz/awsl/issues/230) | `./smokes/networking/vpc-egress-smoke.sh` |

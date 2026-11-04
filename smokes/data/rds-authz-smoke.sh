@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sad path: wrong master password → Postgres auth failure (not SQL success).
-# Happy: ./bin/rds-smoke.sh
+# Happy: ./smokes/data/rds-smoke.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

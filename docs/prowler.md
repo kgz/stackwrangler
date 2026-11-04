@@ -8,7 +8,7 @@ Run [Prowler](https://docs.prowler.com/) against LocalEmu so a stack staged on a
 ./bin/stackwrangler up
 ./bin/stackwrangler hosts check
 # if missing: ./bin/stackwrangler hosts apply   # or add the printed line yourself
-./bin/prowler-smoke.sh
+./smokes/security/prowler-smoke.sh
 ```
 
 The smoke:

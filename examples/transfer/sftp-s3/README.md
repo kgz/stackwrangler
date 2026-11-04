@@ -2,10 +2,10 @@
 
 ```bash
 ./bin/awsbox up --force
-./bin/transfer-smoke.sh          # control plane
-./bin/transfer-key-smoke.sh      # SSH key put → S3 (+ Lambda)
+./smokes/transfer/transfer-smoke.sh          # control plane
+./smokes/transfer/transfer-key-smoke.sh      # SSH key put → S3 (+ Lambda)
 ```
 
-Keep resources: `AWSBOX_TRANSFER_KEEP=1 ./bin/transfer-key-smoke.sh`
+Keep resources: `AWSBOX_TRANSFER_KEEP=1 ./smokes/transfer/transfer-key-smoke.sh`
 
 See [docs/transfer.md](../../../docs/transfer.md).

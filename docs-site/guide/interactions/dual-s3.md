@@ -14,7 +14,7 @@ Console and `aws --profile local` object UI hit **SeaweedFS** (`:8333`). Lambda 
 ## Prove it
 
 ```bash
-./bin/s3-dual-endpoint-smoke.sh
+./smokes/s3/s3-dual-endpoint-smoke.sh
 ```
 
 ## Console

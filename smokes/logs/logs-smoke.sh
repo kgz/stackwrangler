@@ -15,7 +15,7 @@ export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-s
 export AWS_DEFAULT_REGION="$REGION"
 
 FN="${1:-awsbox-hello}"
-"$ROOT/bin/lambda-smoke.sh" "$FN" >/dev/null
+"$ROOT/smokes/lambda/lambda-smoke.sh" "$FN" >/dev/null
 
 GROUP="/aws/lambda/${FN}"
 echo "waiting for log group ${GROUP}…"

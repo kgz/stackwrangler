@@ -37,7 +37,7 @@ Smoke pattern for each hop: happy path **and** at least one deliberate authz fai
 - **S3** — objects (SeaweedFS UI + LocalEmu for IaC/events)
 - **Lambda** — Docker invokes that write/read
 - **ECS / EC2** — container-backed tasks/instances
-- **IAM / STS** — enforcement on; lab proves one path (`./bin/iam-access-denied.sh`); every service smoke should cover authz under its real principal
+- **IAM / STS** — enforcement on; lab proves one path (`./smokes/security/iam-access-denied.sh`); every service smoke should cover authz under its real principal
 - **CFN / CDK / SAM / Terraform** — deploy against the same account
 
 ### Must become real for the SFTP org path (#90 / #91)
@@ -83,7 +83,7 @@ Orgs often tried **LocalStack** for full local repro and got a false green:
 |------|------------|
 | “Authz must match AWS” is absolute — full IAM/condition/SCP parity is rare | Claim **parity on smokes we ship**; document known gaps; expand smoke corpus |
 | Huge backlog of stub tickets recreates catalogue theatre | Execution order = org path data plane; stubs stay labeled stub |
-| Dual S3 (SeaweedFS vs LocalEmu) | **Keep split for now** — [docs/s3-backends.md](s3-backends.md); IaC/runtime LocalEmu; console/`local` SeaweedFS; `./bin/s3-dual-endpoint-smoke.sh` |
+| Dual S3 (SeaweedFS vs LocalEmu) | **Keep split for now** — [docs/s3-backends.md](s3-backends.md); IaC/runtime LocalEmu; console/`local` SeaweedFS; `./smokes/s3/s3-dual-endpoint-smoke.sh` |
 | Emulator ceiling (no real SFTP/RDS/…) | Sidecar or custom bridge; don’t pretend |
 
 ## How this shapes the board
@@ -113,7 +113,7 @@ Milestones remain the catalogue ([Project #8](https://github.com/users/kgz/proje
 | [AI/ML stubs](https://github.com/kgz/awsl/milestone/17) | Bedrock, SageMaker, common AI APIs |
 | [Niche IaC](https://github.com/kgz/awsl/milestone/22) | MWAA, Amplify, Lightsail, IoT, Media, WorkSpaces, Pinpoint, Pulumi, Ansible |
 
-**Shipped so far:** S3 UI, IAM, Lambda, Logs, API GW, Terraform/CFN/CDK/SAM S3+Lambda, ECS/EC2 samples, Transfer API + **native SFTP SSH keys → S3** (`./bin/transfer-key-smoke.sh`), RDS Docker Postgres (`./bin/rds-smoke.sh`), RDS MySQL / Aurora MySQL (`./bin/rds-mysql-smoke.sh`).
+**Shipped so far:** S3 UI, IAM, Lambda, Logs, API GW, Terraform/CFN/CDK/SAM S3+Lambda, ECS/EC2 samples, Transfer API + **native SFTP SSH keys → S3** (`./smokes/transfer/transfer-key-smoke.sh`), RDS Docker Postgres (`./smokes/data/rds-smoke.sh`), RDS MySQL / Aurora MySQL (`./smokes/data/rds-mysql-smoke.sh`).
 
 ```bash
 ./bin/stackwrangler up

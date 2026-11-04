@@ -310,3 +310,4 @@
 484	backlog	Doc: Kinesis/SFN/DynamoDB interaction pages (from docs-catalog)
 485	backlog	Doc: Serverless local deploy interaction page (from docs-catalog)
 486	backlog	Doc: SQS→Lambda ESM name exact smokes (from docs-catalog)
+377	in-review	Debt: retire bin smoke wrappers

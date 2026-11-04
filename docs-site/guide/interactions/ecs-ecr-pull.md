@@ -13,5 +13,5 @@ Task definition image `…dkr.ecr.…/<repo>:<tag>` requires the execution role 
 ## Prove it
 
 ```bash
-./bin/ecr-smoke.sh
+./smokes/compute/ecr-smoke.sh
 ```
