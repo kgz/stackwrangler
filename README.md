@@ -32,7 +32,7 @@ Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plu
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - Optional: `psql`, `mysql`, `sshpass` for RDS / Transfer dataplane smokes
 
-WSL: ports bind to `127.0.0.1` — use Docker Desktop with WSL integration (or an engine in WSL).
+Linux host: published ports bind to `127.0.0.1`. Run Docker Engine (Compose v2) on that host. Windows users running Linux via WSL can use Docker Desktop with WSL integration or an engine inside WSL.
 
 ## Quick start
 
