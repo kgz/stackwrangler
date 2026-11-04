@@ -213,6 +213,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS MessageRetentionPeriod > 14d → InvalidAttributeValue | sad/other | covered | `./smokes/messaging/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./smokes/messaging/sqs-authz-smoke.sh` |
 | Lambda SendMessage using CreateQueue / !Ref QueueUrl (`sqs.<region>.localhost`) | happy | covered | `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459) |
+| ECS SendMessage using CreateQueue QueueUrl (`sqs.<region>.localhost`, bridge task) | happy | covered | `./smokes/compute/ecs-sqs-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#463](https://github.com/kgz/awsl/issues/463) |
 | SQS → Lambda event source mapping invokes Lambda, message deleted | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | SQS redrive (maxReceiveCount 2) to DLQ on Lambda failure | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
