@@ -770,6 +770,28 @@ def _handle_delete_cluster(
     return result
 
 
+def _handle_list_clusters(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    """ListClusters: Moto returns every cluster ARN, including ones DeleteCluster
+    only marked INACTIVE (moto/ecs/models.py delete_cluster). Real ECS keeps
+    INACTIVE clusters describable for a while but omits them from ListClusters
+    (#401), so filter them out here.
+    """
+    result = call_moto(context)
+
+    ecs_backend = _get_ecs_backend(context)
+    inactive_arns = {
+        cluster.arn for cluster in ecs_backend.clusters.values() if cluster.status == "INACTIVE"
+    }
+    if inactive_arns:
+        result["clusterArns"] = [
+            arn for arn in result.get("clusterArns", []) if arn not in inactive_arns
+        ]
+
+    return result
+
+
 def _handle_register_task_definition(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -993,6 +1015,7 @@ _INTERCEPTED_OPS = {
     "DescribeTasks": _handle_describe_tasks,
     "CreateCluster": _handle_create_cluster,
     "DeleteCluster": _handle_delete_cluster,
+    "ListClusters": _handle_list_clusters,
     "RegisterTaskDefinition": _handle_register_task_definition,
     "DeregisterTaskDefinition": _handle_deregister_task_definition,
     "CreateService": _handle_create_service,
