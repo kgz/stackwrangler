@@ -249,7 +249,7 @@ cmd_up() {
 	free_sftp_host_port
 	"${COMPOSE[@]}" up -d
 	wait_healthy
-	"$ROOT/bin/awsbox-profile" write "$@"
+	"$ROOT/bin/stackwrangler-profile" write "$@"
 	sync_console_env
 	local ep iam
 	ep="$(endpoint_url)"
@@ -260,11 +260,11 @@ cmd_up() {
 	echo "Profile:  local  (aws --profile local s3 ls | lambda list-functions)"
 	echo "Console:  ./bin/stackwrangler console   → http://127.0.0.1:3000"
 	# Prowler / S3 Control need awsbox.localhost (RFC 6761 often missing on minimal Linux).
-	if ! "$ROOT/bin/awsbox-hosts" check >/dev/null 2>&1; then
+	if ! "$ROOT/bin/stackwrangler-hosts" check >/dev/null 2>&1; then
 		echo
 		echo "Prowler host: awsbox.localhost not resolving (needed for S3 Control)."
-		echo "  ./bin/awsbox-hosts print   # line to add"
-		echo "  ./bin/awsbox-hosts apply   # sudo append to /etc/hosts"
+		echo "  ./bin/stackwrangler-hosts print   # line to add"
+		echo "  ./bin/stackwrangler-hosts apply   # sudo append to /etc/hosts"
 		echo "  docs/prowler.md            # hosts / localhost notes (incl. Windows via WSL)"
 	fi
 }
@@ -281,7 +281,7 @@ cmd_down() {
 	fi
 	"${COMPOSE[@]}" down "$@"
 	if [[ "$remove_profile" -eq 1 ]]; then
-		"$ROOT/bin/awsbox-profile" remove
+		"$ROOT/bin/stackwrangler-profile" remove
 	fi
 }
 
@@ -463,7 +463,7 @@ cmd_sls() {
 	resolve_serverless_auth_env
 	if [[ -z "${SERVERLESS_LICENSE_KEY:-}" && -z "${SERVERLESS_ACCESS_KEY:-}" ]]; then
 		echo "error: Serverless Framework v4 needs SERVERLESS_ACCESS_KEY, SERVERLESS_LICENSE_KEY," >&2
-		echo "  or SERVERLESS_LOCAL_ONLY_LICENCE_KEY (mapped to LICENSE_KEY). See docs/serverless-awsbox.md" >&2
+		echo "  or SERVERLESS_LOCAL_ONLY_LICENCE_KEY (mapped to LICENSE_KEY). See docs/serverless-stackwrangler.md" >&2
 		exit 1
 	fi
 
@@ -636,7 +636,7 @@ case "${1:-}" in
 		;;
 	hosts)
 		shift
-		exec "$ROOT/bin/awsbox-hosts" "$@"
+		exec "$ROOT/bin/stackwrangler-hosts" "$@"
 		;;
 	mirror|apply)
 		exec "$ROOT/bin/awsl-mirror.sh" "$@"

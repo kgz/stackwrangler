@@ -17,4 +17,4 @@ Compose profile: `aws-redirect`. One dual-role container:
 Compose healthcheck (`healthcheck.sh`) requires DNS **and** a TLS `:443`
 handshake — DNS alone is not ready (TLS can exit while dnsmasq stays up).
 
-Use via `./bin/stackwrangler sls -- …` (see `docs/serverless-awsbox.md`).
+Use via `./bin/stackwrangler sls -- …` (see `docs/serverless-stackwrangler.md`).

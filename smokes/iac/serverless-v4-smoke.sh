@@ -69,7 +69,7 @@ require_sls_auth() {
 	echo "error: Serverless Framework v4 needs auth for every command (incl. package)." >&2
 	echo "  Free / under-\$2M: export SERVERLESS_ACCESS_KEY=…" >&2
 	echo "  Paid / local maintainer: SERVERLESS_LICENSE_KEY or SERVERLESS_LOCAL_ONLY_LICENCE_KEY" >&2
-	echo "  See docs/serverless-awsbox.md" >&2
+	echo "  See docs/serverless-stackwrangler.md" >&2
 	exit 1
 }
 

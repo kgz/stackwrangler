@@ -7,7 +7,7 @@ Dummy [Serverless Framework v4](https://www.serverless.com/) project that deploy
 | `topic/serverless.yml` | SNS topic, SSM `/demo/sls4/…/topic-arn`, CFN `Export` of TopicArn |
 | `consumer/serverless.yml` | `deploymentMethod: direct`, named deploy bucket, `build.esbuild` (`exclude: ["@aws-sdk/*"]`), `${ssm:…}`, native `iamRoleStatements`, SQS ESM Lambda, filtered raw SNS→SQS via `!ImportValue` |
 
-v4 `deploy` ignores `AWS_ENDPOINT_URL` (bundled AWS SDK v2). Use `./bin/stackwrangler sls` so DNS+TLS redirect hits LocalEmu — see [docs/serverless-awsbox.md](../../docs/serverless-awsbox.md).
+v4 `deploy` ignores `AWS_ENDPOINT_URL` (bundled AWS SDK v2). Use `./bin/stackwrangler sls` so DNS+TLS redirect hits LocalEmu — see [docs/serverless-stackwrangler.md](../../docs/serverless-stackwrangler.md).
 
 ## Auth (required)
 
@@ -28,7 +28,7 @@ export SERVERLESS_LOCAL_ONLY_LICENCE_KEY=…
 
 ```bash
 ./bin/stackwrangler up
-./bin/awsbox-profile write --force
+./bin/stackwrangler-profile write --force
 
 cd examples/serverless-v4-sns-sqs && npm i
 aws s3 mb s3://awsbox-sls4-deploy --endpoint-url http://127.0.0.1:4566

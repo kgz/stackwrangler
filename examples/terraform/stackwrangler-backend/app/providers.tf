@@ -16,7 +16,7 @@ variable "awsbox_secret_key" {
 variable "topic_name" {
   type        = string
   description = "Tiny SNS topic to prove apply + no-change second plan"
-  default     = "awsbox-backend-demo"
+  default     = "stackwrangler-backend-demo"
 }
 
 provider "aws" {

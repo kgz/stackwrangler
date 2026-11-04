@@ -7,8 +7,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-BOOT="$ROOT/examples/terraform/awsbox-backend/bootstrap"
-APP="$ROOT/examples/terraform/awsbox-backend/app"
+BOOT="$ROOT/examples/terraform/stackwrangler-backend/bootstrap"
+APP="$ROOT/examples/terraform/stackwrangler-backend/app"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
 # shellcheck disable=SC1091
@@ -16,7 +16,7 @@ source "$ROOT/smokes/lib/local-emu-env.sh"
 
 if [[ "${AWSBOX_TERRAFORM_BACKEND_SMOKE:-}" != "1" ]]; then
 	echo "refusing: set AWSBOX_TERRAFORM_BACKEND_SMOKE=1 to opt in" >&2
-	echo "see docs/terraform-awsbox.md" >&2
+	echo "see docs/terraform-stackwrangler.md" >&2
 	exit 2
 fi
 
@@ -147,7 +147,7 @@ ep = os.environ["AWSBOX_EP"]
 print(f'''terraform {{
   backend "s3" {{
     bucket         = "{os.environ["AWSBOX_BUCKET"]}"
-    key            = "awsbox-backend/app.tfstate"
+    key            = "stackwrangler-backend/app.tfstate"
     region         = "us-east-1"
     dynamodb_table = "{os.environ["AWSBOX_LOCK"]}"
     encrypt        = true
