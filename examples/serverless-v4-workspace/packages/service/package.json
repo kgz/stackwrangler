@@ -1,0 +1,11 @@
+{
+  "name": "@awsbox/ws-service",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@awsbox/ws-shared": "1.0.0"
+  },
+  "devDependencies": {
+    "serverless": "^4.46.0"
+  }
+}
