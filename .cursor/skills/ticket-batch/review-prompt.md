@@ -15,7 +15,7 @@ Do this:
 2. gh pr diff <pr>
 3. Read the repo's AGENTS.md and, if present, docs/gap-check.md. Note any required check the PR skipped.
 4. Score every acceptance line as met, missed, or unclear. Cite a file for each met line. A missed line is must-fix when the ticket required it.
-5. Review the diff for bugs, missing tests, security, quality, duplicate code, and reuse. Security issues, bugs, and a missing test for behaviour this ticket adds are must-fix. Copying or reimplementing a helper that already exists in the repo is must-fix. A rename, format nit, or speculative "might reuse later" is not must-fix.
+5. Review the diff for bugs, missing tests, security, quality, duplicate code, and reuse. Security issues, bugs, and a missing test for behaviour this ticket adds are must-fix. Copying or reimplementing a helper that already exists in the repo is must-fix. A rename, format nit, or speculative "might reuse later" is not must-fix. User-facing docs/CLI/README/docs-site that lead with WSL as the host assumption (e.g. "WSL: ports bind…") are must-fix — Linux-first voice; Windows-via-WSL only as a secondary note (#491).
 6. Split MVP from later work. A gap the acceptance criteria require is must-fix. A real gap the ticket does not require, including future reuse or a wider cleanup, is a potential follow-up.
 7. For each potential follow-up, search first: `gh issue list --search "<keywords>" --state all --limit 20`, plus comments on issue #<n>. If an issue already covers it, cite that number and do not propose a new task. If none does, give a one-line title and why it is outside this ticket's MVP.
 

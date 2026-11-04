@@ -63,7 +63,7 @@ docs-site/guide/interactions/
 ![…](/assets/console/<shot>.png)   <!-- only if UI-relevant; from docs-capture -->
 ```
 
-Voice: short sentences, real `./bin/…` commands, no hype. Mark **gap** / **not-valid** explicitly. Never use AWS recon PNGs from `design/**/refs/` as product shots.
+Voice: short sentences, real `./bin/…` (or `./smokes/…`) commands, no hype. **Linux-first** for ports/Docker/host setup — not WSL-led (Windows-via-WSL only as a secondary note when needed; #491). Mark **gap** / **not-valid** explicitly. Never use AWS recon PNGs from `design/**/refs/` as product shots.
 
 ## Screenshots
 

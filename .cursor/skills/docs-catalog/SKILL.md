@@ -29,6 +29,7 @@ Read [docs/docs-catalog.md](../../../docs/docs-catalog.md) for ticket shape, pag
 ## Voice
 
 - Short sentences. Name commands and ports.
+- **Linux-first host voice.** Assume a Linux host (native or any Linux). Do not lead with WSL / Docker Desktop WSL as the default (bad: `WSL: ports bind to 127.0.0.1…`). Ports/`127.0.0.1`/Docker guidance speaks to Linux first; Windows-via-WSL is a secondary note only when the technical detail is still true (e.g. `/etc/wsl.conf`). See #491.
 - No hype, no “delve” / “robust end-to-end solution”, no AI watermarks.
 - Mark **gap** and **not-valid** in plain words.
 
