@@ -17,7 +17,7 @@ docker rm -f awsl-sftp-1
 STACKWRANGLER_SFTP_HOST_PORT=2223 ./bin/stackwrangler up
 ```
 
-Smoke: `./bin/transfer-sftp-port-smoke.sh`.
+Smoke: `./smokes/transfer/transfer-sftp-port-smoke.sh`.
 
 **Outbound** (connectors that push S3 objects to a remote SFTP host) is a real data plane: see [Outbound SFTP connectors](#outbound-sftp-connectors).
 
@@ -25,11 +25,11 @@ Smoke: `./bin/transfer-sftp-port-smoke.sh`.
 
 ```bash
 ./bin/stackwrangler up --force
-./bin/transfer-smoke.sh              # API: server + user + S3 home
-./bin/transfer-key-smoke.sh          # SSH key auth + put → S3 + ObjectCreated Lambda
-./bin/transfer-dataplane-smoke.sh    # short key put → S3 (no Lambda)
-./bin/transfer-authz-smoke.sh        # empty Transfer role → PutObject deny (simulate)
-./bin/transfer-connector-smoke.sh    # outbound connector: S3 object → remote SFTP host (+ sad paths)
+./smokes/transfer/transfer-smoke.sh              # API: server + user + S3 home
+./smokes/transfer/transfer-key-smoke.sh          # SSH key auth + put → S3 + ObjectCreated Lambda
+./smokes/transfer/transfer-dataplane-smoke.sh    # short key put → S3 (no Lambda)
+./smokes/transfer/transfer-authz-smoke.sh        # empty Transfer role → PutObject deny (simulate)
+./smokes/transfer/transfer-connector-smoke.sh    # outbound connector: S3 object → remote SFTP host (+ sad paths)
 ```
 
 ## Architecture (honest)
@@ -49,7 +49,7 @@ Smoke: `./bin/transfer-sftp-port-smoke.sh`.
 |------|-----------|
 | `list-servers` / `list-users` | May be empty; use `describe-*` |
 | FTPS/FTP | Not exercised |
-| Authz under Transfer role | `./bin/transfer-authz-smoke.sh` (simulate); SFTP-byte deny → [#141](https://github.com/kgz/awsl/issues/141) |
+| Authz under Transfer role | `./smokes/transfer/transfer-authz-smoke.sh` (simulate); SFTP-byte deny → [#141](https://github.com/kgz/awsl/issues/141) |
 
 ## Outbound SFTP connectors
 
@@ -88,7 +88,7 @@ With a `LoggingRole` (needs `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs
 
 ### Smoke
 
-`./bin/transfer-connector-smoke.sh` runs the replication slice [`examples/serverless-v3-rest/slices/transfer-out/`](../examples/serverless-v3-rest/slices/transfer-out): a Lambda creates the tenant connector at runtime, trusts the host key, and sends an S3 object to the compose `sftp` container (`sftp://sftp:22`, user from `AWSBOX_SFTP_USER` / `AWSBOX_SFTP_PASS`).
+`./smokes/transfer/transfer-connector-smoke.sh` runs the replication slice [`examples/serverless-v3-rest/slices/transfer-out/`](../examples/serverless-v3-rest/slices/transfer-out): a Lambda creates the tenant connector at runtime, trusts the host key, and sends an S3 object to the compose `sftp` container (`sftp://sftp:22`, user from `AWSBOX_SFTP_USER` / `AWSBOX_SFTP_PASS`).
 
 Sad paths: access role without `s3:GetObject`, without the secret, without `kms:Decrypt`, trust scoped to another account, wrong host key, Lambda role without `iam:PassRole`.
 
@@ -113,4 +113,4 @@ Debt: console [#313](https://github.com/kgz/awsl/issues/313) · retrieve / AS2 [
 
 ## Slice
 
-Replication slice: [`examples/serverless-v3-rest/slices/transfer-in/`](../examples/serverless-v3-rest/slices/transfer-in/) (`AWS::Transfer::Server` shape + S3 event Lambda). Smoke: `./bin/transfer-key-smoke.sh`.
+Replication slice: [`examples/serverless-v3-rest/slices/transfer-in/`](../examples/serverless-v3-rest/slices/transfer-in/) (`AWS::Transfer::Server` shape + S3 event Lambda). Smoke: `./smokes/transfer/transfer-key-smoke.sh`.

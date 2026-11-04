@@ -168,7 +168,7 @@ function ServersList() {
               loading={loading}
               loadingText="Loading servers…"
               title="No servers"
-              text="Create one here or run ./bin/transfer-smoke.sh"
+              text="Create one here or run ./smokes/transfer/transfer-smoke.sh"
             />
           ) : (
             filtered.map((s) => {
@@ -349,7 +349,7 @@ function ServerDetail({ serverId }: { serverId: string }) {
             />
             <p className="aws-desc" style={{ marginTop: 12 }}>
               Compose <code>sftp</code> service. Bridge smoke:{' '}
-              <code>./bin/transfer-dataplane-smoke.sh</code>
+              <code>./smokes/transfer/transfer-dataplane-smoke.sh</code>
             </p>
           </Section>
         </>

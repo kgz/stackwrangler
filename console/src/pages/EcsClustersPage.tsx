@@ -76,7 +76,7 @@ function ClustersList() {
       desc={
         <>
           An Amazon ECS cluster is a logical grouping of tasks or services.
-          Create via <code>./bin/ecs-smoke.sh</code> / terraform example.
+          Create via <code>./smokes/compute/ecs-smoke.sh</code> / terraform example.
         </>
       }
       notices={<Notices error={error} />}

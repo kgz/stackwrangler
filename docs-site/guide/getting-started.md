@@ -6,7 +6,7 @@ Bring up a local AWS-shaped account, open the console, and talk to it with the A
 
 ## Prerequisites
 
-- Docker
+- Docker Engine on Linux (Compose v2). Published ports bind to `127.0.0.1` on that host. Windows users: run Linux via WSL with Docker Desktop WSL integration or an engine inside WSL.
 - AWS CLI v2
 - Node / yarn (for the console; `./bin/stackwrangler console` installs deps on first run)
 

@@ -4,7 +4,7 @@ We use two complementary layers against the **real** local stack (not mocked S3)
 
 | Layer | Tool | What |
 |-------|------|------|
-| CLI | `./bin/s3-parity.sh` | Day-to-day `aws s3` / `s3api` vs profile `local` |
+| CLI | `./smokes/s3/s3-parity.sh` | Day-to-day `aws s3` / `s3api` vs profile `local` |
 | UI | **Playwright** (`console/e2e`) | Console flows; asserts CLI sees the same data |
 
 ## Why Playwright
@@ -19,11 +19,11 @@ No GitHub Actions — run smokes locally (free-tier friendly).
 ./bin/stackwrangler up   # ./bin/awsbox is a shim to the same CLI
 ./bin/e2e.sh          # parity + Playwright (starts Vite if needed)
 # or separately:
-./bin/s3-parity.sh
+./smokes/s3/s3-parity.sh
 cd console && yarn playwright test
 cd console && yarn playwright test --ui   # interactive
 ```
 
 Needs: Docker, AWS CLI v2, Node 20+, yarn.
 
-IaC smokes (LocalEmu `:4566`): `./bin/iac-smoke.sh`, `./bin/cfn-smoke.sh`, `./bin/cfn-lifecycle-smoke.sh`, `./bin/cdk-smoke.sh`, `./bin/sam-smoke.sh`, `./bin/serverless-v3-smoke.sh`, `./bin/serverless-v4-smoke.sh`, `./bin/serverless-v4-workspace-smoke.sh` ([docs/serverless-awsbox.md](serverless-awsbox.md)).
+IaC smokes (LocalEmu `:4566`): `./smokes/iac/iac-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/iac/serverless-v4-smoke.sh`, `./smokes/iac/serverless-v4-workspace-smoke.sh` ([docs/serverless-awsbox.md](serverless-awsbox.md)).

@@ -6,7 +6,7 @@ Full notes: [docs/terraform-awsbox.md](../../../docs/terraform-awsbox.md).
 
 ```bash
 ./bin/awsbox up
-AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh
+AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh
 ```
 
 Manual: apply `bootstrap/` first, copy `app/backend_override.tf.example` → `app/backend_override.tf`, fill bucket/table names, then `terraform init && apply` under `app/`.

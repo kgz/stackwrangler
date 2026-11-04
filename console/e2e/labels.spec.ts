@@ -16,7 +16,7 @@ test('shows VPC and NLB labels on list and detail', async ({ page }) => {
   const nlbLink = env('AWSBOX_SMOKE_NLB_LINK')
   test.skip(
     vpcId === '' || nlbName === '' || nlbArn === '',
-    'run via ./bin/labels-smoke.sh',
+    'run via ./smokes/account/labels-smoke.sh',
   )
   test.setTimeout(120_000)
 
@@ -48,7 +48,7 @@ test('omits labels when the labels file is gone', async ({ page }) => {
   const nlbLabel = env('AWSBOX_SMOKE_NLB_LABEL')
   test.skip(
     env('AWSBOX_SMOKE_LABELS_ABSENT') !== '1' || vpcId === '' || vpcLabel === '',
-    'run via ./bin/labels-smoke.sh',
+    'run via ./smokes/account/labels-smoke.sh',
   )
   test.setTimeout(120_000)
 

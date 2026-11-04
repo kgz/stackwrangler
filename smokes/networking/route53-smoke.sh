@@ -2,7 +2,7 @@
 # Route 53 public hosted zone + A / A-alias / CNAME records (#56).
 # Creates a public zone, UPSERTs records, list-resource-record-sets shows them,
 # dig @127.0.0.1 inside the emulator resolves. Optional: profile local list.
-# Private zones: see ./bin/r53-private-smoke.sh · docs/r53-private.md
+# Private zones: see ./smokes/networking/r53-private-smoke.sh · docs/r53-private.md
 # Slice: examples/serverless-v3-rest/slices/dns/
 set -euo pipefail
 

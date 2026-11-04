@@ -51,7 +51,7 @@ export AWSBOX_SLS4_TOPIC_EXPORT=awsbox-sls4-topic-local-TopicArn
 ## Smoke
 
 ```bash
-./bin/serverless-v4-smoke.sh
+./smokes/iac/serverless-v4-smoke.sh
 ```
 
 Negative (TLS down) → connection error; DNS log asserts AWS names → proxy only; deploy topic → consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy → remove.

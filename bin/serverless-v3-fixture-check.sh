@@ -10,9 +10,9 @@ printf '%-18s %-8s %s\n' "SLICE" "STATUS" "NOTE"
 printf '%-18s %-8s %s\n' "-----" "------" "----"
 
 parent_ok=0
-if [[ -f "$EX/serverless.yml" && -f "$ROOT/bin/serverless-v3-smoke.sh" ]]; then
+if [[ -f "$EX/serverless.yml" && -f "$ROOT/smokes/iac/serverless-v3-smoke.sh" ]]; then
 	parent_ok=1
-	printf '%-18s %-8s %s\n' "(parent)" "ready" "./bin/serverless-v3-smoke.sh"
+	printf '%-18s %-8s %s\n' "(parent)" "ready" "./smokes/iac/serverless-v3-smoke.sh"
 else
 	printf '%-18s %-8s %s\n' "(parent)" "gap" "missing serverless.yml or smoke script"
 fi

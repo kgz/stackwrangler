@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Failed create rolls back, delete-stack removes resources, failed update status is honest.
-# Usage: ./bin/cfn-lifecycle-smoke.sh
+# Usage: ./smokes/iac/cfn-lifecycle-smoke.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

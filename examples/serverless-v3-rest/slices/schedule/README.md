@@ -11,7 +11,7 @@ invokes a Lambda that sweeps expired items from a DynamoDB table.
 
 ```bash
 ./bin/awsbox up
-./bin/events-schedule-smoke.sh
+./smokes/messaging/events-schedule-smoke.sh
 ```
 
 Smoke asserts: at least 2 invocations in 3 minutes, none after

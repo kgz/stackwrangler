@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Transfer SFTP → LocalEmu S3 via native SSH-key auth (#141).
-# Prefer ./bin/transfer-key-smoke.sh (wrong-key + S3→Lambda). This script is the
+# Prefer ./smokes/transfer/transfer-key-smoke.sh (wrong-key + S3→Lambda). This script is the
 # short put→object check without the event Lambda.
 set -euo pipefail
 

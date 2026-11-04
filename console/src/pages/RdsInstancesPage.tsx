@@ -127,7 +127,7 @@ function InstancesList() {
           Amazon RDS makes it easier to set up, operate, and scale a relational
           database. Docker-backed instances when{' '}
           <code>RDS_DOCKER_BACKEND=1</code>; create via{' '}
-          <code>./bin/rds-smoke.sh</code> or <code>./bin/rds-mysql-smoke.sh</code>.
+          <code>./smokes/data/rds-smoke.sh</code> or <code>./smokes/data/rds-mysql-smoke.sh</code>.
         </>
       }
       notices={<Notices error={error} toast={toast} />}
@@ -172,7 +172,7 @@ function InstancesList() {
               loading={loading}
               loadingText="Loading databases…"
               title="No databases"
-              text="Run ./bin/rds-smoke.sh or ./bin/rds-mysql-smoke.sh (keep with AWSBOX_RDS_KEEP=1 to inspect)."
+              text="Run ./smokes/data/rds-smoke.sh or ./smokes/data/rds-mysql-smoke.sh (keep with AWSBOX_RDS_KEEP=1 to inspect)."
             />
           ) : (
             filtered.map((db) => {

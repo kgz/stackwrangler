@@ -14,11 +14,11 @@ LocalEmu `SERVICES` includes `batch`, `elasticbeanstalk`, `apprunner`, `autoscal
 
 ```bash
 ./bin/stackwrangler up
-./bin/autoscaling-smoke.sh
-./bin/application-autoscaling-smoke.sh
-./bin/batch-smoke.sh
-./bin/elasticbeanstalk-smoke.sh
-./bin/apprunner-smoke.sh
+./smokes/compute/autoscaling-smoke.sh
+./smokes/compute/application-autoscaling-smoke.sh
+./smokes/compute/batch-smoke.sh
+./smokes/compute/elasticbeanstalk-smoke.sh
+./smokes/compute/apprunner-smoke.sh
 ```
 
 ASG CFN slice: `examples/serverless-v3-rest/slices/asg/`.

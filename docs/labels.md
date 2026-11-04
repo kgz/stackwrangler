@@ -36,5 +36,5 @@ Lists and detail pages show the label beside a matching ID or ARN (VPC list/deta
 Load balancer rows come from `elbv2` (included in `docker-compose.yml` `SERVICES`). Recreate the localstack container after pulling that change.
 
 ```bash
-./bin/labels-smoke.sh
+./smokes/account/labels-smoke.sh
 ```

@@ -3,7 +3,7 @@
 Same template as local: `examples/cloudformation/s3-lambda`.
 
 ```bash
-./bin/aws-parity-cfn-s3-lambda.sh
+./smokes/parity/aws-parity-cfn-s3-lambda.sh
 ```
 
 1. LocalEmu `:4566` — deploy → invoke → object under `writes/` → delete  
@@ -12,7 +12,7 @@ Same template as local: `examples/cloudformation/s3-lambda`.
 **Sad (empty Lambda role → AccessDenied):**
 
 ```bash
-./bin/aws-parity-cfn-authz.sh
+./smokes/parity/aws-parity-cfn-authz.sh
 ```
 
 Template: `examples/cloudformation/s3-lambda-deny` (logs-only role).

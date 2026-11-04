@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CFN sad parity: Lambda role without s3:PutObject → AccessDenied (LocalEmu + real AWS).
-# Short-lived; always tear down. Usage: ./bin/aws-parity-cfn-authz.sh
+# Short-lived; always tear down. Usage: ./smokes/parity/aws-parity-cfn-authz.sh
 # Env: AWSBOX_PARITY_SKIP_LOCAL=1 | AWSBOX_PARITY_SKIP_REAL=1 | AWSBOX_PARITY_KEEP=1
 set -euo pipefail
 

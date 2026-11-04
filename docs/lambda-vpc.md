@@ -31,21 +31,21 @@ Lambda containers (and the same mapping for ECS tasks). The target is LocalEmu's
 address on the compose network, not `host-gateway`, because compose publishes
 `:4566` on `127.0.0.1` only. No `.env` change is required for the default region.
 
-Smoke: `./bin/sqs-lambda-queueurl-smoke.sh` (see [sqs.md](sqs.md)).
+Smoke: `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` (see [sqs.md](sqs.md)).
 
 ## Smoke
 
 ```bash
-./bin/lambda-vpc-smoke.sh
-AWSBOX_LAMBDA_SMOKE_HOST=internal-nlb.example ./bin/lambda-vpc-smoke.sh   # also checks your own mapping
+./smokes/lambda/lambda-vpc-smoke.sh
+AWSBOX_LAMBDA_SMOKE_HOST=internal-nlb.example ./smokes/lambda/lambda-vpc-smoke.sh   # also checks your own mapping
 ```
 
 It creates a VPC, subnet and security group, deploys a Lambda with `VpcConfig`, starts a throwaway HTTP server on the host, and checks that the mapped name returns 200 (happy) and an unmapped name fails with `ENOTFOUND` (sad).
 
 ## Fidelity gaps
 
-- `VpcConfig` attaches the function to `localemu-vpc-<vpc-id>` and applies subnet route filters plus security-group `SG_IN` / `SG_OUT` via a privileged alpine netns sidecar (same as ECS awsvpc). There are still no real ENIs ([#51](https://github.com/kgz/awsl/issues/51)). Package managers are never used to install iptables into the runtime image (that hung cold start; [#369](https://github.com/kgz/awsl/issues/369)). Membership and egress coverage: `./bin/sg-enforcement-smoke.sh` ([sg-enforcement.md](sg-enforcement.md)).
+- `VpcConfig` attaches the function to `localemu-vpc-<vpc-id>` and applies subnet route filters plus security-group `SG_IN` / `SG_OUT` via a privileged alpine netns sidecar (same as ECS awsvpc). There are still no real ENIs ([#51](https://github.com/kgz/awsl/issues/51)). Package managers are never used to install iptables into the runtime image (that hung cold start; [#369](https://github.com/kgz/awsl/issues/369)). Membership and egress coverage: `./smokes/networking/sg-enforcement-smoke.sh` ([sg-enforcement.md](sg-enforcement.md)).
 - Mappings apply to every function, so a Lambda **without** `VpcConfig` can also reach mapped hosts. In AWS it couldn't reach private addresses ([#187](https://github.com/kgz/awsl/issues/187)).
 - NLB/ALB forwarding is covered by [elbv2.md](elbv2.md). This smoke still hits the host directly.
 - `DeleteVpc` removes the VPC's Docker network (disconnecting leftover endpoints first).
-- `AttachInternetGateway` does not recreate or orphan `localemu-vpc-*`; route-table egress is covered by [vpc-routing.md](vpc-routing.md) and `./bin/vpc-egress-smoke.sh` ([#386](https://github.com/kgz/awsl/issues/386)).
+- `AttachInternetGateway` does not recreate or orphan `localemu-vpc-*`; route-table egress is covered by [vpc-routing.md](vpc-routing.md) and `./smokes/networking/vpc-egress-smoke.sh` ([#386](https://github.com/kgz/awsl/issues/386)).

@@ -4,7 +4,7 @@ Thanks for interest in stackwrangler.
 
 ## Prerequisites
 
-- Docker (Desktop with WSL integration, or an engine in Linux/WSL)
+- Docker Engine on Linux (Compose v2). Windows users: run Linux via WSL with Docker Desktop WSL integration or an engine inside WSL.
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
 Optional for some smokes: `psql`, `mysql`, `sshpass`.

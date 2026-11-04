@@ -21,7 +21,7 @@ function zipHello(path: string): void {
 test.describe('Logs + API GW + zip deploy', () => {
   test('logs page lists groups after lambda smoke', async ({ page }) => {
     test.setTimeout(180_000)
-    execFileSync(join(root, 'bin', 'lambda-smoke.sh'), {
+    execFileSync(join(root, 'smokes', 'lambda', 'lambda-smoke.sh'), {
       encoding: 'utf8',
       timeout: 120_000,
     })
@@ -53,7 +53,7 @@ test.describe('Logs + API GW + zip deploy', () => {
 
   test('API Gateway create + probe', async ({ page }) => {
     test.setTimeout(180_000)
-    execFileSync(join(root, 'bin', 'lambda-smoke.sh'), ['awsbox-hello'], {
+    execFileSync(join(root, 'smokes', 'lambda', 'lambda-smoke.sh'), ['awsbox-hello'], {
       encoding: 'utf8',
       timeout: 120_000,
     })

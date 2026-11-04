@@ -13,5 +13,5 @@ Topics with `MaximumMessageSize` up to 1 MiB; large payloads to SQS (raw), Lambd
 ## Prove it
 
 ```bash
-./bin/sns-max-message-size-smoke.sh
+./smokes/messaging/sns-max-message-size-smoke.sh
 ```

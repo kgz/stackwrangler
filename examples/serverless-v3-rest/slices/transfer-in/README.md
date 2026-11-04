@@ -8,7 +8,7 @@ This slice is standalone — smoke does not require Serverless CLI.
 
 ```bash
 ./bin/awsbox up --force
-./bin/transfer-key-smoke.sh
+./smokes/transfer/transfer-key-smoke.sh
 ```
 
 See [docs/transfer.md](../../../../docs/transfer.md).

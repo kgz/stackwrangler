@@ -4,8 +4,8 @@
 # - reserved=0 → every sync invoke throttled
 # - SQS ESM: in-flight never exceeds reserved; throttled msgs stay on queue (not DLQ
 #   before maxReceiveCount)
-# ScalingConfig.MaximumConcurrency vs reserved ("lower wins") is NOT asserted —
-# LocalEmu does not enforce MaximumConcurrency at poll time ([#453](https://github.com/kgz/awsl/issues/453)).
+# ScalingConfig.MaximumConcurrency vs reserved: the lower limit wins for
+# in-flight SQS→Lambda ESM invocations ([#453](https://github.com/kgz/awsl/issues/453)).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -280,7 +280,7 @@ try:
                 fail(f"reserved=0 expected TooManyRequestsException/429 got {err} http={http}")
     ok("reserved=0: every sync invoke TooManyRequestsException (429)")
 
-    # ---- SQS ESM: in-flight ≤ reserved; no early DLQ ----
+    # ---- SQS ESM helpers ----
     s3.create_bucket(Bucket=BUCKET)
     buckets.append(BUCKET)
     esm_js = """
@@ -288,112 +288,188 @@ const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const c = new S3Client({ region: process.env.AWS_REGION || "us-east-1", forcePathStyle: true });
 exports.handler = async (event) => {
   const id = event.Records[0].messageId;
+  const prefix = process.env.MARKER_PREFIX || "";
   const start = Date.now();
   await c.send(new PutObjectCommand({
-    Bucket: process.env.BUCKET, Key: "start/" + id, Body: String(start),
+    Bucket: process.env.BUCKET, Key: prefix + "start/" + id, Body: String(start),
   }));
   await new Promise((r) => setTimeout(r, 5000));
   await c.send(new PutObjectCommand({
-    Bucket: process.env.BUCKET, Key: "end/" + id, Body: String(Date.now()),
+    Bucket: process.env.BUCKET, Key: prefix + "end/" + id, Body: String(Date.now()),
   }));
 };
 """
-    mk_fn(FN_ESM, zip_js(esm_js), role_arn, timeout=60, env={"BUCKET": BUCKET})
-    lam.put_function_concurrency(FunctionName=FN_ESM, ReservedConcurrentExecutions=1)
 
-    dlq = sqs.create_queue(QueueName=DLQ_NAME)["QueueUrl"]
-    qurls.append(dlq)
-    dlq_arn = sqs.get_queue_attributes(QueueUrl=dlq, AttributeNames=["QueueArn"])["Attributes"][
-        "QueueArn"
-    ]
-    q = sqs.create_queue(
-        QueueName=Q_NAME,
-        Attributes={
-            "VisibilityTimeout": "60",
-            "RedrivePolicy": json.dumps(
-                {"deadLetterTargetArn": dlq_arn, "maxReceiveCount": 5}
-            ),
-        },
-    )["QueueUrl"]
-    qurls.append(q)
-    qarn = sqs.get_queue_attributes(QueueUrl=q, AttributeNames=["QueueArn"])["Attributes"][
-        "QueueArn"
-    ]
-    mapping = lam.create_event_source_mapping(
-        FunctionName=FN_ESM,
-        EventSourceArn=qarn,
-        BatchSize=1,
-        Enabled=True,
-    )
-    uuids.append(mapping["UUID"])
+    def max_in_flight(prefix: str, expected: int) -> int:
+        deadline = time.time() + 180
+        ends = 0
+        while time.time() < deadline:
+            ends = len(
+                s3.list_objects_v2(Bucket=BUCKET, Prefix=f"{prefix}end/").get("Contents") or []
+            )
+            if ends >= expected:
+                break
+            time.sleep(2)
+        if ends < expected:
+            fail(f"ESM {prefix}: expected {expected} completed invocations, got {ends}")
 
-    for i in range(3):
-        sqs.send_message(QueueUrl=q, MessageBody=f"msg-{i}")
+        starts: list[tuple[str, int]] = []
+        ends_l: list[tuple[str, int]] = []
+        for obj in s3.list_objects_v2(Bucket=BUCKET, Prefix=f"{prefix}start/").get("Contents") or []:
+            body = s3.get_object(Bucket=BUCKET, Key=obj["Key"])["Body"].read().decode()
+            starts.append((obj["Key"].rsplit("/", 1)[-1], int(body)))
+        for obj in s3.list_objects_v2(Bucket=BUCKET, Prefix=f"{prefix}end/").get("Contents") or []:
+            body = s3.get_object(Bucket=BUCKET, Key=obj["Key"])["Body"].read().decode()
+            ends_l.append((obj["Key"].rsplit("/", 1)[-1], int(body)))
 
-    deadline = time.time() + 120
-    ends = 0
-    while time.time() < deadline:
-        ends = len(s3.list_objects_v2(Bucket=BUCKET, Prefix="end/").get("Contents") or [])
-        if ends >= 3:
-            break
-        time.sleep(2)
-    if ends < 3:
-        fail(f"ESM: expected 3 completed invocations, got {ends}")
+        end_by_id = dict(ends_l)
+        intervals: list[tuple[int, int]] = []
+        for mid, start_ms in starts:
+            end_ms = end_by_id.get(mid)
+            if end_ms is None:
+                fail(f"ESM {prefix}: missing end marker for {mid}")
+            intervals.append((start_ms, end_ms))
 
-    starts: list[tuple[str, int]] = []
-    ends_l: list[tuple[str, int]] = []
-    for obj in s3.list_objects_v2(Bucket=BUCKET, Prefix="start/").get("Contents") or []:
-        body = s3.get_object(Bucket=BUCKET, Key=obj["Key"])["Body"].read().decode()
-        starts.append((obj["Key"].rsplit("/", 1)[-1], int(body)))
-    for obj in s3.list_objects_v2(Bucket=BUCKET, Prefix="end/").get("Contents") or []:
-        body = s3.get_object(Bucket=BUCKET, Key=obj["Key"])["Body"].read().decode()
-        ends_l.append((obj["Key"].rsplit("/", 1)[-1], int(body)))
+        events: list[tuple[int, int]] = []
+        for start_ms, end_ms in intervals:
+            events.append((start_ms, 1))
+            events.append((end_ms, -1))
+        # Ends (-1) before starts (+1) at equal ms so serial handoffs don't false-fail.
+        events.sort(key=lambda x: (x[0], x[1]))
+        cur = 0
+        peak = 0
+        for _, delta in events:
+            cur += delta
+            if cur > peak:
+                peak = cur
+        return peak
 
-    intervals: list[tuple[int, int]] = []
-    end_by_id = dict(ends_l)
-    for mid, start_ms in starts:
-        end_ms = end_by_id.get(mid)
-        if end_ms is None:
-            fail(f"ESM: missing end marker for {mid}")
-        intervals.append((start_ms, end_ms))
+    def assert_dlq_empty(dlq_url: str, label: str) -> None:
+        dlq_attrs = sqs.get_queue_attributes(
+            QueueUrl=dlq_url,
+            AttributeNames=[
+                "ApproximateNumberOfMessages",
+                "ApproximateNumberOfMessagesNotVisible",
+            ],
+        )["Attributes"]
+        dlq_visible = int(dlq_attrs.get("ApproximateNumberOfMessages", "0"))
+        dlq_hidden = int(dlq_attrs.get("ApproximateNumberOfMessagesNotVisible", "0"))
+        if dlq_visible + dlq_hidden > 0:
+            fail(
+                f"ESM {label}: messages must not hit DLQ before maxReceiveCount "
+                f"(dlq visible={dlq_visible} hidden={dlq_hidden})"
+            )
 
-    events: list[tuple[int, int]] = []
-    for start_ms, end_ms in intervals:
-        events.append((start_ms, 1))
-        events.append((end_ms, -1))
-    # Ends (-1) before starts (+1) at equal ms so serial handoffs don't false-fail.
-    events.sort(key=lambda x: (x[0], x[1]))
-    cur = 0
-    max_conc = 0
-    for _, delta in events:
-        cur += delta
-        if cur > max_conc:
-            max_conc = cur
-    if max_conc > 1:
-        fail(f"ESM: in-flight concurrency {max_conc} exceeded reserved=1")
-    ok(f"ESM reserved=1: max in-flight={max_conc} (≤1)")
-
-    dlq_attrs = sqs.get_queue_attributes(
-        QueueUrl=dlq,
-        AttributeNames=[
-            "ApproximateNumberOfMessages",
-            "ApproximateNumberOfMessagesNotVisible",
-        ],
-    )["Attributes"]
-    dlq_visible = int(dlq_attrs.get("ApproximateNumberOfMessages", "0"))
-    dlq_hidden = int(dlq_attrs.get("ApproximateNumberOfMessagesNotVisible", "0"))
-    if dlq_visible + dlq_hidden > 0:
-        fail(
-            f"ESM: throttled messages must not hit DLQ before maxReceiveCount "
-            f"(dlq visible={dlq_visible} hidden={dlq_hidden})"
+    def run_esm_case(
+        *,
+        label: str,
+        fn_name: str,
+        q_name: str,
+        dlq_name: str,
+        reserved: int,
+        maximum_concurrency: int | None,
+        message_count: int,
+        expect_max: int,
+        require_peak: int | None = None,
+        marker_prefix: str,
+    ) -> None:
+        mk_fn(
+            fn_name,
+            zip_js(esm_js),
+            role_arn,
+            timeout=60,
+            env={"BUCKET": BUCKET, "MARKER_PREFIX": marker_prefix},
         )
-    ok("ESM reserved=1: DLQ empty (throttled msgs returned to source queue)")
+        lam.put_function_concurrency(
+            FunctionName=fn_name, ReservedConcurrentExecutions=reserved
+        )
 
-    print(
-        "note: ScalingConfig.MaximumConcurrency vs reserved (lower wins) not asserted — "
-        "LocalEmu stores MaximumConcurrency but does not enforce it at poll time "
-        "([#453](https://github.com/kgz/awsl/issues/453))"
+        dlq = sqs.create_queue(QueueName=dlq_name)["QueueUrl"]
+        qurls.append(dlq)
+        dlq_arn = sqs.get_queue_attributes(QueueUrl=dlq, AttributeNames=["QueueArn"])[
+            "Attributes"
+        ]["QueueArn"]
+        q = sqs.create_queue(
+            QueueName=q_name,
+            Attributes={
+                "VisibilityTimeout": "60",
+                "RedrivePolicy": json.dumps(
+                    {"deadLetterTargetArn": dlq_arn, "maxReceiveCount": 5}
+                ),
+            },
+        )["QueueUrl"]
+        qurls.append(q)
+        qarn = sqs.get_queue_attributes(QueueUrl=q, AttributeNames=["QueueArn"])["Attributes"][
+            "QueueArn"
+        ]
+        mapping_args = dict(
+            FunctionName=fn_name,
+            EventSourceArn=qarn,
+            BatchSize=1,
+            Enabled=True,
+        )
+        if maximum_concurrency is not None:
+            mapping_args["ScalingConfig"] = {"MaximumConcurrency": maximum_concurrency}
+        mapping = lam.create_event_source_mapping(**mapping_args)
+        uuids.append(mapping["UUID"])
+
+        for i in range(message_count):
+            sqs.send_message(QueueUrl=q, MessageBody=f"{label}-{i}")
+
+        peak = max_in_flight(marker_prefix, message_count)
+        if peak > expect_max:
+            fail(
+                f"ESM {label}: in-flight concurrency {peak} exceeded "
+                f"min(reserved={reserved}, MaximumConcurrency={maximum_concurrency})={expect_max}"
+            )
+        if require_peak is not None and peak < require_peak:
+            fail(
+                f"ESM {label}: expected peak in-flight ≥ {require_peak} "
+                f"(MaximumConcurrency exercised), got {peak}"
+            )
+        ok(f"ESM {label}: max in-flight={peak} (≤{expect_max})")
+        assert_dlq_empty(dlq, label)
+
+    # reserved=1, no ScalingConfig → serial / reserved cap
+    run_esm_case(
+        label="reserved=1",
+        fn_name=FN_ESM,
+        q_name=Q_NAME,
+        dlq_name=DLQ_NAME,
+        reserved=1,
+        maximum_concurrency=None,
+        message_count=3,
+        expect_max=1,
+        marker_prefix="r1/",
     )
+
+    # reserved=5 + MaximumConcurrency=2 → lower wins (2); peak must reach 2
+    run_esm_case(
+        label="reserved=5,MaximumConcurrency=2",
+        fn_name=f"{P}-esm-mc2",
+        q_name=f"{P}-q-mc2",
+        dlq_name=f"{P}-dlq-mc2",
+        reserved=5,
+        maximum_concurrency=2,
+        message_count=6,
+        expect_max=2,
+        require_peak=2,
+        marker_prefix="mc2/",
+    )
+
+    # reserved=1 + MaximumConcurrency=5 → lower wins (1)
+    run_esm_case(
+        label="reserved=1,MaximumConcurrency=5",
+        fn_name=f"{P}-esm-mc5",
+        q_name=f"{P}-q-mc5",
+        dlq_name=f"{P}-dlq-mc5",
+        reserved=1,
+        maximum_concurrency=5,
+        message_count=6,
+        expect_max=1,
+        marker_prefix="mc5/",
+    )
+
     ok("lambda-reserved-concurrency-smoke")
 finally:
     cleanup()

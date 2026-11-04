@@ -9,7 +9,7 @@
 # Cost: free-tier / noise if teardown OK. No KMS CMK, no hosted zones, no Transfer,
 # no WAF WebACL, no NAT/EIP. Gateway S3 VPCE is $0.
 #
-# Usage: ./bin/aws-parity-hf-cheap.sh
+# Usage: ./smokes/parity/aws-parity-hf-cheap.sh
 # Env: AWSBOX_PARITY_SKIP_LOCAL=1 | AWSBOX_PARITY_SKIP_REAL=1 | AWSBOX_PARITY_KEEP=1
 #      AWSBOX_PARITY_REGION (default ap-southeast-2)
 #      AWSBOX_PARITY_SKIP_SCHEDULE=1  # skip #297 real wait (~3–4 min)
@@ -50,6 +50,7 @@ if [[ "${AWSBOX_PARITY_SKIP_LOCAL:-0}" != "1" ]]; then
 	# Isolate from ~/.aws; map STACKWRANGLER_* → AWSBOX_* for child smokes.
 	# shellcheck disable=SC1091
 	source "$ROOT/smokes/lib/local-emu-env.sh"
+	source "$ROOT/smokes/lib/smoke-path.sh"
 	for s in \
 		dynamodb-depth-smoke \
 		events-schedule-smoke \
@@ -58,7 +59,7 @@ if [[ "${AWSBOX_PARITY_SKIP_LOCAL:-0}" != "1" ]]; then
 		vpc-egress-smoke
 	do
 		echo "---- local ${s} ----"
-		if ! "$ROOT/bin/${s}.sh"; then
+		if ! "$(smoke_path "$s")"; then
 			fail "local ${s}"
 		else
 			pass "local ${s}"

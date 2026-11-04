@@ -59,6 +59,6 @@ Real-account `mirror` (read-only Describe/List/Get, fixture written outside the 
 Smoke (throwaway LocalEmu, no shared stack, no real AWS):
 
 ```bash
-./bin/mirror-smoke.sh
-./bin/mirror-tags-smoke.sh
+./smokes/account/mirror-smoke.sh
+./smokes/account/mirror-tags-smoke.sh
 ```

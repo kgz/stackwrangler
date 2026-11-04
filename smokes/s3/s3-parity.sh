@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run day-to-day aws s3 / s3api checks against local SeaweedFS (:8333).
 # Does not use --profile / ~/.aws — see smokes/lib/local-emu-env.sh.
-# Usage: ./bin/s3-parity.sh
+# Usage: ./smokes/s3/s3-parity.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
