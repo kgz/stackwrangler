@@ -191,6 +191,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |
 | Serverless v4 `${ssm:…}` + cross-stack `Fn::ImportValue` SNS→SQS | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` |
 | Serverless v4 yarn workspace: `--cwd packages/service` mounts workspace root, sibling import bundles | happy | covered | `./smokes/iac/serverless-v4-workspace-smoke.sh` · [#468](https://github.com/kgz/awsl/issues/468) |
+| aws-redirect DNS: AWS suffixes (A + dualstack AAAA) resolve only to the proxy — no public A/AAAA | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
+| aws-redirect TLS edge down → connection error (not real AWS auth) | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
 | Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./smokes/iac/cfn-lifecycle-smoke.sh` |

@@ -45,7 +45,7 @@ aws ssm put-parameter --name /demo/rest/dev/app-name --type String --value my-ap
 ## v4
 
 - Example: [examples/serverless-v4-sns-sqs](../examples/serverless-v4-sns-sqs/) (topic stack + SQS consumer)
-- Smoke: `./smokes/iac/serverless-v4-smoke.sh` (deploy topic → deploy consumer → SNS publish → Lambda S3 marker → redeploy → remove)
+- Smoke: `./smokes/iac/serverless-v4-smoke.sh` (deploy topic → deploy consumer → SNS publish → Lambda S3 marker → redeploy → remove; also DNS fail-closed + TLS-down — [test-paths.md](test-paths.md))
 - Yarn workspace: [examples/serverless-v4-workspace](../examples/serverless-v4-workspace/) — `stackwrangler sls --cwd packages/service` mounts the workspace root when `.bin/serverless` is hoisted ([#468](https://github.com/kgz/awsl/issues/468)); smoke `./smokes/iac/serverless-v4-workspace-smoke.sh`
 - Shape: `frameworkVersion: "4"`, `deploymentMethod: direct`, named `deploymentBucket`, built-in `build.esbuild` (`exclude: ["@aws-sdk/*"]`), native per-function `iamRoleStatements`, `${ssm:…}`, cross-stack `Fn::ImportValue` — **no** `serverless-localstack` / esbuild / iam-roles plugins
 
@@ -72,7 +72,7 @@ Use the transparent redirect instead:
 
 1. Compose profile `aws-redirect` — dual-role container under [`tools/aws-endpoint-redirect/`](../tools/aws-endpoint-redirect/): dnsmasq (AWS hostnames → proxy IP; everything else upstream) + TLS `:443` with **dynamic leaf certs per SNI** signed by `.awsbox/aws-redirect/ca.crt`, forwarding HTTP to LocalEmu `:4566` with the client `Host` kept.
 2. Wrapper: `./bin/stackwrangler sls` (also `./bin/awsbox sls`) runs the CLI in a Node container on that network with `--dns <aws-redirect>`, `NODE_EXTRA_CA_CERTS`, fake keys, **no** `AWS_ENDPOINT_URL`, **no** `~/.aws` mount. The container runs as the host user (`--user $(id -u):$(id -g)`) with `HOME` on `.awsbox/sls-home` (Framework download cache) so `.serverless/` and build output are not root-owned on the project mount ([#469](https://github.com/kgz/awsl/issues/469)).
-3. Fail closed: AWS names never resolve to public IPs. If the TLS edge is down, clients get a connection error — not real AWS.
+3. Fail closed: AWS names never resolve to public IPs. If the TLS edge is down, clients get a connection error — not real AWS. Covered in [test-paths.md](test-paths.md) (`aws-redirect DNS` / `aws-redirect TLS edge down`) via `./smokes/iac/serverless-v4-smoke.sh`.
 
 ```bash
 ./bin/stackwrangler up
