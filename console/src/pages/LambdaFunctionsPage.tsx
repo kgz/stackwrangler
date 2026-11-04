@@ -72,7 +72,7 @@ export function LambdaFunctionsPage() {
     setBusy(true)
     setError(null)
     setToast(null)
-    const name = `awsbox-hello-${Date.now()}`
+    const name = `stackwrangler-hello-${Date.now()}`
     try {
       await createHelloFunction(name)
       setSelected(name)
@@ -106,7 +106,7 @@ export function LambdaFunctionsPage() {
   }
 
   async function onDeployZip(file: File) {
-    const name = deployName.trim() || selected || `awsbox-deploy-${Date.now()}`
+    const name = deployName.trim() || selected || `stackwrangler-deploy-${Date.now()}`
     setBusy(true)
     setError(null)
     setToast(null)
@@ -240,7 +240,7 @@ export function LambdaFunctionsPage() {
               <input
                 type="text"
                 value={deployName}
-                placeholder={selected ?? 'awsbox-deploy-…'}
+                placeholder={selected ?? 'stackwrangler-deploy-…'}
                 onChange={(e) => setDeployName(e.target.value)}
               />
             </label>

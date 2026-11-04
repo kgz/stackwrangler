@@ -39,8 +39,8 @@ function isMysqlEngine(engine: string | undefined): boolean {
 
 function connectHint(db: DBInstance): string {
   const host = db.Endpoint?.Address ?? '127.0.0.1'
-  const user = db.MasterUsername ?? 'awsbox'
-  const name = db.DBName ?? 'awsbox'
+  const user = db.MasterUsername ?? 'stackwrangler'
+  const name = db.DBName ?? 'stackwrangler'
   const h =
     host.includes('rds.amazonaws.com') || host === 'localhost'
       ? '127.0.0.1'
