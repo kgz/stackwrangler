@@ -7,4 +7,4 @@ VPC Lambda in a private subnet with no default route. Asserts:
 - peer VPC CIDR succeeds
 - adding an IGW/NAT route restores public egress
 
-Run: `./bin/vpc-egress-smoke.sh`
+Run: `./smokes/networking/vpc-egress-smoke.sh`

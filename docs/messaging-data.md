@@ -24,12 +24,12 @@ docker compose up -d --force-recreate localstack
 
 Console for each is Debt (#167, #172–#178).
 
-Real-AWS parity: `./bin/aws-parity-batch10.sh` · [aws-parity-batch10.md](aws-parity-batch10.md).  
-HF cheap (DDB depth + schedule + REST/keys + S3 GW VPCE): `./bin/aws-parity-hf-cheap.sh` · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md).
+Real-AWS parity: `./smokes/parity/aws-parity-batch10.sh` · [aws-parity-batch10.md](aws-parity-batch10.md).  
+HF cheap (DDB depth + schedule + REST/keys + S3 GW VPCE): `./smokes/parity/aws-parity-hf-cheap.sh` · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md).
 
 ## DynamoDB depth (#296)
 
-`./bin/dynamodb-depth-smoke.sh` deploys `examples/serverless-v3-rest/slices/ddb/resources.yml` (token table, GSI `tokenHash-index`, TTL `expiresAt`) through CloudFormation.
+`./smokes/data/dynamodb-depth-smoke.sh` deploys `examples/serverless-v3-rest/slices/ddb/resources.yml` (token table, GSI `tokenHash-index`, TTL `expiresAt`) through CloudFormation.
 
 - IAM: `Query`/`Scan` with `IndexName` are evaluated on `table/<t>/index/<i>` (patch `localemu-patches/iam_arn_builder.py`). Allow on the table ARN does not cover the index.
 - TTL: LocalEmu sweeps hourly. The smoke triggers the sweep with `DELETE <endpoint>/_aws/dynamodb/expired` (not an AWS API; override with `AWSBOX_DDB_EXPIRE_URL`). Real AWS deletes within about 48h.

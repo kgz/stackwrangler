@@ -2,7 +2,7 @@
 
 REST APIs imported from an OpenAPI 3 document with `x-amazon-apigateway-*` extensions, the shape spec-first stacks (Serverless `resources`, CloudFormation `AWS::ApiGateway::RestApi` `Body`) deploy.
 
-Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/serverless-v3-rest/slices/apigw-authz/) · Smoke: `./bin/apigw-rest-smoke.sh` · Real (Deny 403 + API keys, cents): `./bin/aws-parity-hf-cheap.sh` ([aws-parity-hf-cheap.md](aws-parity-hf-cheap.md))
+Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/serverless-v3-rest/slices/apigw-authz/) · Smoke: `./smokes/apigw/apigw-rest-smoke.sh` · Real (Deny 403 + API keys, cents): `./smokes/parity/aws-parity-hf-cheap.sh` ([aws-parity-hf-cheap.md](aws-parity-hf-cheap.md))
 
 ## What works
 
@@ -16,8 +16,8 @@ Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/se
 | Unknown route → 403 `Missing Authentication Token` | Working (matches AWS) |
 | Authorizer **Deny** | Working (403 `User is not authorized to access this resource`, matches AWS) |
 | Custom domain + base-path mapping | Working. `Host` (or DNS pointed at the edge) reaches the mapped API/stage. Needs `route53,acm` in SERVICES to create the domain. |
-| `HTTP_PROXY` request body | Working. Raw body is forwarded (including curl `-d` default `application/x-www-form-urlencoded`). Smoke: `./bin/apigw-proxy-body-smoke.sh`. |
-| `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./bin/apigw-nlb-ecs-smoke.sh` phase A. |
+| `HTTP_PROXY` request body | Working. Raw body is forwarded (including curl `-d` default `application/x-www-form-urlencoded`). Smoke: `./smokes/apigw/apigw-proxy-body-smoke.sh`. |
+| `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./smokes/apigw/apigw-nlb-ecs-smoke.sh` phase A. |
 | API keys + usage plans | Working: `x-api-key` (`apiKeySource` HEADER) or authorizer `usageIdentifierKey` (AUTHORIZER); missing / unknown / disabled / revoked key → 403; plan throttle and quota → 429. [Details](#api-keys-and-usage-plans) |
 | Console | HTTP APIs only → [#189](https://github.com/kgz/awsl/issues/189) · API keys / usage plans [#310](https://github.com/kgz/awsl/issues/310) |
 
@@ -41,7 +41,7 @@ Routing lives in `localemu-patches/init/start.d/20-apigw-custom-domain.py`.
 ## VPC link → NLB
 
 ```bash
-./bin/apigw-nlb-ecs-smoke.sh
+./smokes/apigw/apigw-nlb-ecs-smoke.sh
 ```
 
 `create-vpc-link` + `put-integration --connection-type VPC_LINK --connection-id …` with
@@ -57,7 +57,7 @@ the smoke registers the container's VPC-bridge address in that case so phase A s
 
 ## API keys and usage plans
 
-Example: [examples/serverless-v3-rest/slices/api-keys](../examples/serverless-v3-rest/slices/api-keys/) · Smoke: `./bin/apigw-usage-plan-smoke.sh`
+Example: [examples/serverless-v3-rest/slices/api-keys](../examples/serverless-v3-rest/slices/api-keys/) · Smoke: `./smokes/apigw/apigw-usage-plan-smoke.sh`
 
 Per-client keys minted at runtime by a Lambda (`CreateApiKey` + `CreateUsagePlanKey`, plan found by name with `GetUsagePlans`, revoked with `DeleteApiKey`) work as in AWS:
 

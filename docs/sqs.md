@@ -4,13 +4,13 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 
 ```bash
 ./bin/stackwrangler up --force   # after enabling sqs in compose
-./bin/sqs-smoke.sh
-./bin/sqs-authz-smoke.sh
-./bin/sqs-lambda-queueurl-smoke.sh   # Lambda SendMessage via CreateQueue QueueUrl (#459)
-./bin/sqs-lambda-dlq-smoke.sh   # needs python3 boto3
-./bin/sqs-lambda-batch-failures-smoke.sh   # ReportBatchItemFailures; needs python3 boto3
-./bin/sqs-lambda-esm-enable-smoke.sh
-./bin/sqs-lambda-esm-cred-refresh-smoke.sh   # needs AWSBOX_STS_ASSUME_ROLE_DURATION + recreate
+./smokes/messaging/sqs-smoke.sh
+./smokes/messaging/sqs-authz-smoke.sh
+./smokes/lambda/sqs-lambda-queueurl-smoke.sh   # Lambda SendMessage via CreateQueue QueueUrl (#459)
+./smokes/lambda/sqs-lambda-dlq-smoke.sh   # needs python3 boto3
+./smokes/lambda/sqs-lambda-batch-failures-smoke.sh   # ReportBatchItemFailures; needs python3 boto3
+./smokes/lambda/sqs-lambda-esm-enable-smoke.sh
+./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh   # needs AWSBOX_STS_ASSUME_ROLE_DURATION + recreate
 ```
 
 | Area | Status |
@@ -27,5 +27,5 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | SQS → Lambda ReportBatchItemFailures | Working (`sqs-lambda-batch-failures-smoke.sh`; partial batch retry + DLQ; empty failures delete all; unknown `itemIdentifier` fails batch; response ignored without `FunctionResponseTypes`) |
 | SQS → Lambda ESM enable/disable | Working (`sqs-lambda-esm-enable-smoke.sh`; Disabled holds; re-enable drains; MessageRetentionPeriod drops expired) · [#446](https://github.com/kgz/awsl/issues/446) |
 | SQS → Lambda ESM credential refresh | Working (`sqs-lambda-esm-cred-refresh-smoke.sh`; short `AWSBOX_STS_ASSUME_ROLE_DURATION`; refresh past expiry; `LastProcessingResult` on hard fail) · [#475](https://github.com/kgz/awsl/issues/475) |
-| Lambda reserved concurrency (direct + SQS ESM) | Working for PutFunctionConcurrency throttle + ESM in-flight cap (`lambda-reserved-concurrency-smoke.sh`); ESM `ScalingConfig.MaximumConcurrency` vs reserved lower-wins not enforced — [#453](https://github.com/kgz/awsl/issues/453) |
+| Lambda reserved concurrency (direct + SQS ESM) | Working (`lambda-reserved-concurrency-smoke.sh`; PutFunctionConcurrency throttle; ESM in-flight ≤ reserved; ESM `ScalingConfig.MaximumConcurrency` vs reserved lower-wins) · [#453](https://github.com/kgz/awsl/issues/453) |
 | Console | Not wired — Debt from #64 → [#167](https://github.com/kgz/awsl/issues/167) |

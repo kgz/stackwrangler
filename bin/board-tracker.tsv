@@ -285,7 +285,7 @@
 445	done	SQS→Lambda ReportBatchItemFailures smoke
 446	done	Smoke: ESM enable/disable stops polling; re-enable drains
 447	done	ReservedConcurrentExecutions smoke (direct + ESM)
-453	backlog	Debt: ESM ScalingConfig.MaximumConcurrency vs reserved (from #447)
+453	in-review	Debt: ESM ScalingConfig.MaximumConcurrency vs reserved (from #447)
 449	backlog	Debt: ESM clears LPR after SQS role re-grant (from #285)
 458	done	Serverless Framework v4 deploy against awsbox
 459	done	SQS QueueUrl host resolves inside Lambda/ECS
@@ -310,3 +310,4 @@
 484	backlog	Doc: Kinesis/SFN/DynamoDB interaction pages (from docs-catalog)
 485	backlog	Doc: Serverless local deploy interaction page (from docs-catalog)
 486	backlog	Doc: SQS→Lambda ESM name exact smokes (from docs-catalog)
+377	done	Debt: retire bin smoke wrappers

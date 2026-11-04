@@ -23,7 +23,7 @@ sequenceDiagram
 ## Prove it
 
 ```bash
-./bin/sns-sqs-fanout-smoke.sh
+./smokes/messaging/sns-sqs-fanout-smoke.sh
 ```
 
 Matrix: [smoke-matrix](https://github.com/kgz/stackwrangler/blob/main/docs/smoke-matrix.md) · SNS → SQS fan-out.

@@ -21,5 +21,5 @@ sequenceDiagram
 ## Prove it
 
 ```bash
-./bin/events-schedule-smoke.sh
+./smokes/messaging/events-schedule-smoke.sh
 ```

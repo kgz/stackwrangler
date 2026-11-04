@@ -43,4 +43,4 @@ aws --endpoint-url http://127.0.0.1:4566 --profile local ec2 create-vpc \
   --tag-specifications 'ResourceType=vpc,Tags=[{Key=_custom_id_,Value=vpc-0123456789abcdef0}]'
 ```
 
-Smoke: `./bin/custom-id-smoke.sh`.
+Smoke: `./smokes/account/custom-id-smoke.sh`.

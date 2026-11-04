@@ -259,13 +259,13 @@ cmd_up() {
 	echo "IAM/Lambda: ${iam}"
 	echo "Profile:  local  (aws --profile local s3 ls | lambda list-functions)"
 	echo "Console:  ./bin/stackwrangler console   → http://127.0.0.1:3000"
-	# Prowler / S3 Control need awsbox.localhost (RFC 6761 often missing on WSL).
+	# Prowler / S3 Control need awsbox.localhost (RFC 6761 often missing on minimal Linux).
 	if ! "$ROOT/bin/awsbox-hosts" check >/dev/null 2>&1; then
 		echo
 		echo "Prowler host: awsbox.localhost not resolving (needed for S3 Control)."
 		echo "  ./bin/awsbox-hosts print   # line to add"
 		echo "  ./bin/awsbox-hosts apply   # sudo append to /etc/hosts"
-		echo "  docs/prowler.md            # WSL / Windows hosts notes"
+		echo "  docs/prowler.md            # hosts / localhost notes (incl. Windows via WSL)"
 	fi
 }
 

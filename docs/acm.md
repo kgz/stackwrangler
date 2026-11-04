@@ -8,7 +8,7 @@ LocalEmu `acm` on `:4566` (`SERVICES` includes `acm`; profile `local` has `acm` 
 
 ```bash
 ./bin/stackwrangler up --force
-./bin/acm-smoke.sh
+./smokes/security/acm-smoke.sh
 ```
 
 Happy: request DNS-validated cert for `api.example.test`, describe/list, import PEM, create API custom domain with the ARN, create ALB HTTPS listener that stores the ARN.  

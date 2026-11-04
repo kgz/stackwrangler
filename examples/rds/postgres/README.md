@@ -2,7 +2,7 @@
 
 ```bash
 ./bin/awsbox up --force
-./bin/rds-smoke.sh
+./smokes/data/rds-smoke.sh
 ```
 
 See [docs/rds.md](../../../docs/rds.md).

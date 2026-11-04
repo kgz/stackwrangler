@@ -13,5 +13,5 @@ Function reads a secret, exchanges credentials for an OAuth token, POSTs to an e
 ## Prove it
 
 ```bash
-./bin/lambda-secret-oauth-smoke.sh
+./smokes/lambda/lambda-secret-oauth-smoke.sh
 ```

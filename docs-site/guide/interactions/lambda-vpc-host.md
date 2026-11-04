@@ -13,5 +13,5 @@ Function in a VPC reaches a service on the Docker host via the local network map
 ## Prove it
 
 ```bash
-./bin/lambda-vpc-smoke.sh
+./smokes/lambda/lambda-vpc-smoke.sh
 ```

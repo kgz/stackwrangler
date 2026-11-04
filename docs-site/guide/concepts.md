@@ -17,7 +17,7 @@ Two S3 APIs on purpose until a later unify:
 | **SeaweedFS** | `:8333` | Console general-purpose buckets, `aws --profile local` |
 | **LocalEmu S3** | `:4566` | Lambda / CFN / CDK / SAM / Transfer bridge / IAM deny labs |
 
-Do not expect one bucket list to cover both. Smoke: `./bin/s3-dual-endpoint-smoke.sh`. Details: [`docs/s3-backends.md`](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md).
+Do not expect one bucket list to cover both. Smoke: `./smokes/s3/s3-dual-endpoint-smoke.sh`. Details: [`docs/s3-backends.md`](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md).
 
 ## IAM enforcement intent
 

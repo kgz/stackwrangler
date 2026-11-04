@@ -8,12 +8,12 @@ Run [Prowler](https://docs.prowler.com/) against LocalEmu so a stack staged on a
 ./bin/stackwrangler up
 ./bin/stackwrangler hosts check
 # if missing: ./bin/stackwrangler hosts apply   # or add the printed line yourself
-./bin/prowler-smoke.sh
+./smokes/security/prowler-smoke.sh
 ```
 
 The smoke:
 
-1. Installs `prowler==5.45.0` into `.venv-prowler/` if needed (`uv venv`/`uv pip` when `uv` is on PATH; else `python3 -m venv` — needs distro `python3-venv` on Debian/Ubuntu/WSL). Removes a half-built venv if install fails.
+1. Installs `prowler==5.45.0` into `.venv-prowler/` if needed (`uv venv`/`uv pip` when `uv` is on PATH; else `python3 -m venv` — needs distro `python3-venv` on Debian/Ubuntu). Removes a half-built venv if install fails.
 2. Runs under `env -i` with **only** awsbox dummy keys + `AWS_ENDPOINT_URL` (no host `~/.aws`, no real account fallthrough) — including the S3 Control spot-checks
 3. Defaults to `http://awsbox.localhost:4566` so S3 Control’s `<account-id>.<host>` form can resolve. Override with `AWSBOX_PROWLER_ENDPOINT`
 4. Runs `--scan-unused-services` with a scoped service list (~266 checks: s3, iam, ec2, rds, ssm, cloudwatch, cloudtrail, organizations, backup, awslambda, apigateway, batch, autoscaling)
@@ -24,7 +24,7 @@ The smoke:
 
 boto3 addresses S3 Control as `http://<account-id>.<endpoint-host>:4566/…`. That host must resolve to loopback. We use `awsbox.localhost` (not a third-party DNS name).
 
-On many hosts, RFC 6761 synthesises `*.localhost` → `127.0.0.1`. **WSL2 and some minimal Debian/Ubuntu images do not** (`hosts: files dns` in `nsswitch.conf`, no synthetic localhost). Then:
+On many Linux hosts, RFC 6761 synthesises `*.localhost` → `127.0.0.1`. **Some minimal Debian/Ubuntu images do not** (`hosts: files dns` in `nsswitch.conf`, no synthetic localhost). Then:
 
 ```bash
 ./bin/stackwrangler hosts print
@@ -35,19 +35,21 @@ On many hosts, RFC 6761 synthesises `*.localhost` → `127.0.0.1`. **WSL2 and so
 
 `./bin/stackwrangler up` warns when the names do not resolve (stack still starts; only Prowler/S3 Control virtual-host needs them).
 
-### WSL notes
+Override without hosts: `AWSBOX_PROWLER_ENDPOINT=http://…` pointing at any name that supports `<account-id>.<host>` (e.g. a local dnsmasq wildcard).
 
-- WSL may **regenerate** `/etc/hosts` on start. Either:
-  - set in `/etc/wsl.conf`:
-    ```ini
-    [network]
-    generateHosts = false
-    ```
-    then `wsl --shutdown` and re-apply the line, or
-  - add the same line to the **Windows** hosts file  
-    `C:\Windows\System32\drivers\etc\hosts`  
-    (WSL copies Windows hosts into the distro when `generateHosts` is on).
-- Override without hosts: `AWSBOX_PROWLER_ENDPOINT=http://…` pointing at any name that supports `<account-id>.<host>` (e.g. a local dnsmasq wildcard).
+### Windows users (Linux via WSL)
+
+WSL2 often lacks synthetic `*.localhost` as well. After `hosts apply`, WSL may **regenerate** `/etc/hosts` on start. Either:
+
+- set in `/etc/wsl.conf`:
+  ```ini
+  [network]
+  generateHosts = false
+  ```
+  then `wsl --shutdown` and re-apply the line, or
+- add the same line to the **Windows** hosts file  
+  `C:\Windows\System32\drivers\etc\hosts`  
+  (WSL copies Windows hosts into the distro when `generateHosts` is on).
 
 ## Manual run
 

@@ -2,7 +2,7 @@
 
 Point Terraform at LocalEmu (`AWSBOX_IAM_ENDPOINT`, default `http://127.0.0.1:4566`) so apply works with IAM on, remote state + DynamoDB lock, and a second plan that is empty.
 
-Worked example: [`examples/terraform/awsbox-backend/`](../examples/terraform/awsbox-backend/). Opt-in smoke: `./bin/terraform-backend-smoke.sh` (see Opt-in smoke).
+Worked example: [`examples/terraform/awsbox-backend/`](../examples/terraform/awsbox-backend/). Opt-in smoke: `./smokes/iac/terraform-backend-smoke.sh` (see Opt-in smoke).
 
 Related: dual S3 brains in [s3-backends.md](s3-backends.md) — remote state for this flow uses **LocalEmu S3**, not SeaweedFS.
 
@@ -120,7 +120,7 @@ Not part of `./bin/e2e.sh`. Requires LocalEmu up and an explicit opt-in:
 
 ```bash
 ./bin/stackwrangler up
-AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./bin/terraform-backend-smoke.sh
+AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh
 ```
 
 The script:

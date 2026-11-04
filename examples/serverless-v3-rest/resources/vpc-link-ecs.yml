@@ -1,5 +1,5 @@
 # Shape stub: VPC Link → internal NLB → ECS (DesiredCount 0).
-# Data plane is exercised by ./bin/apigw-nlb-ecs-smoke.sh; parent only needs the CFN shape.
+# Data plane is exercised by ./smokes/apigw/apigw-nlb-ecs-smoke.sh; parent only needs the CFN shape.
 Resources:
   StubVpc:
     Type: AWS::EC2::VPC

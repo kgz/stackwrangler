@@ -1,7 +1,7 @@
 # Real-AWS parity — messaging / data / crypto batch
 
 ```bash
-./bin/aws-parity-batch10.sh
+./smokes/parity/aws-parity-batch10.sh
 ```
 
 Local: existing `*-smoke.sh` / `*-authz-smoke.sh`.  

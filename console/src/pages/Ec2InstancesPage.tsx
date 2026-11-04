@@ -62,7 +62,7 @@ export function Ec2InstancesPage() {
       desc={
         <>
           Virtual servers in the cloud. Docker-backed via LocalEmu; create with{' '}
-          <code>./bin/ec2-smoke.sh</code>.
+          <code>./smokes/compute/ec2-smoke.sh</code>.
         </>
       }
       notices={<Notices error={error} />}

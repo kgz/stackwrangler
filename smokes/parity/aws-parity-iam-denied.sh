@@ -3,7 +3,7 @@
 # Requires explicit human approval per docs/aws-parity-agent-iam.md / cost rule.
 # Real AWS (~$0 IAM): temp deny-user → s3 ls AccessDenied; temp role → SimulatePrincipalPolicy Deny s3:PutObject.
 # Uses default credentials (unset AWS_* local overrides). Requires create/delete IAM on that principal.
-# Usage: ./bin/aws-parity-iam-denied.sh
+# Usage: ./smokes/parity/aws-parity-iam-denied.sh
 set -euo pipefail
 
 # Local stack keys in the shell must not override ~/.aws/credentials [default]

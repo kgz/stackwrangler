@@ -39,7 +39,7 @@ cmd_check() {
 		return 0
 	fi
 	echo "missing: ${HOST} / ${ACCOUNT_ID}.${HOST} do not resolve (AF_INET)" >&2
-	echo "add to /etc/hosts (or Windows hosts on WSL — see docs/prowler.md):" >&2
+	echo "add to /etc/hosts (see docs/prowler.md; Windows via WSL: same doc):" >&2
 	hosts_line >&2
 	echo "or: ./bin/awsbox-hosts apply" >&2
 	echo "or: AWSBOX_PROWLER_ENDPOINT=http://… (override)" >&2
@@ -67,8 +67,8 @@ cmd_apply() {
 	echo "  ${line}"
 	if ! printf '%s\n' "$line" | sudo tee -a /etc/hosts >/dev/null; then
 		echo "error: could not write /etc/hosts" >&2
-		echo "WSL: /etc/hosts may be regenerated — set [network] generateHosts=false in /etc/wsl.conf," >&2
-		echo "     or add the same line to the Windows hosts file (C:\\Windows\\System32\\drivers\\etc\\hosts)" >&2
+		echo "On Windows via WSL, /etc/hosts may be regenerated — set [network] generateHosts=false in /etc/wsl.conf," >&2
+		echo "     or add the same line to the Windows hosts file (C:\\Windows\\System32\\drivers\\etc\\hosts). See docs/prowler.md." >&2
 		exit 1
 	fi
 	if resolve_ok; then

@@ -3,7 +3,7 @@
 EC2, ECS `awsvpc` tasks, RDS instances, and VPC Lambdas on a VPC subnet enforce their security groups with iptables. A rule that names another security group allows the current members of that group and refuses everyone else. Changing a rule updates running workloads; they do not need to be recreated.
 
 ```bash
-./bin/sg-enforcement-smoke.sh
+./smokes/networking/sg-enforcement-smoke.sh
 ```
 
 After pulling, recreate LocalEmu so the patch is mounted:

@@ -3,7 +3,7 @@
 Short-lived create → assert → delete for HF tickets that stay **free-tier / cents** when teardown succeeds.
 
 ```bash
-./bin/aws-parity-hf-cheap.sh
+./smokes/parity/aws-parity-hf-cheap.sh
 ```
 
 | Side | What runs |

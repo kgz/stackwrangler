@@ -4,7 +4,7 @@ Local CI trust checks: which GitHub-style `sub` can assume which role, and which
 
 ```bash
 ./bin/stackwrangler up
-./bin/oidc-smoke.sh
+./smokes/security/oidc-smoke.sh
 ```
 
 Issuer for tests is `https://awsbox.local/oidc`. `bin/oidc-mint.py` generates a local RSA key + JWKS under `localemu-patches/oidc/` on first use (gitignored — not committed), then signs JWTs (`--sub`, `--aud`). LocalEmu verifies against the mounted JWKS at `/opt/awsbox/oidc`.

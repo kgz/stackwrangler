@@ -26,7 +26,7 @@ The resolver process also answers [Route 53 private hosted zones](r53-private.md
 ## Smoke
 
 ```bash
-./bin/vpce-private-dns-smoke.sh
+./smokes/networking/vpce-private-dns-smoke.sh
 ```
 
 Uses host port `24568` (`AWSBOX_VPCE_HOST_PORT`) so it does not take over a stack already on `:4566`. Proves resolution with ECS `awsvpc` tasks (getent + HTTP to `:4566` through the endpoint proxy).

@@ -306,7 +306,7 @@ aws ec2 create-route --route-table-id "$RTB_A" --destination-cidr-block 0.0.0.0/
 
 # --- lambda-vpc-smoke still green (mapped host.docker.internal) ---
 if [[ "${AWSBOX_VPC_EGRESS_SKIP_LAMBDA_VPC:-0}" != "1" ]]; then
-	if "$ROOT/bin/lambda-vpc-smoke.sh"; then
+	if "$ROOT/smokes/lambda/lambda-vpc-smoke.sh"; then
 		ok "lambda-vpc-smoke.sh still passes"
 	else
 		bad "lambda-vpc-smoke.sh failed"
