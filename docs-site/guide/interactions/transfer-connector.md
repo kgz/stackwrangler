@@ -4,6 +4,8 @@ Outbound connector (`StartFileTransfer`) pushes from S3 to a remote SFTP. Lambda
 
 **Status:** partial · Gaps: console connectors [#313](https://github.com/kgz/stackwrangler/issues/313) · retrieve/AS2 [#314](https://github.com/kgz/stackwrangler/issues/314)
 
+SFTP client (`paramiko`) is shipped as wheels under `localemu-patches/wheels/` — no PyPI at boot (#315).
+
 ## Sequence
 
 1. Provision connector + credentials secret.
@@ -15,3 +17,5 @@ Outbound connector (`StartFileTransfer`) pushes from S3 to a remote SFTP. Lambda
 ```bash
 ./smokes/transfer/transfer-connector-smoke.sh
 ```
+
+Smoke also drops LocalEmu public egress and asserts vendored `paramiko` still imports.

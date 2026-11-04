@@ -219,7 +219,7 @@
 311	backlog	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
 313	backlog	Debt: Transfer connectors console UI (from #295)
 314	backlog	Debt: Transfer connectors: RetrieveFilePaths and AS2 (from #295)
-315	backlog	Debt: Transfer connectors need paramiko installed at boot (from #295)
+315	in-progress	Debt: Transfer connectors need paramiko installed at boot (from #295)
 306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
 307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 317	backlog	Debt: EventBridge schedule cadence beyond rate(1 minute) and non-wildcard cron (from #297)
