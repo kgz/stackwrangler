@@ -11,6 +11,7 @@ export type AppId =
   | 'ec2'
   | 'sfn'
   | 'secretsmanager'
+  | 'kinesis'
 
 export type ServiceDef = {
   id: AppId
@@ -45,6 +46,13 @@ export const SERVICES: ServiceDef[] = [
     desc: 'Manage secrets and credentials',
     to: '/secretsmanager',
   },
+  {
+    id: 'kinesis',
+    abbr: 'KIN',
+    name: 'Kinesis',
+    desc: 'Real-time data streams',
+    to: '/kinesis',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -59,6 +67,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/ec2')) return 'ec2'
   if (pathname.startsWith('/stepfunctions')) return 'sfn'
   if (pathname.startsWith('/secretsmanager')) return 'secretsmanager'
+  if (pathname.startsWith('/kinesis')) return 'kinesis'
   return 's3'
 }
 
@@ -87,6 +96,8 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'Lambda Functions', to: '/lambda' },
   { type: 'Feature', label: 'State machines', to: '/stepfunctions' },
   { type: 'Feature', label: 'Secrets', to: '/secretsmanager' },
+  { type: 'Service', label: 'Kinesis Data Streams', to: '/kinesis' },
+  { type: 'Feature', label: 'Data streams', to: '/kinesis' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'Stacks', to: '/cloudformation' },
@@ -118,6 +129,7 @@ const CRUMBS: Record<string, string> = {
   '/logs': 'Log groups',
   '/stepfunctions': 'State machines',
   '/secretsmanager': 'Secrets',
+  '/kinesis': 'Data streams',
   '/apigateway': 'HTTP APIs',
   '/cloudformation': 'Stacks',
   '/transfer': 'Servers',

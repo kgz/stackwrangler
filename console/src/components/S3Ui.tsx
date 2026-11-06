@@ -21,10 +21,12 @@ export function DeadButton({
   children,
   variant = 'normal',
   label,
+  title = TO_IMPLEMENT,
 }: {
   children: ReactNode
   variant?: 'normal' | 'primary'
   label?: string
+  title?: string
 }) {
   return (
     <button
@@ -32,7 +34,7 @@ export function DeadButton({
       className={`btn btn-${variant}`}
       disabled
       aria-disabled="true"
-      title={TO_IMPLEMENT}
+      title={title}
       aria-label={label}
     >
       {children}

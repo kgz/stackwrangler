@@ -97,7 +97,7 @@ Smoke: `./smokes/data/rds-smoke.sh` · sad: `./smokes/data/rds-authz-smoke.sh` (
 | SNS | publish · MaximumMessageSize ≤1 MiB · SQS fan-out (queue policy / `SourceArn`; refuse `alias/aws/sqs` and a CMK without an SNS key grant) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./smokes/messaging/sns-sqs-fanout-smoke.sh` · `./smokes/messaging/sns-max-message-size-smoke.sh` |
 | EventBridge | put-events + rule · scheduled `rate()` rule → Lambda (disable stops it; no invoke permission = no fire) | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) · [slice](../examples/serverless-v3-rest/slices/schedule/README.md) · cadence [#317](https://github.com/kgz/awsl/issues/317) |
 | Step Functions | Pass state machine | list (+ empty) | **Working** · thin console list [#175](https://github.com/kgz/awsl/issues/175) · create/detail [#533](https://github.com/kgz/awsl/issues/533) |
-| Kinesis | put/get records | — | **Working** (CLI) · console [#178](https://github.com/kgz/awsl/issues/178) |
+| Kinesis | put/get records | — | **Working** (CLI) · console list [#178](https://github.com/kgz/awsl/issues/178) · create/detail [#539](https://github.com/kgz/awsl/issues/539) |
 | MSK / SES / AppSync | — | — | **Backlog** |
 
 Smoke: `./smokes/messaging/sqs-smoke.sh` · `./smokes/messaging/sns-smoke.sh` · `./smokes/messaging/sns-max-message-size-smoke.sh` · `./smokes/messaging/sns-sqs-fanout-smoke.sh` · `./smokes/messaging/events-smoke.sh` · `./smokes/messaging/sfn-smoke.sh` · `./smokes/messaging/kinesis-smoke.sh` · `./smokes/data/dynamodb-depth-smoke.sh` · `./smokes/messaging/events-schedule-smoke.sh` · `./smokes/lambda/sqs-lambda-dlq-smoke.sh` (+ `*-authz-smoke.sh`)
