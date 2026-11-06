@@ -12,6 +12,7 @@ export type AppId =
   | 'sfn'
   | 'secretsmanager'
   | 'kinesis'
+  | 'sqs'
   | 'kms'
   | 'sns'
 
@@ -56,6 +57,13 @@ export const SERVICES: ServiceDef[] = [
     to: '/kinesis',
   },
   {
+    id: 'sqs',
+    abbr: 'SQS',
+    name: 'SQS',
+    desc: 'Managed message queues',
+    to: '/sqs',
+  },
+  {
     id: 'kms',
     abbr: 'KMS',
     name: 'Key Management Service',
@@ -84,6 +92,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/stepfunctions')) return 'sfn'
   if (pathname.startsWith('/secretsmanager')) return 'secretsmanager'
   if (pathname.startsWith('/kinesis')) return 'kinesis'
+  if (pathname.startsWith('/sqs')) return 'sqs'
   if (pathname.startsWith('/kms')) return 'kms'
   if (pathname.startsWith('/sns')) return 'sns'
   return 's3'
@@ -122,6 +131,8 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'Secrets', to: '/secretsmanager' },
   { type: 'Service', label: 'Kinesis Data Streams', to: '/kinesis' },
   { type: 'Feature', label: 'Data streams', to: '/kinesis' },
+  { type: 'Service', label: 'Simple Queue Service', to: '/sqs' },
+  { type: 'Feature', label: 'Queues', to: '/sqs' },
   { type: 'Feature', label: 'Customer managed keys', to: '/kms' },
   { type: 'Service', label: 'Simple Notification Service', to: '/sns' },
   { type: 'Feature', label: 'Topics', to: '/sns' },
@@ -158,6 +169,7 @@ const CRUMBS: Record<string, string> = {
   '/stepfunctions': 'State machines',
   '/secretsmanager': 'Secrets',
   '/kinesis': 'Data streams',
+  '/sqs': 'Queues',
   '/kms': 'Customer managed keys',
   '/sns': 'Topics',
   '/apigateway': 'HTTP APIs',

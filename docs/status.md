@@ -93,7 +93,7 @@ Smoke: `./smokes/data/rds-smoke.sh` · sad: `./smokes/data/rds-authz-smoke.sh` (
 
 ## Messaging & integration
 
-| SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [sqs.md](sqs.md) |
+| SQS | LocalEmu send/receive | list (+ empty) | **Working** · thin console list [#167](https://github.com/kgz/awsl/issues/167) · create/detail/send [#548](https://github.com/kgz/awsl/issues/548) · [sqs.md](sqs.md) |
 | SNS | publish · MaximumMessageSize ≤1 MiB · SQS fan-out (queue policy / `SourceArn`; refuse `alias/aws/sqs` and a CMK without an SNS key grant) | — | **Working** (CLI) · console Topics list (#172) · create/detail [#546](https://github.com/kgz/awsl/issues/546) · `./smokes/messaging/sns-sqs-fanout-smoke.sh` · `./smokes/messaging/sns-max-message-size-smoke.sh` |
 | EventBridge | put-events + rule · scheduled `rate()` rule → Lambda (disable stops it; no invoke permission = no fire) | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) · [slice](../examples/serverless-v3-rest/slices/schedule/README.md) · cadence [#317](https://github.com/kgz/awsl/issues/317) |
 | Step Functions | Pass state machine | list (+ empty) | **Working** · thin console list [#175](https://github.com/kgz/awsl/issues/175) · create/detail [#533](https://github.com/kgz/awsl/issues/533) |

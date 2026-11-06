@@ -228,6 +228,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  sqs: {
+    title: 'SQS',
+    sections: [
+      {
+        id: 'sqs-main',
+        label: 'SQS',
+        items: [
+          {
+            label: 'Queues',
+            to: '/sqs',
+            active: under('/sqs'),
+          },
+        ],
+      },
+    ],
+  },
   kms: {
     title: 'Key Management Service',
     sections: [

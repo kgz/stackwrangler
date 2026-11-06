@@ -41,6 +41,16 @@ const lists: Array<{
     heading: 'Data streams',
     columns: ['Name', 'Status', 'Capacity mode', 'Monitoring', 'Created'],
     disabled: ['Delete', 'Create data stream'],
+    path: '/sqs',
+    heading: 'Queues',
+    columns: [
+      'Name',
+      'Type',
+      'Created',
+      'Messages available',
+      'Messages in flight',
+    ],
+    disabled: ['Delete', 'Create queue'],
   },
   {
     path: '/kms',

@@ -27,6 +27,7 @@
     "@aws-sdk/client-secrets-manager": "^3.758.0",
     "@aws-sdk/client-sfn": "^3.758.0",
     "@aws-sdk/client-sns": "^3.758.0",
+    "@aws-sdk/client-sqs": "^3.758.0",
     "@aws-sdk/client-transfer": "^3.1152.0",
     "@monaco-editor/react": "^4.7.0",
     "jszip": "^3.10.2",

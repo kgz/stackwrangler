@@ -127,7 +127,7 @@
 162	backlog	Debt: unify single S3 brain (from #143)
 163	done	Real-AWS CFN S3+Lambda parity
 165	done	Real-AWS CFN Lambda AccessDenied parity
-167	backlog	Debt: SQS console (from #64)
+167	done	Debt: SQS console (from #64) — queues list
 169	done	Logs PutLogEvents AccessDenied
 170	done	API GW CreateApi AccessDenied
 171	done	EC2 RunInstances AccessDenied
@@ -313,5 +313,5 @@
 546	backlog	Debt: SNS create topic + topic detail (from #172)
 561	backlog	Doc: REST APIs console screenshot (from #189)
 562	backlog	Doc: SNS Topics console screenshot (from #172)
-
 563	backlog	Doc: SQS queues console screenshot (from #167)
+548	backlog	Debt: SQS create/detail/send (from #167)

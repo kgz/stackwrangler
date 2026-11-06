@@ -243,6 +243,21 @@
     "@smithy/types" "^4.19.0"
     tslib "^2.6.2"
 
+"@aws-sdk/client-sqs@^3.758.0":
+  version "3.1163.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-sqs/-/client-sqs-3.1163.0.tgz#e0cb12d9a1543eddcc77860f2d192b4ce5e2a55b"
+  integrity sha512-DmknybmkX+nk/4EKppjUPqtqmr6zK0AIlKLXC45h+YGLz5OpKt95tI1iQYJi3eKBBhabO+GtZrC3+Zjc//BhJg==
+  dependencies:
+    "@aws-sdk/core" "^3.980.0"
+    "@aws-sdk/credential-provider-node" "^3.972.93"
+    "@aws-sdk/middleware-sdk-sqs" "^3.972.48"
+    "@aws-sdk/types" "^3.975.0"
+    "@smithy/core" "^3.38.0"
+    "@smithy/fetch-http-handler" "^5.8.0"
+    "@smithy/node-http-handler" "^4.14.0"
+    "@smithy/types" "^4.19.0"
+    tslib "^2.6.2"
+
 "@aws-sdk/client-transfer@^3.1152.0":
   version "3.1152.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/client-transfer/-/client-transfer-3.1152.0.tgz#4ac04aed146701f5cf909931ec5e682e55a44c83"
@@ -666,6 +681,16 @@
     "@aws-sdk/signature-v4-multi-region" "^3.996.48"
     "@aws-sdk/types" "^3.974.6"
     "@smithy/core" "^3.35.2"
+    "@smithy/types" "^4.19.0"
+    tslib "^2.6.2"
+
+"@aws-sdk/middleware-sdk-sqs@^3.972.48":
+  version "3.972.48"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/middleware-sdk-sqs/-/middleware-sdk-sqs-3.972.48.tgz#cd1e13ace9d374bf5619602b7c4c04b5dfac35d4"
+  integrity sha512-GNzuBLwvUUV++svohxeAj1sf4AgA2gOevKTYHRKIDPpVD30YoBiNBb+X0L28b9KazqHhG6WilyiOE4XDmZeHeg==
+  dependencies:
+    "@aws-sdk/types" "^3.975.0"
+    "@smithy/core" "^3.38.0"
     "@smithy/types" "^4.19.0"
     tslib "^2.6.2"
 

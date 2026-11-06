@@ -29,4 +29,4 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | SQS → Lambda ESM enable/disable | Working (`sqs-lambda-esm-enable-smoke.sh`; Disabled holds; re-enable drains; MessageRetentionPeriod drops expired) · [#446](https://github.com/kgz/awsl/issues/446) |
 | SQS → Lambda ESM credential refresh | Working (`sqs-lambda-esm-cred-refresh-smoke.sh`; short `AWSBOX_STS_ASSUME_ROLE_DURATION`; refresh past expiry; `LastProcessingResult` on hard fail) · [#475](https://github.com/kgz/awsl/issues/475) |
 | Lambda reserved concurrency (direct + SQS ESM) | Working (`lambda-reserved-concurrency-smoke.sh`; PutFunctionConcurrency throttle; ESM in-flight ≤ reserved; ESM `ScalingConfig.MaximumConcurrency` vs reserved lower-wins; MC alone when reserved unset) · [#453](https://github.com/kgz/awsl/issues/453) [#498](https://github.com/kgz/awsl/issues/498) |
-| Console | Not wired — Debt from #64 → [#167](https://github.com/kgz/awsl/issues/167) |
+| Console queues list | Working (thin) — [#167](https://github.com/kgz/awsl/issues/167) · `console/e2e/sqs-queues.spec.ts` · create/detail/send [#548](https://github.com/kgz/awsl/issues/548) |
