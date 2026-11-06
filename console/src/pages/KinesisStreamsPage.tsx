@@ -65,7 +65,9 @@ export function KinesisStreamsPage() {
       toolbar={
         <>
           <RefreshButton onClick={() => void refresh()} />
-          <DeadButton title="Select a row">Delete</DeadButton>
+          <DeadButton title={selected ? undefined : 'Select a row'}>
+            Delete
+          </DeadButton>
           <div className="spacer" />
           <DeadButton variant="primary">Create data stream</DeadButton>
         </>
