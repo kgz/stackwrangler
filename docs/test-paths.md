@@ -293,7 +293,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
-| CFN Create/Update in console | ui | missing | [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) |
+| CFN Create stack (upload/paste) in console | ui | covered | `console/e2e/cfn-create-stack.spec.ts` · [#93](https://github.com/kgz/awsl/issues/93) |
+| CFN Update / change sets / StackSets in console | ui | missing | [#94](https://github.com/kgz/awsl/issues/94)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./smokes/transfer/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./smokes/transfer/transfer-dataplane-smoke.sh` |

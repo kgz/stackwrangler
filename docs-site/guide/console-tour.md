@@ -18,7 +18,7 @@ Functions list against LocalEmu (`:4566`). Create and detail (Monaco) are wired 
 
 ## CloudFormation
 
-Stacks console for the local CFN path used by CDK / SAM / examples.
+Stacks list/detail plus Create stack (upload or paste template, then poll status) for the local CFN path used by CDK / SAM / examples.
 
 ![CloudFormation stacks](/assets/console/cloudformation-stacks.png)
 

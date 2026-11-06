@@ -59,7 +59,7 @@ const lists: Array<{
     path: '/cloudformation',
     heading: /^Stacks/,
     columns: ['Stack name', 'Status', 'Created time', 'Description'],
-    disabled: ['Update ▾', 'Stack actions ▾', 'Create stack ▾'],
+    disabled: ['Update ▾', 'Stack actions ▾'],
   },
   {
     path: '/transfer',

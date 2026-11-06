@@ -19,6 +19,7 @@ import { MarketplacePage } from './pages/MarketplacePage'
 import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
+import { CloudFormationCreateStackPage } from './pages/CloudFormationCreateStackPage'
 import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
 import { TransferServersPage } from './pages/TransferServersPage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
@@ -48,6 +49,10 @@ export default function App() {
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route path="cloudformation" element={<CloudFormationStacksPage />} />
+          <Route
+            path="cloudformation/create"
+            element={<CloudFormationCreateStackPage />}
+          />
           <Route
             path="cloudformation/stacks/:name"
             element={<CloudFormationStacksPage />}

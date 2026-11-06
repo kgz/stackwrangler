@@ -21,6 +21,7 @@ import {
   deleteStack,
   describeStack,
   getStackTemplate,
+  isStackBusy,
   listStackEvents,
   listStackResources,
   listStacks,
@@ -126,7 +127,9 @@ function StacksList() {
             </select>
           </label>
           <div className="spacer" />
-          <DeadButton variant="primary">Create stack ▾</DeadButton>
+          <Link className="btn btn-primary" to="/cloudformation/create">
+            Create stack ▾
+          </Link>
         </>
       }
       placeholder="Search by stack name"
@@ -242,6 +245,14 @@ function StackDetail({ name }: { name: string }) {
     void refresh()
   }, [refresh])
 
+  useEffect(() => {
+    if (!isStackBusy(stack?.StackStatus)) return
+    const id = window.setInterval(() => {
+      void refresh()
+    }, 3000)
+    return () => window.clearInterval(id)
+  }, [stack?.StackStatus, refresh])
+
   async function onDelete() {
     setBusy(true)
     setError(null)
@@ -313,7 +324,9 @@ function StackDetail({ name }: { name: string }) {
             Delete
           </button>
           <DeadButton>Update ▾</DeadButton>
-          <DeadButton variant="primary">Create stack ▾</DeadButton>
+          <Link className="btn btn-primary" to="/cloudformation/create">
+            Create stack ▾
+          </Link>
         </div>
 
         <Notices error={error} toast={toast} />

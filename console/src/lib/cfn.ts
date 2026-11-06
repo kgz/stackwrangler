@@ -1,5 +1,6 @@
 import {
   CloudFormationClient,
+  CreateStackCommand,
   DeleteStackCommand,
   DescribeStackEventsCommand,
   DescribeStackResourcesCommand,
@@ -7,6 +8,7 @@ import {
   GetTemplateCommand,
   ListStacksCommand,
   StackStatus,
+  type Capability,
   type Output,
   type Parameter,
   type Stack,
@@ -15,6 +17,12 @@ import {
   type StackSummary,
 } from '@aws-sdk/client-cloudformation'
 import { emuCreds } from './emu'
+
+const DEFAULT_CAPABILITIES: Capability[] = [
+  'CAPABILITY_IAM',
+  'CAPABILITY_NAMED_IAM',
+  'CAPABILITY_AUTO_EXPAND',
+]
 
 function client() {
   return new CloudFormationClient(emuCreds())
@@ -89,6 +97,26 @@ export async function getStackTemplate(stackName: string): Promise<string> {
 
 export async function deleteStack(stackName: string): Promise<void> {
   await client().send(new DeleteStackCommand({ StackName: stackName }))
+}
+
+export async function createStack(input: {
+  stackName: string
+  templateBody: string
+  capabilities?: Capability[]
+}): Promise<string | undefined> {
+  const out = await client().send(
+    new CreateStackCommand({
+      StackName: input.stackName,
+      TemplateBody: input.templateBody,
+      Capabilities: input.capabilities ?? DEFAULT_CAPABILITIES,
+    }),
+  )
+  return out.StackId
+}
+
+export function isStackBusy(status: string | undefined): boolean {
+  if (!status) return false
+  return status.includes('IN_PROGRESS')
 }
 
 export type { Output, Parameter, Stack, StackEvent, StackResource, StackSummary }
