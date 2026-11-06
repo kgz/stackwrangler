@@ -127,7 +127,7 @@
 162	backlog	Debt: unify single S3 brain (from #143)
 163	done	Real-AWS CFN S3+Lambda parity
 165	done	Real-AWS CFN Lambda AccessDenied parity
-167	in-progress	Debt: SQS console (from #64) — queues list
+167	in-review	Debt: SQS console (from #64) — queues list
 169	done	Logs PutLogEvents AccessDenied
 170	done	API GW CreateApi AccessDenied
 171	done	EC2 RunInstances AccessDenied
