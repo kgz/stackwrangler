@@ -111,7 +111,7 @@ Smoke: `./smokes/messaging/sqs-smoke.sh` · `./smokes/messaging/sns-smoke.sh` ·
 | IAM OIDC / web identity | `AssumeRoleWithWebIdentity` checks a local JWKS; trust `StringEquals`/`StringLike` on `<issuer>:sub` and `:aud`. `repo:org/*` matches every repo in the org (risky). `iam:PassRole` is limited by `iam:PassedToService` | — | **CLI + smoke** · [oidc.md](oidc.md) · service-origin `kms:ViaService` / `aws:SourceArn` [#223](https://github.com/kgz/awsl/issues/223) |
 | STS | Enabled | — | **Control plane** (polish backlog) |
 | KMS | encrypt/decrypt · key policy on Encrypt/Decrypt/GenerateDataKey | — | **Partial** · key policy `./smokes/security/resource-policy-smoke.sh` · console [#177](https://github.com/kgz/awsl/issues/177) |
-| Secrets Manager | create/get · resource policy on Get/Describe | — | **Partial** · resource policy `./smokes/security/resource-policy-smoke.sh` · console [#176](https://github.com/kgz/awsl/issues/176) |
+| Secrets Manager | create/get · resource policy on Get/Describe | list (+ empty) | **Partial** · resource policy `./smokes/security/resource-policy-smoke.sh` · thin console list [#176](https://github.com/kgz/awsl/issues/176) · store/detail [#535](https://github.com/kgz/awsl/issues/535) |
 | Multiple accounts | Key→account, isolated state, cross-account AssumeRole | — | **CLI + smoke** · [multi-account.md](multi-account.md) |
 | ACM | request / import / describe / list · ARN on API custom domain + ALB HTTPS listener ([acm.md](acm.md)) | — ([#333](https://github.com/kgz/awsl/issues/333)) | **Partial** · TLS handshake [#242](https://github.com/kgz/awsl/issues/242) |
 | Cognito / detection | — | — | **Backlog** |

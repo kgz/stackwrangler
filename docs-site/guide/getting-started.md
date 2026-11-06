@@ -26,7 +26,6 @@ docker run --rm --network host \
 That pulls sibling images (LocalEmu with patches, SeaweedFS, console nginx, ECR registry), starts them on the **host** Docker engine, and writes AWS profile `local`. Config lives in `~/.stackwrangler`.
 
 Tear down with the same image and `down` (thin CLI: `stackwrangler down`; optional `--remove-profile` drops profile `local`).
->>>>>>> origin/feature/487-docker-image-install
 
 ::: tip Naming
 **stackwrangler** is the product CLI and docs brand. **LocalEmu** is the emulator behind `:4566`. This is unrelated to Cloudflare’s Wrangler CLI.

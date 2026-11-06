@@ -9,6 +9,7 @@ import { LambdaFunctionDetailPage } from './pages/LambdaFunctionDetailPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
+import { SecretsPage } from './pages/SecretsPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
 import { FileSystemsPage } from './pages/FileSystemsPage'
@@ -40,6 +41,7 @@ export default function App() {
           />
           <Route path="logs" element={<LogsPage />} />
           <Route path="stepfunctions" element={<StepFunctionsPage />} />
+          <Route path="secretsmanager" element={<SecretsPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route path="cloudformation" element={<CloudFormationStacksPage />} />
           <Route

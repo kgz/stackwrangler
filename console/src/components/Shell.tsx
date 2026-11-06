@@ -196,6 +196,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  secretsmanager: {
+    title: 'Secrets Manager',
+    sections: [
+      {
+        id: 'secrets-main',
+        label: 'Secrets',
+        items: [
+          {
+            label: 'Secrets',
+            to: '/secretsmanager',
+            active: under('/secretsmanager'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [

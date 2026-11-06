@@ -67,7 +67,7 @@ Repo rules to follow (from AGENTS.md, in-repo rules, and owner board rule ~/.cur
 - Branch is feature/<issue>-<slug> (already exists if continuing). Base is origin/<base> — rebase onto it before finishing if the branch is behind.
 - If an open PR already exists for this branch, update that PR; do not open a duplicate.
 - Web UI / console tickets: Open Design first. Set board to `designing`, run `./bin/od-design-run.sh --issue <n> "…"`, use theme `design/stackwrangler/` (grey rose), prefer skill `web-clone` when the screen exists in real AWS (read-only screenshots OK). Land mocks under `design/stackwrangler-console/` before React. Unwired controls: `disabled` + `title="To implement"` (+ Debt if v1). Never-ship controls: omit. No enabled no-ops. Only then `export STACKWRANGLER_AGENT=cursor-batch-<slug>; ./bin/board-status.sh in-progress <n>` (Project field Agent — no per-agent labels; AWSBOX_AGENT still works as fallback). Non-UI tickets start at in-progress the same way.
-- Move the board to in-progress before code edits (after designing when UI), and to in-review when the PR is open/updated, using only the repo's script. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.>>>>>>> origin/feature/487-docker-image-install
+- Move the board to in-progress before code edits (after designing when UI), and to in-review when the PR is open/updated, using only the repo's script. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.>>>>>>> origin/feature/487-docker-image-install>>>>>>> origin/feature/176-secrets-console
 - Do not mark the ticket done.
 - Run the tests the ticket and the repo docs require. If a gap-check script exists, run ./bin/gap-check.sh <n>. Prefer absorbing small additive gaps into this PR; otherwise file scored Debt (pillar + Impact/Effort; release label only if cut gate matches — never auto CURRENT_RELEASE).
 - Commit with a short message about why. No Co-authored-by or agent attribution.
@@ -99,11 +99,11 @@ Open must-fix items from round 3:
 <verbatim must-fix list>
 ```
 
-You decide each `potential-follow-up`. File a backlog ticket only when the gap is real and uncovered (this repo: `Debt: … (from #<n>)` when it matches gap-check). Skip it when it is already filed, out of scope, or not worth tracking. Comment the decision on the PR: filed as `#N`, or skipped, with the reason. Potential follow-ups do not fail the review and do not block the batch.
+You decide each `potential-follow-up`. File a backlog ticket only when the gap is real and uncovered (this repo: `Debt: … (from #<n>)` when it matches gap-check). Skip it when it is already filed, out of scope, or not worth tracking. Comment the decision on the PR: filed as `#N`, or skipped, with the reason. Potential follow-ups do not fail the review and do not block the batch.>>>>>>> origin/feature/176-secrets-console
 
-v1 that leaves out an AWS console UI for that service is Debt. Do not skip it as not worth tracking. Title `Debt: <service> console (from #<n>)`. Label with `$(cat docs/CURRENT_RELEASE)`. If `./bin/od-design-run.sh` exists, the debt's designs go through Open Design `web-clone`, not a guessed layout.
+v1 that leaves out an AWS console UI for that service is Debt. Do not skip it as not worth tracking. Title `Debt: <service> console (from #<n>)` only if Impact ≥ 3; else unlabelled backlog. If `./bin/od-design-run.sh` exists, the debt's designs go through Open Design `web-clone`, not a guessed layout.
 
-Web UI PRs that skipped Open Design / `designing` (no mocks under `design/stackwrangler-console/` matching `design/stackwrangler/`) are must-fix — send back to designing, do not batch.>>>>>>> origin/feature/487-docker-image-install
+Web UI PRs that skipped Open Design / `designing` (no mocks under `design/stackwrangler-console/` matching `design/stackwrangler/`) are must-fix — send back to designing, do not batch.>>>>>>> origin/feature/487-docker-image-install>>>>>>> origin/feature/176-secrets-console
 
 Move the board to in-review when the PR is open. Leave it there.
 

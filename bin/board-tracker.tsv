@@ -136,7 +136,6 @@
 174	backlog	Debt: DynamoDB console (from #59)
 175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
 533	backlog	Debt: Step Functions create + state-machine detail (from #175)
-176	backlog	Debt: Secrets console (from #72)
 177	backlog	Debt: KMS console (from #71)
 178	backlog	Debt: Kinesis console (from #68)
 180	backlog	Epic: settings/topology fidelity (hairpin etc)
@@ -305,4 +304,5 @@
 498	done	Debt: smoke MaximumConcurrency without reserved (from #453)
 420	done	(batch/2026-11-04-v002-b)
 428	in-review	Public OSS: polish docs-site (Runa-grade + GitHub Pages prep)
-487	in-review	Public OSS: single Docker image install path
+487	done	Public OSS: single Docker image install path
+535	backlog	Debt: Secrets Manager store + secret detail (from #176)

@@ -10,6 +10,7 @@ export type AppId =
   | 'ecs'
   | 'ec2'
   | 'sfn'
+  | 'secretsmanager'
 
 export type ServiceDef = {
   id: AppId
@@ -37,6 +38,13 @@ export const SERVICES: ServiceDef[] = [
     desc: 'Coordinate distributed applications',
     to: '/stepfunctions',
   },
+  {
+    id: 'secretsmanager',
+    abbr: 'SM',
+    name: 'Secrets Manager',
+    desc: 'Manage secrets and credentials',
+    to: '/secretsmanager',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -50,6 +58,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/ecs')) return 'ecs'
   if (pathname.startsWith('/ec2')) return 'ec2'
   if (pathname.startsWith('/stepfunctions')) return 'sfn'
+  if (pathname.startsWith('/secretsmanager')) return 'secretsmanager'
   return 's3'
 }
 
@@ -77,6 +86,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'IAM Users', to: '/iam' },
   { type: 'Feature', label: 'Lambda Functions', to: '/lambda' },
   { type: 'Feature', label: 'State machines', to: '/stepfunctions' },
+  { type: 'Feature', label: 'Secrets', to: '/secretsmanager' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'Stacks', to: '/cloudformation' },
@@ -107,6 +117,7 @@ const CRUMBS: Record<string, string> = {
   '/lambda/create': 'Create function',
   '/logs': 'Log groups',
   '/stepfunctions': 'State machines',
+  '/secretsmanager': 'Secrets',
   '/apigateway': 'HTTP APIs',
   '/cloudformation': 'Stacks',
   '/transfer': 'Servers',
