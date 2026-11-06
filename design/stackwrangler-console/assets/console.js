@@ -50,6 +50,8 @@
   const SEARCH_INDEX = [
     { type: "Service", label: "S3", href: "general-purpose-buckets.html" },
     { type: "Service", label: "IAM", href: "iam-users.html" },
+    { type: "Service", label: "KMS", href: "kms-keys.html" },
+    { type: "Service", label: "Key Management Service", href: "kms-keys.html" },
     { type: "Service", label: "Lambda", href: "lambda-functions.html" },
     { type: "Service", label: "Secrets Manager", href: "secrets-list.html" },
     { type: "Service", label: "CloudWatch", href: "logs-log-groups.html" },
@@ -63,6 +65,7 @@
     { type: "Service", label: "ECS", href: "ecs-clusters.html" },
     { type: "Service", label: "EC2", href: "ec2-instances.html" },
     { type: "Feature", label: "General purpose buckets", href: "general-purpose-buckets.html" },
+    { type: "Feature", label: "Customer managed keys", href: "kms-keys.html" },
     { type: "Feature", label: "Directory buckets", href: "directory-buckets.html" },
     { type: "Feature", label: "Table buckets", href: "table-buckets.html" },
     { type: "Feature", label: "Vector buckets", href: "vector-buckets.html" },
@@ -152,6 +155,20 @@
       tree: S3_NAV_TREE,
       foot: S3_FOOT,
     },
+
+    kms: {
+      label: "Key Management Service",
+      home: "kms-keys.html",
+      tree: [
+        {
+          id: "kms-main",
+          label: "Key Management Service",
+          open: true,
+          items: [{ id: "kms-keys", label: "Customer managed keys", href: "kms-keys.html" }],
+        },
+      ],
+      foot: [],
+    },
     iam: {
       label: "IAM",
       home: "iam-users.html",
@@ -190,8 +207,7 @@
         },
       ],
       foot: [],
-    },
-    sfn: {
+    },    sfn: {
       label: "Step Functions",
       home: "sfn-state-machines.html",
       tree: [
@@ -484,6 +500,7 @@
     ["EC2", "EC2", "ec2-instances.html"],
     ["ECS", "Elastic Container Service", "ecs-clusters.html"],
     ["IAM", "IAM", "iam-users.html"],
+    ["KMS", "KMS", "kms-keys.html"],
     ["λ", "Lambda", "lambda-functions.html"],
     ["S3", "S3", "general-purpose-buckets.html"],
   ]

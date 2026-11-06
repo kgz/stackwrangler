@@ -134,3 +134,22 @@ Open `index.html` in Open Design preview or a static file server from this direc
 
 ## License / trademark
 AWS name, logo, and console UI are Amazon trademarks. Local design reference only — do not publish as an AWS product.
+
+## Issue #177 — KMS Customer managed keys list
+
+### Mode
+- Web-clone of the AWS KMS **Customer managed keys** list into grey-rose console chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure follows `secrets-list.html`: h1 + description + card toolbar + find/pager + table
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `kms-keys.html` | Alias / Key ID / Status / Key spec / Key usage / Creation date · 3 rows (`alias/app-data`, `alias/local-dev`, `alias/secrets-envelope`) |
+| `kms-keys-empty.html` | Empty twin · Refresh + Create key + empty panel · link to sample rows |
+
+### Dead controls
+- `title="To implement"`: Create key, Refresh, table settings, column filters, alias dead links
+- `title="Select a row"`: Delete, Schedule key deletion
+- Working: find field (`data-find-table`), pager chrome, Services/search → `kms-keys.html`
+

@@ -13,5 +13,6 @@ PNG paths are under `docs/assets/console/` (docs-site serves them via `public/as
 | `ec2-instances.png` | `/ec2` | List page |
 | `sfn-state-machines.png` | `/stepfunctions` | Optional: seed via `sfn-smoke.sh` / e2e create; empty OK |
 | `secrets-list.png` | `/secretsmanager` | Optional: seed via `secrets-smoke.sh` / e2e create; empty OK |
+| `kms-keys.png` | `/kms` | Optional: seed via `kms-smoke.sh` / e2e create; empty OK |
 
 No seed for a new shot → file **Doc:**; do not invent images or use `design/**/refs/` AWS recon PNGs.

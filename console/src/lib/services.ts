@@ -12,6 +12,7 @@ export type AppId =
   | 'sfn'
   | 'secretsmanager'
   | 'kinesis'
+  | 'kms'
 
 export type ServiceDef = {
   id: AppId
@@ -53,6 +54,13 @@ export const SERVICES: ServiceDef[] = [
     desc: 'Real-time data streams',
     to: '/kinesis',
   },
+  {
+    id: 'kms',
+    abbr: 'KMS',
+    name: 'Key Management Service',
+    desc: 'Create and manage encryption keys',
+    to: '/kms',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -68,6 +76,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/stepfunctions')) return 'sfn'
   if (pathname.startsWith('/secretsmanager')) return 'secretsmanager'
   if (pathname.startsWith('/kinesis')) return 'kinesis'
+  if (pathname.startsWith('/kms')) return 'kms'
   return 's3'
 }
 
@@ -78,7 +87,13 @@ export type SearchItem = {
 }
 
 export const SEARCH_INDEX: SearchItem[] = [
-  ...SERVICES.map((s): SearchItem => ({ type: 'Service', label: s.name, to: s.to })),
+  ...SERVICES.flatMap((s): SearchItem[] => {
+    const items: SearchItem[] = [{ type: 'Service', label: s.name, to: s.to }]
+    if (s.abbr.toLowerCase() !== s.name.toLowerCase()) {
+      items.push({ type: 'Service', label: s.abbr, to: s.to })
+    }
+    return items
+  }),
   { type: 'Feature', label: 'General purpose buckets', to: '/' },
   { type: 'Feature', label: 'Directory buckets', to: '/directory-buckets' },
   { type: 'Feature', label: 'Table buckets', to: '/table-buckets' },
@@ -98,6 +113,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'Secrets', to: '/secretsmanager' },
   { type: 'Service', label: 'Kinesis Data Streams', to: '/kinesis' },
   { type: 'Feature', label: 'Data streams', to: '/kinesis' },
+  { type: 'Feature', label: 'Customer managed keys', to: '/kms' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'Stacks', to: '/cloudformation' },
@@ -130,6 +146,7 @@ const CRUMBS: Record<string, string> = {
   '/stepfunctions': 'State machines',
   '/secretsmanager': 'Secrets',
   '/kinesis': 'Data streams',
+  '/kms': 'Customer managed keys',
   '/apigateway': 'HTTP APIs',
   '/cloudformation': 'Stacks',
   '/transfer': 'Servers',

@@ -275,6 +275,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Secret resource policy explicit deny beats Lambda-role IAM Allow (`GetSecretValue`, `DescribeSecret`) | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS encrypt/decrypt | happy | covered | `./smokes/security/kms-smoke.sh` |
 | KMS deny Decrypt | sad/authz | covered | `./smokes/security/kms-authz-smoke.sh` |
+| KMS console Customer managed keys list | ui | covered | `console/e2e/kms-keys.spec.ts` |
 | KMS key policy delegates to IAM and role Encrypt/Decrypt/GenerateDataKey succeeds | happy | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy without IAM delegation denies a role IAM allows | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy explicit deny Encrypt | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |

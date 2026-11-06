@@ -228,6 +228,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  kms: {
+    title: 'Key Management Service',
+    sections: [
+      {
+        id: 'kms-main',
+        label: 'Key Management Service',
+        items: [
+          {
+            label: 'Customer managed keys',
+            to: '/kms',
+            active: under('/kms'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [
