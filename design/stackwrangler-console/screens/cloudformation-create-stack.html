@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create stack — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-create-stack" data-nav="cloudformation-stacks" data-service="cloudformation" data-title="Create stack" data-crumb="Create stack">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create stack</h1>
+      <p class="aws-desc">Specify a template, name the stack, then create. LocalEmu accepts YAML or JSON template body.</p>
+
+      <section class="aws-card" data-od-id="prerequisite">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Prerequisite — Prepare template</h2>
+          <div class="aws-choice-row" role="group" aria-label="Prepare template" data-od-id="prerequisite-options">
+            <button type="button" class="aws-choice is-selected" aria-pressed="true" data-od-id="opt-template-ready" id="opt-template-ready">
+              <strong>Template is ready</strong>
+              <span>Upload a file or paste the template body.</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-sample-template">
+              <strong>Use a sample template</strong>
+              <span>Start from an AWS sample.</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-designer">
+              <strong>Create template in Designer</strong>
+              <span>Build visually in Infrastructure Composer / Designer.</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="specify-template" style="margin-top:16px">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Specify template</h2>
+            <ul class="aws-radio-list" data-od-id="template-source-options">
+              <li>
+                <label>
+                  <input type="radio" name="templateSource" value="upload" checked data-od-id="source-upload" />
+                  <span>
+                    <strong>Upload a template file</strong>
+                    <span class="sub">YAML (.yaml / .yml) or JSON (.json).</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="templateSource" value="paste" data-od-id="source-paste" />
+                  <span>
+                    <strong>Paste template body</strong>
+                    <span class="sub">Paste YAML or JSON into the editor.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="templateSource" value="s3" disabled aria-disabled="true" title="To implement" data-od-id="source-s3" />
+                  <span>
+                    <strong>Amazon S3 URL</strong>
+                    <span class="sub">Use a template object URL.</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <div class="aws-field" id="upload-field" style="margin-top:12px" data-od-id="upload-field">
+              <label class="aws-label" for="stack-template-file">Template file</label>
+              <input class="aws-input" id="stack-template-file" name="templateFile" type="file" accept=".yaml,.yml,.json,application/json,text/yaml,text/x-yaml" data-od-id="field-template-file" />
+              <p class="aws-hint">Select a CloudFormation template. Upload is simulated in this mock.</p>
+            </div>
+            <div class="aws-field" id="paste-field" hidden style="margin-top:12px" data-od-id="paste-field">
+              <label class="aws-label" for="stack-template-body">Template body</label>
+              <textarea class="aws-input aws-mono" id="stack-template-body" name="templateBody" rows="14" spellcheck="false" data-od-id="field-template-body" style="width:100%;font-family:var(--aws-mono, ui-monospace, monospace);font-size:12px;line-height:1.45;resize:vertical">AWSTemplateFormatVersion: "2010-09-09"
+Description: Demo stack for local labs
+Resources:
+  DemoBucket:
+    Type: AWS::S3::Bucket
+</textarea>
+              <p class="aws-hint">YAML or JSON. Capabilities (IAM / named IAM / auto-expand) are requested when needed at create time.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="stack-details">
+            <h2 class="aws-section-title">Stack details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="stack-name">Stack name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="stack-name" name="stackName" type="text" autocomplete="off" placeholder="my-stack" value="awsbox-demo" data-od-id="field-stack-name" />
+              <p class="aws-hint">Unique in this account and Region. Letters, numbers, and hyphens.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="stack-desc">Description</label>
+              <input class="aws-input" id="stack-desc" name="description" type="text" placeholder="Optional (from template Description if omitted)" data-od-id="field-description" />
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="parameters-section">
+            <h2 class="aws-section-title">Parameters</h2>
+            <p class="aws-desc" data-od-id="parameters-empty">No parameters detected in the template.</p>
+          </div>
+
+          <div class="aws-form-actions" data-od-id="create-actions">
+            <a class="btn btn-normal" href="cloudformation-stacks.html" data-od-id="btn-cancel">Cancel</a>
+            <div class="spacer" style="flex:1"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-stack">Create stack</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      const sourceUpload = document.querySelector('[data-od-id="source-upload"]');
+      const sourcePaste = document.querySelector('[data-od-id="source-paste"]');
+      const uploadField = document.getElementById("upload-field");
+      const pasteField = document.getElementById("paste-field");
+      const createBtn = document.querySelector('[data-od-id="btn-create-stack"]');
+
+      function syncSource() {
+        const paste = sourcePaste && sourcePaste.checked;
+        if (uploadField) uploadField.hidden = !!paste;
+        if (pasteField) pasteField.hidden = !paste;
+      }
+
+      [sourceUpload, sourcePaste].forEach(function (el) {
+        if (el) el.addEventListener("change", syncSource);
+      });
+      syncSource();
+
+      if (createBtn) {
+        createBtn.addEventListener("click", function () {
+          window.location.href = "cloudformation-stack-detail.html";
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

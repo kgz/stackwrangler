@@ -24,6 +24,7 @@ import { MarketplacePage } from './pages/MarketplacePage'
 import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
+import { CloudFormationCreateStackPage } from './pages/CloudFormationCreateStackPage'
 import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
 import { TransferServersPage } from './pages/TransferServersPage'
 import { RdsCreateDatabasePage } from './pages/RdsCreateDatabasePage'
@@ -65,6 +66,10 @@ export default function App() {
             element={<ApiGatewayRestApiDetailPage />}
           />
           <Route path="cloudformation" element={<CloudFormationStacksPage />} />
+          <Route
+            path="cloudformation/create"
+            element={<CloudFormationCreateStackPage />}
+          />
           <Route
             path="cloudformation/stacks/:name"
             element={<CloudFormationStacksPage />}

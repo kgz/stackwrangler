@@ -295,9 +295,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | API GW deny CreateApi | sad/authz | covered | `./smokes/apigw/apigw-authz-smoke.sh` |
 | EC2 deny RunInstances | sad/authz | covered | `./smokes/compute/ec2-authz-smoke.sh` |
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
+| CFN Create stack (paste/upload → poll) | ui | covered | `console/e2e/cfn-create-stack.spec.ts` · [#93](https://github.com/kgz/awsl/issues/93) |
+| CFN Update / change sets in console | ui | missing | [#94](https://github.com/kgz/awsl/issues/94)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
-| CFN Create/Update in console | ui | missing | [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./smokes/transfer/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./smokes/transfer/transfer-dataplane-smoke.sh` |

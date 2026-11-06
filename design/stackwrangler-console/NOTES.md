@@ -249,3 +249,20 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 ### Dead controls (`title="To implement"`)
 - Easy create, Aurora engine, VPC / subnet / SG / Multi-AZ selects
 - Working in mock: engine toggle (Postgres/MySQL), Cancel, Create → detail sample
+
+## Issue #93 — CloudFormation Create stack wizard
+
+### Mode
+- Web-clone of AWS CFN **Create stack** (template ready → upload/paste → stack name) into grey-rose console chrome
+- Designs under `screens/`; React wires CreateStack + describe poll in `console/`
+- OD agent runs failed (daemon GLIBC/opencode EACCES during batch); mocks landed to match `lambda-create-function.html` + CFN list chrome
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `cloudformation-create-stack.html` | Prerequisite choices · template source (upload / paste / S3 stub) · stack name · parameters empty · Create |
+| `cloudformation-stacks.html` | Create stack ▾ → create wizard (enabled link) |
+
+### Dead controls
+- `title="To implement"`: Use a sample template, Create template in Designer, Amazon S3 URL
+- Working: Template is ready, Upload file, Paste body, Stack name, Cancel → stacks list, Create stack → detail mock

@@ -98,6 +98,7 @@
     { type: "Feature", label: "REST APIs", href: "apigateway-rest-apis.html" },
     { type: "Feature", label: "demo-rest", href: "apigateway-rest-api-detail.html" },
     { type: "Feature", label: "Stacks", href: "cloudformation-stacks.html" },
+    { type: "Feature", label: "Create stack", href: "cloudformation-create-stack.html" },
     { type: "Feature", label: "Transfer servers", href: "transfer-servers.html" },
     { type: "Feature", label: "Databases", href: "rds-databases.html" },
     { type: "Feature", label: "Create database", href: "rds-create-database.html" },
@@ -335,6 +336,7 @@
           open: true,
           items: [
             { id: "cloudformation-stacks", label: "Stacks", href: "cloudformation-stacks.html" },
+            { id: "cloudformation-create-stack", label: "Create stack", href: "cloudformation-create-stack.html" },
             { id: "cloudformation-stack-detail", label: "Stack detail", href: "cloudformation-stack-detail.html" },
           ],
         },
