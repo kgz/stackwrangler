@@ -47,10 +47,9 @@ services:
       ROOT_ACCESS_KEYS: ${STACKWRANGLER_ACCESS_KEY:-stackwrangler},AKIAIOSFODNN7EXAMPLE
       DISABLE_CORS_CHECKS: "1"
       EXTRA_CORS_ALLOWED_ORIGINS: "*"
-      # VPC-only Lambda host maps — start.d 20-lambda-vpc-docker-flags.py (#187).
-      STACKWRANGLER_LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
-      AWSBOX_LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
-      LAMBDA_DOCKER_FLAGS: ""
+      # Extra docker run flags for Lambda (docs/lambda-vpc.md). Global for now —
+      # VPC-only injection is #187 / #529, not this PR.
+      LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
       AWSBOX_STS_ASSUME_ROLE_DURATION: ${STACKWRANGLER_STS_ASSUME_ROLE_DURATION:-}
     ports:
       - "127.0.0.1:${STACKWRANGLER_LOCALEMU_HOST_PORT:-4566}:4566"
