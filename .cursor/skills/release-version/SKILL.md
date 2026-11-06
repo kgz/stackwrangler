@@ -1,39 +1,97 @@
 ---
 name: release-version
 description: >-
-  Product release labels and git tags for stackwrangler. Use when creating tickets with
-  a release label, cutting a semver release, tagging vX.Y.Z, or updating
-  CURRENT_RELEASE / versioning docs.
+  Product release labels, git tags, and the cut loop (ship cut → publish →
+  re-evaluate next) for awsbox/stackwrangler. Use when creating tickets with a
+  release label, cutting a semver release, tagging vX.Y.Z, updating
+  CURRENT_RELEASE / versioning docs, or asking what to do after a cut ships.
 ---
 
 # Release versioning
 
-Milestones (`v1 — Networking`, …) are **service catalogues**. Product cuts are **labels + git tags** (`v0.0.1`, …).
+**Pillars** (milestones: `Platform`, `Identity & authz`, …) are categories.  
+**Product cuts** are **labels + git tags** (`v0.0.2` Public, `v0.0.3` Trust, …).
 
-Canonical docs: `docs/versioning.md`, `docs/CURRENT_RELEASE`.
+Canonical docs: `docs/versioning.md`, `docs/version-plan.md`, `docs/CURRENT_RELEASE`.
+
+## Development loop (cut → publish → re-evaluate)
+
+Do **not** pre-label three versions ahead and grind forever. One open cut at a time:
+
+### 1. Execute the current cut
+
+1. Work the Project #8 view for `$(cat docs/CURRENT_RELEASE)` (or the cut the user named).
+2. Order: Impact ↓, Effort ↑ (`./bin/issue-score.sh` / board fields).
+3. Ship → merge PR → `./bin/board-status.sh done <n>` → **delete the head branch** (remote + local) and remove the worktree if any. See [Branch & PR cleanup](#branch--pr-cleanup).
+4. New gaps: absorb if small (`docs/gap-check.md`); else score + pillar; **release label only if this cut’s gate matches**. Never dump unrelated Debt onto the active cut.
+
+### 2. Publish when the theme is done
+
+Cut’s theme actually finished (or residuals explicitly waived):
+
+```bash
+./bin/release-tag.sh vX.Y.Z
+```
+
+That tags `origin/main` (or `--sha`), creates the GitHub Release, ensures the label exists, writes `docs/CURRENT_RELEASE`. Commit the `CURRENT_RELEASE` bump if the tree should ship it.
+
+Only when the user asks. Not as a side effect of a feature ticket.  
+Do not cut **Public** while open Impact ≥ 5 core trust bugs are unwaived.
+
+After publish, that cut’s board view should be empty (or only waived leftovers).
+
+### 3. Re-evaluate the next cut(s)
+
+1. Confirm the next theme still matches [version-plan.md](docs/version-plan.md) (Public → Trust → Accuracy → Org path).
+2. From **No version** / **Unscored**, pull issues that now match that cut’s **theme + Impact gate**; add the next label + scores.
+3. Leave everything else **unlabelled** (milestone only).
+4. Ensure the board view for the new cut exists (filter `label:vX.Y.Z`, sort Impact ↓ Effort ↑). Create label + view together if opening a cut that was parked.
+5. Set work focus to the new `CURRENT_RELEASE` view and return to step 1.
+
+Soft WIP: if a cut grows past ~15 open labelled issues, deliberate demote pass — lowest Impact then highest Effort → next cut or unlabelled. Never auto-displace on Debt create.
 
 ## New tickets
 
 ```bash
-REL=$(cat docs/CURRENT_RELEASE)
-# after gh issue create … — add milestone as usual, then:
-gh issue edit <n> --add-label "$REL"
+# after gh issue create … — pillar milestone, then scores:
+./bin/issue-score.sh <n> --impact=N --effort=N
+# release label ONLY if theme + Impact gate match (docs/versioning.md):
+# gh issue edit <n> --add-label v0.0.3
 ```
 
-Debt: same milestone area as parent + label `$REL` (or parent's release label if retargeting an older cut).
+Do **not** default to `$(cat docs/CURRENT_RELEASE)`.
 
-Board / tracker updates (`bin/board-status.sh`, `bin/board-tracker.tsv`) require maintainer GitHub project access — optional for external contributors.
+Debt: absorb small gaps in-parent (`docs/gap-check.md`); else evaluate-and-place with scores + pillar; label only if gate matches.
 
-## Cut a release (only when the user asks)
+## Cuts (active)
+
+| Label | Theme | Gate |
+|-------|-------|------|
+| `v0.0.2` | Public | `public-ready` / blocks public |
+| `v0.0.3` | Trust | Impact ≥ 4 core bug/authz |
+| `v0.0.4` | Accuracy | Impact ≥ 3 core debt/docs |
+| `v0.1.0` | Org path | path-critical |
+
+Far-future labels (`v0.1.1`, `v0.1.2`, `v1.0.0`) stay parked until deliberately opened in step 3.
+
+## Branch & PR cleanup
+
+Stale `feature/*` / `batch/*` branches pile up fast. After every merge (or abandoned PR), clean up in the same turn:
 
 ```bash
-./bin/release-tag.sh v0.0.2
+# Prefer delete-branch on merge:
+gh pr merge <pr> --merge --delete-branch
+# If already merged without delete:
+gh pr view <pr> --json headRefName -q .headRefName   # note BRANCH
+git push origin --delete "$BRANCH"                    # remote
+git branch -d "$BRANCH" 2>/dev/null || git branch -D "$BRANCH"
+git worktree list
+git worktree remove <path> 2>/dev/null || true        # if a wt used that branch
+git fetch --prune
 ```
 
-Creates annotated tag on `origin/main` (or `--sha`), pushes tag, GitHub Release, ensures label exists, writes `docs/CURRENT_RELEASE`. Commit the CURRENT_RELEASE bump in a follow-up if the working tree should ship it.
-
-Do **not** cut a release as a side effect of implementing a feature ticket.
-
-## Bootstrap note
-
-First product cut is **`v0.0.1`**. All existing issues at bootstrap carry label `v0.0.1`; catalogue milestone titles stay `v1 — …`.
+- Merged PR → delete remote head + local branch + worktree.
+- Closed / abandoned PR (not merging) → same deletes once the user confirms abandon (or the ticket is dropped).
+- After a `batch/…` lands on the default branch → delete the batch branch and each ticket branch that was only for that batch.
+- Do not leave “merged but branch still on origin” — that is how we get ~100 dead branches.
+- Periodic hygiene when asked: `git fetch --prune` then list `git branch -r` / `gh api repos/…/branches` for `feature/*` and `batch/*` with no open PR and already merged → delete.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update GitHub Project #8 (stackwrangler) card status for issues.
-# Usage: ./bin/board-status.sh <backlog|ready|designing|in-progress|in-review|done> <issue-num> [issue-num...] [--agent=<id>]
+# Usage: ./bin/board-status.sh <backlog|designing|in-progress|in-review|done> <issue-num> [issue-num...] [--agent=<id>]
 #
 # Agent claim (no per-agent labels): Project text field "Agent".
 #   in-progress → set from --agent=… or $STACKWRANGLER_AGENT (else $AWSBOX_AGENT)
@@ -53,6 +53,7 @@ if [[ $# -lt 2 ]]; then
 	echo "Usage: $0 <backlog|ready|designing|in-progress|in-review|done> <issue-num> [issue-num...] [--agent=<id>]" >&2
 	echo "  Claim who picked up work via Project field Agent (not a GitHub label)." >&2
 	echo "  in-progress: --agent=… or \$STACKWRANGLER_AGENT (legacy: \$AWSBOX_AGENT)." >&2
+	echo "  ready → backlog (alias; Ready column removed)." >&2
 	exit 1
 fi
 
@@ -60,9 +61,12 @@ STATUS_NAME="$1"
 shift
 
 # Project #8 Status option IDs (refresh if board-status updates fail).
+# Keep option IDs stable — rewriting them clears every card's Status.
 case "$STATUS_NAME" in
-	backlog|todo) OPT="dfa84092" ;;
-	ready) OPT="ae0781e5" ;;
+	backlog|todo|ready)
+		OPT="dfa84092" # ready aliases to Backlog (Ready column removed)
+		STATUS_NAME=backlog
+		;;
 	designing|design) OPT="6199a95a" ;;
 	in-progress|in_progress) OPT="99efdfee" ;;
 	in-review|in_review) OPT="649b2f32" ;;

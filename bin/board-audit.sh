@@ -80,8 +80,7 @@ query($cursor: String!) {
 
 normalize_status() {
 	case "$1" in
-		Backlog|backlog|todo) echo backlog ;;
-		Ready|ready) echo ready ;;
+		Backlog|backlog|todo|Ready|ready) echo backlog ;;
 		Designing|designing|design) echo designing ;;
 		"In progress"|in-progress|in_progress) echo in-progress ;;
 		"In review"|in-review|in_review) echo in-review ;;
@@ -97,10 +96,12 @@ while IFS=$'\t' read -r num status; do
 done < <(fetch_board)
 
 drift=0
-apply_backlog=() apply_ready=() apply_designing=() apply_in_progress=() apply_in_review=() apply_done=()
+apply_backlog=() apply_designing=() apply_in_progress=() apply_in_review=() apply_done=()
 
 for issue in $(printf '%s\n' "${!EXPECTED[@]}" | sort -n); do
 	expected="${EXPECTED[$issue]}"
+	# tracker "ready" is legacy → backlog
+	[[ "$expected" == "ready" ]] && expected=backlog
 	actual="${BOARD[$issue]:-missing}"
 	if [[ "$actual" == "$expected" ]]; then
 		printf 'ok      #%s  %s\n' "$issue" "$expected"
@@ -110,7 +111,6 @@ for issue in $(printf '%s\n' "${!EXPECTED[@]}" | sort -n); do
 	printf 'DRIFT    #%s  board=%s  tracker=%s\n' "$issue" "$actual" "$expected"
 	case "$expected" in
 		backlog) apply_backlog+=("$issue") ;;
-		ready) apply_ready+=("$issue") ;;
 		designing) apply_designing+=("$issue") ;;
 		in-progress) apply_in_progress+=("$issue") ;;
 		in-review) apply_in_review+=("$issue") ;;
@@ -130,7 +130,6 @@ if [[ "$APPLY" -eq 0 ]]; then
 fi
 
 [[ ${#apply_backlog[@]} -gt 0 ]] && "$ROOT/bin/board-status.sh" backlog "${apply_backlog[@]}"
-[[ ${#apply_ready[@]} -gt 0 ]] && "$ROOT/bin/board-status.sh" ready "${apply_ready[@]}"
 [[ ${#apply_designing[@]} -gt 0 ]] && "$ROOT/bin/board-status.sh" designing "${apply_designing[@]}"
 [[ ${#apply_in_progress[@]} -gt 0 ]] && "$ROOT/bin/board-status.sh" in-progress "${apply_in_progress[@]}"
 [[ ${#apply_in_review[@]} -gt 0 ]] && "$ROOT/bin/board-status.sh" in-review "${apply_in_review[@]}"

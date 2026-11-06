@@ -26,7 +26,7 @@ End state: `./bin/stackwrangler up` once — endpoints + profile `local` — the
 | **Control plane only** | `create-*` / `describe-*` succeed; no real traffic | **Stub** — document limits; not “shipped” for org paths |
 | **Console empty** | Nav chrome, honest “not on local stack yet” | UX only |
 
-**Priority rule:** prefer deepening data planes **and** IAM enforcement on the org path over adding more stub APIs. Stubs exist so IaC can *start* applying; they are debt, not the destination.
+**Priority rule:** public basic release → core-stack bugs → security/authz that create false confidence → core debt/docs. Prefer deepening data planes **and** IAM enforcement on the shipped core / org path over adding more stub APIs. Stubs exist so IaC can *start* applying; they are debt, not the destination. Catalogue width without a release label stays backlog. See [version-plan.md](version-plan.md).
 
 Smoke pattern for each hop: happy path **and** at least one deliberate authz failure (not a single hard-coded policy demo).
 

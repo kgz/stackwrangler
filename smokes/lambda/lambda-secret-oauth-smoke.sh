@@ -5,7 +5,7 @@
 # Stage isolation: stage=b uses b's credentials. Env var BASE_URL drives the call (flip to a 2nd mock).
 # Sad/authz: role without secretsmanager:GetSecretValue → Lambda fails, mock sees NO requests.
 # Sad/other: wrong client secret → mock 401, Lambda reports failure and does not post the document.
-# Needs AWSBOX_LAMBDA_DOCKER_FLAGS to map host.docker.internal (default; docs/lambda-vpc.md).
+# Hits the mock via docker-bridge gateway IP (non-VPC; host maps are VPC-only, #187).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -103,8 +103,8 @@ start_mock() { # name -> sets PORT_<name>, LOG_<name>
 }
 start_mock m1
 start_mock m2
-URL1="http://host.docker.internal:${PORT_m1}"
-URL2="http://host.docker.internal:${PORT_m2}"
+URL1="http://${BIND}:${PORT_m1}"
+URL2="http://${BIND}:${PORT_m2}"
 reqs() { python3 -c 'import json,sys; [print(l.strip()) for l in open(sys.argv[1])]' "$TMP/$1.log"; }
 nreq() { wc -l <"$TMP/$1.log" | tr -d ' '; }
 

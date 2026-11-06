@@ -1,5 +1,5 @@
 # issue	expected_board	notes
-# expected_board: backlog | ready | in-progress | in-review | done
+# expected_board: backlog | designing | in-progress | in-review | done
 1	done	epic — v1 + IaC/ECS/EC2 + v2 empty states
 2	done	superseded
 3	done	superseded
@@ -144,7 +144,7 @@
 184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
 185	done	Serverless v3 deploy smoke
 186	done	VPC Lambda → host services via mapped hostnames
-187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
+187	in-review	Debt: non-VPC Lambda reaches mapped hosts (from #186)
 189	backlog	Debt: console REST APIs (from #184)
 190	done	Debt: REST authorizer Deny 401 vs 403 (from #184)
 191	done	Debt: REST custom domain routing (from #184)
