@@ -93,6 +93,24 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 1. Create / Actions / Refresh disabled with `title="To implement"` (design-only).
 2. React follow-ups: #347 (S3), #349 (services), full Create/detail #350+.
 
+## Issue #174 — DynamoDB Tables list
+
+### Mode
+- Web-clone of the AWS DynamoDB **Tables** list into grey-rose console chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure follows `kinesis-streams.html` / `kms-keys.html`: h1 + description + card toolbar + find/pager + table
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `dynamodb-tables.html` | Name / Status / Partition key / Sort key / Indexes / Capacity mode · 3 rows (`orders`, `awsbox-ddb-demo`, `sessions`) |
+| `dynamodb-tables-empty.html` | Empty twin · Refresh + Create table + empty panel · link to sample rows |
+
+### Dead controls
+- `title="To implement"`: Create table, Refresh, table settings, column filters, table name dead links
+- `title="Select a row"`: Delete
+- Working: find field (`data-find-table`), pager chrome, Services/search/favorites → `dynamodb-tables.html`
+
 ## Issue #176 — Secrets Manager list
 
 ### Mode

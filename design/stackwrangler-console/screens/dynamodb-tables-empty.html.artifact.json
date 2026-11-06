@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/dynamodb-tables-empty.html",
+  "entry": "screens/dynamodb-tables-empty.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T09:47:12.681Z",
+  "updatedAt": "2026-11-06T09:47:12.681Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

@@ -16,6 +16,7 @@ import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { KmsKeysPage } from './pages/KmsKeysPage'
 import { SnsTopicsPage } from './pages/SnsTopicsPage'
+import { DynamoDBTablesPage } from './pages/DynamoDBTablesPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
 import { FileSystemsPage } from './pages/FileSystemsPage'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="sns" element={<SnsTopicsPage />} />
+          <Route path="dynamodb" element={<DynamoDBTablesPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route
             path="apigateway/rest-apis"

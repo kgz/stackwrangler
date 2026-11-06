@@ -258,6 +258,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `cron(* * * * ? *)` rule invokes Lambda target (other cron/rate forms: [#317](https://github.com/kgz/awsl/issues/317)) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | DynamoDB put/get | happy | covered | `./smokes/data/dynamodb-smoke.sh` |
+| DynamoDB console tables list | ui | covered | `console/e2e/dynamodb-tables.spec.ts` |
 | DynamoDB deny PutItem | sad/authz | covered | `./smokes/data/dynamodb-authz-smoke.sh` |
 | DynamoDB table with GSI + TTL deployed via CloudFormation (serverless slice) | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB GSI query, table query, scan with filter | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |

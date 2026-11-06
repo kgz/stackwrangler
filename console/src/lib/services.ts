@@ -15,6 +15,7 @@ export type AppId =
   | 'sqs'
   | 'kms'
   | 'sns'
+  | 'dynamodb'
 
 export type ServiceDef = {
   id: AppId
@@ -77,6 +78,13 @@ export const SERVICES: ServiceDef[] = [
     desc: 'Pub/sub notifications',
     to: '/sns',
   },
+  {
+    id: 'dynamodb',
+    abbr: 'DDB',
+    name: 'DynamoDB',
+    desc: 'NoSQL key-value and document store',
+    to: '/dynamodb',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -95,6 +103,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/sqs')) return 'sqs'
   if (pathname.startsWith('/kms')) return 'kms'
   if (pathname.startsWith('/sns')) return 'sns'
+  if (pathname.startsWith('/dynamodb')) return 'dynamodb'
   return 's3'
 }
 
@@ -136,6 +145,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'Customer managed keys', to: '/kms' },
   { type: 'Service', label: 'Simple Notification Service', to: '/sns' },
   { type: 'Feature', label: 'Topics', to: '/sns' },
+  { type: 'Feature', label: 'Tables', to: '/dynamodb' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'REST APIs', to: '/apigateway/rest-apis' },
@@ -173,6 +183,7 @@ const CRUMBS: Record<string, string> = {
   '/sqs': 'Queues',
   '/kms': 'Customer managed keys',
   '/sns': 'Topics',
+  '/dynamodb': 'Tables',
   '/apigateway': 'HTTP APIs',
   '/apigateway/rest-apis': 'REST APIs',
   '/cloudformation': 'Stacks',

@@ -62,6 +62,7 @@
     { type: "Service", label: "Simple Notification Service", href: "sns-topics.html" },
     { type: "Service", label: "SQS", href: "sqs-queues.html" },
     { type: "Service", label: "Simple Queue Service", href: "sqs-queues.html" },
+    { type: "Service", label: "DynamoDB", href: "dynamodb-tables.html" },
     { type: "Service", label: "API Gateway", href: "apigateway-http-apis.html" },
     { type: "Service", label: "CloudFormation", href: "cloudformation-stacks.html" },
     { type: "Service", label: "Transfer Family", href: "transfer-servers.html" },
@@ -92,6 +93,7 @@
     { type: "Feature", label: "Data streams", href: "kinesis-streams.html" },
     { type: "Feature", label: "Topics", href: "sns-topics.html" },
     { type: "Feature", label: "Queues", href: "sqs-queues.html" },
+    { type: "Feature", label: "Tables", href: "dynamodb-tables.html" },
     { type: "Feature", label: "HTTP APIs", href: "apigateway-http-apis.html" },
     { type: "Feature", label: "REST APIs", href: "apigateway-rest-apis.html" },
     { type: "Feature", label: "demo-rest", href: "apigateway-rest-api-detail.html" },
@@ -290,6 +292,19 @@
           label: "SQS",
           open: true,
           items: [{ id: "sqs-queues", label: "Queues", href: "sqs-queues.html" }],
+        },
+      ],
+      foot: [],
+    },
+    dynamodb: {
+      label: "DynamoDB",
+      home: "dynamodb-tables.html",
+      tree: [
+        {
+          id: "dynamodb-main",
+          label: "Tables",
+          open: true,
+          items: [{ id: "dynamodb-tables", label: "Tables", href: "dynamodb-tables.html" }],
         },
       ],
       foot: [],
@@ -643,6 +658,7 @@
       ["KIN", "Kinesis", "Real-time data streams", "kinesis-streams.html"],
       ["SNS", "SNS", "Pub/sub notifications", "sns-topics.html"],
       ["SQS", "SQS", "Managed message queues", "sqs-queues.html"],
+      ["DDB", "DynamoDB", "NoSQL key-value and document store", "dynamodb-tables.html"],
       ["EC2", "EC2", "Virtual servers in the cloud", "ec2-instances.html"],
       ["RDS", "RDS", "Managed relational databases", "rds-databases.html"],
     ]

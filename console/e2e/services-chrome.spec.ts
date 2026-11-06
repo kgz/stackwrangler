@@ -70,6 +70,17 @@ const lists: Array<{
     heading: 'Topics',
     columns: ['Name', 'Type', 'ARN'],
     disabled: ['Delete', 'Create topic'],
+    path: '/dynamodb',
+    heading: 'Tables',
+    columns: [
+      'Name',
+      'Status',
+      'Partition key',
+      'Sort key',
+      'Indexes',
+      'Capacity mode',
+    ],
+    disabled: ['Create table'],
   },
   {
     path: '/apigateway',

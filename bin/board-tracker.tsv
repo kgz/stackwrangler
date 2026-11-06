@@ -133,7 +133,8 @@
 171	done	EC2 RunInstances AccessDenied
 172	done	Debt: SNS console (from #65) — thin list; create/detail #546
 173	backlog	Debt: EventBridge console (from #66)
-174	backlog	Debt: DynamoDB console (from #59)
+174	done	Debt: DynamoDB console (from #59)
+549	backlog	Debt: DynamoDB create/detail (from #174)
 175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
 533	backlog	Debt: Step Functions create + state-machine detail (from #175)
 176	in-review	Debt: Secrets console (from #72) — OD approved; React list shipped
