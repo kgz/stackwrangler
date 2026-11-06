@@ -132,7 +132,7 @@
 170	done	API GW CreateApi AccessDenied
 171	done	EC2 RunInstances AccessDenied
 172	backlog	Debt: SNS console (from #65)
-173	in-progress	Debt: EventBridge console (from #66)
+173	in-review	Debt: EventBridge console (from #66)
 174	backlog	Debt: DynamoDB console (from #59)
 175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
 533	backlog	Debt: Step Functions create + state-machine detail (from #175)
