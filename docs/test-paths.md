@@ -296,7 +296,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | EC2 deny RunInstances | sad/authz | covered | `./smokes/compute/ec2-authz-smoke.sh` |
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
 | CFN Create stack (paste/upload → poll) | ui | covered | `console/e2e/cfn-create-stack.spec.ts` · [#93](https://github.com/kgz/awsl/issues/93) |
-| CFN Update / change sets in console | ui | missing | [#94](https://github.com/kgz/awsl/issues/94)–[#95](https://github.com/kgz/awsl/issues/95) |
+| CFN Update / change sets in console | ui | covered | `console/e2e/cfn-update-changesets.spec.ts` · [#94](https://github.com/kgz/awsl/issues/94) |
+| CFN StackSets console chrome | ui | missing | [#95](https://github.com/kgz/awsl/issues/95) |
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |

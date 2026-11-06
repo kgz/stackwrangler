@@ -18,7 +18,15 @@
           <div class="aws-toolbar" data-od-id="action-toolbar">
             <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
             <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-stack" title="Select a row">Delete</button>
-            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-update-stack" title="Select a row">Update ▾</button>
+            <div style="position:relative;display:inline-flex" data-od-id="update-menu">
+              <details>
+                <summary class="btn btn-normal" style="list-style:none;cursor:pointer" data-od-id="btn-update-stack" title="Select a row">Update ▾</summary>
+                <div class="aws-menu open" style="position:absolute;left:0;top:100%;margin-top:4px;min-width:200px">
+                  <a href="cloudformation-update-stack.html" data-od-id="menu-update-stack">Update stack</a>
+                  <a href="cloudformation-create-change-set.html" data-od-id="menu-create-changeset">Create change set</a>
+                </div>
+              </details>
+            </div>
             <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-stack-actions" title="Select a row">Stack actions ▾</button>
             <div class="spacer"></div>
             <a class="btn btn-primary" href="cloudformation-create-stack.html" data-od-id="btn-create-stack">Create stack ▾</a>

@@ -26,6 +26,9 @@ import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
 import { CloudFormationCreateStackPage } from './pages/CloudFormationCreateStackPage'
 import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
+import { CloudFormationUpdateStackPage } from './pages/CloudFormationUpdateStackPage'
+import { CloudFormationCreateChangeSetPage } from './pages/CloudFormationCreateChangeSetPage'
+import { CloudFormationChangeSetDetailPage } from './pages/CloudFormationChangeSetDetailPage'
 import { TransferServersPage } from './pages/TransferServersPage'
 import { RdsCreateDatabasePage } from './pages/RdsCreateDatabasePage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
@@ -69,6 +72,18 @@ export default function App() {
           <Route
             path="cloudformation/create"
             element={<CloudFormationCreateStackPage />}
+          />
+          <Route
+            path="cloudformation/stacks/:name/update"
+            element={<CloudFormationUpdateStackPage />}
+          />
+          <Route
+            path="cloudformation/stacks/:name/change-sets/create"
+            element={<CloudFormationCreateChangeSetPage />}
+          />
+          <Route
+            path="cloudformation/stacks/:name/change-sets/:changeSetName"
+            element={<CloudFormationChangeSetDetailPage />}
           />
           <Route
             path="cloudformation/stacks/:name"
