@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Topics — SNS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sns-topics" data-nav="sns-topics" data-service="sns" data-title="Topics" data-crumb="Topics">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Topics</h1>
+      <p class="aws-desc">Amazon Simple Notification Service (SNS) sends notifications two ways, A2A and A2P. A2A provides high-throughput, push-based, many-to-many messaging between distributed systems, microservices, and event-driven serverless applications.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-topic" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-topic" title="To implement">Create topic</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter topics by name" data-find-table="#data-table" aria-label="Filter topics by name" data-od-id="find-topics" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="sns-topics-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Type <button type="button" class="filter" aria-label="Filter Type" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">ARN</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="orders-events">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-events" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="topic-orders-events">orders-events</button></td>
+                  <td>Standard</td>
+                  <td>arn:aws:sns:ap-southeast-2:000000000000:orders-events</td>
+                </tr>
+                <tr data-name="awsbox-sns-demo.fifo">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-sns-demo.fifo" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="topic-awsbox-sns-demo">awsbox-sns-demo.fifo</button></td>
+                  <td>FIFO</td>
+                  <td>arn:aws:sns:ap-southeast-2:000000000000:awsbox-sns-demo.fifo</td>
+                </tr>
+                <tr data-name="app-alerts">
+                  <td class="check"><input type="checkbox" aria-label="Select app-alerts" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="topic-app-alerts">app-alerts</button></td>
+                  <td>Standard</td>
+                  <td>arn:aws:sns:ap-southeast-2:000000000000:app-alerts</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

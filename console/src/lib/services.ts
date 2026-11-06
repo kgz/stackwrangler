@@ -13,6 +13,7 @@ export type AppId =
   | 'secretsmanager'
   | 'kinesis'
   | 'kms'
+  | 'sns'
 
 export type ServiceDef = {
   id: AppId
@@ -61,6 +62,13 @@ export const SERVICES: ServiceDef[] = [
     desc: 'Create and manage encryption keys',
     to: '/kms',
   },
+  {
+    id: 'sns',
+    abbr: 'SNS',
+    name: 'SNS',
+    desc: 'Pub/sub notifications',
+    to: '/sns',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -77,6 +85,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/secretsmanager')) return 'secretsmanager'
   if (pathname.startsWith('/kinesis')) return 'kinesis'
   if (pathname.startsWith('/kms')) return 'kms'
+  if (pathname.startsWith('/sns')) return 'sns'
   return 's3'
 }
 
@@ -114,6 +123,8 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Service', label: 'Kinesis Data Streams', to: '/kinesis' },
   { type: 'Feature', label: 'Data streams', to: '/kinesis' },
   { type: 'Feature', label: 'Customer managed keys', to: '/kms' },
+  { type: 'Service', label: 'Simple Notification Service', to: '/sns' },
+  { type: 'Feature', label: 'Topics', to: '/sns' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'REST APIs', to: '/apigateway/rest-apis' },
@@ -148,6 +159,7 @@ const CRUMBS: Record<string, string> = {
   '/secretsmanager': 'Secrets',
   '/kinesis': 'Data streams',
   '/kms': 'Customer managed keys',
+  '/sns': 'Topics',
   '/apigateway': 'HTTP APIs',
   '/apigateway/rest-apis': 'REST APIs',
   '/cloudformation': 'Stacks',

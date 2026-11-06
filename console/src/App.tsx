@@ -14,6 +14,7 @@ import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { SecretsPage } from './pages/SecretsPage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { KmsKeysPage } from './pages/KmsKeysPage'
+import { SnsTopicsPage } from './pages/SnsTopicsPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
 import { FileSystemsPage } from './pages/FileSystemsPage'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="secretsmanager" element={<SecretsPage />} />
           <Route path="kinesis" element={<KinesisStreamsPage />} />
           <Route path="kms" element={<KmsKeysPage />} />
+          <Route path="sns" element={<SnsTopicsPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route
             path="apigateway/rest-apis"

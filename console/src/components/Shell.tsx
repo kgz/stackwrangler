@@ -244,6 +244,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  sns: {
+    title: 'SNS',
+    sections: [
+      {
+        id: 'sns-main',
+        label: 'SNS',
+        items: [
+          {
+            label: 'Topics',
+            to: '/sns',
+            active: under('/sns'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [
