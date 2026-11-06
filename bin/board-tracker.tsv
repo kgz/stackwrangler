@@ -139,7 +139,7 @@
 177	backlog	Debt: KMS console (from #71)
 178	backlog	Debt: Kinesis console (from #68)
 180	backlog	Epic: settings/topology fidelity (hairpin etc)
-181	in-progress	Debt: ECS same-host hairpin fidelity
+181	in-review	Debt: ECS same-host hairpin fidelity
 182	done	Real-AWS parity batch10 messaging/data
 184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
 185	done	Serverless v3 deploy smoke
