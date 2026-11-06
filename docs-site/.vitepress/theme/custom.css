@@ -1,3 +1,235 @@
+/* stackwrangler docs — VitePress map + chrome; palette from design/stackwrangler/tokens.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,650;1,400&display=swap');
+
+:root {
+  /* VitePress brand map — force dark charcoal + rose (no stock VP grey) */
+  --vp-c-brand-1: var(--awsbox-accent);
+  --vp-c-brand-2: var(--awsbox-accent-hover);
+  --vp-c-brand-3: var(--awsbox-accent-pressed);
+  --vp-c-brand-soft: rgba(180, 138, 160, 0.14);
+
+  --vp-c-bg: var(--awsbox-page);
+  --vp-c-bg-alt: var(--awsbox-chrome);
+  --vp-c-bg-elv: var(--awsbox-panel);
+  --vp-c-bg-soft: var(--awsbox-panel);
+
+  --vp-c-border: var(--awsbox-border);
+  --vp-c-divider: var(--awsbox-hairline);
+  --vp-c-gutter: var(--awsbox-chrome);
+
+  --vp-c-text-1: var(--awsbox-fg);
+  --vp-c-text-2: var(--awsbox-body);
+  --vp-c-text-3: var(--awsbox-quiet);
+
+  --vp-c-default-1: var(--awsbox-raised);
+  --vp-c-default-2: var(--awsbox-panel);
+  --vp-c-default-3: var(--awsbox-chrome);
+  --vp-c-default-soft: rgba(255, 255, 255, 0.04);
+
+  --vp-c-tip-1: var(--awsbox-accent);
+  --vp-c-tip-2: var(--awsbox-accent-hover);
+  --vp-c-tip-3: var(--awsbox-accent-pressed);
+  --vp-c-tip-soft: rgba(180, 138, 160, 0.12);
+
+  --vp-c-warning-1: var(--awsbox-warning);
+  --vp-c-danger-1: var(--awsbox-danger);
+  --vp-c-success-1: var(--awsbox-success);
+
+  --vp-button-brand-border: var(--awsbox-accent);
+  --vp-button-brand-text: var(--awsbox-on-accent);
+  --vp-button-brand-bg: var(--awsbox-accent);
+  --vp-button-brand-hover-border: var(--awsbox-accent-hover);
+  --vp-button-brand-hover-text: var(--awsbox-on-accent);
+  --vp-button-brand-hover-bg: var(--awsbox-accent-hover);
+  --vp-button-brand-active-border: var(--awsbox-accent-pressed);
+  --vp-button-brand-active-text: var(--awsbox-on-accent);
+  --vp-button-brand-active-bg: var(--awsbox-accent-pressed);
+
+  --vp-button-alt-border: var(--awsbox-border);
+  --vp-button-alt-text: var(--awsbox-fg);
+  --vp-button-alt-bg: transparent;
+  --vp-button-alt-hover-border: var(--awsbox-field);
+  --vp-button-alt-hover-text: var(--awsbox-fg);
+  --vp-button-alt-hover-bg: var(--awsbox-raised);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    120deg,
+    var(--awsbox-link) 10%,
+    var(--awsbox-accent) 55%,
+    var(--awsbox-accent-hover) 90%
+  );
+  --vp-home-hero-image-background-image: radial-gradient(
+    closest-side at 50% 50%,
+    rgba(180, 138, 160, 0.22),
+    transparent 70%
+  );
+
+  --vp-font-family-base: var(--awsbox-font-sans);
+  --vp-font-family-mono: var(--awsbox-font-mono);
+
+  --vp-radius: var(--awsbox-radius-panel);
+}
+
+html.dark,
+html:not(.light) {
+  color-scheme: dark;
+}
+
+.VPNavBar .VPNavBarTitle .title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.VPHero .name {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.VPHero .text {
+  color: var(--awsbox-fg);
+  font-weight: 600;
+}
+
+.VPHero .tagline {
+  color: var(--awsbox-body);
+  max-width: 36rem;
+}
+
+.VPFeature {
+  border-color: var(--awsbox-border) !important;
+  background: var(--awsbox-panel) !important;
+  border-radius: var(--awsbox-radius-panel) !important;
+  transition:
+    border-color var(--awsbox-motion) ease,
+    background var(--awsbox-motion) ease;
+}
+
+.VPFeature:hover {
+  border-color: var(--awsbox-accent) !important;
+  background: var(--awsbox-raised) !important;
+}
+
+.VPFeature .title {
+  color: var(--awsbox-fg);
+}
+
+.VPFeature .details {
+  color: var(--awsbox-body);
+}
+
+.VPButton.medium.brand {
+  border-radius: var(--awsbox-radius-control);
+  font-weight: 600;
+}
+
+.VPButton.medium.alt {
+  border-radius: var(--awsbox-radius-control);
+  font-weight: 600;
+}
+
+.custom-block.tip {
+  border-color: var(--awsbox-accent);
+  background: var(--awsbox-selected);
+}
+
+a {
+  color: var(--awsbox-link);
+}
+
+a:hover {
+  color: var(--awsbox-link-hover);
+}
+
+/* Home extras */
+.sw-home-section {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 0 24px 3rem;
+}
+
+.sw-home-section h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--awsbox-fg);
+}
+
+.sw-home-section p,
+.sw-home-section li {
+  color: var(--awsbox-body);
+}
+
+.sw-shot-strip {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin: 1.25rem 0 0;
+}
+
+@media (min-width: 768px) {
+  .sw-shot-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sw-shot-strip figure {
+  margin: 0;
+  border: 1px solid var(--awsbox-border);
+  border-radius: var(--awsbox-radius-panel);
+  overflow: hidden;
+  background: var(--awsbox-chrome);
+}
+
+.sw-shot-strip img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top left;
+}
+
+.sw-shot-strip figcaption {
+  padding: 0.45rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--awsbox-quiet);
+  border-top: 1px solid var(--awsbox-hairline);
+}
+
+.sw-why-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+}
+
+@media (min-width: 768px) {
+  .sw-why-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sw-why-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--awsbox-border);
+  border-radius: var(--awsbox-radius-panel);
+  background: var(--awsbox-panel);
+}
+
+.sw-why-card strong {
+  display: block;
+  color: var(--awsbox-fg);
+  margin-bottom: 0.35rem;
+}
+
+.sw-why-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--awsbox-body);
+}
+
 /* Completeness progress — grey-rose, no mermaid chart junk */
 .sw-progress {
   margin: 1.25rem 0 1.75rem;
