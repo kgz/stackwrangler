@@ -11,6 +11,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@aws-sdk/client-api-gateway": "^3.758.0",
     "@aws-sdk/client-apigatewayv2": "^3.758.0",
     "@aws-sdk/client-cloudformation": "^3.758.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.758.0",

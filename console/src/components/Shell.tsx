@@ -251,7 +251,16 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
         id: 'apigw-apis',
         label: 'APIs',
         items: [
-          { label: 'HTTP APIs', to: '/apigateway', active: under('/apigateway') },
+          {
+            label: 'HTTP APIs',
+            to: '/apigateway',
+            active: (p) => p === '/apigateway' || p === '/apigateway/',
+          },
+          {
+            label: 'REST APIs',
+            to: '/apigateway/rest-apis',
+            active: under('/apigateway/rest-apis'),
+          },
         ],
       },
     ],
