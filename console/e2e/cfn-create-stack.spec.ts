@@ -49,7 +49,7 @@ test.describe('CloudFormation create stack UI', () => {
     await expect(
       page.getByRole('heading', { name: /^Stacks \(/ }),
     ).toBeVisible()
-    await page.getByRole('link', { name: 'Create stack ▾' }).click()
+    await page.locator('.aws-main a.btn-primary', { hasText: 'Create stack' }).click()
     await expect(
       page.getByRole('heading', { name: 'Create stack', exact: true }),
     ).toBeVisible()
