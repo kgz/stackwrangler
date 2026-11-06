@@ -68,14 +68,15 @@ if [[ "$NO_PUSH" -eq 0 ]]; then
 	else
 		echo "GitHub release $VER already exists"
 	fi
-	# Tag may already exist on the remote from `gh release create --target`.
-	if git ls-remote --exit-code --tags origin "refs/tags/${VER}" >/dev/null 2>&1; then
-		echo "tag $VER already on origin (from release create; ok)"
+	# `gh release create --target` may already have minted the tag on origin.
+	if git push origin "refs/tags/$VER"; then
+		echo "pushed tag $VER"
+	elif git ls-remote --exit-code --tags origin "refs/tags/${VER}" >/dev/null 2>&1; then
+		echo "tag $VER already on origin (ok)"
 	else
-		git push origin "refs/tags/$VER"
+		echo "error: failed to push tag $VER and it is missing on origin" >&2
+		exit 1
 	fi
-	# Ensure local tip matches remote even when release create minted the tag.
-	git push origin "refs/tags/$VER" 2>/dev/null || true
 else
 	echo "skipped push/release (--no-push)"
 fi
