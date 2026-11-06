@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { RestApi } from '@aws-sdk/client-api-gateway'
 import { ResourceLabel } from '../components/ResourceLabel'
-import { DeadButton, RefreshButton } from '../components/S3Ui'
+import { DeadButton, RefreshButton, TableTools } from '../components/S3Ui'
 import {
   EmptyRow,
   FilterHeader,
@@ -77,37 +77,11 @@ export function ApiGatewayRestApisPage() {
             <div className="spacer" />
             <DeadButton variant="primary">Create</DeadButton>
           </div>
-          <div className="aws-table-tools">
-            <label className="aws-find">
-              <span aria-hidden="true">⌕</span>
-              <input
-                type="search"
-                placeholder="Search APIs"
-                aria-label="Search APIs"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-              />
-            </label>
-            <div className="aws-pager">
-              <button type="button" disabled aria-label="Previous">
-                ‹
-              </button>
-              <span className="page">1</span>
-              <button type="button" disabled aria-label="Next">
-                ›
-              </button>
-              <button
-                type="button"
-                className="btn-icon"
-                aria-label="Table settings"
-                title="To implement"
-                disabled
-                aria-disabled="true"
-              >
-                ⚙
-              </button>
-            </div>
-          </div>
+          <TableTools
+            placeholder="Search APIs"
+            value={filter}
+            onChange={setFilter}
+          />
           <div className="aws-table-wrap">
             <table className="aws-table" data-testid="rest-apis-table">
               <thead>
