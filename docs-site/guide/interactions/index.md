@@ -24,7 +24,7 @@ Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/is
 | Transfer SFTP → S3 | partial | `transfer-dataplane-smoke.sh`, `transfer-key-smoke.sh` | — | [transfer-sftp-s3](./transfer-sftp-s3) |
 | Dual S3 (SeaweedFS + LocalEmu) | partial | `s3-dual-endpoint-smoke.sh` | [home-s3-buckets](/assets/console/home-s3-buckets.png) | [dual-s3](./dual-s3) |
 | IAM AccessDenied lab | shipped | `iam-access-denied.sh` | — | [iam-deny](./iam-deny) |
-| Lambda VPC → host service | partial | `lambda-vpc-smoke.sh` | — | [lambda-vpc-host](./lambda-vpc-host) |
+| Lambda VPC → host service | working | `lambda-vpc-smoke.sh` | non-VPC mapped name | [lambda-vpc-host](./lambda-vpc-host) |
 | SQS → Lambda (event source) | partial | see page | — | [sqs-to-lambda](./sqs-to-lambda) |
 | ECS task → ECR image pull | partial | `ecr-smoke.sh` | — | [ecs-ecr-pull](./ecs-ecr-pull) |
 | SNS large topic → SQS / Lambda | partial | `sns-max-message-size-smoke.sh` | — | [sns-large-topic](./sns-large-topic) |
