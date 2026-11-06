@@ -1,5 +1,5 @@
 # issue	expected_board	notes
-# expected_board: backlog | ready | in-progress | in-review | done
+# expected_board: backlog | designing | in-progress | in-review | done
 1	done	epic — v1 + IaC/ECS/EC2 + v2 empty states
 2	done	superseded
 3	done	superseded
