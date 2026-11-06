@@ -14,7 +14,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -99,17 +99,40 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler:latest
           provenance: false
 
-      - name: Upload install CLI to GitHub Release (tag pushes)
+      - name: Ensure GitHub Release + upload install CLI
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           TAG="${{ steps.meta.outputs.tag }}"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" install/stackwrangler --clobber
-          else
-            echo "No GitHub Release for $TAG yet — upload install/stackwrangler after release-tag.sh"
+          SHA="${{ github.sha }}"
+          # release-tag.sh should create the release before the tag push; still
+          # poll / create here so a bare `git push --tags` cannot 404 the asset.
+          for i in $(seq 1 36); do
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              break
+            fi
+            if [[ "$i" -eq 1 ]]; then
+              echo "Release $TAG not visible yet — waiting (or will create)"
+            fi
+            sleep 5
+          done
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Creating GitHub Release $TAG at $SHA"
+            gh release create "$TAG" --target "$SHA" --title "stackwrangler $TAG" \
+              --notes "Product release $TAG. See docs/versioning.md / docs/docker-install.md."
           fi
+          for i in $(seq 1 12); do
+            if gh release upload "$TAG" install/stackwrangler --clobber; then
+              echo "Uploaded install/stackwrangler to $TAG"
+              exit 0
+            fi
+            echo "upload attempt $i failed; retrying…"
+            sleep 5
+          done
+          echo "error: failed to upload install/stackwrangler to release $TAG" >&2
+          exit 1
 
       - name: Summarize digests
         run: |

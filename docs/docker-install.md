@@ -111,7 +111,9 @@ Or the same args via `docker run … ghcr.io/kgz/stackwrangler:latest down -v`.
 | `ghcr.io/kgz/stackwrangler-console` | Static Vite build + nginx `/aws-iam` proxy |
 | `ghcr.io/kgz/stackwrangler-ecr` | `registry:2` + ECR notify config |
 
-Published by [`.github/workflows/publish-images.yml`](../.github/workflows/publish-images.yml) on `v*.*.*` tags (and `workflow_dispatch`). `bin/release-tag.sh` still cuts the GitHub Release / board label; the workflow attaches `install/stackwrangler` when the release exists.
+Published by [`.github/workflows/publish-images.yml`](../.github/workflows/publish-images.yml) on `v*.*.*` tags (and `workflow_dispatch`).
+
+**Release ordering:** `bin/release-tag.sh` creates the GitHub Release **before** pushing the git tag, so the workflow can upload `install/stackwrangler`. The workflow also polls / creates the release if missing (needs `contents: write`) and retries the asset upload — a bare `git push --tags` still gets the CLI asset.
 
 ## Local build (before a tag / private GHCR)
 

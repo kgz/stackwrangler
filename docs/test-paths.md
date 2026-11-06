@@ -27,7 +27,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
-| Public path: `install/stackwrangler up` (no git `$ROOT` compose) | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` · [docker-install.md](docker-install.md) |
+| Public path: cold dir + copied `install/stackwrangler up` (no monorepo compose) | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` · [docker-install.md](docker-install.md) |
 | Public path: console HTTP on release nginx image | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: `aws --profile local` sts + s3 ls after image up | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: orchestrator `up` without `/var/run/docker.sock` | sad/other | covered | `./smokes/platform/docker-image-install-smoke.sh` |

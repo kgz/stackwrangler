@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
-# Public image install path (#487): build local tags → up via install/stackwrangler
-# (no compose from $ROOT) → console HTTP + sts → down.
-# Uses alternate ports so a checkout stack on :4566/:8333 can stay up.
+# Public image install path (#487): cold-machine shape.
+# Build artifacts may use the checkout; the *run* path copies install/stackwrangler
+# into a temp dir and never invokes monorepo root compose / ./bin/stackwrangler.
 # Docs: docs/docker-install.md
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$ROOT"
 
 TAG="${STACKWRANGLER_SMOKE_TAG:-local}"
 HOME_DIR="${STACKWRANGLER_SMOKE_HOME:-$(mktemp -d /tmp/stackwrangler-img-smoke.XXXXXX)}"
 AWS_DIR="${STACKWRANGLER_SMOKE_AWS:-$(mktemp -d /tmp/stackwrangler-img-aws.XXXXXX)}"
+# Isolated “machine” — only the public CLI script, no repo checkout.
+COLD_DIR="${STACKWRANGLER_SMOKE_COLD:-$(mktemp -d /tmp/stackwrangler-img-cold.XXXXXX)}"
 PROJECT="${COMPOSE_PROJECT_NAME:-stackwrangler-img-smoke}"
+CLI="${COLD_DIR}/stackwrangler"
 
 # High ports — avoid shared LocalEmu / SeaweedFS on this machine.
 export STACKWRANGLER_S3_HOST_PORT="${STACKWRANGLER_S3_HOST_PORT:-18333}"
@@ -35,18 +37,36 @@ export AWS_CONFIG_FILE="${AWS_DIR}/config"
 export COMPOSE_PROJECT_NAME="$PROJECT"
 
 cleanup() {
-	"$ROOT/install/stackwrangler" down -v --remove-profile >/dev/null 2>&1 || true
+	if [[ -x "$CLI" ]]; then
+		"$CLI" down -v --remove-profile >/dev/null 2>&1 || true
+	fi
 }
 trap cleanup EXIT
 
 if [[ "${STACKWRANGLER_SMOKE_SKIP_BUILD:-0}" != "1" ]]; then
+	# Artifact build only — not the public run path.
 	"$ROOT/bin/build-release-images.sh" --tag "$TAG"
 fi
 
 rm -rf "${HOME_DIR:?}/"* "${AWS_DIR:?}/"* 2>/dev/null || true
-mkdir -p "$HOME_DIR" "$AWS_DIR"
+mkdir -p "$HOME_DIR" "$AWS_DIR" "$COLD_DIR"
+cp "$ROOT/install/stackwrangler" "$CLI"
+chmod +x "$CLI"
 
-"$ROOT/install/stackwrangler" up --force
+# Run exclusively from the cold dir (no monorepo $ROOT on cwd / compose).
+cd "$COLD_DIR"
+case "$(pwd -P)" in
+"$ROOT" | "$ROOT"/*)
+	echo "FAIL: cold smoke must not run under monorepo root ($ROOT)" >&2
+	exit 1
+	;;
+esac
+[[ ! -f "$COLD_DIR/docker-compose.yml" ]] || {
+	echo "FAIL: unexpected docker-compose.yml in cold dir" >&2
+	exit 1
+}
+
+"$CLI" up --force
 
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:${STACKWRANGLER_CONSOLE_HOST_PORT}/" || true)"
 [[ "$code" =~ ^[23][0-9][0-9]$ ]] || {
@@ -75,4 +95,4 @@ printf '%s\n' "$out" | grep -qi 'docker.sock' || {
 	exit 1
 }
 
-echo "OK docker-image-install-smoke (console + sts + sock refusal)"
+echo "OK docker-image-install-smoke (cold dir + console + sts + sock refusal)"
