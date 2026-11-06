@@ -8,6 +8,7 @@ import { LambdaCreateFunctionPage } from './pages/LambdaCreateFunctionPage'
 import { LambdaFunctionDetailPage } from './pages/LambdaFunctionDetailPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
+import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
 import { FileSystemsPage } from './pages/FileSystemsPage'
@@ -38,6 +39,7 @@ export default function App() {
             element={<LambdaFunctionDetailPage />}
           />
           <Route path="logs" element={<LogsPage />} />
+          <Route path="stepfunctions" element={<StepFunctionsPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route path="cloudformation" element={<CloudFormationStacksPage />} />
           <Route

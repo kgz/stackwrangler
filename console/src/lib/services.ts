@@ -9,6 +9,7 @@ export type AppId =
   | 'rds'
   | 'ecs'
   | 'ec2'
+  | 'sfn'
 
 export type ServiceDef = {
   id: AppId
@@ -29,6 +30,13 @@ export const SERVICES: ServiceDef[] = [
   { id: 'rds', abbr: 'RDS', name: 'RDS', desc: 'Managed relational databases', to: '/rds' },
   { id: 'ecs', abbr: 'ECS', name: 'Elastic Container Service', desc: 'Run containerized applications', to: '/ecs' },
   { id: 'ec2', abbr: 'EC2', name: 'EC2', desc: 'Virtual servers in the cloud', to: '/ec2' },
+  {
+    id: 'sfn',
+    abbr: 'SFN',
+    name: 'Step Functions',
+    desc: 'Coordinate distributed applications',
+    to: '/stepfunctions',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -41,6 +49,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/rds')) return 'rds'
   if (pathname.startsWith('/ecs')) return 'ecs'
   if (pathname.startsWith('/ec2')) return 'ec2'
+  if (pathname.startsWith('/stepfunctions')) return 'sfn'
   return 's3'
 }
 
@@ -67,6 +76,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'AWS Marketplace for S3', to: '/marketplace' },
   { type: 'Feature', label: 'IAM Users', to: '/iam' },
   { type: 'Feature', label: 'Lambda Functions', to: '/lambda' },
+  { type: 'Feature', label: 'State machines', to: '/stepfunctions' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'Stacks', to: '/cloudformation' },
@@ -96,6 +106,7 @@ const CRUMBS: Record<string, string> = {
   '/lambda': 'Functions',
   '/lambda/create': 'Create function',
   '/logs': 'Log groups',
+  '/stepfunctions': 'State machines',
   '/apigateway': 'HTTP APIs',
   '/cloudformation': 'Stacks',
   '/transfer': 'Servers',

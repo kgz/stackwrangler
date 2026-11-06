@@ -55,7 +55,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | EventBridge schedule → Lambda | yes (`rate(1 minute)` ≥2 invocations; none after disable-rule) | **yes** (rule without `lambda:InvokeFunction` for `events.amazonaws.com` never invokes) | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-schedule-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
 | DynamoDB depth (GSI, conditions, UpdateItem, transactions, TTL) | yes (CFN slice `serverless-v3-rest/slices/ddb`) | **yes** (Allow on index ARN / table ARN only, Deny on index; Batch/Transact table-scoped [#306](https://github.com/kgz/awsl/issues/306)) | duplicate put, failed update condition, cancelled transaction; index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) | — | `dynamodb-depth-smoke.sh` |
-| Step Functions | yes | **yes** | — | no → [#175](https://github.com/kgz/awsl/issues/175) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` |
+| Step Functions | yes | **yes** | — | thin list [#175](https://github.com/kgz/awsl/issues/175) · create/detail [#533](https://github.com/kgz/awsl/issues/533) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` · console e2e `sfn-state-machines.spec.ts` |
 | Secrets Manager | yes | **yes** | — | no → [#176](https://github.com/kgz/awsl/issues/176) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` |
 | KMS | yes | **yes** | — | no → [#177](https://github.com/kgz/awsl/issues/177) | `kms-smoke.sh`, `kms-authz-smoke.sh` |
 | Resource policies (SM, KMS, S3) | yes (delegation allows) | **yes** (explicit deny / no key-policy delegation) | cross-account [#233](https://github.com/kgz/awsl/issues/233) | — | `resource-policy-smoke.sh` |

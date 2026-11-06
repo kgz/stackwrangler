@@ -63,6 +63,14 @@ test.describe('docs-capture', () => {
     })
   })
 
+  test('step functions state machines', async ({ page }) => {
+    await shot(page, 'sfn-state-machines.png', '/stepfunctions', async () => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'State machines' }),
+      ).toBeVisible({ timeout: 30_000 })
+    })
+  })
+
   test('specialty buckets empty chrome', async ({ page }) => {
     await shot(
       page,

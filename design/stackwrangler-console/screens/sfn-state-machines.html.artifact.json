@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sfn-state-machines.html",
+  "entry": "screens/sfn-state-machines.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T07:25:07.033Z",
+  "updatedAt": "2026-11-06T07:25:07.033Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}
