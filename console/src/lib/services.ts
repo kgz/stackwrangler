@@ -152,6 +152,7 @@ const CRUMBS: Record<string, string> = {
   '/transfer': 'Servers',
   '/rds': 'Databases',
   '/ecs': 'Clusters',
+  '/ecs/create': 'Create cluster',
   '/ec2': 'Instances',
   '/ec2/vpcs': 'Your VPCs',
   '/ec2/load-balancers': 'Load balancers',

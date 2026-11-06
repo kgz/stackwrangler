@@ -22,7 +22,10 @@ import { StorageInsightsPage } from './pages/StorageInsightsPage'
 import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
 import { TransferServersPage } from './pages/TransferServersPage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
-import { EcsClustersPage } from './pages/EcsClustersPage'
+import {
+  EcsClustersPage,
+  EcsCreateClusterPage,
+} from './pages/EcsClustersPage'
 import { Ec2InstancesPage } from './pages/Ec2InstancesPage'
 import { LoadBalancersPage } from './pages/LoadBalancersPage'
 import { VpcsPage } from './pages/VpcsPage'
@@ -60,8 +63,17 @@ export default function App() {
           <Route path="rds" element={<RdsInstancesPage />} />
           <Route path="rds/databases/:id" element={<RdsInstancesPage />} />
           <Route path="ecs" element={<EcsClustersPage />} />
+          <Route path="ecs/create" element={<EcsCreateClusterPage />} />
           <Route path="ecs/clusters/:name" element={<EcsClustersPage />} />
+          <Route
+            path="ecs/clusters/:name/tasks/:taskId"
+            element={<EcsClustersPage />}
+          />
           <Route path="ec2" element={<Ec2InstancesPage />} />
+          <Route
+            path="ec2/instances/:instanceId"
+            element={<Ec2InstancesPage />}
+          />
           <Route path="ec2/vpcs" element={<VpcsPage />} />
           <Route path="ec2/vpcs/:vpcId" element={<VpcsPage />} />
           <Route path="ec2/load-balancers" element={<LoadBalancersPage />} />

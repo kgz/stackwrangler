@@ -5,6 +5,7 @@ const lists: Array<{
   heading: string | RegExp
   columns: string[]
   disabled: string[]
+  enabledLinks?: string[]
 }> = [
   {
     path: '/iam',
@@ -77,7 +78,8 @@ const lists: Array<{
     path: '/ecs',
     heading: 'Clusters',
     columns: ['Cluster name', 'Registered container instances', 'Tasks running'],
-    disabled: ['Delete Cluster', 'Create Cluster'],
+    disabled: ['Delete Cluster'],
+    enabledLinks: ['Create Cluster'],
   },
   {
     path: '/ec2',
@@ -132,6 +134,11 @@ test.describe('Built service list chrome (#349)', () => {
           .first()
         await expect(btn).toBeDisabled()
         await expect(btn).toHaveAttribute('title', 'To implement')
+      }
+      for (const label of spec.enabledLinks ?? []) {
+        await expect(
+          page.getByRole('link', { name: label, exact: true }),
+        ).toBeVisible()
       }
       await expectDisabledControlsExplained(page)
     })
