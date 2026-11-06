@@ -1289,24 +1289,10 @@ class DockerTaskManager:
             f'-j DNAT --to-destination ${{CREDS_IP}}:{int(creds_port)}'
         )
         try:
-            from localemu.services.ec2.docker.vpc_routing import (
-                _ensure_rt_image,
-                _sh_netns,
-            )
+            from localemu.services.ec2.docker.vpc_routing import _sh
 
-            try:
-                DOCKER_CLIENT.exec_in_container(
-                    docker_name, ["sh", "-c", script], user="0",
-                )
-            except Exception:
-                # alpine / distroless: no iptables in-image (#154).
-                # Bake awsbox-rt first — alpine+apk fallback cannot apk
-                # without egress on private awsvpc tasks.
-                _ensure_rt_image()
-                if not _sh_netns(docker_name, script):
-                    raise RuntimeError(
-                        "task-creds DNAT netns sidecar failed"
-                    ) from None
+            # exec → awsbox-rt netns sidecar when the image has no iptables
+            _sh(docker_name, script)
             LOG.debug(
                 "task-creds DNAT installed on %s → %s:%s",
                 docker_name, creds_host, creds_port,
