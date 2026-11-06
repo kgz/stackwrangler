@@ -134,7 +134,7 @@
 172	backlog	Debt: SNS console (from #65)
 173	backlog	Debt: EventBridge console (from #66)
 174	backlog	Debt: DynamoDB console (from #59)
-175	designing	Debt: StepFunctions console (from #67) — Open Design mocks
+175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
 176	backlog	Debt: Secrets console (from #72)
 177	backlog	Debt: KMS console (from #71)
 178	backlog	Debt: Kinesis console (from #68)
