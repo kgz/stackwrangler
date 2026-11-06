@@ -7,9 +7,10 @@
 #   # shellcheck disable=SC1091
 #   source "$ROOT/smokes/lib/local-emu-env.sh"
 #
-# Optional: AWSBOX_ALLOW_REAL_AWS=1 skips the guard (real-side parity only).
+# Optional: STACKWRANGLER_ALLOW_REAL_AWS=1 (or AWSBOX_ALLOW_REAL_AWS=1) skips
+# the guard (real-side parity only).
 
-if [[ "${AWSBOX_ALLOW_REAL_AWS:-0}" == "1" ]]; then
+if [[ "${STACKWRANGLER_ALLOW_REAL_AWS:-${AWSBOX_ALLOW_REAL_AWS:-0}}" == "1" ]]; then
 	return 0 2>/dev/null || exit 0
 fi
 
@@ -17,18 +18,23 @@ _sw_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC1091
 [[ -f "$_sw_root/.env" ]] && set -a && source "$_sw_root/.env" && set +a
 
-# Prefer STACKWRANGLER_* (canonical); AWSBOX_* still works.
-export AWSBOX_ACCESS_KEY="${AWSBOX_ACCESS_KEY:-${STACKWRANGLER_ACCESS_KEY:-stackwrangler}}"
-export AWSBOX_SECRET_KEY="${AWSBOX_SECRET_KEY:-${STACKWRANGLER_SECRET_KEY:-stackwranglerstackwrangler}}"
-export AWSBOX_REGION="${AWSBOX_REGION:-${STACKWRANGLER_REGION:-us-east-1}}"
-export AWSBOX_IAM_ENDPOINT="${AWSBOX_IAM_ENDPOINT:-${STACKWRANGLER_IAM_ENDPOINT:-http://127.0.0.1:4566}}"
-export AWSBOX_ENDPOINT="${AWSBOX_ENDPOINT:-${STACKWRANGLER_ENDPOINT:-http://127.0.0.1:8333}}"
+# Prefer STACKWRANGLER_* when both are set; AWSBOX-only .env still works.
+export AWSBOX_ACCESS_KEY="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
+export AWSBOX_SECRET_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
+export AWSBOX_REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
+export AWSBOX_IAM_ENDPOINT="${STACKWRANGLER_IAM_ENDPOINT:-${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}}"
+export AWSBOX_ENDPOINT="${STACKWRANGLER_ENDPOINT:-${AWSBOX_ENDPOINT:-http://127.0.0.1:8333}}"
+export STACKWRANGLER_ACCESS_KEY="$AWSBOX_ACCESS_KEY"
+export STACKWRANGLER_SECRET_KEY="$AWSBOX_SECRET_KEY"
+export STACKWRANGLER_REGION="$AWSBOX_REGION"
+export STACKWRANGLER_IAM_ENDPOINT="$AWSBOX_IAM_ENDPOINT"
+export STACKWRANGLER_ENDPOINT="$AWSBOX_ENDPOINT"
 
 _ep_host="$(python3 -c "from urllib.parse import urlparse; print(urlparse('${AWSBOX_IAM_ENDPOINT}').hostname or '')")"
 case "$_ep_host" in
 	127.0.0.1|localhost|::1|host.docker.internal) ;;
 	*)
-		echo "FATAL: refusing local smoke — AWSBOX_IAM_ENDPOINT host must be loopback (got '${AWSBOX_IAM_ENDPOINT}')." >&2
+		echo "FATAL: refusing local smoke — STACKWRANGLER_IAM_ENDPOINT / AWSBOX_IAM_ENDPOINT host must be loopback (got '${AWSBOX_IAM_ENDPOINT}')." >&2
 		echo "This guard exists so smokes never talk to real AWS by accident." >&2
 		exit 2
 		;;

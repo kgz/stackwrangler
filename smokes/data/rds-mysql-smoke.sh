@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
 source "$ROOT/smokes/lib/local-emu-env.sh"
 
-EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
+EP="${STACKWRANGLER_IAM_ENDPOINT:-${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}}"
 KEY="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
 SECRET="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
 TS="$(date +%s)"
@@ -19,7 +19,7 @@ CLUSTER="awsbox-amysql-${TS}"
 READER="${CLUSTER}-r"
 DB="awsbox"
 WRONG="DefinitelyWrongPass1"
-KEEP="${AWSBOX_RDS_KEEP:-0}"
+KEEP="${STACKWRANGLER_RDS_KEEP:-${AWSBOX_RDS_KEEP:-0}}"
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
