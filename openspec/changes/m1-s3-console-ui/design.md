@@ -26,5 +26,5 @@ SeaweedFS on `:8333`, profile `local`. Build product console (not MinIO/Seaweed 
 ## Risks / Trade-offs
 
 - [Browser CORS to :8333] → Vite proxy in dev; document for prod static host
-- [AWS UI churn] → ref screenshot pinned in `design/awsbox-console/refs/`
+- [AWS UI churn] → ref screenshot pinned in `design/stackwrangler-console/refs/`
 - [SDK checksum middleware vs SeaweedFS] → disable flexible checksums if PutObject fails

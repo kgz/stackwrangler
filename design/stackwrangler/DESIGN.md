@@ -1,4 +1,4 @@
-# awsbox
+# stackwrangler
 
 > Category: Infrastructure console
 > Surface: web
@@ -7,7 +7,7 @@ Dark operations console for learning AWS by doing the same jobs. Layout and noun
 
 ## 1. Visual Theme & Atmosphere
 
-awsbox is a dense dark console. A person who can find the service menu, the region, Create, and the resource table here can find them in the AWS console. The skin is not that console.
+stackwrangler is a dense dark console. A person who can find the service menu, the region, Create, and the resource table here can find them in the AWS console. The skin is not that console.
 
 Kick kept Twitch's regions (follows, player, chat) and replaced the purple, the glitch mark, and the type. Do the same here. Keep the console skeleton. Replace the orange, the sky-blue links, the blue-charcoal chrome, the smile, and Ember.
 
@@ -89,7 +89,7 @@ Same jobs, same slots:
 - Table: name first, location, date. Gear for columns. Pagination under the table.
 - Empty state: one sentence and the same filled action.
 
-Service nouns stay (bucket, object, region, access point). The product name in the chrome is awsbox, lowercase.
+Service nouns stay (bucket, object, region, access point). The product name in the chrome is stackwrangler, lowercase.
 
 ## 6. Components
 
@@ -115,7 +115,7 @@ Color and border changes take 120ms. No bounce, no page-load animation. Focus is
 
 ## 8. Voice & Brand
 
-Short, operational, the same verbs the console uses: create, delete, empty, copy ARN. Product name is awsbox. Never Amazon, never the smile, never "the cloud platform."
+Short, operational, the same verbs the console uses: create, delete, empty, copy ARN. Product name is stackwrangler. Never Amazon, never the smile, never "the cloud platform."
 
 ## 9. Anti-patterns
 

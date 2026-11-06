@@ -27,7 +27,7 @@ For the shipped surface, list anything that is **not** fully Working:
 | **Authz** | only admin/root path tested; workload role deny missing |
 | **Console** | list-only, Create disabled, “use CLI/smoke”, empty tabs, missing detail |
 | **AWS console UI** | shipped service missing an AWS console surface. Title `Debt: <service> console (from #<n>)` only if Impact ≥ 3; else unlabelled backlog. Designs use Open Design `web-clone` (`./bin/od-design-run.sh`) |
-| **Open Design first** | Console / web UI shipped without a `designing` phase — mocks under `design/` grey-rose theme dirs (historic names until [#421](https://github.com/kgz/stackwrangler/issues/421); web-clone when AWS has the screen). Fix before `done`; do not invent layout |
+| **Open Design first** | Console / web UI shipped without a `designing` phase — mocks in `design/stackwrangler-console/` using `design/stackwrangler/` theme (web-clone when AWS has the screen). Fix before `done`; do not invent layout |
 | **Dead controls** | Enabled button/link that no-ops or only toasts. Not wired → `disabled` + `title="To implement"` (+ Debt if Impact ≥ 3 for v1 surface). Never ship → omit |
 | **Sidecar / bridge** | real AWS shape deferred to a compose hack |
 | **Dual endpoints** | console vs CLI hit different backends |

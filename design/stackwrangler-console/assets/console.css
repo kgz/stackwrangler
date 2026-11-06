@@ -1,4 +1,4 @@
-/* awsbox palette. Spec: design/awsbox/DESIGN.md. Slot names stay so screen CSS keeps working. */
+/* stackwrangler palette. Spec: design/stackwrangler/DESIGN.md. --awsbox-* slots stay so screen CSS keeps working. */
 :root {
   --awsbox-page: #141414;
   --awsbox-chrome: #1c1c1c;

@@ -63,9 +63,11 @@ Work only in <absolute worktree path>. Every shell command uses that working dir
 Issue: #<n>
 <title and body, verbatim>
 
-Repo rules to follow (from AGENTS.md and the board docs):
-- Branch is already feature/<issue>-<slug>, based on origin/<base>.
-- Move the board to in-progress before editing, and to in-review when the PR is open, using only the repo's script (if bin/board-status.sh exists: export AWSBOX_AGENT=cursor-batch-<slug>; ./bin/board-status.sh in-progress <n>, then in-review). Claim via Project field Agent — do not create per-agent labels. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
+Repo rules to follow (from AGENTS.md, in-repo rules, and owner board rule ~/.cursor/rules/stackwrangler-board.mdc):
+- Branch is feature/<issue>-<slug> (already exists if continuing). Base is origin/<base> — rebase onto it before finishing if the branch is behind.
+- If an open PR already exists for this branch, update that PR; do not open a duplicate.
+- Web UI / console tickets: Open Design first. Set board to `designing`, run `./bin/od-design-run.sh --issue <n> "…"`, use theme `design/stackwrangler/` (grey rose), prefer skill `web-clone` when the screen exists in real AWS (read-only screenshots OK). Land mocks under `design/stackwrangler-console/` before React. Unwired controls: `disabled` + `title="To implement"` (+ Debt if v1). Never-ship controls: omit. No enabled no-ops. Only then `export STACKWRANGLER_AGENT=cursor-batch-<slug>; ./bin/board-status.sh in-progress <n>` (Project field Agent — no per-agent labels; AWSBOX_AGENT still works as fallback). Non-UI tickets start at in-progress the same way.
+- Move the board to in-progress before code edits (after designing when UI), and to in-review when the PR is open/updated, using only the repo's script. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
 - Do not mark the ticket done.
 - Run the tests the ticket and the repo docs require. If a gap-check script exists, run ./bin/gap-check.sh <n>. Prefer absorbing small additive gaps into this PR; otherwise file scored Debt (pillar + Impact/Effort; release label only if cut gate matches — never auto CURRENT_RELEASE).
 - Commit with a short message about why. No Co-authored-by or agent attribution.
@@ -98,6 +100,10 @@ Open must-fix items from round 3:
 ```
 
 You decide each `potential-follow-up`. Prefer absorb-in-parent when Effort ≤ 2 and same service. File Debt only when the gap is real, uncovered, and too big to absorb — with pillar + `./bin/issue-score.sh` and a release label only if the cut gate matches. Skip when already filed, out of scope, or not worth tracking. Comment: filed as `#N`, absorbed, or skipped. Potential follow-ups do not fail the review and do not block the batch.
+
+v1 that leaves out an AWS console UI for that service is Debt. Do not skip it as not worth tracking. Title `Debt: <service> console (from #<n>)` only if Impact ≥ 3; else unlabelled backlog. If `./bin/od-design-run.sh` exists, the debt's designs go through Open Design `web-clone`, not a guessed layout.
+
+Web UI PRs that skipped Open Design / `designing` (no mocks under `design/stackwrangler-console/` matching `design/stackwrangler/`) are must-fix — send back to designing, do not batch.
 
 Move the board to in-review when the PR is open. Leave it there.
 

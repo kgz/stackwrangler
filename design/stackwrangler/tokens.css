@@ -1,4 +1,4 @@
-/* awsbox palette. Roles are defined in DESIGN.md. */
+/* stackwrangler palette (--awsbox-* slots kept for screen CSS). Roles in DESIGN.md. */
 
 :root {
   --awsbox-page: #141414;
