@@ -1,39 +1,8 @@
-/* stackwrangler docs — grey-rose from design/awsbox tokens */
+/* stackwrangler docs — VitePress map + chrome; palette from design/stackwrangler/tokens.css */
 
 @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,650;1,400&display=swap');
 
 :root {
-  --awsbox-page: #141414;
-  --awsbox-chrome: #1c1c1c;
-  --awsbox-panel: #242424;
-  --awsbox-raised: #2e2e2e;
-  --awsbox-selected: #2a2428;
-
-  --awsbox-fg: #ececec;
-  --awsbox-body: #c4c4c4;
-  --awsbox-quiet: #8d8d8d;
-  --awsbox-on-accent: #1a1a1a;
-
-  --awsbox-accent: #b48aa0;
-  --awsbox-accent-hover: #c4a0b2;
-  --awsbox-accent-pressed: #9a7488;
-  --awsbox-link: #e6d0da;
-  --awsbox-link-hover: #f3e6ec;
-
-  --awsbox-danger: #e25b4a;
-  --awsbox-warning: #e2b15a;
-  --awsbox-success: #3ddc8a;
-
-  --awsbox-border: #3a3a3a;
-  --awsbox-hairline: #2a2a2a;
-  --awsbox-field: #5a5a5a;
-
-  --awsbox-font-sans: 'Source Sans 3', 'Segoe UI', sans-serif;
-  --awsbox-font-mono: 'Source Code Pro', ui-monospace, monospace;
-  --awsbox-radius-control: 2px;
-  --awsbox-radius-panel: 4px;
-  --awsbox-motion: 120ms;
-
   /* VitePress brand map — force dark charcoal + rose (no stock VP grey) */
   --vp-c-brand-1: var(--awsbox-accent);
   --vp-c-brand-2: var(--awsbox-accent-hover);

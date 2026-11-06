@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
@@ -10,6 +11,9 @@ const pages = process.env.GITHUB_PAGES === '1' || process.env.CI === 'true'
 const require = createRequire(import.meta.url)
 const dayjsRoot = path.dirname(require.resolve('dayjs/package.json'))
 const dayjsEsm = path.join(dayjsRoot, 'esm/index.js')
+const vitepressDir = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.resolve(vitepressDir, '../..')
+
 
 export default withMermaid(
   defineConfig({
@@ -141,7 +145,12 @@ export default withMermaid(
       optimizeDeps: {
         include: ['dayjs', 'mermaid'],
       },
+      // theme imports design/stackwrangler/tokens.css outside docs-site/
+      server: {
+        fs: { allow: [repoRoot] },
+      },
     },
+
     mermaid: {
       theme: 'dark',
       themeVariables: {

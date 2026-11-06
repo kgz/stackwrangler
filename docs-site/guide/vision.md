@@ -115,6 +115,7 @@ aws --profile local s3 ls
 | This page (public) | `docs-site/guide/vision.md` |
 | Depth / status | [Completeness](./completeness) |
 | Cross-service edges | [Interactions](./interactions/) |
-| Console mocks (design) | `design/awsbox-console/` |
+| Console mocks (design) | `design/awsbox-console/` → `design/stackwrangler-console/` (#421) |
+| Theme tokens | `design/stackwrangler/tokens.css` |
 | IaC examples | `examples/` |
 | Product entry | `./bin/stackwrangler` |

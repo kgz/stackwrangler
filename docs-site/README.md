@@ -1,6 +1,6 @@
 # stackwrangler docs site
 
-Maintainer notes for the VitePress site under `docs-site/`. Product guide pages live in `guide/` — do not put deploy/meta instructions there. Theme tokens follow `design/awsbox` (grey rose); do not invent a new palette.
+Maintainer notes for the VitePress site under `docs-site/`. Product guide pages live in `guide/` — do not put deploy/meta instructions there. Theme tokens import `design/stackwrangler/tokens.css` (grey rose); do not invent a new palette.
 
 **Intended public URL:** https://kgz.github.io/stackwrangler/
 
