@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sqs-queues-empty.html",
+  "entry": "screens/sqs-queues-empty.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T09:46:13.000Z",
+  "updatedAt": "2026-11-06T09:46:13.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

@@ -37,6 +37,18 @@ const lists: Array<{
     disabled: ['Delete', 'Rotate', 'Store a new secret'],
   },
   {
+    path: '/sqs',
+    heading: 'Queues',
+    columns: [
+      'Name',
+      'Type',
+      'Created',
+      'Messages available',
+      'Messages in flight',
+    ],
+    disabled: ['Delete', 'Create queue'],
+  },
+  {
     path: '/kms',
     heading: 'Customer managed keys',
     columns: [

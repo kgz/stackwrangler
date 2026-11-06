@@ -123,6 +123,25 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `kinesis-streams.html`
 
+## Issue #167 — SQS Queues list
+
+### Mode
+- Web-clone of the AWS SQS **Queues** list into grey-rose console chrome
+- Designs only for OD pass — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure follows `kinesis-streams.html` / `secrets-list.html` / `sns-topics.html`: h1 + description + card toolbar + find/pager + table
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `sqs-queues.html` | Name / Type / Created / Messages available / Messages in flight · 3 rows (`awsbox-sqs-demo`, `notifications.fifo`, `orders-ingress`) |
+| `sqs-queues-empty.html` | Empty twin · Refresh + Create queue + empty panel · link to sample rows |
+
+### Dead controls
+- `title="To implement"`: Create queue, Refresh, table settings, column filters, queue name dead links
+- `title="Select a row"`: Delete
+- Working: find field (`data-find-table`), pager chrome, Services/search → `sqs-queues.html`
+
+
 ## Run
 
 ```bash
