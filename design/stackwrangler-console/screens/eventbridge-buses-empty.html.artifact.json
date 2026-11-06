@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/eventbridge-buses-empty.html",
+  "entry": "screens/eventbridge-buses-empty.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T09:50:21.000Z",
+  "updatedAt": "2026-11-06T09:50:21.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

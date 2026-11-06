@@ -252,11 +252,14 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SNS → SQS queue CMK without `sns.amazonaws.com` `kms:GenerateDataKey` + `kms:Decrypt` → not delivered | sad/authz | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue CMK whose key policy Allows `sns.amazonaws.com` those actions → delivered | happy | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./smokes/messaging/events-smoke.sh` |
+| EventBridge console rules + event buses list | ui | covered | `console/e2e/eventbridge-rules.spec.ts` |
 | EventBridge deny PutEvents | sad/authz | covered | `./smokes/messaging/events-authz-smoke.sh` |
 | EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `disable-rule` stops scheduled invocations | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `cron(* * * * ? *)` rule invokes Lambda target (other cron/rate forms: [#317](https://github.com/kgz/awsl/issues/317)) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
+| EventBridge console Rules list | happy | covered | console e2e `eventbridge-rules.spec.ts` · thin list (Create/detail → [#552](https://github.com/kgz/awsl/issues/552)) |
+| EventBridge console Event buses list | happy | covered | console e2e `eventbridge-rules.spec.ts` (buses path) · thin list (Create/detail → [#552](https://github.com/kgz/awsl/issues/552)) |
 | DynamoDB put/get | happy | covered | `./smokes/data/dynamodb-smoke.sh` |
 | DynamoDB console tables list | ui | covered | `console/e2e/dynamodb-tables.spec.ts` |
 | DynamoDB deny PutItem | sad/authz | covered | `./smokes/data/dynamodb-authz-smoke.sh` |

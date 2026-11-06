@@ -13,6 +13,7 @@ export type AppId =
   | 'secretsmanager'
   | 'kinesis'
   | 'sqs'
+  | 'eventbridge'
   | 'kms'
   | 'sns'
   | 'dynamodb'
@@ -65,6 +66,13 @@ export const SERVICES: ServiceDef[] = [
     to: '/sqs',
   },
   {
+    id: 'eventbridge',
+    abbr: 'EB',
+    name: 'EventBridge',
+    desc: 'Event bus and rules',
+    to: '/events',
+  },
+  {
     id: 'kms',
     abbr: 'KMS',
     name: 'Key Management Service',
@@ -101,6 +109,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/secretsmanager')) return 'secretsmanager'
   if (pathname.startsWith('/kinesis')) return 'kinesis'
   if (pathname.startsWith('/sqs')) return 'sqs'
+  if (pathname.startsWith('/events')) return 'eventbridge'
   if (pathname.startsWith('/kms')) return 'kms'
   if (pathname.startsWith('/sns')) return 'sns'
   if (pathname.startsWith('/dynamodb')) return 'dynamodb'
@@ -142,6 +151,9 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'Data streams', to: '/kinesis' },
   { type: 'Service', label: 'Simple Queue Service', to: '/sqs' },
   { type: 'Feature', label: 'Queues', to: '/sqs' },
+  { type: 'Service', label: 'Amazon EventBridge', to: '/events' },
+  { type: 'Feature', label: 'Rules', to: '/events' },
+  { type: 'Feature', label: 'Event buses', to: '/events/buses' },
   { type: 'Feature', label: 'Customer managed keys', to: '/kms' },
   { type: 'Service', label: 'Simple Notification Service', to: '/sns' },
   { type: 'Feature', label: 'Topics', to: '/sns' },
@@ -183,6 +195,8 @@ const CRUMBS: Record<string, string> = {
   '/secretsmanager': 'Secrets',
   '/kinesis': 'Data streams',
   '/sqs': 'Queues',
+  '/events': 'Rules',
+  '/events/buses': 'Event buses',
   '/kms': 'Customer managed keys',
   '/sns': 'Topics',
   '/dynamodb': 'Tables',

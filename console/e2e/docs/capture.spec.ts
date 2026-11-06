@@ -103,6 +103,17 @@ test.describe('docs-capture', () => {
     })
   })
 
+  test('eventbridge rules list', async ({ page }) => {
+    await shot(page, 'eventbridge-rules.png', '/events', async () => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Rules' }),
+      ).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByText('Loading rules…')).toHaveCount(0, {
+        timeout: 30_000,
+      })
+    })
+  })
+
   test('specialty buckets empty chrome', async ({ page }) => {
     await shot(
       page,

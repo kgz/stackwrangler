@@ -244,6 +244,27 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  eventbridge: {
+    title: 'EventBridge',
+    sections: [
+      {
+        id: 'eventbridge-main',
+        label: 'EventBridge',
+        items: [
+          {
+            label: 'Rules',
+            to: '/events',
+            active: exactly('/events'),
+          },
+          {
+            label: 'Event buses',
+            to: '/events/buses',
+            active: under('/events/buses'),
+          },
+        ],
+      },
+    ],
+  },
   kms: {
     title: 'Key Management Service',
     sections: [
