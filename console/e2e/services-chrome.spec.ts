@@ -50,6 +50,19 @@ const lists: Array<{
     disabled: ['Create key'],
   },
   {
+    path: '/dynamodb',
+    heading: 'Tables',
+    columns: [
+      'Name',
+      'Status',
+      'Partition key',
+      'Sort key',
+      'Indexes',
+      'Capacity mode',
+    ],
+    disabled: ['Create table'],
+  },
+  {
     path: '/apigateway',
     heading: 'APIs',
     columns: ['Name', 'API ID', 'Created date', 'Endpoint'],

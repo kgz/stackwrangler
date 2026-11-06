@@ -244,6 +244,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  dynamodb: {
+    title: 'DynamoDB',
+    sections: [
+      {
+        id: 'dynamodb-main',
+        label: 'Tables',
+        items: [
+          {
+            label: 'Tables',
+            to: '/dynamodb',
+            active: under('/dynamodb'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [

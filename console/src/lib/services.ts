@@ -13,6 +13,7 @@ export type AppId =
   | 'secretsmanager'
   | 'kinesis'
   | 'kms'
+  | 'dynamodb'
 
 export type ServiceDef = {
   id: AppId
@@ -61,6 +62,13 @@ export const SERVICES: ServiceDef[] = [
     desc: 'Create and manage encryption keys',
     to: '/kms',
   },
+  {
+    id: 'dynamodb',
+    abbr: 'DDB',
+    name: 'DynamoDB',
+    desc: 'NoSQL key-value and document store',
+    to: '/dynamodb',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -77,6 +85,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/secretsmanager')) return 'secretsmanager'
   if (pathname.startsWith('/kinesis')) return 'kinesis'
   if (pathname.startsWith('/kms')) return 'kms'
+  if (pathname.startsWith('/dynamodb')) return 'dynamodb'
   return 's3'
 }
 
@@ -114,6 +123,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Service', label: 'Kinesis Data Streams', to: '/kinesis' },
   { type: 'Feature', label: 'Data streams', to: '/kinesis' },
   { type: 'Feature', label: 'Customer managed keys', to: '/kms' },
+  { type: 'Feature', label: 'Tables', to: '/dynamodb' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'Stacks', to: '/cloudformation' },
@@ -147,6 +157,7 @@ const CRUMBS: Record<string, string> = {
   '/secretsmanager': 'Secrets',
   '/kinesis': 'Data streams',
   '/kms': 'Customer managed keys',
+  '/dynamodb': 'Tables',
   '/apigateway': 'HTTP APIs',
   '/cloudformation': 'Stacks',
   '/transfer': 'Servers',
