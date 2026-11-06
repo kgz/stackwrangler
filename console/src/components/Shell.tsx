@@ -372,7 +372,13 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       {
         id: 'ec2-instances-sec',
         label: 'Instances',
-        items: [{ label: 'Instances', to: '/ec2', active: exactly('/ec2') }],
+        items: [
+          {
+            label: 'Instances',
+            to: '/ec2',
+            active: (p) => p === '/ec2' || p.startsWith('/ec2/instances/'),
+          },
+        ],
       },
       {
         id: 'ec2-network',

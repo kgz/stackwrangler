@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create cluster — Elastic Container Service</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ecs-create-cluster" data-nav="ecs-clusters" data-service="ecs" data-title="Create cluster" data-crumb="Create cluster">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create cluster</h1>
+      <p class="aws-desc">
+        Create an empty ECS cluster. LocalEmu accepts a cluster name only — capacity providers,
+        Container Insights, and VPC settings stay CLI/terraform for now.
+      </p>
+
+      <section class="aws-card" data-od-id="cluster-config">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Cluster configuration</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="cluster-name">Cluster name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="cluster-name" name="clusterName" type="text" autocomplete="off" placeholder="my-cluster" value="awsbox-lab" data-od-id="field-cluster-name" />
+              <p class="aws-hint">Up to 255 letters, numbers, hyphens, and underscores.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Infrastructure</label>
+              <ul class="aws-radio-list">
+                <li>
+                  <label>
+                    <input type="radio" name="infra" value="fargate" checked data-od-id="infra-fargate" />
+                    <span>
+                      <strong>AWS Fargate (serverless)</strong>
+                      <span class="sub">Default LocalEmu launch type for run-task / services.</span>
+                    </span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="infra" value="ec2" disabled title="To implement" data-od-id="infra-ec2" />
+                    <span>
+                      <strong>Amazon EC2 instances</strong>
+                      <span class="sub">Register container instances via CLI / smoke.</span>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-actions">
+        <a class="btn btn-normal" href="ecs-clusters.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-create-cluster">Create</button>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

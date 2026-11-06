@@ -195,6 +195,7 @@ const CRUMBS: Record<string, string> = {
   '/rds': 'Databases',
   '/rds/create': 'Create database',
   '/ecs': 'Clusters',
+  '/ecs/create': 'Create cluster',
   '/ec2': 'Instances',
   '/ec2/vpcs': 'Your VPCs',
   '/ec2/load-balancers': 'Load balancers',
