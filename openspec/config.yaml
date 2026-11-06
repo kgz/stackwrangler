@@ -9,7 +9,7 @@ context: |
   Later: Lambda, API Gateway, Serverless, more services.
   Conventions: no TypeScript `any`, no casts; short git messages.
   Delivery: ticket on board → OpenSpec change → apply → PR with Closes #n.
-  Console mocks: design/awsbox-console/ (Open Design).
+  Console mocks: design/stackwrangler-console/ (Open Design).
 
 rules:
   proposal:
