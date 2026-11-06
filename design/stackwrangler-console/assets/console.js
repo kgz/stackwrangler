@@ -54,6 +54,8 @@
     { type: "Service", label: "Secrets Manager", href: "secrets-list.html" },
     { type: "Service", label: "CloudWatch", href: "logs-log-groups.html" },
     { type: "Service", label: "Step Functions", href: "sfn-state-machines.html" },
+    { type: "Service", label: "Kinesis", href: "kinesis-streams.html" },
+    { type: "Service", label: "Kinesis Data Streams", href: "kinesis-streams.html" },
     { type: "Service", label: "API Gateway", href: "apigateway-http-apis.html" },
     { type: "Service", label: "CloudFormation", href: "cloudformation-stacks.html" },
     { type: "Service", label: "Transfer Family", href: "transfer-servers.html" },
@@ -80,6 +82,7 @@
     { type: "Feature", label: "demo-console-hello", href: "lambda-function-detail.html" },
     { type: "Feature", label: "Log groups", href: "logs-log-groups.html" },
     { type: "Feature", label: "State machines", href: "sfn-state-machines.html" },
+    { type: "Feature", label: "Data streams", href: "kinesis-streams.html" },
     { type: "Feature", label: "HTTP APIs", href: "apigateway-http-apis.html" },
     { type: "Feature", label: "Stacks", href: "cloudformation-stacks.html" },
     { type: "Feature", label: "Transfer servers", href: "transfer-servers.html" },
@@ -210,6 +213,15 @@
           label: "Secrets",
           open: true,
           items: [{ id: "secrets-list", label: "Secrets", href: "secrets-list.html" }],
+    kinesis: {
+      label: "Kinesis",
+      home: "kinesis-streams.html",
+      tree: [
+        {
+          id: "kinesis-main",
+          label: "Data streams",
+          open: true,
+          items: [{ id: "kinesis-streams", label: "Data streams", href: "kinesis-streams.html" }],
         },
       ],
       foot: [],
@@ -555,6 +567,7 @@
       ["λ", "Lambda", "Run code without thinking about servers", "lambda-functions.html"],
       ["SM", "Secrets Manager", "Manage secrets and credentials", "secrets-list.html"],
       ["CFN", "CloudFormation", "Model and provision resources", "cloudformation-stacks.html"],
+      ["KIN", "Kinesis", "Real-time data streams", "kinesis-streams.html"],
       ["EC2", "EC2", "Virtual servers in the cloud", "ec2-instances.html"],
       ["RDS", "RDS", "Managed relational databases", "rds-databases.html"],
     ]
