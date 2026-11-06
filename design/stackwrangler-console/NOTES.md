@@ -85,7 +85,8 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 | `transfer-servers.html` + `transfer-server-detail.html` | Servers list + users + data plane |
 | `rds-databases.html` + `rds-instance-detail.html` | Databases list + connectivity/config |
 | `ecs-clusters.html` + `ecs-cluster-detail.html` | Clusters list + services/tasks |
-| `ec2-instances.html` | Instances list |
+| `ecs-create-cluster.html` + `ecs-task-detail.html` | Create cluster + task depth (#146) |
+| `ec2-instances.html` + `ec2-instance-detail.html` | Instances list + detail (#146) |
 | `ec2-vpcs.html` + `ec2-vpc-detail.html` | VPCs list + detail tabs (details/CIDRs/subnets/tags) |
 | `ec2-load-balancers.html` | Load balancers list |
 
@@ -134,6 +135,27 @@ Open `index.html` in Open Design preview or a static file server from this direc
 
 ## License / trademark
 AWS name, logo, and console UI are Amazon trademarks. Local design reference only — do not publish as an AWS product.
+
+## Issue #146 — ECS/EC2 console depth
+
+### Mode
+- Web-clone depth for ECS create/cluster/task and EC2 instance detail into grey-rose chrome
+- LocalEmu-shaped sample rows; no real AWS resources / API writes in design
+- Create cluster is a thin name form (capacity providers / EC2 infra stay stubbed)
+- Task Logs: clear stub — CloudWatch stream not wired in LocalEmu console
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `ecs-create-cluster.html` | Cluster name + Fargate selected; EC2 infra disabled |
+| `ecs-cluster-detail.html` | Overview (+ pending/registered) · richer services/tasks · task link |
+| `ecs-task-detail.html` | Config · containers table · Logs stub |
+| `ec2-instance-detail.html` | Summary + networking (VPC/subnet/SG/IAM) |
+| `ecs-clusters.html` / `ec2-instances.html` | Create Cluster → create page; instance ID → detail |
+
+### Dead controls
+- `title="To implement"`: Launch instance, EC2 infra radio, task Stop / View in CloudWatch Logs, cluster Actions, instance state/Actions
+- Working links: Create Cluster, cluster/task/instance detail navigation
 
 ## Issue #177 — KMS Customer managed keys list
 

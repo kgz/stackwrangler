@@ -15,6 +15,7 @@
       <div class="aws-toolbar" data-od-id="detail-toolbar">
         <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">awsbox-lab</h1>
         <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Actions ▾</button>
       </div>
       <div class="aws-subtitle-row"><span class="aws-status aws-status-success">ACTIVE</span></div>
       <section class="aws-card" data-od-id="overview-card">
@@ -25,6 +26,8 @@
             <div><dt>ARN</dt><dd><code class="aws-mono">arn:aws:ecs:ap-southeast-2:445772506418:cluster/awsbox-lab</code></dd></div>
             <div><dt>Active services</dt><dd>1</dd></div>
             <div><dt>Running tasks</dt><dd>1</dd></div>
+            <div><dt>Pending tasks</dt><dd>0</dd></div>
+            <div><dt>Registered container instances</dt><dd>0</dd></div>
           </dl>
         </div>
       </section>
@@ -33,9 +36,25 @@
           <h2 class="aws-section-title">Services</h2>
           <div class="aws-table-wrap">
             <table class="aws-table" data-od-id="ecs-services-table">
-              <thead><tr><th scope="col"><span class="th-inner">Service name</span></th><th scope="col"><span class="th-inner">Status</span></th><th scope="col"><span class="th-inner">Desired tasks</span></th><th scope="col"><span class="th-inner">Running tasks</span></th></tr></thead>
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Service name</span></th>
+                  <th scope="col"><span class="th-inner">Status</span></th>
+                  <th scope="col"><span class="th-inner">Task definition</span></th>
+                  <th scope="col"><span class="th-inner">Launch type</span></th>
+                  <th scope="col"><span class="th-inner">Desired tasks</span></th>
+                  <th scope="col"><span class="th-inner">Running tasks</span></th>
+                </tr>
+              </thead>
               <tbody>
-                <tr><td>web</td><td><span class="aws-status aws-status-success">ACTIVE</span></td><td>1</td><td>1</td></tr>
+                <tr>
+                  <td>web</td>
+                  <td><span class="aws-status aws-status-success">ACTIVE</span></td>
+                  <td><code class="aws-mono">awsbox-lab-web:3</code></td>
+                  <td>FARGATE</td>
+                  <td>1</td>
+                  <td>1</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -46,14 +65,31 @@
           <h2 class="aws-section-title">Tasks</h2>
           <div class="aws-table-wrap">
             <table class="aws-table" data-od-id="ecs-tasks-table">
-              <thead><tr><th scope="col"><span class="th-inner">Task</span></th><th scope="col"><span class="th-inner">Last status</span></th><th scope="col"><span class="th-inner">Desired status</span></th><th scope="col"><span class="th-inner">Launch type</span></th></tr></thead>
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Task</span></th>
+                  <th scope="col"><span class="th-inner">Last status</span></th>
+                  <th scope="col"><span class="th-inner">Desired status</span></th>
+                  <th scope="col"><span class="th-inner">Task definition</span></th>
+                  <th scope="col"><span class="th-inner">Launch type</span></th>
+                  <th scope="col"><span class="th-inner">Started at</span></th>
+                </tr>
+              </thead>
               <tbody>
-                <tr><td><code class="aws-mono">1a2b3c4d5e6f</code></td><td><span class="aws-status aws-status-success">RUNNING</span></td><td>RUNNING</td><td>FARGATE</td></tr>
+                <tr>
+                  <td><a href="ecs-task-detail.html" data-od-id="task-1a2b"><code class="aws-mono">1a2b3c4d5e6f</code></a></td>
+                  <td><span class="aws-status aws-status-success">RUNNING</span></td>
+                  <td>RUNNING</td>
+                  <td><code class="aws-mono">awsbox-lab-web:3</code></td>
+                  <td>FARGATE</td>
+                  <td>2026-11-06 08:20:11</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
+      <p class="aws-desc" style="margin-top:16px"><a href="ecs-clusters.html">Back to clusters</a></p>
     </main>
   </div>
   <script src="../assets/console.js"></script>
