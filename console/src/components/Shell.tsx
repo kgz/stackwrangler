@@ -212,6 +212,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  kinesis: {
+    title: 'Kinesis',
+    sections: [
+      {
+        id: 'kinesis-main',
+        label: 'Data streams',
+        items: [
+          {
+            label: 'Data streams',
+            to: '/kinesis',
+            active: under('/kinesis'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [

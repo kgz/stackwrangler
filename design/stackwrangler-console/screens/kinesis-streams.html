@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data streams — Kinesis</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="kinesis-streams" data-nav="kinesis-streams" data-service="kinesis" data-title="Data streams" data-crumb="Data streams">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Data streams</h1>
+      <p class="aws-desc">Amazon Kinesis Data Streams captures, processes, and stores data streams at any scale so you can build real-time applications.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-stream" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-data-stream" title="To implement">Create data stream</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter streams by name" data-find-table="#data-table" aria-label="Filter streams by name" data-od-id="find-streams" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="kinesis-streams-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Status <button type="button" class="filter" aria-label="Filter Status" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Capacity mode <button type="button" class="filter" aria-label="Filter Capacity mode" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Monitoring <button type="button" class="filter" aria-label="Filter Monitoring" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Created <span aria-hidden="true">↑</span></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="app-events">
+                  <td class="check"><input type="checkbox" aria-label="Select app-events" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="stream-app-events">app-events</button></td>
+                  <td>ACTIVE</td>
+                  <td>On-demand</td>
+                  <td>Open</td>
+                  <td>2026-10-22 08:41:16</td>
+                </tr>
+                <tr data-name="awsbox-kinesis-demo">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-kinesis-demo" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="stream-awsbox-kinesis-demo">awsbox-kinesis-demo</button></td>
+                  <td>ACTIVE</td>
+                  <td>Provisioned</td>
+                  <td>Open</td>
+                  <td>2026-11-02 14:18:03</td>
+                </tr>
+                <tr data-name="orders-ingest">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-ingest" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="stream-orders-ingest">orders-ingest</button></td>
+                  <td>ACTIVE</td>
+                  <td>Provisioned</td>
+                  <td>Enhanced</td>
+                  <td>2026-09-14 11:05:49</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

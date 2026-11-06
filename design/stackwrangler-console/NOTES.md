@@ -99,6 +99,12 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 - Web-clone of the AWS Secrets Manager **Secrets** list into grey-rose console chrome
 - Designs only — LocalEmu-shaped sample rows; no real AWS resources touched
 - Structure follows existing thin lists (`iam-users.html` / `sfn-state-machines.html`): h1 + description + card toolbar + find/pager + table
+## Issue #178 — Kinesis Data streams list
+
+### Mode
+- Web-clone of the AWS Kinesis **Data streams** list into grey-rose console chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure follows `kms-keys.html` / `secrets-list.html` / `sfn-state-machines.html`: h1 + description + card toolbar + find/pager + table
 
 ### Deliverables
 | File | Covers |
@@ -109,6 +115,13 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 ### Dead controls (`title="To implement"`)
 - Store a new secret, Delete, Rotate, Refresh, header filters, secret name links, table settings
 - Working: find field filters rows through shared `data-find-table` wiring; pager and nav links unchanged
+| `kinesis-streams.html` | Name / Status / Capacity mode / Monitoring / Created · 3 rows (`app-events`, `awsbox-kinesis-demo`, `orders-ingest`) |
+| `kinesis-streams-empty.html` | Empty twin · Refresh + Create data stream + empty panel · link to sample rows |
+
+### Dead controls
+- `title="To implement"`: Create data stream, Refresh, table settings, column filters, stream name dead links
+- `title="Select a row"`: Delete
+- Working: find field (`data-find-table`), pager chrome, Services/search → `kinesis-streams.html`
 
 ## Run
 

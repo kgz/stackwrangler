@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/kinesis-streams.html",
+  "entry": "screens/kinesis-streams.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T08:03:36.500Z",
+  "updatedAt": "2026-11-06T08:03:36.500Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}
