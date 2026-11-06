@@ -79,6 +79,17 @@ test.describe('docs-capture', () => {
     })
   })
 
+  test('kms customer managed keys', async ({ page }) => {
+    await shot(page, 'kms-keys.png', '/kms', async () => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Customer managed keys' }),
+      ).toBeVisible({ timeout: 30_000 })
+      await expect(
+        page.getByText('Loading customer managed keys…'),
+      ).toHaveCount(0, { timeout: 30_000 })
+    })
+  })
+
   test('specialty buckets empty chrome', async ({ page }) => {
     await shot(
       page,
