@@ -135,7 +135,7 @@ source "$ROOT/bin/stackwrangler-env.sh"
 	|| fail "helper should fall back to AWSBOX_* from .env"
 pass "stackwrangler-env.sh falls back to AWSBOX_*"
 
-# --- smokes/lib/local-emu-env.sh: STACKWRANGLER_* wins when both set ---
+# --- local-emu-env.sh (via stackwrangler-env.sh): STACKWRANGLER_* wins when both set ---
 unset STACKWRANGLER_ACCESS_KEY STACKWRANGLER_SECRET_KEY STACKWRANGLER_REGION \
 	STACKWRANGLER_ENDPOINT STACKWRANGLER_IAM_ENDPOINT \
 	AWSBOX_ACCESS_KEY AWSBOX_SECRET_KEY AWSBOX_REGION \
