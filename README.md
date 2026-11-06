@@ -18,7 +18,7 @@ Live local console (grey rose chrome) — same account as CLI and IaC.
 
 ## Features
 
-- **One local account** — CLI (`aws --profile local`), console (`./bin/stackwrangler console`), and Terraform / CDK / SAM / Serverless hit the same endpoints
+- **One local account** — CLI (`aws --profile local`), console, and Terraform / CDK / SAM / Serverless hit the same endpoints
 - **Fully working bar** — create → configure → traffic or data moves → you can see it. Control-plane stubs stay labelled stubs (no catalogue theatre)
 - **Authz that denies** — LocalEmu with `IAM_ENFORCEMENT=1`; workload principals and resource policies fail like AWS when the policy is wrong
 - **Honest depth** — Working / Partial / Sidecar / Backlog are first-class; see [docs/status.md](docs/status.md)
@@ -26,25 +26,32 @@ Live local console (grey rose chrome) — same account as CLI and IaC.
 
 Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plus sidecars: **SeaweedFS** (console buckets), **distribution/registry** (ECR-shaped push/pull), **atmoz/sftp** (Transfer dataplane). Console buckets UI uses SeaweedFS; IaC / Lambda / S3 events use **LocalEmu S3** ([docs/s3-backends.md](docs/s3-backends.md)).
 
-## Prerequisites
+## Install (Docker only — no git)
 
-- [Docker](https://docs.docker.com/get-docker/) (Compose v2)
-- [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-- Optional: `psql`, `mysql`, `sshpass` for RDS / Transfer dataplane smokes
-
-Linux host: published ports bind to `127.0.0.1`. Run Docker Engine (Compose v2) on that host. Windows users running Linux via WSL can use Docker Desktop with WSL integration or an engine inside WSL.
-
-## Quick start
+**This is the primary public path.** Requires Docker Engine (Compose v2). Full detail: [docs/docker-install.md](docs/docker-install.md).
 
 ```bash
-git clone https://github.com/kgz/stackwrangler.git
-cd stackwrangler
-./bin/stackwrangler up
-./bin/stackwrangler console   # http://127.0.0.1:3000
-aws --profile local s3 ls
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:latest
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:latest up
 ```
 
-`./bin/stackwrangler up` copies `.env.example` → `.env` on first run. Defaults: access key `stackwrangler`, secret `stackwranglerstackwrangler`, profile `local`. Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop the profile).
+Then open <http://127.0.0.1:3000> and:
+
+```bash
+aws --profile local s3 ls
+aws --profile local --endpoint-url http://127.0.0.1:4566 sts get-caller-identity
+```
+
+Upgrade / teardown / ports / known limits (host Docker, sock mounts, dual S3): [docs/docker-install.md](docs/docker-install.md).
+
+Optional thin CLI (GitHub Release asset `stackwrangler`): same `up` / `down` / `status` commands without typing `docker run`.
+
+Contributor clone path: `./bin/stackwrangler up` copies `.env.example` → `.env` on first run. Defaults: access key `stackwrangler`, secret `stackwranglerstackwrangler`, profile `local`. Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop the profile).
 
 | What | Where |
 |------|--------|
@@ -53,13 +60,26 @@ aws --profile local s3 ls
 | Transfer SFTP (native) | `127.0.0.1:2222` ([docs/transfer.md](docs/transfer.md)) |
 | Console | `http://127.0.0.1:3000` |
 | Profile | `local` |
+| Config / data | `~/.stackwrangler` |
 
-If profile `local` exists and isn’t stackwrangler-managed: `./bin/stackwrangler up --force`.
+Images publish to GHCR on product tags (`vX.Y.Z`). Until a tag has been cut, build locally from a contributor checkout with `./bin/build-release-images.sh` (see docker-install docs) — **running** the stack still does not require keeping the clone.
 
-Coming from older checkouts named `awsbox`: `./bin/awsbox` still works as a shim that execs `stackwrangler` (and prints a rename notice). Prefer `./bin/stackwrangler` and `STACKWRANGLER_*` env vars.
+## Contributors (git clone)
+
+For patches, smokes, OpenSpec, and Open Design — not required to run or upgrade the public image path:
+
+```bash
+git clone https://github.com/kgz/stackwrangler.git
+cd stackwrangler
+./bin/stackwrangler up
+./bin/stackwrangler console   # Vite dev server on :3000
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Coming from older checkouts named `awsbox`: `./bin/awsbox` still shims to `stackwrangler`.
 
 ## Documentation
 
+- [Docker install](docs/docker-install.md) — public path (start here)
 - Public docs site: [docs-site/](docs-site/) (VitePress) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) after Pages is enabled on a public repo
 - Run docs locally: `cd docs-site && pnpm install && pnpm dev`
 - [Vision](docs/vision.md) — north star (mirrored on the site)

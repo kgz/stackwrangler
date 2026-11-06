@@ -8,27 +8,25 @@ Bring up a local AWS-shaped account, open the console, and talk to it with the A
 
 - Docker Engine on Linux (Compose v2). Published ports bind to `127.0.0.1` on that host. Windows users: run Linux via WSL with Docker Desktop WSL integration or an engine inside WSL.
 - AWS CLI v2
-- Node / yarn (for the console; `./bin/stackwrangler console` installs deps on first run)
 
-## 1. Clone and start the stack
+No git clone for the public path. Full reference: [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md) in the repo.
 
-::: code-group
+## 1. Start the stack (Docker image)
 
-```bash [Clone + up]
-git clone https://github.com/kgz/stackwrangler.git
-cd stackwrangler
-./bin/stackwrangler up
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:latest
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:latest up
 ```
 
-```bash [Tear down]
-./bin/stackwrangler down
-# optional: drop profile local
-./bin/stackwrangler down --remove-profile
-```
+That pulls sibling images (LocalEmu with patches, SeaweedFS, console nginx, ECR registry), starts them on the **host** Docker engine, and writes AWS profile `local`. Config lives in `~/.stackwrangler`.
 
-:::
-
-That starts SeaweedFS (S3 for the console and `aws --profile local`), LocalEmu (IAM, Lambda, CFN, … on `:4566`), and related sidecars. It writes AWS profile `local`.
+Tear down with the same image and `down` (thin CLI: `stackwrangler down`; optional `--remove-profile` drops profile `local`).
+>>>>>>> origin/feature/487-docker-image-install
 
 ::: tip Naming
 **stackwrangler** is the product CLI and docs brand. **LocalEmu** is the emulator behind `:4566`. This is unrelated to Cloudflare’s Wrangler CLI.
@@ -36,10 +34,7 @@ That starts SeaweedFS (S3 for the console and `aws --profile local`), LocalEmu (
 
 ## 2. Open the console
 
-```bash
-./bin/stackwrangler console
-# → http://127.0.0.1:3000
-```
+Browse <http://127.0.0.1:3000> — the release path serves a baked static console (no Vite).
 
 Grey-rose chrome, same account as the CLI. Home opens on **S3 general purpose buckets** (SeaweedFS):
 
@@ -63,7 +58,22 @@ aws --profile local \
 
 Profile `local` points S3 at SeaweedFS (`:8333`). Most other services use LocalEmu (`:4566`). See [Concepts](./concepts) for the dual-S3 split.
 
-## 4. Next
+## 4. Upgrade / teardown
+
+```bash
+docker pull ghcr.io/kgz/stackwrangler:latest   # and sibling :latest tags — see docker-install
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:latest down -v
+```
+
+## Contributors only
+
+Clone the repo when changing the product (smokes, patches, console source). See [CONTRIBUTING](https://github.com/kgz/stackwrangler/blob/main/CONTRIBUTING.md) — not required to run or upgrade.
+
+## 5. Next
 
 - [Vision](./vision) — what “fully working” means
 - [Completeness](./completeness) — Working vs Partial vs stub

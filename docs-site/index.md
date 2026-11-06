@@ -47,10 +47,14 @@ Bring the account up, open the console, talk to it with the AWS CLI:
 ::: code-group
 
 ```bash [Bring up]
-git clone https://github.com/kgz/stackwrangler.git
-cd stackwrangler
-./bin/stackwrangler up
-./bin/stackwrangler console   # http://127.0.0.1:3000
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:latest
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:latest up
+# → http://127.0.0.1:3000
 ```
 
 ```bash [CLI]
@@ -112,4 +116,4 @@ Ready? [Getting Started](/guide/getting-started) · [Vision](/guide/vision) · [
 
 Docs also run locally: `cd docs-site && pnpm install && pnpm dev` → [docs-site README](https://github.com/kgz/stackwrangler/blob/main/docs-site/README.md). Hosted target: [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/).
 
-</div>
+</div>>>>>>>> origin/feature/487-docker-image-install

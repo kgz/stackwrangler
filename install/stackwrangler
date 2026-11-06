@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Public host CLI — no git clone. Wraps the published orchestrator image.
+# Install: copy this file from a GitHub Release asset, or:
+#   docker run --rm ghcr.io/kgz/stackwrangler:latest version
+#   # then use this script, or the docker run one-liner in docs/docker-install.md
+set -euo pipefail
+
+IMAGE="${STACKWRANGLER_IMAGE:-ghcr.io/kgz/stackwrangler:latest}"
+DATA="${STACKWRANGLER_HOME:-${HOME}/.stackwrangler}"
+AWS_DIR="${AWS_SHARED_CREDENTIALS_FILE:-${HOME}/.aws/credentials}"
+AWS_HOME="$(dirname "$AWS_DIR")"
+
+mkdir -p "$DATA" "$AWS_HOME"
+
+# Pass through image channel + port/credential overrides.
+env_args=()
+pass_env() {
+	local name="$1"
+	if [[ -n "${!name-}" ]]; then
+		env_args+=(-e "${name}=${!name}")
+	fi
+}
+pass_env STACKWRANGLER_IMAGE_TAG
+pass_env STACKWRANGLER_LOCALEMU_IMAGE
+pass_env STACKWRANGLER_CONSOLE_IMAGE
+pass_env STACKWRANGLER_ECR_IMAGE
+pass_env STACKWRANGLER_LOCAL_IMAGES
+pass_env STACKWRANGLER_ACCESS_KEY
+pass_env STACKWRANGLER_SECRET_KEY
+pass_env STACKWRANGLER_REGION
+pass_env STACKWRANGLER_ENDPOINT
+pass_env STACKWRANGLER_IAM_ENDPOINT
+pass_env STACKWRANGLER_S3_HOST_PORT
+pass_env STACKWRANGLER_LOCALEMU_HOST_PORT
+pass_env STACKWRANGLER_CONSOLE_HOST_PORT
+pass_env STACKWRANGLER_ECR_HOST_PORT
+pass_env STACKWRANGLER_SFTP_HOST_PORT
+pass_env STACKWRANGLER_ECS_CREDS_PORT
+pass_env STACKWRANGLER_TRANSFER_SFTP_PORT
+pass_env STACKWRANGLER_ACCOUNT_ID
+pass_env STACKWRANGLER_ACCOUNT_IDS
+pass_env COMPOSE_PROJECT_NAME
+
+# Host network so health checks to 127.0.0.1 published ports work (Linux).
+exec docker run --rm \
+	--network host \
+	-v /var/run/docker.sock:/var/run/docker.sock \
+	-v "${DATA}:/data" \
+	-v "${AWS_HOME}:/root/.aws" \
+	-e STACKWRANGLER_DATA=/data \
+	"${env_args[@]}" \
+	"$IMAGE" \
+	"$@"

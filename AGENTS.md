@@ -26,12 +26,15 @@ git checkout -b feature/<issue>-<short-slug>   # or feature/<short-slug>
 - PR body: `Closes #<n>` when applicable
 - No `Co-authored-by` / agent attribution
 - No secrets or real AWS credentials in commits
+- After merge (or abandon): delete the head branch on origin + locally, remove the worktree, `git fetch --prune`. Prefer `gh pr merge … --delete-branch`. Do not leave merged `feature/*` / `batch/*` branches on the remote.
 
-## Versioning
+## Versioning (pillars + release label + scores)
 
-- **Milestone** = service catalogue (`v1 — Networking`, …)
-- **Label** = product release from [docs/CURRENT_RELEASE](docs/CURRENT_RELEASE) (e.g. `v0.0.1`)
-- Cutting a release: `./bin/release-tag.sh vX.Y.Z` — only when asked. See [docs/versioning.md](docs/versioning.md).
+- **Milestone** = pillar (`Platform`, `Identity & authz`, …) — see [docs/version-plan.md](docs/version-plan.md).
+- **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.1.0` Org path). Only if theme + Impact gate match — otherwise **no version label**.
+- New tickets: pillar + `./bin/issue-score.sh <n> --impact=N --effort=N`. Do **not** auto-label `CURRENT_RELEASE`. Freeze: every new issue needs pillar + scores; version label only if cut gate matches.
+- Debt: absorb small gaps in-parent ([docs/gap-check.md](docs/gap-check.md)); else evaluate-and-place.
+- Cut a release: `./bin/release-tag.sh vX.Y.Z` — only when asked. See [docs/versioning.md](docs/versioning.md).
 
 ## Product north star
 
@@ -55,7 +58,7 @@ Any ticket that adds or changes **console / web UI** (`console/`, new service pa
 1. Theme: `design/stackwrangler/` (grey rose). Do not invent a new palette or copy AWS orange / sky blue / smile.
 2. Mocks: `./bin/od-design-run.sh --issue <n> "…"`. Prefer skill **web-clone** when the screen exists in real AWS. Read-only AWS console screenshots are allowed; never create/update/delete real resources without explicit approval.
 3. **Dead controls:** not wired yet → `disabled` + `title="To implement"` (+ Debt if v1 needs it). Never ship it → omit from the mock. No enabled no-op / toast-only controls.
-4. Land mocks in `design/stackwrangler-console/` (or the ticket’s design folder).
+4. Land mocks in `design/stackwrangler-console/` (or the ticket’s design folder).>>>>>>> origin/feature/487-docker-image-install
 5. Then implement against the mocks.
 
 Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
@@ -67,19 +70,19 @@ Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 ```
 
 1. Walk the checklist in `docs/gap-check.md`
-2. For every Partial / disabled Create / sidecar / “use CLI smoke” / authz hole / AWS console UI left out of v1 **without** an open Debt ticket → create `Debt: … (from #<n>)`, label `$(cat docs/CURRENT_RELEASE)`, link from README or service doc. Console debt designs use Open Design `web-clone`
+2. Prefer **absorbing** small additive gaps into this PR. Otherwise file `Debt: … (from #<n>)` with pillar + Impact/Effort; release label only if cut gate matches (never default `CURRENT_RELEASE`). Tracker row + docs link. Console debt designs use Open Design `web-clone`
 3. Prefer shipping docs in the PR; if blocked on public docs / screenshot / interaction edge → `Doc: … (from #<n>)` per [docs/docs-catalog.md](docs/docs-catalog.md) (skill `docs-catalog`). User-facing host/ports/Docker copy is **Linux-first** (not WSL-led; #491).
-4. Mention new Debt / Doc issues in the PR body
+4. Mention new Debt / Doc issues (or “absorbed”) in the PR body
 
-Do **not** treat the parent as finished until gaps are ticketed (or explicitly N/A in the PR).
+Do **not** treat the parent as finished until gaps are absorbed, ticketed, or explicitly N/A in the PR.
 
 ## Verify as the live principal
 
-When you use awsbox to check a stack, a policy or a workload, **act as the principal that runs it live**: the CI deploy role for deploys, the task or execution role for workloads. Admin keys skip IAM, so a check run with them can't fail on permissions and proves nothing about them. If an emulator gap forces you to loosen a statement, loosen only that one and say so. See [docs/serverless-stackwrangler.md](docs/serverless-stackwrangler.md#deploy-as-the-deploy-role-admin-keys-skip-iam).
+When you use stackwrangler to check a stack, a policy or a workload, **act as the principal that runs it live**: the CI deploy role for deploys, the task or execution role for workloads. Admin keys skip IAM, so a check run with them can't fail on permissions and proves nothing about them. If an emulator gap forces you to loosen a statement, loosen only that one and say so. See [docs/serverless-stackwrangler.md](docs/serverless-stackwrangler.md#deploy-as-the-deploy-role-admin-keys-skip-iam).
 
 ## Maintainers
 
-Maintainers with GitHub **project** access may use `bin/board-status.sh` / `bin/board-tracker.tsv`. That loop is optional for external contributors and is not documented here (private board; clone ≠ project access).
+Maintainers with GitHub **project** access may use `bin/board-status.sh` / `bin/board-tracker.tsv` / `bin/issue-score.sh`. Board lifecycle: **Backlog** → **Designing** → **In progress** → **In review** → **Done** (`ready` aliases to backlog). That loop is optional for external contributors (private board; clone ≠ project access).
 
 ---
 

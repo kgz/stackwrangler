@@ -1,23 +1,34 @@
 # Post-ticket gap check (cheap)
 
-Run **before** marking a ticket `done` / merging the PR. Goal: no half-baked CLI/UI ships without a **Debt:** follow-up, and no silent docs gaps without a **Doc:** follow-up (or docs shipped in the PR). See [docs-catalog.md](docs-catalog.md).
+Run **before** marking a ticket `done` / merging the PR. Goal: no half-baked CLI/UI ships without a tracked follow-up — prefer fixing small gaps in the same PR. Docs gaps use **Doc:** (or ship docs in the PR) — see [docs-catalog.md](docs-catalog.md).
 
 ```bash
 ./bin/gap-check.sh <issue-num>   # prints checklist + heuristic hits
 ```
 
+## Absorb vs Debt (required)
+
+Before filing `Debt:`, answer:
+
+1. Can this be a **small additive AC** on the current ticket (same PR, same service)?
+2. Is the resulting diff **small** (rough guide: Effort ≤ 2, localized, no new Open Design epic)?
+
+If **yes to both** → implement in this ticket; extend AC; **no Debt issue**.
+
+If **no** → file Debt, then **evaluate-and-place** (score + pillar; release label only if cut gate matches). Never auto-label with `$(cat docs/CURRENT_RELEASE)`.
+
 ## Rubric (agent must answer)
 
 For the shipped surface, list anything that is **not** fully Working:
 
-| Check | File Debt ticket if… |
-|-------|----------------------|
+| Check | Absorb or Debt/Doc if… |
+|-------|------------------------|
 | **Data plane** | create/describe works but bytes/SQL/invoke/traffic don’t |
 | **Authz** | only admin/root path tested; workload role deny missing |
 | **Console** | list-only, Create disabled, “use CLI/smoke”, empty tabs, missing detail |
 | **AWS console UI** | v1 of a service ships without a console surface AWS has for it. Title `Debt: <service> console (from #<n>)`. Designs use Open Design `web-clone` (`./bin/od-design-run.sh`), not a guessed layout |
 | **Open Design first** | Console / web UI shipped without a `designing` phase — mocks in `design/stackwrangler-console/` using `design/stackwrangler/` theme (web-clone when AWS has the screen). Fix before `done`; do not invent layout |
-| **Dead controls** | Enabled button/link that no-ops or only toasts. Not wired → `disabled` + `title="To implement"` (+ Debt if v1). Never ship → omit from mock and product UI |
+| **Dead controls** | Enabled button/link that no-ops or only toasts. Not wired → `disabled` + `title="To implement"` (+ Debt if v1). Never ship → omit from mock and product UI |>>>>>>> origin/feature/487-docker-image-install
 | **Sidecar / bridge** | real AWS shape deferred to a compose hack |
 | **Dual endpoints** | console vs CLI hit different backends |
 | **Docs/README** | Partial/Sidecar status with **no** issue link |
@@ -35,12 +46,15 @@ Prefer shipping docs in the parent PR. File **Doc:** only when blocked. Same “
 ```text
 Title: Debt: <short gap> (from #<parent>)
 Body: Why / Goal / Acceptance / Related #<parent>
-Milestone: same area as parent
-Label: $(cat docs/CURRENT_RELEASE)   # product cut; see docs/versioning.md
+          Impact: N / Effort: N   (also set via ./bin/issue-score.sh)
+Milestone: pillar for where the gap lives (see docs/version-plan.md)
+Label: only if theme + Impact gate match an open cut — else no version label
 Board: backlog
 Tracker: bin/board-tracker.tsv
 Link from docs and/or README status row
 ```
+
+Placement: [docs/versioning.md](versioning.md) — evaluate and place; do not displace other tickets.
 
 ## Doc: ticket shape
 
@@ -50,8 +64,8 @@ Body: Why / Goal / Acceptance / Related #<parent>
   - pages to add/update
   - edges to document
   - screenshots required
-Milestone: same area as parent
-Label: $(cat docs/CURRENT_RELEASE)
+Milestone: pillar for the area
+Label: only if cut gate matches — else no version label
 Board: backlog
 Tracker: bin/board-tracker.tsv
 Link from catalog index or parent PR
@@ -61,9 +75,9 @@ Full template + capture commands: [docs-catalog.md](docs-catalog.md).
 
 ## Examples we already needed
 
-- Transfer native SSH keys (was sidecar password) → [#141](https://github.com/kgz/awsl/issues/141)
-- Dual S3 → [#143](https://github.com/kgz/awsl/issues/143)
-- Workload IAM → [#144](https://github.com/kgz/awsl/issues/144)
-- RDS create/Aurora → [#145](https://github.com/kgz/awsl/issues/145)
-- ECS/EC2 UI depth → [#146](https://github.com/kgz/awsl/issues/146)
-- Console Create/detail program → [#350](https://github.com/kgz/awsl/issues/350) (Lambda [#351](https://github.com/kgz/awsl/issues/351), Logs [#352](https://github.com/kgz/awsl/issues/352), IAM users [#353](https://github.com/kgz/awsl/issues/353), HTTP API detail [#354](https://github.com/kgz/awsl/issues/354))
+- Transfer native SSH keys (was sidecar password) → [#141](https://github.com/kgz/stackwrangler/issues/141)
+- Dual S3 → [#143](https://github.com/kgz/stackwrangler/issues/143)
+- Workload IAM → [#144](https://github.com/kgz/stackwrangler/issues/144)
+- RDS create/Aurora → [#145](https://github.com/kgz/stackwrangler/issues/145)
+- ECS/EC2 UI depth → [#146](https://github.com/kgz/stackwrangler/issues/146)
+- Console Create/detail program → [#350](https://github.com/kgz/stackwrangler/issues/350) (Lambda [#351](https://github.com/kgz/stackwrangler/issues/351), Logs [#352](https://github.com/kgz/stackwrangler/issues/352), IAM users [#353](https://github.com/kgz/stackwrangler/issues/353), HTTP API detail [#354](https://github.com/kgz/stackwrangler/issues/354))
