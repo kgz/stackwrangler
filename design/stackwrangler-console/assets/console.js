@@ -87,6 +87,8 @@
     { type: "Feature", label: "State machines", href: "sfn-state-machines.html" },
     { type: "Feature", label: "Data streams", href: "kinesis-streams.html" },
     { type: "Feature", label: "HTTP APIs", href: "apigateway-http-apis.html" },
+    { type: "Feature", label: "REST APIs", href: "apigateway-rest-apis.html" },
+    { type: "Feature", label: "demo-rest", href: "apigateway-rest-api-detail.html" },
     { type: "Feature", label: "Stacks", href: "cloudformation-stacks.html" },
     { type: "Feature", label: "Transfer servers", href: "transfer-servers.html" },
     { type: "Feature", label: "Databases", href: "rds-databases.html" },
@@ -242,6 +244,19 @@
       ],
       foot: [],
     },
+    sfn: {
+      label: "Step Functions",
+      home: "sfn-state-machines.html",
+      tree: [
+        {
+          id: "sfn-main",
+          label: "Step Functions",
+          open: true,
+          items: [{ id: "sfn-state-machines", label: "State machines", href: "sfn-state-machines.html" }],
+        },
+      ],
+      foot: [],
+    },
     apigateway: {
       label: "API Gateway",
       home: "apigateway-http-apis.html",
@@ -250,7 +265,10 @@
           id: "apigw-apis",
           label: "APIs",
           open: true,
-          items: [{ id: "apigateway-http-apis", label: "HTTP APIs", href: "apigateway-http-apis.html" }],
+          items: [
+            { id: "apigateway-http-apis", label: "HTTP APIs", href: "apigateway-http-apis.html" },
+            { id: "apigateway-rest-apis", label: "REST APIs", href: "apigateway-rest-apis.html" },
+          ],
         },
       ],
       foot: [],

@@ -3,6 +3,8 @@ import { Shell } from './components/Shell'
 import { BucketObjectsPage } from './pages/BucketObjectsPage'
 import { BucketsPage } from './pages/BucketsPage'
 import { ApiGatewayPage } from './pages/ApiGatewayPage'
+import { ApiGatewayRestApiDetailPage } from './pages/ApiGatewayRestApiDetailPage'
+import { ApiGatewayRestApisPage } from './pages/ApiGatewayRestApisPage'
 import { IamUsersPage } from './pages/IamUsersPage'
 import { LambdaCreateFunctionPage } from './pages/LambdaCreateFunctionPage'
 import { LambdaFunctionDetailPage } from './pages/LambdaFunctionDetailPage'
@@ -47,6 +49,14 @@ export default function App() {
           <Route path="kinesis" element={<KinesisStreamsPage />} />
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
+          <Route
+            path="apigateway/rest-apis"
+            element={<ApiGatewayRestApisPage />}
+          />
+          <Route
+            path="apigateway/rest-apis/:apiId"
+            element={<ApiGatewayRestApiDetailPage />}
+          />
           <Route path="cloudformation" element={<CloudFormationStacksPage />} />
           <Route
             path="cloudformation/stacks/:name"

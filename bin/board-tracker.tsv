@@ -146,7 +146,7 @@
 185	done	Serverless v3 deploy smoke
 186	done	VPC Lambda → host services via mapped hostnames
 187	in-review	Debt: non-VPC Lambda reaches mapped hosts (from #186)
-189	backlog	Debt: console REST APIs (from #184)
+189	in-review	Debt: console REST APIs (from #184)
 190	done	Debt: REST authorizer Deny 401 vs 403 (from #184)
 191	done	Debt: REST custom domain routing (from #184)
 193	done	v1: resource-based policy evaluation
@@ -309,3 +309,4 @@
 535	backlog	Debt: Secrets Manager store + secret detail (from #176)
 539	backlog	Debt: Kinesis create/detail (from #178)
 540	backlog	Debt: KMS create/detail (from #177)
+543	backlog	Debt: API Gateway REST create/deploy controls (from #189)

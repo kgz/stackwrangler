@@ -56,6 +56,19 @@ const lists: Array<{
     disabled: ['Delete', 'Create'],
   },
   {
+    path: '/apigateway/rest-apis',
+    heading: 'APIs',
+    columns: [
+      'Name',
+      'API ID',
+      'Description',
+      'Created date',
+      'Protocol',
+      'Endpoint',
+    ],
+    disabled: ['Delete', 'Create'],
+  },
+  {
     path: '/cloudformation',
     heading: /^Stacks/,
     columns: ['Stack name', 'Status', 'Created time', 'Description'],

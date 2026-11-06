@@ -99,12 +99,6 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 - Web-clone of the AWS Secrets Manager **Secrets** list into grey-rose console chrome
 - Designs only — LocalEmu-shaped sample rows; no real AWS resources touched
 - Structure follows existing thin lists (`iam-users.html` / `sfn-state-machines.html`): h1 + description + card toolbar + find/pager + table
-## Issue #178 — Kinesis Data streams list
-
-### Mode
-- Web-clone of the AWS Kinesis **Data streams** list into grey-rose console chrome
-- Designs only — LocalEmu-shaped sample rows; no real AWS resources / API writes
-- Structure follows `kms-keys.html` / `secrets-list.html` / `sfn-state-machines.html`: h1 + description + card toolbar + find/pager + table
 
 ### Deliverables
 | File | Covers |
@@ -115,6 +109,17 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 ### Dead controls (`title="To implement"`)
 - Store a new secret, Delete, Rotate, Refresh, header filters, secret name links, table settings
 - Working: find field filters rows through shared `data-find-table` wiring; pager and nav links unchanged
+
+## Issue #178 — Kinesis Data streams list
+
+### Mode
+- Web-clone of the AWS Kinesis **Data streams** list into grey-rose console chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure follows `kms-keys.html` / `secrets-list.html` / `sfn-state-machines.html`: h1 + description + card toolbar + find/pager + table
+
+### Deliverables
+| File | Covers |
+|---|---|
 | `kinesis-streams.html` | Name / Status / Capacity mode / Monitoring / Created · 3 rows (`app-events`, `awsbox-kinesis-demo`, `orders-ingest`) |
 | `kinesis-streams-empty.html` | Empty twin · Refresh + Create data stream + empty panel · link to sample rows |
 
@@ -122,6 +127,27 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 - `title="To implement"`: Create data stream, Refresh, table settings, column filters, stream name dead links
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `kinesis-streams.html`
+
+## Issue #189 — API Gateway REST APIs
+
+### Mode
+- Web-clone of AWS API Gateway **REST APIs** (v1) list + detail into grey-rose console chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources touched
+- Structure mirrors `apigateway-http-apis.html` for the list; detail uses Lambda-style tab panels
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `apigateway-rest-apis.html` | HTTP\|REST tabs · Name / API ID / Description / Created / Protocol / Endpoint · 2 rows (`demo-rest`, `orders-api`) · name → detail |
+| `apigateway-rest-apis-empty.html` | Empty twin · Refresh + Create + empty panel · link to sample rows |
+| `apigateway-rest-api-detail.html` | Overview · Invoke URL · Resources/methods · Authorizers · Stages (`demo-rest`) |
+| HTTP list screens | Matching REST tab links (populated ↔ empty twins) |
+| Shared chrome | Sidebar REST APIs · search Feature `REST APIs` / `demo-rest` |
+
+### Dead controls
+- List: `title="To implement"` Refresh, Create, table settings, column filters; `title="Select a row"` Delete
+- Detail: Refresh, Deploy API, Actions, Create resource/method/authorizer/stage
+- Working: HTTP ↔ REST tabs; name cells → detail; detail tab panels; find field; Services/search → REST list
 
 ## Run
 
