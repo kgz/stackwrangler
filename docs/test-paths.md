@@ -75,7 +75,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | REST backend task stopped → API 5xx (AWS 504/503, emulator 500) | sad/other | covered | `./smokes/apigw/apigw-nlb-ecs-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` |
-| Non-VPC Lambda blocked from private hosts | sad/other | missing | [#187](https://github.com/kgz/awsl/issues/187) |
+| Non-VPC Lambda blocked from mapped private hosts | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [#187](https://github.com/kgz/awsl/issues/187) |
 | Lambda reads per-stage secret → OAuth client-credentials token → POST to external HTTP API | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda stage isolation (stage=b uses b's secret) and env-var base URL drives the call | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda role missing `secretsmanager:GetSecretValue` → fails, external API sees no request | sad/authz | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
@@ -159,6 +159,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./smokes/account/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./smokes/account/labels-smoke.sh` |
 | Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./smokes/account/labels-smoke.sh` |
+| Two awsvpc ECS tasks on one host: direct ENI works | happy | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
+| Same-host peer→NLB VIP fails under host DNAT (AWS-like hairpin) | sad/other | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
 | NLB TCP :443 → two instance targets | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [elbv2.md](elbv2.md) |
 | Internal NLB :10080 → two target ports; closed on the edge address | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | NLB target sees the client source IP | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
@@ -263,6 +265,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | DynamoDB `aws:ResourceTag` on index ARN | sad/authz | missing | [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions Pass execution | happy | covered | `./smokes/messaging/sfn-smoke.sh` |
 | Step Functions deny StartExecution | sad/authz | covered | `./smokes/messaging/sfn-authz-smoke.sh` |
+| Step Functions console state machines list | happy | covered | console e2e `sfn-state-machines.spec.ts` · thin list (Create/detail → [#533](https://github.com/kgz/awsl/issues/533)) |
 | Secrets create/get | happy | covered | `./smokes/security/secrets-smoke.sh` |
 | Secrets deny GetSecretValue | sad/authz | covered | `./smokes/security/secrets-authz-smoke.sh` |
 | Secret resource policy explicit deny beats Lambda-role IAM Allow (`GetSecretValue`, `DescribeSecret`) | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |

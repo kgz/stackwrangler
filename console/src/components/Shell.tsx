@@ -180,6 +180,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  sfn: {
+    title: 'Step Functions',
+    sections: [
+      {
+        id: 'sfn-main',
+        label: 'Step Functions',
+        items: [
+          {
+            label: 'State machines',
+            to: '/stepfunctions',
+            active: under('/stepfunctions'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [

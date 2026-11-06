@@ -12,13 +12,27 @@ Bring up a local AWS-shaped account, open the console, and talk to it with the A
 
 ## 1. Clone and start the stack
 
-```bash
+::: code-group
+
+```bash [Clone + up]
 git clone https://github.com/kgz/stackwrangler.git
 cd stackwrangler
 ./bin/stackwrangler up
 ```
 
+```bash [Tear down]
+./bin/stackwrangler down
+# optional: drop profile local
+./bin/stackwrangler down --remove-profile
+```
+
+:::
+
 That starts SeaweedFS (S3 for the console and `aws --profile local`), LocalEmu (IAM, Lambda, CFN, … on `:4566`), and related sidecars. It writes AWS profile `local`.
+
+::: tip Naming
+**stackwrangler** is the product CLI and docs brand. **LocalEmu** is the emulator behind `:4566`. This is unrelated to Cloudflare’s Wrangler CLI.
+:::
 
 ## 2. Open the console
 
@@ -33,10 +47,19 @@ Grey-rose chrome, same account as the CLI. Home opens on **S3 general purpose bu
 
 ## 3. Use the AWS CLI
 
-```bash
+::: code-group
+
+```bash [S3 (SeaweedFS)]
 aws --profile local s3 ls
-aws --profile local --endpoint-url http://127.0.0.1:4566 lambda list-functions
 ```
+
+```bash [Lambda (LocalEmu)]
+aws --profile local \
+  --endpoint-url http://127.0.0.1:4566 \
+  lambda list-functions
+```
+
+:::
 
 Profile `local` points S3 at SeaweedFS (`:8333`). Most other services use LocalEmu (`:4566`). See [Concepts](./concepts) for the dual-S3 split.
 
@@ -46,3 +69,13 @@ Profile `local` points S3 at SeaweedFS (`:8333`). Most other services use LocalE
 - [Completeness](./completeness) — Working vs Partial vs stub
 - [Console tour](./console-tour) — more screenshots of shipped surfaces
 - Deep agent/dev notes stay in the repo under [`docs/`](https://github.com/kgz/stackwrangler/tree/main/docs)
+
+### Docs site locally
+
+```bash
+cd docs-site
+pnpm install
+pnpm dev      # http://127.0.0.1:5173/
+```
+
+Hosted target (after the repo is public + Pages enabled): https://kgz.github.io/stackwrangler/

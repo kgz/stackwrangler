@@ -44,7 +44,7 @@ cd stackwrangler
 aws --profile local s3 ls
 ```
 
-`./bin/stackwrangler up` copies `.env.example` → `.env` on first run (`STACKWRANGLER_*` vars). Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop profile `local`).
+`./bin/stackwrangler up` copies `.env.example` → `.env` on first run. Defaults: access key `stackwrangler`, secret `stackwranglerstackwrangler`, profile `local`. Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop the profile).
 
 | What | Where |
 |------|--------|
@@ -60,11 +60,11 @@ Coming from older checkouts named `awsbox`: `./bin/awsbox` still works as a shim
 
 ## Documentation
 
-- [Vision](docs/vision.md) — north star and fidelity bar
+- Public docs site: [docs-site/](docs-site/) (VitePress) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) after Pages is enabled on a public repo
+- Run docs locally: `cd docs-site && pnpm install && pnpm dev`
+- [Vision](docs/vision.md) — north star (mirrored on the site)
 - [Service status](docs/status.md) — Working / Partial matrix
 - [Contributing](CONTRIBUTING.md)
-
-A VitePress docs site and GitHub Pages URL land with [#403](https://github.com/kgz/stackwrangler/issues/403) / [#428](https://github.com/kgz/stackwrangler/issues/428) — not linked here until they exist.
 
 ## License
 

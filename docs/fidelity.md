@@ -25,7 +25,7 @@ Happy smokes prove bytes move. **Fidelity smokes** prove the *awkward* path matc
 
 | Gap | Why it matters | Status |
 |-----|----------------|--------|
-| ECS task↔task on same host via service VIP / NAT hairpin | Classic “works across AZs, fails same host” | Debt — track under networking fidelity epic |
+| ECS task↔task on same host via service VIP / NAT hairpin | Classic “works across AZs, fails same host” | Covered · matches AWS fail under `AWSBOX-ELBV2` DNAT · [ecs-hairpin.md](ecs-hairpin.md) · `./smokes/networking/ecs-hairpin-smoke.sh` · [#181](https://github.com/kgz/awsl/issues/181) |
 | Private subnet route table (no default, peering, NAT, GW endpoints) | Workload cannot reach a public host / S3 until a route says so | Covered · `./smokes/networking/vpc-routing-smoke.sh` · `./smokes/networking/vpc-egress-smoke.sh` |
 | Dual S3 brains | Wrong endpoint “succeeds” | Documented split · unify [#162](https://github.com/kgz/awsl/issues/162) |
 | ECS task-role via 169.254 DNAT under compose | In-container SDK path | [#154](https://github.com/kgz/awsl/issues/154) |

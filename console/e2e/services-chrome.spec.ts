@@ -25,6 +25,12 @@ const lists: Array<{
     disabled: ['Actions ▾', 'Create log group'],
   },
   {
+    path: '/stepfunctions',
+    heading: 'State machines',
+    columns: ['Name', 'Type', 'Creation date'],
+    disabled: ['Actions ▾', 'Create state machine'],
+  },
+  {
     path: '/apigateway',
     heading: 'APIs',
     columns: ['Name', 'API ID', 'Created date', 'Endpoint'],

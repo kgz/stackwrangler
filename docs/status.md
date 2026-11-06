@@ -1,6 +1,6 @@
 # Service status
 
-Working / Partial / control-plane depth for the local stack. Product pitch and quick start live in the [root README](../README.md). Vision: [vision.md](vision.md). A VitePress docs site / Pages URL comes with #403 / #428.
+Working / Partial / control-plane depth for the local stack. Product pitch and quick start live in the [root README](../README.md). Vision: [vision.md](vision.md). Public docs: [docs-site/](../docs-site/) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) (Pages after public).
 
 ## Status legend
 
@@ -45,7 +45,7 @@ Smokes: `./smokes/s3/s3-parity.sh`, `./smokes/s3/s3-dual-endpoint-smoke.sh`, `./
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| Lambda | Docker invoke · VPC → host services ([lambda-vpc.md](lambda-vpc.md)) | Functions · Create · detail/Code (Monaco) | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) · VPC isolation **Partial** ([#187](https://github.com/kgz/awsl/issues/187)) · Create/detail UI [#351](https://github.com/kgz/awsl/issues/351) · list Actions [#357](https://github.com/kgz/awsl/issues/357) |
+| Lambda | Docker invoke · VPC → host services ([lambda-vpc.md](lambda-vpc.md)) | Functions · Create · detail/Code (Monaco) | **Working** (authz depth → [#144](https://github.com/kgz/awsl/issues/144)) · VPC host maps VPC-only ([#187](https://github.com/kgz/awsl/issues/187)) · Create/detail UI [#351](https://github.com/kgz/awsl/issues/351) · list Actions [#357](https://github.com/kgz/awsl/issues/357) |
 | EC2 | Docker instances · IMDSv2 instance-profile creds · user data · SSM `SendCommand` | Instances list | **Partial** · console depth [#146](https://github.com/kgz/awsl/issues/146) |
 | ECS | Docker tasks · secrets/`valueFrom` · host ports · EC2 container instances · desiredCount replacement · bridge ports → target groups · CodeDeploy blue/green · pull from ECR URI | Clusters / services / tasks | **Partial** · awsvpc ENI [#268](https://github.com/kgz/awsl/issues/268) · EC2 services [#207](https://github.com/kgz/awsl/issues/207) · bridge targets vs instance-IP health [#247](https://github.com/kgz/awsl/issues/247) · VPC NLB listeners [#203](https://github.com/kgz/awsl/issues/203) · depth [#146](https://github.com/kgz/awsl/issues/146) |
 | ECR | create-repository · `get-login-password` · push/pull `127.0.0.1:5000/<repo>` · ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` (needs `ecr:BatchGetImage`) | — | **Partial** · push the repositoryUri hostname [#218](https://github.com/kgz/awsl/issues/218) · Lambda image authz [#219](https://github.com/kgz/awsl/issues/219) · console [#217](https://github.com/kgz/awsl/issues/217) |
@@ -96,7 +96,7 @@ Smoke: `./smokes/data/rds-smoke.sh` · sad: `./smokes/data/rds-authz-smoke.sh` (
 | SQS | LocalEmu send/receive | — | **Working** (CLI) · console [#167](https://github.com/kgz/awsl/issues/167) · [sqs.md](sqs.md) |
 | SNS | publish · MaximumMessageSize ≤1 MiB · SQS fan-out (queue policy / `SourceArn`; refuse `alias/aws/sqs` and a CMK without an SNS key grant) | — | **Working** (CLI) · console [#172](https://github.com/kgz/awsl/issues/172) · `./smokes/messaging/sns-sqs-fanout-smoke.sh` · `./smokes/messaging/sns-max-message-size-smoke.sh` |
 | EventBridge | put-events + rule · scheduled `rate()` rule → Lambda (disable stops it; no invoke permission = no fire) | — | **Working** (CLI) · console [#173](https://github.com/kgz/awsl/issues/173) · [slice](../examples/serverless-v3-rest/slices/schedule/README.md) · cadence [#317](https://github.com/kgz/awsl/issues/317) |
-| Step Functions | Pass state machine | — | **Working** (CLI) · console [#175](https://github.com/kgz/awsl/issues/175) |
+| Step Functions | Pass state machine | list (+ empty) | **Working** · thin console list [#175](https://github.com/kgz/awsl/issues/175) · create/detail [#533](https://github.com/kgz/awsl/issues/533) |
 | Kinesis | put/get records | — | **Working** (CLI) · console [#178](https://github.com/kgz/awsl/issues/178) |
 | MSK / SES / AppSync | — | — | **Backlog** |
 

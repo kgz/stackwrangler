@@ -59,9 +59,12 @@ services:
       ROOT_ACCESS_KEYS: ${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}},AKIAIOSFODNN7EXAMPLE
       DISABLE_CORS_CHECKS: "1"
       EXTRA_CORS_ALLOWED_ORIGINS: "*"
-      # Extra `docker run` flags for Lambda containers, e.g. map internal hostnames
-      # to the host: --add-host=internal-nlb.example:host-gateway (docs/lambda-vpc.md)
-      LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
+      # VPC-only Lambda host maps (docs/lambda-vpc.md). start.d injects into
+      # docker run when the function has VpcConfig; non-VPC must not resolve them (#187).
+      STACKWRANGLER_LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
+      AWSBOX_LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
+      # Leave LocalEmu's global flags empty — SQS QueueUrl / VPCE DNS patches add their own.
+      LAMBDA_DOCKER_FLAGS: ""
       # Shorten STS AssumeRole sessions for ESM credential-refresh smoke (#475).
       # Unset in normal use (LocalEmu default 3600s). Example: 120
       AWSBOX_STS_ASSUME_ROLE_DURATION: ${STACKWRANGLER_STS_ASSUME_ROLE_DURATION:-${AWSBOX_STS_ASSUME_ROLE_DURATION:-}}

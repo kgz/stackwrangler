@@ -8,7 +8,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
 ```
 
-Keep resources: `AWSBOX_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
+Keep resources: `STACKWRANGLER_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
 
 Needs host `psql` (Postgres smoke) or `mysql` (MySQL smoke).
 

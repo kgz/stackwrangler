@@ -16,7 +16,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |
 | Real AWS CFN S3+Lambda | **yes** (parity) | **yes** (empty role) | teardown | — | `aws-parity-cfn-s3-lambda.sh`, `aws-parity-cfn-authz.sh` |
 | Real AWS HF cheap (#296/#297/#190/#294/#230 VPCE) | **yes** (focused) | **yes** (Deny 403, missing/disabled key) | schedule quiet after disable | — | `aws-parity-hf-cheap.sh` · skipped gaps [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
-| Lambda VPC → host service | yes | no ([#187](https://github.com/kgz/awsl/issues/187)) | unmapped name | — | `lambda-vpc-smoke.sh` |
+| Lambda VPC → host service | yes | — | unmapped name; non-VPC mapped name ENOTFOUND ([#187](https://github.com/kgz/awsl/issues/187)) | — | `lambda-vpc-smoke.sh` |
 | Lambda → Secrets Manager → OAuth token → external API | yes (+ per-stage secret isolation, env-var base URL) | **yes** (role without `GetSecretValue`: mock sees no requests) | wrong client secret → 401, no document posted | — | `lambda-secret-oauth-smoke.sh` |
 | Lambda trust `aws:SourceAccount` | yes (same account; plain trust) | **yes** (other account refused) | — | — | `lambda-trust-condition-smoke.sh` |
 | Lambda trust `aws:SourceArn` | yes (function ARN) | **yes** (other function ARN refused) | — | — | `lambda-trust-sourcearn-smoke.sh` |
@@ -46,6 +46,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Security groups | yes (SG A, prefix list, CIDR, VPC Lambda, Lambda→RDS) | **yes** (SG B refused; live revoke; Lambda egress; Lambda→RDS 5432) | NLB client IP [#236](https://github.com/kgz/awsl/issues/236) | — | `sg-enforcement-smoke.sh` |
 | VPCE private DNS (ecr/logs/ssm/sts/ecs) | yes (in-VPC resolve + call) | n/a (isolation is other-VPC) | other VPC does not get endpoint IP | — | `vpce-private-dns-smoke.sh` |
 | ELBv2 NLB/ALB | yes | **yes** (deny CreateLoadBalancer) | unhealthy target drops | no → [#241](https://github.com/kgz/awsl/issues/241) | `elbv2-smoke.sh` |
+| ECS same-host VIP hairpin | yes (direct ENI; LocalEmu→self VIP) | n/a (topology fidelity) | peer→VIP fails under DNAT (AWS-like); proxy path if no DNAT — [ecs-hairpin.md](ecs-hairpin.md) [#181](https://github.com/kgz/awsl/issues/181) | — | `ecs-hairpin-smoke.sh` |
 | SNS | yes | **yes** | — | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-smoke.sh`, `sns-authz-smoke.sh` |
 | SNS MaximumMessageSize (≤1 MiB) | yes (CreateTopic/Set; 300 KiB–1 MiB → SQS raw; large-topic sqs/lambda/firehose) | **yes** (default >256 KiB; http/email/sms/application subscribe; Set with http sub) | ≤100 subs on large topics (patch; no 101-sub smoke) | no → [#172](https://github.com/kgz/awsl/issues/172) | `sns-max-message-size-smoke.sh` |
 | SNS → SQS fan-out | yes (envelope, raw, filter; CMK with SNS grant) | **yes** (wrong/missing queue policy; `alias/aws/sqs` KMS; CMK without SNS grant; unsubscribe) | — | — | `sns-sqs-fanout-smoke.sh` |
@@ -54,7 +55,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | EventBridge schedule → Lambda | yes (`rate(1 minute)` ≥2 invocations; none after disable-rule) | **yes** (rule without `lambda:InvokeFunction` for `events.amazonaws.com` never invokes) | — | no → [#173](https://github.com/kgz/awsl/issues/173) | `events-schedule-smoke.sh` |
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
 | DynamoDB depth (GSI, conditions, UpdateItem, transactions, TTL) | yes (CFN slice `serverless-v3-rest/slices/ddb`) | **yes** (Allow on index ARN / table ARN only, Deny on index; Batch/Transact table-scoped [#306](https://github.com/kgz/awsl/issues/306)) | duplicate put, failed update condition, cancelled transaction; index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) | — | `dynamodb-depth-smoke.sh` |
-| Step Functions | yes | **yes** | — | no → [#175](https://github.com/kgz/awsl/issues/175) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` |
+| Step Functions | yes | **yes** | — | thin list [#175](https://github.com/kgz/awsl/issues/175) · create/detail [#533](https://github.com/kgz/awsl/issues/533) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` · console e2e `sfn-state-machines.spec.ts` |
 | Secrets Manager | yes | **yes** | — | no → [#176](https://github.com/kgz/awsl/issues/176) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` |
 | KMS | yes | **yes** | — | no → [#177](https://github.com/kgz/awsl/issues/177) | `kms-smoke.sh`, `kms-authz-smoke.sh` |
 | Resource policies (SM, KMS, S3) | yes (delegation allows) | **yes** (explicit deny / no key-policy delegation) | cross-account [#233](https://github.com/kgz/awsl/issues/233) | — | `resource-policy-smoke.sh` |

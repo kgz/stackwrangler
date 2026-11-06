@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>State machines — Step Functions</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sfn-state-machines" data-nav="sfn-state-machines" data-service="sfn" data-title="State machines" data-crumb="State machines">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">State machines</h1>
+      <p class="aws-desc">A state machine is a workflow defined with states that perform work, make decisions, and control execution flow.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="Select a row">Actions ▾</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-state-machine" title="To implement" disabled aria-disabled="true">Create state machine</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter by name or ARN" data-find-table="#data-table" aria-label="Filter by name or ARN" data-od-id="find-state-machines" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="sfn-state-machines-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Type <button type="button" class="filter" aria-label="Filter Type" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Creation date <span aria-hidden="true">↑</span></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="demo-console-hello">
+                  <td class="check"><input type="checkbox" aria-label="Select demo-console-hello" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="sm-hello">demo-console-hello</button></td>
+                  <td>Standard</td>
+                  <td>2026-10-26 11:42:08</td>
+                </tr>
+                <tr data-name="orders-fulfillment">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-fulfillment" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="sm-orders">orders-fulfillment</button></td>
+                  <td>Standard</td>
+                  <td>2026-10-18 16:02:41</td>
+                </tr>
+                <tr data-name="metrics-ingest">
+                  <td class="check"><input type="checkbox" aria-label="Select metrics-ingest" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="sm-metrics">metrics-ingest</button></td>
+                  <td>Express</td>
+                  <td>2026-09-30 09:14:22</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

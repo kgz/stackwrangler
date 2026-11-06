@@ -1,21 +1,22 @@
 # Lambda in a VPC → services on your machine
 
-Lambdas that run in a VPC usually call private services by an internal hostname (an internal NLB, an ECS service). In awsbox, each function runs in its own Docker container, and only the hostnames you map resolve.
+Lambdas that run in a VPC usually call private services by an internal hostname (an internal NLB, an ECS service). In awsbox, each function runs in its own Docker container, and only the hostnames you map resolve — and only when the function has `VpcConfig` ([#187](https://github.com/kgz/awsl/issues/187)).
 
 ## Setup
 
 `.env`:
 
 ```bash
-# one --add-host per name your functions call; host-gateway = your machine
-AWSBOX_LAMBDA_DOCKER_FLAGS=--add-host=host.docker.internal:host-gateway --add-host=internal-nlb.example:host-gateway
+# one --add-host per name your VPC functions call; host-gateway = your machine
+STACKWRANGLER_LAMBDA_DOCKER_FLAGS=--add-host=host.docker.internal:host-gateway --add-host=internal-nlb.example:host-gateway
+# AWSBOX_LAMBDA_DOCKER_FLAGS still works if STACKWRANGLER_* is unset
 ```
 
 Restart the emulator after changing it: `./bin/stackwrangler up --force`.
 
-The value is passed through as LocalEmu's `LAMBDA_DOCKER_FLAGS`, so any `docker run` flag works (for example `--network <name>` to join another compose network). `host-gateway` needs Docker 20.10+.
+The value is kept on the LocalEmu container and injected into `docker run` **only** for functions with `VpcConfig` (not via LocalEmu's global `LAMBDA_DOCKER_FLAGS`). Any `docker run` flag works (for example `--network <name>` to join another compose network). `host-gateway` needs Docker 20.10+.
 
-A function then reaches a service listening on your machine at `http://internal-nlb.example:<port>/`. The service must listen on `0.0.0.0` (or the Docker bridge), not only `127.0.0.1`.
+A VPC function then reaches a service listening on your machine at `http://internal-nlb.example:<port>/`. The service must listen on `0.0.0.0` (or the Docker bridge), not only `127.0.0.1`. Non-VPC functions do not get these maps — use a bridge IP if a non-VPC smoke needs the host.
 
 ## SQS QueueUrl host (`sqs.<region>.localhost`)
 
@@ -27,9 +28,11 @@ when `SendMessage` uses that URL from env (the usual `QUEUE_URL=!Ref Queue`
 pattern).
 
 awsbox injects `--add-host=sqs.<region>.localhost:<LocalEmu docker IP>` into
-Lambda containers (and the same mapping for ECS tasks). The target is LocalEmu's
-address on the compose network, not `host-gateway`, because compose publishes
-`:4566` on `127.0.0.1` only. No `.env` change is required for the default region.
+Lambda containers (and the same mapping for ECS tasks), including non-VPC
+functions — that hostname is the emulator endpoint, not a private VPC name.
+The target is LocalEmu's address on the compose network, not `host-gateway`,
+because compose publishes `:4566` on `127.0.0.1` only. No `.env` change is
+required for the default region.
 
 Smokes: `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` (Lambda) ·
 `./smokes/compute/ecs-sqs-queueurl-smoke.sh` (ECS bridge task, same host inject)
@@ -39,15 +42,14 @@ Smokes: `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` (Lambda) ·
 
 ```bash
 ./smokes/lambda/lambda-vpc-smoke.sh
-AWSBOX_LAMBDA_SMOKE_HOST=internal-nlb.example ./smokes/lambda/lambda-vpc-smoke.sh   # also checks your own mapping
+STACKWRANGLER_LAMBDA_SMOKE_HOST=internal-nlb.example ./smokes/lambda/lambda-vpc-smoke.sh   # also checks your own mapping
 ```
 
-It creates a VPC, subnet and security group, deploys a Lambda with `VpcConfig`, starts a throwaway HTTP server on the host, and checks that the mapped name returns 200 (happy) and an unmapped name fails with `ENOTFOUND` (sad).
+It creates a VPC, subnet and security group, deploys a Lambda with `VpcConfig` and a second function without, starts a throwaway HTTP server on the host, and checks that the mapped name returns 200 for the VPC function (happy), an unmapped name fails with `ENOTFOUND` (sad), and the non-VPC function cannot resolve the mapped name (sad, [#187](https://github.com/kgz/awsl/issues/187)).
 
 ## Fidelity gaps
 
 - `VpcConfig` attaches the function to `localemu-vpc-<vpc-id>` and applies subnet route filters plus security-group `SG_IN` / `SG_OUT` via a privileged alpine netns sidecar (same as ECS awsvpc). There are still no real ENIs ([#51](https://github.com/kgz/awsl/issues/51)). Package managers are never used to install iptables into the runtime image (that hung cold start; [#369](https://github.com/kgz/awsl/issues/369)). Membership and egress coverage: `./smokes/networking/sg-enforcement-smoke.sh` ([sg-enforcement.md](sg-enforcement.md)).
-- Mappings apply to every function, so a Lambda **without** `VpcConfig` can also reach mapped hosts. In AWS it couldn't reach private addresses ([#187](https://github.com/kgz/awsl/issues/187)).
 - NLB/ALB forwarding is covered by [elbv2.md](elbv2.md). This smoke still hits the host directly.
 - `DeleteVpc` removes the VPC's Docker network (disconnecting leftover endpoints first).
 - `AttachInternetGateway` does not recreate or orphan `localemu-vpc-*`; route-table egress is covered by [vpc-routing.md](vpc-routing.md) and `./smokes/networking/vpc-egress-smoke.sh` ([#386](https://github.com/kgz/awsl/issues/386)).
