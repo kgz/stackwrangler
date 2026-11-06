@@ -135,7 +135,7 @@
 173	backlog	Debt: EventBridge console (from #66)
 174	backlog	Debt: DynamoDB console (from #59)
 175	backlog	Debt: StepFunctions console (from #67)
-176	backlog	Debt: Secrets console (from #72)
+176	designing	Debt: Secrets console (from #72)
 177	backlog	Debt: KMS console (from #71)
 178	backlog	Debt: Kinesis console (from #68)
 180	backlog	Epic: settings/topology fidelity (hairpin etc)

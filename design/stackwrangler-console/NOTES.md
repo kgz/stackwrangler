@@ -93,6 +93,23 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 1. Create / Actions / Refresh disabled with `title="To implement"` (design-only).
 2. React follow-ups: #347 (S3), #349 (services), full Create/detail #350+.
 
+## Issue #176 — Secrets Manager list
+
+### Mode
+- Web-clone of the AWS Secrets Manager **Secrets** list into grey-rose console chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources touched
+- Structure follows existing thin lists (`iam-users.html` / `sfn-state-machines.html`): h1 + description + card toolbar + find/pager + table
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `secrets-list.html` | Name / Description / Last retrieved / Created on · 3 rows (`app/oauth/client`, `rds!db-master`, `transfer/tenant/creds`) |
+| `secrets-list-empty.html` | Empty twin · Refresh + Store a new secret + empty panel |
+
+### Dead controls (`title="To implement"`)
+- Store a new secret, Delete, Rotate, Refresh, header filters, secret name links, table settings
+- Working: find field filters rows through shared `data-find-table` wiring; pager and nav links unchanged
+
 ## Run
 
 ```bash

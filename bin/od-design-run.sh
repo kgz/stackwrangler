@@ -27,7 +27,8 @@ CONVERSATION="${OD_CONVERSATION:-eb1c88fa-e9f5-4667-829a-9044c48f472c}"
 DAEMON="${OD_DAEMON_URL:-http://127.0.0.1:7456}"
 WEB="${OD_WEB_URL:-http://127.0.0.1:7456}"
 AGENT="${OD_AGENT_ID:-cursor-agent}"
-MODEL="${OD_MODEL:-auto}"
+# Empty = agent default. "auto" breaks opencode; cursor-agent accepts it when set.
+MODEL="${OD_MODEL:-}"
 
 ISSUE=""
 NEW_CONV_TITLE=""
@@ -166,6 +167,8 @@ api(
     "PUT",
     f"/api/projects/{project}/conversations/{conversation}/messages/{assistant_message_id}",
     {
+        "role": "assistant",
+        "content": "",
         "agentId": agent,
         "runId": run["runId"],
         "runStatus": "queued",
