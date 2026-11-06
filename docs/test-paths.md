@@ -99,7 +99,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull authz | sad/authz | missing | [#219](https://github.com/kgz/awsl/issues/219) |
-| ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
+| ECS in-container SDK via 169.254 creds URI (`AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` → DNAT → LocalEmu; empty task role PutObject AccessDenied; no host-side cred fetch) | sad/authz | covered | `./smokes/compute/ecs-authz-smoke.sh` |
 | Public hosted zone + UPSERT A / A-alias / CNAME; `list-resource-record-sets` | happy | covered | `./smokes/networking/route53-smoke.sh` · [r53.md](r53.md) |
 | Public zone names resolve via `dig @127.0.0.1` inside LocalEmu | happy | covered | `./smokes/networking/route53-smoke.sh` |
 | Profile `local` `route53 list-hosted-zones` includes the public zone | happy | covered | `./smokes/networking/route53-smoke.sh` |
