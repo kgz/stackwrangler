@@ -29,3 +29,5 @@ Parent/Root fields show `—` for ordinary root stacks. Nested navigation lights
 - Console stacks list/detail (pre-#95)
 - Write UI: Create [#93](https://github.com/kgz/awsl/issues/93), Update/change sets [#94](https://github.com/kgz/awsl/issues/94)
 - Status: [status.md](status.md) · OD mocks: `design/stackwrangler-console/screens/cloudformation-stacksets*.html`
+- Drift / stack notifications: Debt [#564](https://github.com/kgz/stackwrangler/issues/564) (from [#147](https://github.com/kgz/awsl/issues/147))
+

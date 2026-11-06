@@ -118,7 +118,8 @@
 144	done	Debt: workload IAM authz smokes
 145	done	Debt: RDS create UI + Aurora fidelity
 146	done	Debt: ECS/EC2 console depth
-147	backlog	Debt: CFN write-path audit vs #93–95
+147	done	Debt: CFN write-path audit vs #93–95
+564	backlog	Debt: CFN drift + stack notifications (from #147)
 150	done	Debt: smoke matrix sad paths — ECS task-role authz
 154	done	Debt: ECS in-container task-role creds DNAT (from #150)
 156	done	Real-AWS IAM AccessDenied parity (~$0)
