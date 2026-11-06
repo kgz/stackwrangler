@@ -267,7 +267,7 @@
 413	in-review	Public OSS: flip repository visibility to public
 416	done	Public OSS: split public AGENTS vs owner board workflow
 423	done	Debt: align console e2e credential defaults to STACKWRANGLER_* (from #405)
-425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
+425	done	absorbed into #428 (Pages workflow)
 427	done	Debt: rename leftover awsbox doc/example/helper paths (from #415)
 431	backlog	Debt: enable branch protection after public/Pro (from #412)
 433	done	Debt: scope stackwrangler-board.mdc (not alwaysApply global)
@@ -303,3 +303,4 @@
 495	done	Debt: Linux-first OD start hints (from #491)
 498	done	Debt: smoke MaximumConcurrency without reserved (from #453)
 420	done	(batch/2026-11-04-v002-b)
+428	in-progress	Public OSS: polish docs-site (Runa-grade + GitHub Pages prep)

@@ -1,6 +1,6 @@
 # Service status
 
-Working / Partial / control-plane depth for the local stack. Product pitch and quick start live in the [root README](../README.md). Vision: [vision.md](vision.md). A VitePress docs site / Pages URL comes with #403 / #428.
+Working / Partial / control-plane depth for the local stack. Product pitch and quick start live in the [root README](../README.md). Vision: [vision.md](vision.md). Public docs: [docs-site/](../docs-site/) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) (Pages after public).
 
 ## Status legend
 

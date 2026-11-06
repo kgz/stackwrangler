@@ -1,0 +1,77 @@
+# Build docs-site/ and deploy to GitHub Pages (https://kgz.github.io/stackwrangler/).
+# Mirror of Runa's deploy-docs.yml: pnpm in docs-site/, upload-pages-artifact, deploy-pages.
+#
+# While the repo is private, Pages Actions often cannot publish (need public repo
+# or org/enterprise Pages). Workflow still builds on push/dispatch so we can
+# dry-run. After #413 flips visibility: Settings → Pages → Source: GitHub Actions,
+# then the next green run on main goes live. No redesign required.
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs-site/**'
+      - '.github/workflows/deploy-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: docs-site/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: docs-site
+        run: pnpm install --frozen-lockfile
+
+      - name: Build VitePress site
+        working-directory: docs-site
+        env:
+          # Force base `/stackwrangler/` (also set when CI=true)
+          GITHUB_PAGES: '1'
+          CI: 'true'
+        run: pnpm build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/.vitepress/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
