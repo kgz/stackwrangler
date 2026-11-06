@@ -24,6 +24,7 @@ import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
 import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
 import { TransferServersPage } from './pages/TransferServersPage'
+import { RdsCreateDatabasePage } from './pages/RdsCreateDatabasePage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
 import { EcsClustersPage } from './pages/EcsClustersPage'
 import { Ec2InstancesPage } from './pages/Ec2InstancesPage'
@@ -70,6 +71,7 @@ export default function App() {
             element={<TransferServersPage />}
           />
           <Route path="rds" element={<RdsInstancesPage />} />
+          <Route path="rds/create" element={<RdsCreateDatabasePage />} />
           <Route path="rds/databases/:id" element={<RdsInstancesPage />} />
           <Route path="ecs" element={<EcsClustersPage />} />
           <Route path="ecs/clusters/:name" element={<EcsClustersPage />} />

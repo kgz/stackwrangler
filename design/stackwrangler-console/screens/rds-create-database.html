@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create database — RDS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="rds-create-database" data-nav="rds-databases" data-service="rds" data-title="Create database" data-crumb="Create database">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create database</h1>
+      <p class="aws-desc">
+        Standard create for Docker-backed Postgres or MySQL when
+        <code class="aws-mono">RDS_DOCKER_BACKEND=1</code>. Aurora clusters stay on the CLI smoke.
+      </p>
+
+      <section class="aws-card" data-od-id="create-method">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Choose a database creation method</h2>
+          <div class="aws-choice-row" role="group" aria-label="Create method" data-od-id="create-options">
+            <button type="button" class="aws-choice is-selected" aria-pressed="true" data-od-id="opt-standard" id="opt-standard">
+              <strong>Standard create</strong>
+              <span>Full control of engine, class, storage, and credentials.</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-easy">
+              <strong>Easy create</strong>
+              <span>Use recommended best-practice options.</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="engine-options" style="margin-top:16px">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Engine options</h2>
+          <div class="aws-choice-row" role="group" aria-label="Engine" data-od-id="engine-choices">
+            <button type="button" class="aws-choice is-selected" aria-pressed="true" data-od-id="engine-postgres" id="engine-postgres">
+              <strong>PostgreSQL</strong>
+              <span>Docker Postgres via LocalEmu.</span>
+            </button>
+            <button type="button" class="aws-choice" aria-pressed="false" data-od-id="engine-mysql" id="engine-mysql">
+              <strong>MySQL</strong>
+              <span>Docker MySQL via LocalEmu.</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="engine-aurora">
+              <strong>Amazon Aurora</strong>
+              <span>Use <code class="aws-mono">./smokes/data/rds-mysql-smoke.sh</code>.</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card aws-card-flush" style="margin-top:16px" data-od-id="settings">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Settings</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="db-id">DB instance identifier <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="db-id" name="dbInstanceIdentifier" type="text" autocomplete="off" placeholder="database-1" value="demo-console-pg" data-od-id="field-db-id" />
+              <p class="aws-hint">1–63 characters. Letters, numbers, and hyphens. Must start with a letter.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-engine-version">Engine version <span class="req" aria-hidden="true">*</span></label>
+              <select class="aws-select" id="db-engine-version" name="engineVersion" data-od-id="field-engine-version" style="max-width:480px;width:100%">
+                <option value="16.3" selected data-engine="postgres">16.3</option>
+                <option value="8.0" data-engine="mysql">8.0</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-class">DB instance class</label>
+              <select class="aws-select" id="db-class" name="dbInstanceClass" data-od-id="field-db-class" style="max-width:480px;width:100%">
+                <option value="db.t3.micro" selected>db.t3.micro</option>
+                <option value="db.t3.small">db.t3.small</option>
+                <option value="db.t4g.micro">db.t4g.micro</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-storage">Allocated storage (GiB) <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="db-storage" name="allocatedStorage" type="number" min="20" value="20" data-od-id="field-storage" style="max-width:240px" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-name">Initial database name</label>
+              <input class="aws-input" id="db-name" name="dbName" type="text" autocomplete="off" value="stackwrangler" data-od-id="field-db-name" />
+              <p class="aws-hint">Optional. Created inside the instance when supported by the engine.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="credentials-section">
+            <h2 class="aws-section-title">Credentials</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="db-user">Master username <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="db-user" name="masterUsername" type="text" autocomplete="off" value="stackwrangler" data-od-id="field-master-user" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-pass">Master password <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="db-pass" name="masterUserPassword" type="password" autocomplete="new-password" value="Stackwrangler1!" data-od-id="field-master-pass" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-pass2">Confirm password <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="db-pass2" name="masterUserPasswordConfirm" type="password" autocomplete="new-password" value="Stackwrangler1!" data-od-id="field-master-pass-confirm" />
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="connectivity-section">
+            <h2 class="aws-section-title">Connectivity</h2>
+            <p class="aws-desc" style="margin-bottom:12px">
+              VPC / subnet / security group pickers are not wired in this local subset. Host port is published separately from SG enforcement on the VPC address.
+            </p>
+            <div class="aws-field">
+              <label class="aws-label" for="db-vpc">Virtual private cloud (VPC)</label>
+              <select class="aws-select" id="db-vpc" name="vpc" disabled aria-disabled="true" title="To implement" data-od-id="field-vpc" style="max-width:480px;width:100%">
+                <option>Default VPC (local)</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-subnet">DB subnet group</label>
+              <select class="aws-select" id="db-subnet" name="dbSubnetGroup" disabled aria-disabled="true" title="To implement" data-od-id="field-subnet" style="max-width:480px;width:100%">
+                <option>default-vpc-subnet-group</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-sg">VPC security groups</label>
+              <select class="aws-select" id="db-sg" name="vpcSecurityGroups" disabled aria-disabled="true" title="To implement" data-od-id="field-sg" style="max-width:480px;width:100%">
+                <option>default</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="db-multiaz">Multi-AZ deployment</label>
+              <select class="aws-select" id="db-multiaz" name="multiAZ" disabled aria-disabled="true" title="To implement" data-od-id="field-multiaz" style="max-width:480px;width:100%">
+                <option>No</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="aws-form-actions" data-od-id="create-actions">
+            <a class="btn btn-normal" href="rds-databases.html" data-od-id="btn-cancel">Cancel</a>
+            <div class="spacer" style="flex:1"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-database">Create database</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      const pg = document.getElementById("engine-postgres");
+      const mysql = document.getElementById("engine-mysql");
+      const version = document.getElementById("db-engine-version");
+      const createBtn = document.querySelector('[data-od-id="btn-create-database"]');
+
+      function selectEngine(which) {
+        [pg, mysql].forEach(function (el) {
+          if (!el) return;
+          const on = el === which;
+          el.classList.toggle("is-selected", on);
+          el.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        if (!version) return;
+        var want = which === mysql ? "mysql" : "postgres";
+        Array.prototype.forEach.call(version.options, function (opt) {
+          var eng = opt.getAttribute("data-engine");
+          opt.hidden = eng !== want;
+          if (eng === want) version.value = opt.value;
+        });
+      }
+
+      if (pg) pg.addEventListener("click", function () { selectEngine(pg); });
+      if (mysql) mysql.addEventListener("click", function () { selectEngine(mysql); });
+      selectEngine(pg);
+
+      if (createBtn) {
+        createBtn.addEventListener("click", function () {
+          window.location.href = "rds-instance-detail.html";
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

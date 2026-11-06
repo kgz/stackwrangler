@@ -1,4 +1,5 @@
 import {
+  CreateDBInstanceCommand,
   DeleteDBInstanceCommand,
   DescribeDBInstancesCommand,
   RDSClient,
@@ -29,6 +30,34 @@ export async function deleteDbInstance(id: string): Promise<void> {
     new DeleteDBInstanceCommand({
       DBInstanceIdentifier: id,
       SkipFinalSnapshot: true,
+    }),
+  )
+}
+
+export type CreateDbInstanceInput = {
+  identifier: string
+  engine: 'postgres' | 'mysql'
+  engineVersion: string
+  instanceClass: string
+  allocatedStorage: number
+  masterUsername: string
+  masterUserPassword: string
+  dbName?: string
+}
+
+export async function createDbInstance(
+  input: CreateDbInstanceInput,
+): Promise<void> {
+  await client().send(
+    new CreateDBInstanceCommand({
+      DBInstanceIdentifier: input.identifier,
+      Engine: input.engine,
+      EngineVersion: input.engineVersion,
+      DBInstanceClass: input.instanceClass,
+      AllocatedStorage: input.allocatedStorage,
+      MasterUsername: input.masterUsername,
+      MasterUserPassword: input.masterUserPassword,
+      DBName: input.dbName || undefined,
     }),
   )
 }
