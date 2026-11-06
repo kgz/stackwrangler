@@ -115,5 +115,3 @@ More shots: [Console tour](/guide/console-tour).
 Ready? [Getting Started](/guide/getting-started) · [Vision](/guide/vision) · [Completeness](/guide/completeness)
 
 Docs also run locally: `cd docs-site && pnpm install && pnpm dev` → [docs-site README](https://github.com/kgz/stackwrangler/blob/main/docs-site/README.md). Hosted target: [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/).
-
-</div>>>>>>>> origin/feature/487-docker-image-install
