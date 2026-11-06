@@ -27,6 +27,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
+| Public path: `install/stackwrangler up` (no git `$ROOT` compose) | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` · [docker-install.md](docker-install.md) |
+| Public path: console HTTP on release nginx image | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
+| Public path: `aws --profile local` sts + s3 ls after image up | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
+| Public path: orchestrator `up` without `/var/run/docker.sock` | sad/other | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./smokes/s3/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./smokes/security/iam-access-denied.sh` + IAM console lab |

@@ -1,0 +1,253 @@
+#!/usr/bin/env bash
+# Image-mode CLI — runs inside ghcr.io/kgz/stackwrangler (orchestrator).
+# Speaks to host Docker via /var/run/docker.sock; config lives in STACKWRANGLER_DATA.
+set -euo pipefail
+
+OPT_ROOT="${STACKWRANGLER_OPT_ROOT:-/opt/stackwrangler}"
+DATA="${STACKWRANGLER_DATA:-/data}"
+COMPOSE_FILE="${STACKWRANGLER_COMPOSE_FILE:-$OPT_ROOT/docker/compose.release.yml}"
+COMPOSE=(docker compose -f "$COMPOSE_FILE" --project-directory "$DATA")
+ENDPOINT_DEFAULT="http://127.0.0.1:8333"
+IAM_ENDPOINT_DEFAULT="http://127.0.0.1:4566"
+
+# shellcheck disable=SC1091
+STACKWRANGLER_ENV_DEFER=1
+source "$OPT_ROOT/bin/stackwrangler-env.sh"
+
+mkdir -p "$DATA"
+
+# Baked at image build (docker/Dockerfile ARG IMAGE_VERSION). Prefer over floating latest.
+orchestrator_channel() {
+	if [[ -n "${STACKWRANGLER_IMAGE_TAG:-}" ]]; then
+		printf '%s\n' "$STACKWRANGLER_IMAGE_TAG"
+		return 0
+	fi
+	local v=""
+	if [[ -f "$OPT_ROOT/IMAGE_VERSION" ]]; then
+		v="$(tr -d '[:space:]' <"$OPT_ROOT/IMAGE_VERSION")"
+	fi
+	if [[ -n "$v" && "$v" != "dev" ]]; then
+		printf '%s\n' "$v"
+		return 0
+	fi
+	printf '%s\n' "latest"
+}
+
+sw_usage() {
+	cat <<'EOF'
+stackwrangler (image) — local AWS-shaped stack via published images
+
+Usage:
+  stackwrangler up [--force]
+  stackwrangler down [--remove-profile] [-v]
+  stackwrangler status
+  stackwrangler console
+  stackwrangler version
+
+Config: $STACKWRANGLER_DATA (default /data → host ~/.stackwrangler)
+Compose: release images only — no git checkout required.
+Docs: https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md
+EOF
+}
+
+ensure_env() {
+	if [[ ! -f "$DATA/.env" ]]; then
+		cp "$OPT_ROOT/.env.example" "$DATA/.env"
+		# Persist host -e overrides into the data dir on first run.
+		local key
+		for key in STACKWRANGLER_S3_HOST_PORT STACKWRANGLER_LOCALEMU_HOST_PORT \
+			STACKWRANGLER_CONSOLE_HOST_PORT STACKWRANGLER_ECR_HOST_PORT \
+			STACKWRANGLER_SFTP_HOST_PORT STACKWRANGLER_ECS_CREDS_PORT \
+			STACKWRANGLER_TRANSFER_SFTP_PORT \
+			STACKWRANGLER_ACCESS_KEY STACKWRANGLER_SECRET_KEY STACKWRANGLER_REGION \
+			STACKWRANGLER_ENDPOINT STACKWRANGLER_IAM_ENDPOINT; do
+			if [[ -n "${!key-}" ]]; then
+				if grep -q "^${key}=" "$DATA/.env"; then
+					sed -i "s|^${key}=.*|${key}=${!key}|" "$DATA/.env"
+				else
+					printf '%s=%s\n' "$key" "${!key}" >>"$DATA/.env"
+				fi
+			fi
+		done
+		echo "created $DATA/.env from defaults"
+	fi
+	printf '# managed by stackwrangler image — see docs/docker-install.md\n' >"$DATA/README.txt"
+}
+
+# Load $DATA/.env without clobbering vars already set (docker run -e / install script).
+load_data_env() {
+	local line key tmp
+	[[ -f "$DATA/.env" ]] || return 0
+	tmp="$(mktemp)"
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		case "$line" in
+		'' | \#*) continue ;;
+		esac
+		key="${line%%=*}"
+		key="${key%"${key##*[![:space:]]}"}"
+		key="${key#"${key%%[![:space:]]*}"}"
+		[[ -n "$key" ]] || continue
+		if [[ -z "${!key-}" ]]; then
+			printf '%s\n' "$line" >>"$tmp"
+		fi
+	done <"$DATA/.env"
+	set -a
+	# shellcheck disable=SC1090
+	source "$tmp"
+	set +a
+	rm -f "$tmp"
+}
+
+endpoint_url() {
+	load_data_env
+	echo "$(sw_env STACKWRANGLER_ENDPOINT AWSBOX_ENDPOINT "$ENDPOINT_DEFAULT")"
+}
+
+iam_endpoint_url() {
+	load_data_env
+	echo "$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT "$IAM_ENDPOINT_DEFAULT")"
+}
+
+console_url() {
+	load_data_env
+	local port
+	port="$(sw_env STACKWRANGLER_CONSOLE_HOST_PORT AWSBOX_CONSOLE_HOST_PORT 3000)"
+	echo "http://127.0.0.1:${port}"
+}
+
+export_image_defaults() {
+	load_data_env
+	local tag
+	tag="$(orchestrator_channel)"
+	# Local build / smoke (bin/build-release-images.sh) before GHCR defaults.
+	if [[ -n "${STACKWRANGLER_LOCAL_IMAGES:-}" ]]; then
+		export STACKWRANGLER_LOCALEMU_IMAGE="${STACKWRANGLER_LOCALEMU_IMAGE:-stackwrangler-localemu:${tag}}"
+		export STACKWRANGLER_CONSOLE_IMAGE="${STACKWRANGLER_CONSOLE_IMAGE:-stackwrangler-console:${tag}}"
+		export STACKWRANGLER_ECR_IMAGE="${STACKWRANGLER_ECR_IMAGE:-stackwrangler-ecr:${tag}}"
+		return 0
+	fi
+	# Pin siblings to this orchestrator's baked channel (IMAGE_VERSION), not floating latest.
+	export STACKWRANGLER_LOCALEMU_IMAGE="${STACKWRANGLER_LOCALEMU_IMAGE:-ghcr.io/kgz/stackwrangler-localemu:${tag}}"
+	export STACKWRANGLER_CONSOLE_IMAGE="${STACKWRANGLER_CONSOLE_IMAGE:-ghcr.io/kgz/stackwrangler-console:${tag}}"
+	export STACKWRANGLER_ECR_IMAGE="${STACKWRANGLER_ECR_IMAGE:-ghcr.io/kgz/stackwrangler-ecr:${tag}}"
+}
+
+# shellcheck disable=SC1091
+source "$OPT_ROOT/bin/stackwrangler-wait-healthy.sh"
+
+write_profile() {
+	# Reuse checkout profile helper with ROOT=DATA so it reads DATA/.env
+	ROOT="$DATA" "$OPT_ROOT/bin/stackwrangler-profile" write "$@"
+}
+
+cmd_up() {
+	if [[ ! -S /var/run/docker.sock ]]; then
+		echo "error: /var/run/docker.sock missing — mount the host Docker socket" >&2
+		exit 1
+	fi
+	ensure_env
+	load_data_env
+	export_image_defaults
+	"${COMPOSE[@]}" up -d
+	wait_healthy
+	write_profile "$@"
+	local ep iam cu
+	ep="$(endpoint_url)"
+	iam="$(iam_endpoint_url)"
+	cu="$(console_url)"
+	echo
+	echo "S3 API:     ${ep}"
+	echo "IAM/Lambda: ${iam}"
+	echo "Console:    ${cu}"
+	echo "Profile:    local  (aws --profile local s3 ls)"
+	echo "Data dir:   ${DATA}"
+}
+
+cmd_down() {
+	local remove_profile=0
+	local -a extra=()
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--remove-profile) remove_profile=1; shift ;;
+		*) extra+=("$1"); shift ;;
+		esac
+	done
+	ensure_env
+	export_image_defaults
+	load_data_env
+	"${COMPOSE[@]}" down "${extra[@]}"
+	if [[ "$remove_profile" -eq 1 ]]; then
+		ROOT="$DATA" "$OPT_ROOT/bin/stackwrangler-profile" remove
+	fi
+}
+
+cmd_status() {
+	ensure_env
+	export_image_defaults
+	load_data_env
+	"${COMPOSE[@]}" ps
+	local ep code iam cu
+	ep="$(endpoint_url)"
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
+	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "s3:       ${ep} (live, http ${code})"
+	else
+		echo "s3:       ${ep} (not reachable)"
+	fi
+	iam="$(iam_endpoint_url)"
+	if curl -sf --max-time 1 "${iam}/_localstack/health" >/dev/null 2>&1 \
+		|| curl -sf --max-time 1 "${iam}/_localemu/health" >/dev/null 2>&1 \
+		|| [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${iam}/" || true)" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "iam:      ${iam} (live)"
+	else
+		echo "iam:      ${iam} (not reachable)"
+	fi
+	cu="$(console_url)"
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${cu}/" || true)"
+	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "console:  ${cu} (live, http ${code})"
+	else
+		echo "console:  ${cu} (not reachable)"
+	fi
+}
+
+cmd_console() {
+	ensure_env
+	export_image_defaults
+	load_data_env
+	# Ensure console service is up (full stack preferred).
+	if ! "${COMPOSE[@]}" ps --status running -q console 2>/dev/null | grep -q .; then
+		echo "console not running — starting stack (up)…"
+		cmd_up
+	fi
+	echo "Console: $(console_url)"
+}
+
+cmd_version() {
+	if [[ -f "$OPT_ROOT/IMAGE_VERSION" ]]; then
+		cat "$OPT_ROOT/IMAGE_VERSION"
+	else
+		echo "stackwrangler-image (dev/unversioned)"
+	fi
+	docker compose version 2>/dev/null || true
+}
+
+main() {
+	local cmd="${1:-}"
+	shift || true
+	case "$cmd" in
+	up) cmd_up "$@" ;;
+	down) cmd_down "$@" ;;
+	status) cmd_status "$@" ;;
+	console) cmd_console "$@" ;;
+	version | --version) cmd_version "$@" ;;
+	help | -h | --help | "") sw_usage ;;
+	*)
+		echo "unknown command: $cmd" >&2
+		sw_usage >&2
+		exit 1
+		;;
+	esac
+}
+
+main "$@"

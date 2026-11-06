@@ -73,3 +73,4 @@ fi
 printf '%s\n' "$VER" >"$ROOT/docs/CURRENT_RELEASE"
 echo "docs/CURRENT_RELEASE -> $VER"
 echo "New tickets: milestone v1 — <area> + label $VER"
+echo "GHCR images: tag push triggers .github/workflows/publish-images.yml (docs/docker-install.md)"

@@ -1,0 +1,126 @@
+# Publish public install images to GHCR on product tags (vX.Y.Z) and manual runs.
+# Digests: check the workflow summary / GHCR package versions after push.
+name: publish-images
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to publish (e.g. v0.0.2 or local-test)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: kgz
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          DIGEST="$(grep -E '^sha256:[0-9a-f]{64}$' localemu-patches/IMAGE_DIGEST | tail -n1)"
+          echo "localemu_digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "Publishing tag=${TAG} localemu=${DIGEST}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push localemu
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.localemu
+          push: true
+          build-args: |
+            LOCALEMU_DIGEST=${{ steps.meta.outputs.localemu_digest }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-localemu:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-localemu:latest
+          provenance: false
+
+      - name: Build and push ecr
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.ecr
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-ecr:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-ecr:latest
+          provenance: false
+
+      - name: Build and push console
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.console
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-console:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-console:latest
+          provenance: false
+
+      - name: Build and push orchestrator
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          build-args: |
+            IMAGE_VERSION=${{ steps.meta.outputs.tag }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler:latest
+          provenance: false
+
+      - name: Upload install CLI to GitHub Release (tag pushes)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" install/stackwrangler --clobber
+          else
+            echo "No GitHub Release for $TAG yet — upload install/stackwrangler after release-tag.sh"
+          fi
+
+      - name: Summarize digests
+        run: |
+          {
+            echo "## Published images"
+            echo ""
+            echo "Tag: \`${{ steps.meta.outputs.tag }}\`"
+            echo ""
+            for name in stackwrangler stackwrangler-localemu stackwrangler-console stackwrangler-ecr; do
+              echo "### ${name}"
+              docker buildx imagetools inspect "${{ env.REGISTRY }}/${{ env.OWNER }}/${name}:${{ steps.meta.outputs.tag }}" || true
+              echo ""
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

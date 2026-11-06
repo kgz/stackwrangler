@@ -1,0 +1,98 @@
+# Public / image install path — image refs only (no git checkout bind mounts).
+# Dev checkouts keep using ../docker-compose.yml with localemu-patches/ mounts.
+name: stackwrangler
+
+services:
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command: mini -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: ${STACKWRANGLER_ACCESS_KEY:-stackwrangler}
+      AWS_SECRET_ACCESS_KEY: ${STACKWRANGLER_SECRET_KEY:-stackwranglerstackwrangler}
+    ports:
+      - "127.0.0.1:${STACKWRANGLER_S3_HOST_PORT:-8333}:8333"
+    volumes:
+      - seaweed-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:8333/ 2>&1 | grep -q 'HTTP/'"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 8s
+
+  localstack:
+    image: ${STACKWRANGLER_LOCALEMU_IMAGE:-ghcr.io/kgz/stackwrangler-localemu:latest}
+    user: root
+    cap_add:
+      - NET_ADMIN
+    environment:
+      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,elasticbeanstalk,apprunner,dax,wafv2,waf,network-firewall,fms
+      AWSBOX_ECR_REGISTRY: 127.0.0.1:${STACKWRANGLER_ECR_HOST_PORT:-5000}
+      AWSBOX_ECS_CREDS_PORT: ${STACKWRANGLER_ECS_CREDS_PORT:-4571}
+      AWSBOX_TRANSFER_SFTP_PORT: ${STACKWRANGLER_TRANSFER_SFTP_PORT:-2222}
+      AWSBOX_SFTP_HOST_PORT: ${STACKWRANGLER_SFTP_HOST_PORT:-2222}
+      AWSBOX_TRANSFER_SFTP_HOST: ${STACKWRANGLER_TRANSFER_SFTP_HOST:-127.0.0.1}
+      R53_RESOLVER_SECRET: ${STACKWRANGLER_SECRET_KEY:-stackwranglerstackwrangler}
+      IAM_ENFORCEMENT: "1"
+      EC2_VM_MANAGER: docker
+      RDS_DOCKER_BACKEND: "1"
+      SQS_ENABLE_MESSAGE_RETENTION_PERIOD: "1"
+      DEBUG: "0"
+      PERSISTENCE: "0"
+      GATEWAY_LISTEN: 0.0.0.0:4566
+      AWS_DEFAULT_REGION: ${STACKWRANGLER_REGION:-us-east-1}
+      AWSBOX_ACCOUNT_ID: ${STACKWRANGLER_ACCOUNT_ID:-}
+      AWSBOX_ACCOUNT_IDS: ${STACKWRANGLER_ACCOUNT_IDS:-}
+      MOTO_S3_ALLOW_CROSSACCOUNT_ACCESS: "false"
+      ROOT_ACCESS_KEYS: ${STACKWRANGLER_ACCESS_KEY:-stackwrangler},AKIAIOSFODNN7EXAMPLE
+      DISABLE_CORS_CHECKS: "1"
+      EXTRA_CORS_ALLOWED_ORIGINS: "*"
+      # VPC-only Lambda host maps — start.d 20-lambda-vpc-docker-flags.py (#187).
+      STACKWRANGLER_LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
+      AWSBOX_LAMBDA_DOCKER_FLAGS: ${STACKWRANGLER_LAMBDA_DOCKER_FLAGS:-${AWSBOX_LAMBDA_DOCKER_FLAGS:---add-host=host.docker.internal:host-gateway}}
+      LAMBDA_DOCKER_FLAGS: ""
+      AWSBOX_STS_ASSUME_ROLE_DURATION: ${STACKWRANGLER_STS_ASSUME_ROLE_DURATION:-}
+    ports:
+      - "127.0.0.1:${STACKWRANGLER_LOCALEMU_HOST_PORT:-4566}:4566"
+      - "127.0.0.1:${STACKWRANGLER_ECS_CREDS_PORT:-4571}:${STACKWRANGLER_ECS_CREDS_PORT:-4571}"
+      - "127.0.0.1:${STACKWRANGLER_SFTP_HOST_PORT:-2222}:${STACKWRANGLER_TRANSFER_SFTP_PORT:-2222}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - stackwrangler-state:/var/lib/awsbox
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4566/ | grep -qE '^[12345]'",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  ecr-registry:
+    image: ${STACKWRANGLER_ECR_IMAGE:-ghcr.io/kgz/stackwrangler-ecr:latest}
+    depends_on:
+      localstack:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${STACKWRANGLER_ECR_HOST_PORT:-5000}:5000"
+    volumes:
+      - ecr-data:/var/lib/registry
+
+  console:
+    image: ${STACKWRANGLER_CONSOLE_IMAGE:-ghcr.io/kgz/stackwrangler-console:latest}
+    depends_on:
+      localstack:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${STACKWRANGLER_CONSOLE_HOST_PORT:-3000}:80"
+
+volumes:
+  seaweed-data:
+  stackwrangler-state:
+  ecr-data:

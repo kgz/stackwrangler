@@ -2,23 +2,26 @@
 
 Thanks for interest in stackwrangler.
 
+**To run the stack as a user**, use the Docker image path — no clone: [docs/docker-install.md](docs/docker-install.md) (also the root README). This file is for people changing the product.
+
 ## Prerequisites
 
 - Docker Engine on Linux (Compose v2). Windows users: run Linux via WSL with Docker Desktop WSL integration or an engine inside WSL.
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- Node / yarn (console Vite) when working on `console/`
 
 Optional for some smokes: `psql`, `mysql`, `sshpass`.
 
-## Local stack
+## Local stack (checkout)
 
 ```bash
 cp .env.example .env   # first time; `up` also does this
 ./bin/stackwrangler up
-./bin/stackwrangler console   # http://127.0.0.1:3000
+./bin/stackwrangler console   # Vite → http://127.0.0.1:3000
 aws --profile local s3 ls
 ```
 
-SeaweedFS S3 is `:8333`; LocalEmu (IAM, Lambda, CFN, …) is `:4566`. Details and ports: root [README](README.md).
+SeaweedFS S3 is `:8333`; LocalEmu (IAM, Lambda, CFN, …) is `:4566`. Public image users get a baked nginx console instead of Vite — [docs/docker-install.md](docs/docker-install.md).
 
 ```bash
 ./bin/stackwrangler down                 # keep profile
@@ -26,6 +29,8 @@ SeaweedFS S3 is `:8333`; LocalEmu (IAM, Lambda, CFN, …) is `:4566`. Details an
 ```
 
 If profile `local` exists and isn’t stackwrangler-managed: `./bin/stackwrangler up --force`.
+
+Release images (orchestrator + patched LocalEmu + console): `./bin/build-release-images.sh`.
 
 ## Pull requests
 

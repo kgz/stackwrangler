@@ -1,0 +1,20 @@
+.git
+.github
+.cursor
+**/.awsbox
+**/.env
+**/node_modules
+console/dist
+console/playwright-report
+console/test-results
+# Keep design/awsbox + design/awsbox-console/assets for console image build.
+design/awsbox-console/screens
+design/awsbox-console/refs
+design/awsbox-console/RECON
+design/awsbox-console/scripts
+docs-site
+openspec
+smokes
+examples
+testdata
+agent-transcripts

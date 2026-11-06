@@ -32,12 +32,17 @@ features:
 
 ## Quick start
 
+Docker only — **no git clone** (see [Getting Started](/guide/getting-started)):
+
 ```bash
-git clone https://github.com/kgz/stackwrangler.git
-cd stackwrangler
-./bin/stackwrangler up
-./bin/stackwrangler console   # http://127.0.0.1:3000
+mkdir -p ~/.stackwrangler ~/.aws
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:latest up
+# → http://127.0.0.1:3000
 aws --profile local s3 ls
 ```
 
-See [Why](/guide/why), [Getting Started](/guide/getting-started), [Completeness](/guide/completeness), and [Concepts](/guide/concepts).
+See [Why](/guide/why), [Getting Started](/guide/getting-started), [Completeness](/guide/completeness), and [Concepts](/guide/concepts). Contributor clone path: [CONTRIBUTING](https://github.com/kgz/stackwrangler/blob/main/CONTRIBUTING.md).
