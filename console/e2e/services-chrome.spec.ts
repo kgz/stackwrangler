@@ -37,6 +37,19 @@ const lists: Array<{
     disabled: ['Delete', 'Rotate', 'Store a new secret'],
   },
   {
+    path: '/kms',
+    heading: 'Customer managed keys',
+    columns: [
+      'Alias',
+      'Key ID',
+      'Status',
+      'Key spec',
+      'Key usage',
+      'Creation date',
+    ],
+    disabled: ['Create key'],
+  },
+  {
     path: '/apigateway',
     heading: 'APIs',
     columns: ['Name', 'API ID', 'Created date', 'Endpoint'],
