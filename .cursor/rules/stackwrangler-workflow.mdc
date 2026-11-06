@@ -14,13 +14,13 @@ git checkout main && git pull origin main
 git checkout -b feature/<issue>-<short-slug>
 ```
 
-## Versioning (milestones + release label)
+## Versioning (pillars + release label + scores)
 
-- **Milestone** = service catalogue (`v1 — Networking`, …). Keep these names.
-- **Label** = product release (`v0.0.1`, …) from `docs/CURRENT_RELEASE`. Catalogue “v1” work at the start of product versioning = label **`v0.0.1`**.
-- Creating issues / Debt: assign milestone **and** add label `$(cat docs/CURRENT_RELEASE)`.
-- Active work → label `$(cat docs/CURRENT_RELEASE)` only (drop other `v0.0.x`). `v0.0.2`/`v0.0.3` are for backlog planning until the card is active.
-- Cut a release (git tag + GitHub Release + new label + bump CURRENT_RELEASE): `./bin/release-tag.sh vX.Y.Z`. Details: `docs/versioning.md`.
+- **Milestone** = pillar (`Platform`, `Identity & authz`, …) — `docs/version-plan.md`.
+- **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.1.0` Org path) only if theme + Impact gate match; else **no version label**.
+- New / Debt: pillar + `./bin/issue-score.sh`; **do not** auto-add `$(cat docs/CURRENT_RELEASE)`.
+- Absorb small gaps in-parent (`docs/gap-check.md`); Debt is evaluate-and-place.
+- Cut a release: `./bin/release-tag.sh vX.Y.Z` — only when asked. Details: `docs/versioning.md`.
 
 ## Product north star
 
@@ -51,6 +51,7 @@ Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 
 - No `Co-authored-by` / Cursor attribution
 - PR body: `Closes #<n>`
+- After merge or abandon: delete remote + local head branch, remove worktree, `git fetch --prune`. Prefer `gh pr merge … --delete-branch`. No leftover merged `feature/*` / `batch/*` on origin.
 
 ## Gap check before merge (required)
 
@@ -63,12 +64,12 @@ User relies on the agent to not lose half-baked follow-ups (especially UI stubs)
 ```
 
 1. Walk the checklist in `docs/gap-check.md`
-2. For every Partial / disabled Create / sidecar / “use CLI smoke” / authz hole / AWS console UI left out of v1 **without** an open Debt ticket → create `Debt: … (from #<n>)`, label `$(cat docs/CURRENT_RELEASE)`, link from README or service doc. Console debt designs use Open Design `web-clone` (`./bin/od-design-run.sh`)
+2. Prefer absorbing small additive gaps into this PR. Otherwise `Debt: … (from #<n>)` with pillar + Impact/Effort; release label only if cut gate matches. Tracker + docs link. Console debt: Open Design `web-clone` (`./bin/od-design-run.sh`)
 3. Prefer shipping docs in the PR; if blocked on public docs / screenshot / interaction edge → `Doc: … (from #<n>)` per `docs/docs-catalog.md` (skill `docs-catalog`; Agent `cursor-batch-docs`). User-facing host/ports/Docker copy is **Linux-first** (not WSL-led; #491).
-4. Mention new Debt / Doc issues in the PR body
+4. Mention new Debt / Doc issues (or absorbed) in the PR body
 
-Do **not** treat the parent as finished until gaps are ticketed (or explicitly N/A in the PR).
+Do **not** treat the parent as finished until gaps are absorbed, ticketed, or explicitly N/A in the PR.
 
 ## Maintainers
 
-`bin/board-status.sh` may remain in-repo for maintainers who have private GitHub project access. Board claiming / Agent field / project URLs are **not** part of this public rule.
+`bin/board-status.sh` / `bin/issue-score.sh` may remain in-repo for maintainers who have private GitHub project access. Board claiming / Agent field / project URLs are **not** part of this public rule. Lifecycle: **Backlog** → **Designing** → **In progress** → **In review** → **Done** (`ready` aliases to backlog; do not rewrite Status option IDs).

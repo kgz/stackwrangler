@@ -10,7 +10,7 @@ cd "$ROOT"
 echo "=== stackwrangler gap-check ${PARENT:+(parent #${PARENT})} ==="
 echo
 echo "Rubric: docs/gap-check.md"
-echo "Answer each; open Debt: / Doc: tickets for any NO / PARTIAL without an existing follow-up (or ship docs in this PR)."
+echo "Answer each; absorb small gaps into this PR, else open scored Debt / Doc: for NO / PARTIAL without a follow-up."
 echo
 cat <<'EOF'
 [ ] Data plane real for what we claimed?
@@ -85,6 +85,5 @@ echo "=== Interactions catalog present? ==="
 [[ -f docs/docs-catalog.md ]] && echo "OK docs/docs-catalog.md" || echo "MISSING docs/docs-catalog.md"
 echo
 
-REL="$(cat "$(dirname "$0")/../docs/CURRENT_RELEASE" 2>/dev/null || echo v0.0.1)"
-echo "Done. If anything half-baked shipped in #${PARENT:-this PR}, file Debt: / Doc: now — before board done."
-echo "Debt/Doc tickets: milestone + label ${REL} (docs/versioning.md · docs/docs-catalog.md)."
+echo "Done. If anything half-baked shipped in #${PARENT:-this PR}: absorb small gaps into this PR, else file scored Debt / Doc: — before board done."
+echo "Debt/Doc: pillar + Impact/Effort (./bin/issue-score.sh); release label only if cut gate matches — never auto CURRENT_RELEASE (docs/gap-check.md · docs/docs-catalog.md)."
