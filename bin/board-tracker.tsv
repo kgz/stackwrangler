@@ -120,7 +120,7 @@
 146	backlog	Debt: ECS/EC2 console depth
 147	backlog	Debt: CFN write-path audit vs #93–95
 150	done	Debt: smoke matrix sad paths — ECS task-role authz
-154	backlog	Debt: ECS in-container task-role creds DNAT (from #150)
+154	done	Debt: ECS in-container task-role creds DNAT (from #150)
 156	done	Real-AWS IAM AccessDenied parity (~$0)
 158	done	Transfer empty role AccessDenied smoke (from #150)
 159	done	RDS wrong-password auth deny smoke (from #150)
@@ -313,3 +313,5 @@
 546	backlog	Debt: SNS create topic + topic detail (from #172)
 561	backlog	Doc: REST APIs console screenshot (from #189)
 562	backlog	Doc: SNS Topics console screenshot (from #172)
+
+563	backlog	Doc: SQS queues console screenshot (from #167)
