@@ -20,6 +20,7 @@ import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
 import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
+import { CloudFormationStackSetsPage } from './pages/CloudFormationStackSetsPage'
 import { TransferServersPage } from './pages/TransferServersPage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
 import { EcsClustersPage } from './pages/EcsClustersPage'
@@ -51,6 +52,10 @@ export default function App() {
           <Route
             path="cloudformation/stacks/:name"
             element={<CloudFormationStacksPage />}
+          />
+          <Route
+            path="cloudformation/stacksets"
+            element={<CloudFormationStackSetsPage />}
           />
           <Route path="transfer" element={<TransferServersPage />} />
           <Route

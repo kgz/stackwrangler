@@ -263,7 +263,18 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
         id: 'cfn-stacks',
         label: 'Stacks',
         items: [
-          { label: 'Stacks', to: '/cloudformation', active: under('/cloudformation') },
+          {
+            label: 'Stacks',
+            to: '/cloudformation',
+            active: (p) =>
+              (p === '/cloudformation' || p.startsWith('/cloudformation/stacks')) &&
+              !p.startsWith('/cloudformation/stacksets'),
+          },
+          {
+            label: 'StackSets',
+            to: '/cloudformation/stacksets',
+            active: under('/cloudformation/stacksets'),
+          },
         ],
       },
     ],

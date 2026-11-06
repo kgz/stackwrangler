@@ -88,6 +88,7 @@
     { type: "Feature", label: "Data streams", href: "kinesis-streams.html" },
     { type: "Feature", label: "HTTP APIs", href: "apigateway-http-apis.html" },
     { type: "Feature", label: "Stacks", href: "cloudformation-stacks.html" },
+    { type: "Feature", label: "StackSets", href: "cloudformation-stacksets.html" },
     { type: "Feature", label: "Transfer servers", href: "transfer-servers.html" },
     { type: "Feature", label: "Databases", href: "rds-databases.html" },
     { type: "Feature", label: "Clusters", href: "ecs-clusters.html" },
@@ -266,6 +267,7 @@
           items: [
             { id: "cloudformation-stacks", label: "Stacks", href: "cloudformation-stacks.html" },
             { id: "cloudformation-stack-detail", label: "Stack detail", href: "cloudformation-stack-detail.html" },
+            { id: "cloudformation-stacksets", label: "StackSets", href: "cloudformation-stacksets.html" },
           ],
         },
       ],

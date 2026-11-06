@@ -73,7 +73,7 @@
 92	done	Console nav: link ECS + EC2
 93	backlog	Create stack wizard
 94	backlog	Update stack + change sets
-95	backlog	StackSets + nested stacks
+95	in-review	StackSets + nested stacks
 96	backlog	CodePipeline
 97	backlog	CodeBuild
 98	done	CodeDeploy

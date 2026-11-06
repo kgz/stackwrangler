@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/cloudformation-stack-parent-detail.html",
+  "entry": "screens/cloudformation-stack-parent-detail.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": ["html", "pdf", "zip"],
+  "createdAt": "2026-11-06T09:45:45.000Z",
+  "updatedAt": "2026-11-06T09:45:45.000Z",
+  "metadata": { "inferred": true, "reconciled": true }
+}

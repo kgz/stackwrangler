@@ -153,3 +153,23 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete, Schedule key deletion
 - Working: find field (`data-find-table`), pager chrome, Services/search → `kms-keys.html`
 
+
+## Issue #95 — StackSets + nested stacks chrome
+
+### Mode
+- Web-clone of AWS CloudFormation **StackSets** list + nested stack navigation into grey-rose console chrome
+- Designs only for OD; React console wires ListStackSets (often empty) + ParentId/RootId / nested resource links
+- Structure follows `kms-keys.html` / `cloudformation-stacks.html`
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `cloudformation-stacksets.html` | Name / Description / Status / Permission model · 3 sample rows |
+| `cloudformation-stacksets-empty.html` | Empty twin · honesty copy for LocalEmu ListStackSets |
+| `cloudformation-stack-parent-detail.html` | Root stack · Resources `AWS::CloudFormation::Stack` links to nested |
+| `cloudformation-stack-detail.html` | Nested child · Parent / Root overview links |
+
+### Dead controls
+- `title="To implement"`: Create StackSet, Refresh, table settings, StackSet name links, Create/Update stack
+- `title="Select a row"`: Delete StackSet
+- Working: find field, pager chrome, nav → StackSets, nested/parent hrefs between detail mocks
