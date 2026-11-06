@@ -116,7 +116,7 @@
 141	done	Transfer native SFTP auth — drop sidecar
 143	done	Debt: unify dual S3 backends
 144	done	Debt: workload IAM authz smokes
-145	backlog	Debt: RDS create UI + Aurora fidelity
+145	done	Debt: RDS create UI + Aurora fidelity
 146	backlog	Debt: ECS/EC2 console depth
 147	backlog	Debt: CFN write-path audit vs #93–95
 150	done	Debt: smoke matrix sad paths — ECS task-role authz
@@ -311,6 +311,7 @@
 540	backlog	Debt: KMS create/detail (from #177)
 543	backlog	Debt: API Gateway REST create/deploy controls (from #189)
 546	backlog	Debt: SNS create topic + topic detail (from #172)
+556	backlog	Doc: RDS Create screenshot + interactions (from #145)
 561	backlog	Doc: REST APIs console screenshot (from #189)
 562	backlog	Doc: SNS Topics console screenshot (from #172)
 563	backlog	Doc: SQS queues console screenshot (from #167)

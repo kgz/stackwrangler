@@ -317,7 +317,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./smokes/data/rds-smoke.sh` |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./smokes/data/rds-authz-smoke.sh` |
-| RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
+| RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |

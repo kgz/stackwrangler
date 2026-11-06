@@ -106,7 +106,7 @@ const lists: Array<{
     path: '/rds',
     heading: 'Databases',
     columns: ['DB identifier', 'Role', 'Engine', 'Region & AZ', 'Size', 'VPC'],
-    disabled: ['Actions ▾', 'Create database'],
+    disabled: ['Actions ▾'],
   },
   {
     path: '/ecs',

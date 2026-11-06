@@ -98,6 +98,7 @@
     { type: "Feature", label: "Stacks", href: "cloudformation-stacks.html" },
     { type: "Feature", label: "Transfer servers", href: "transfer-servers.html" },
     { type: "Feature", label: "Databases", href: "rds-databases.html" },
+    { type: "Feature", label: "Create database", href: "rds-create-database.html" },
     { type: "Feature", label: "Clusters", href: "ecs-clusters.html" },
     { type: "Feature", label: "Instances", href: "ec2-instances.html" },
     { type: "Feature", label: "VPCs", href: "ec2-vpcs.html" },
@@ -352,6 +353,7 @@
           items: [
             { id: "rds-databases", label: "Databases", href: "rds-databases.html" },
             { id: "rds-instance-detail", label: "DB instance", href: "rds-instance-detail.html" },
+            { id: "rds-create-database", label: "Create database", href: "rds-create-database.html" },
           ],
         },
       ],

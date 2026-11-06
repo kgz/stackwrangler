@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/rds-create-database.html",
+  "entry": "screens/rds-create-database.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T09:45:30.326Z",
+  "updatedAt": "2026-11-06T09:45:30.326Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

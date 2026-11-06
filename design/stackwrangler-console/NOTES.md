@@ -215,3 +215,19 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete, Schedule key deletion
 - Working: find field (`data-find-table`), pager chrome, Services/search → `kms-keys.html`
 
+## Issue #145 — RDS Create database
+
+### Mode
+- Web-clone of AWS RDS **Create database** (Standard create) into grey-rose console chrome
+- OD daemon runs failed here (`cursor-agent` GLIBC; `opencode` EACCES on `~/.config/opencode`); mock landed by hand against `lambda-create-function.html` + existing RDS list chrome
+- LocalEmu-shaped subset only — no real AWS resources
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `rds-create-database.html` | Standard create · Postgres/MySQL engines · settings/credentials · dead VPC/SG/Multi-AZ |
+| `rds-databases.html` | Create database → enabled link to create screen |
+
+### Dead controls (`title="To implement"`)
+- Easy create, Aurora engine, VPC / subnet / SG / Multi-AZ selects
+- Working in mock: engine toggle (Postgres/MySQL), Cancel, Create → detail sample

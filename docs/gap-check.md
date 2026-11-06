@@ -78,6 +78,6 @@ Full template + capture commands: [docs-catalog.md](docs-catalog.md).
 - Transfer native SSH keys (was sidecar password) → [#141](https://github.com/kgz/stackwrangler/issues/141)
 - Dual S3 → [#143](https://github.com/kgz/stackwrangler/issues/143)
 - Workload IAM → [#144](https://github.com/kgz/stackwrangler/issues/144)
-- RDS create/Aurora → [#145](https://github.com/kgz/stackwrangler/issues/145)
+- RDS create/Aurora → [#145](https://github.com/kgz/stackwrangler/issues/145) (console Create shipped; Doc shot [#556](https://github.com/kgz/awsl/issues/556); Aurora failover [#225](https://github.com/kgz/awsl/issues/225))
 - ECS/EC2 UI depth → [#146](https://github.com/kgz/stackwrangler/issues/146)
 - Console Create/detail program → [#350](https://github.com/kgz/stackwrangler/issues/350) (Lambda [#351](https://github.com/kgz/stackwrangler/issues/351), Logs [#352](https://github.com/kgz/stackwrangler/issues/352), IAM users [#353](https://github.com/kgz/stackwrangler/issues/353), HTTP API detail [#354](https://github.com/kgz/stackwrangler/issues/354))
