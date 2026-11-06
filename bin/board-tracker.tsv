@@ -202,7 +202,7 @@
 300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
 304	done	Design: S3 console missing UI via Open Design web-clone
-305	done	Rebrand awsbox to stackwrangler
+305	in-review	Rebrand awsbox to stackwrangler
 306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
 307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)

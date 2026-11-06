@@ -1,13 +1,13 @@
 # AWS Transfer Family (local)
 
 LocalEmu `transfer` on `:4566` = **control plane** (create-server / create-user / ImportSshPublicKey).  
-**Inbound SFTP** = native listener inside LocalEmu (`start.d/20-transfer-sftp.py`) on `127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}` — **SSH public keys only** (no `awsboxpass`).
+**Inbound SFTP** = native listener inside LocalEmu (`start.d/20-transfer-sftp.py`) on `127.0.0.1:${STACKWRANGLER_SFTP_HOST_PORT:-2222}` — **SSH public keys only** (no password auth).
 
 Optional `legacy-sftp` compose profile (atmoz password target on `:2223`) remains for outbound connector probes that need a dumb remote host.
 
 ## Upgrading from `beta/full-flow-v1`
 
-That branch published atmoz SFTP as compose service `sftp` on `127.0.0.1:${AWSBOX_SFTP_HOST_PORT:-2222}` (container `awsl-sftp-1`). This tree runs inbound SFTP inside the emulator on the same host port. The password target is the `legacy-sftp` profile on `127.0.0.1:${AWSBOX_LEGACY_SFTP_HOST_PORT:-2223}`.
+That branch published atmoz SFTP as compose service `sftp` on `127.0.0.1:${STACKWRANGLER_SFTP_HOST_PORT:-2222}` (container `awsl-sftp-1`). This tree runs inbound SFTP inside the emulator on the same host port. The password target is the `legacy-sftp` profile on `127.0.0.1:${STACKWRANGLER_LEGACY_SFTP_HOST_PORT:-2223}` (`stackwrangler` / `stackwranglerpass`).
 
 `./bin/stackwrangler up` removes this checkout's leftover `sftp` container when it still holds the emulator port: compose project label matches this directory, service `sftp`, image `atmoz/sftp`. Another project's SFTP server, or anything else on the port, makes `up` exit before Compose and names the holder. A failed bind otherwise leaves the emulator container `Created` and the rest of the stack down.
 
@@ -37,7 +37,7 @@ Smoke: `./smokes/transfer/transfer-sftp-port-smoke.sh`.
 | Layer | Implementation |
 |-------|----------------|
 | IaC / API | LocalEmu Transfer (`--profile local transfer …`) |
-| Bytes in | Native SFTP in LocalEmu (`AWSBOX_TRANSFER_SFTP_PORT`, published as `AWSBOX_SFTP_HOST_PORT`) |
+| Bytes in | Native SFTP in LocalEmu (`STACKWRANGLER_TRANSFER_SFTP_PORT`, published as `STACKWRANGLER_SFTP_HOST_PORT`) |
 | Auth | SERVICE_MANAGED users + `ImportSshPublicKey` (password rejected) |
 | Bytes → S3 | Put/Get under the user's Transfer role via gateway AssumeRole |
 
@@ -80,7 +80,7 @@ The role is **assumed through the gateway**, so its identity policy is enforced 
 - `s3:GetObject` on the object (`ACCESS_DENIED_S3`)
 - `secretsmanager:GetSecretValue` on the secret, plus `kms:Decrypt` when the secret uses a CMK (`ACCESS_DENIED_SECRET`)
 
-`FailureCode` values are awsbox's (AWS does not publish a fixed list): `ACCESS_ROLE_TRUST`, `ACCESS_ROLE_NOT_FOUND`, `ACCESS_DENIED_S3`, `ACCESS_DENIED_SECRET`, `SECRET_*`, `HOST_KEY_NOT_TRUSTED`, `SFTP_AUTH_FAILED`, `CONNECTION_ERROR`, `SFTP_WRITE_FAILED`.
+`FailureCode` values are stackwrangler's (AWS does not publish a fixed list): `ACCESS_ROLE_TRUST`, `ACCESS_ROLE_NOT_FOUND`, `ACCESS_DENIED_S3`, `ACCESS_DENIED_SECRET`, `SECRET_*`, `HOST_KEY_NOT_TRUSTED`, `SFTP_AUTH_FAILED`, `CONNECTION_ERROR`, `SFTP_WRITE_FAILED`.
 
 ### Logging
 
@@ -88,7 +88,7 @@ With a `LoggingRole` (needs `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs
 
 ### Smoke
 
-`./smokes/transfer/transfer-connector-smoke.sh` runs the replication slice [`examples/serverless-v3-rest/slices/transfer-out/`](../examples/serverless-v3-rest/slices/transfer-out): a Lambda creates the tenant connector at runtime, trusts the host key, and sends an S3 object to the compose `sftp` container (`sftp://sftp:22`, user from `AWSBOX_SFTP_USER` / `AWSBOX_SFTP_PASS`, defaults match the `legacy-sftp` profile). The smoke drops LocalEmu public egress (iptables) and still imports vendored `paramiko` (#315).
+`./smokes/transfer/transfer-connector-smoke.sh` runs the replication slice [`examples/serverless-v3-rest/slices/transfer-out/`](../examples/serverless-v3-rest/slices/transfer-out): a Lambda creates the tenant connector at runtime, trusts the host key, and sends an S3 object to the compose `sftp` container (`sftp://sftp:22`, user from `STACKWRANGLER_SFTP_USER` / `STACKWRANGLER_SFTP_PASS`, defaults match the `legacy-sftp` profile: `stackwrangler` / `stackwranglerpass`). The smoke drops LocalEmu public egress (iptables) and still imports vendored `paramiko` (#315).
 
 Sad paths: access role without `s3:GetObject`, without the secret, without `kms:Decrypt`, trust scoped to another account, wrong host key, Lambda role without `iam:PassRole`.
 

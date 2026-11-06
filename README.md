@@ -44,7 +44,7 @@ cd stackwrangler
 aws --profile local s3 ls
 ```
 
-`./bin/stackwrangler up` copies `.env.example` → `.env` on first run (`STACKWRANGLER_*` vars). Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop profile `local`).
+`./bin/stackwrangler up` copies `.env.example` → `.env` on first run. Defaults: access key `stackwrangler`, secret `stackwranglerstackwrangler`, profile `local`. Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop the profile).
 
 | What | Where |
 |------|--------|
