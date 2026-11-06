@@ -153,3 +153,23 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete, Schedule key deletion
 - Working: find field (`data-find-table`), pager chrome, Services/search → `kms-keys.html`
 
+## Issue #173 — EventBridge rules + event buses lists
+
+### Mode
+- Web-clone of the AWS EventBridge **Rules** and **Event buses** lists into grey-rose console chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure follows `kinesis-streams.html` / `secrets-list.html`: h1 + description + card toolbar + find/pager + table
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `eventbridge-rules.html` | Name / Status / Event bus / Type / Updated · 3 rows (`awsbox-events-demo`, `cleanup-schedule`, `orders-route`) |
+| `eventbridge-rules-empty.html` | Empty twin · Refresh + Create rule + empty panel · link to sample rows |
+| `eventbridge-buses.html` | Name / Type / Description · `default` + `app-domain` + `orders` |
+| `eventbridge-buses-empty.html` | Empty twin · Refresh + Create event bus + empty panel · link to sample rows |
+
+### Dead controls
+- `title="To implement"`: Create rule / Create event bus, Refresh, table settings, column filters, name dead links
+- `title="Select a row"`: Delete
+- Working: find field (`data-find-table`), pager chrome, Services/search → `eventbridge-rules.html` / `eventbridge-buses.html`
+

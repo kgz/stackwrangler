@@ -37,6 +37,18 @@ const lists: Array<{
     disabled: ['Delete', 'Rotate', 'Store a new secret'],
   },
   {
+    path: '/events',
+    heading: 'Rules',
+    columns: ['Name', 'Status', 'Event bus', 'Type', 'Updated'],
+    disabled: ['Create rule'],
+  },
+  {
+    path: '/events/buses',
+    heading: 'Event buses',
+    columns: ['Name', 'Type', 'Description'],
+    disabled: ['Create event bus'],
+  },
+  {
     path: '/kms',
     heading: 'Customer managed keys',
     columns: [

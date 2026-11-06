@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Event buses — EventBridge</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="eventbridge-buses" data-nav="eventbridge-buses" data-service="eventbridge" data-title="Event buses" data-crumb="Event buses">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Event buses</h1>
+      <p class="aws-desc">An event bus receives events from sources and routes them to rules for matching and delivery.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-bus" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-bus" title="To implement">Create event bus</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter event buses by name" data-find-table="#data-table" aria-label="Filter event buses by name" data-od-id="find-buses" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="eventbridge-buses-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Type <button type="button" class="filter" aria-label="Filter Type" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Description <button type="button" class="filter" aria-label="Filter Description" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="app-domain">
+                  <td class="check"><input type="checkbox" aria-label="Select app-domain" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="bus-app-domain">app-domain</button></td>
+                  <td>Custom</td>
+                  <td>Domain events for the local app</td>
+                </tr>
+                <tr data-name="default">
+                  <td class="check"><input type="checkbox" aria-label="Select default" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="bus-default">default</button></td>
+                  <td>Default</td>
+                  <td>AWS default event bus</td>
+                </tr>
+                <tr data-name="orders">
+                  <td class="check"><input type="checkbox" aria-label="Select orders" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="bus-orders">orders</button></td>
+                  <td>Custom</td>
+                  <td>Order lifecycle events</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

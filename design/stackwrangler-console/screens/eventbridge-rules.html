@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rules — EventBridge</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="eventbridge-rules" data-nav="eventbridge-rules" data-service="eventbridge" data-title="Rules" data-crumb="Rules">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Rules</h1>
+      <p class="aws-desc">Amazon EventBridge rules match incoming events and route them to targets for processing.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-rule" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-rule" title="To implement">Create rule</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter rules by name" data-find-table="#data-table" aria-label="Filter rules by name" data-od-id="find-rules" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="eventbridge-rules-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Status <button type="button" class="filter" aria-label="Filter Status" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Event bus <button type="button" class="filter" aria-label="Filter Event bus" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Type <button type="button" class="filter" aria-label="Filter Type" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Updated <span aria-hidden="true">↑</span></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="awsbox-events-demo">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-events-demo" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="rule-awsbox-events-demo">awsbox-events-demo</button></td>
+                  <td>ENABLED</td>
+                  <td>default</td>
+                  <td>Event pattern</td>
+                  <td>2026-11-02 14:18:03</td>
+                </tr>
+                <tr data-name="cleanup-schedule">
+                  <td class="check"><input type="checkbox" aria-label="Select cleanup-schedule" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="rule-cleanup-schedule">cleanup-schedule</button></td>
+                  <td>ENABLED</td>
+                  <td>default</td>
+                  <td>Schedule</td>
+                  <td>2026-10-22 08:41:16</td>
+                </tr>
+                <tr data-name="orders-route">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-route" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="rule-orders-route">orders-route</button></td>
+                  <td>DISABLED</td>
+                  <td>orders</td>
+                  <td>Event pattern</td>
+                  <td>2026-09-14 11:05:49</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
