@@ -653,14 +653,11 @@ class DockerTaskManager:
                 env_vars["LOCALEMU_ECS_CLUSTER"] = cluster_name
                 env_vars["LOCALEMU_ECS_CONTAINER_NAME"] = c_name
 
-                # / #79: Standard ECS env vars. The credentials
-                # endpoint runs on the LocalEmu host; inside the task
-                # container we DNAT 169.254.170.2:80 → host:creds_port
-                # after start_container (AWS SDK only trusts the approved
-                # link-local hosts for the credentials endpoint, so we
-                # MUST present 169.254.170.2). The DNAT install happens
-                # below after docker start, inside the container's
-                # netns (requires NET_ADMIN capability).
+                # #79/#154: Standard ECS env vars. Creds listen inside
+                # LocalEmu; non-host tasks DNAT 169.254.170.2:80 → this
+                # container's compose-network IP:creds_port after start
+                # (SDKs only trust link-local / loopback for the creds
+                # URI). Sidecar covers images without iptables.
                 from localemu import config as _le_config
                 from localemu.services.ecs.docker.task_credentials import (
                     get_task_credentials_server,
@@ -980,14 +977,10 @@ class DockerTaskManager:
                     cpu_shares=cpu_shares,
                     mem_limit=mem_limit,
                     additional_flags=additional_flags,
-                    # #79: NET_ADMIN lets us install an iptables DNAT rule
-                    # in the container's netns that redirects
-                    # 169.254.170.2:80 → host.docker.internal:<creds_port>.
-                    # AWS SDKs only trust a handful of allow-listed hosts
-                    # (169.254.170.2, 169.254.170.23, localhost, ::1) for
-                    # the container-credentials endpoint, so we *must*
-                    # present 169.254.170.2 — pointing FULL_URI directly
-                    # at host.docker.internal fails SDK validation.
+                    # #79/#154: NET_ADMIN for in-netns DNAT when the image
+                    # has iptables; otherwise vpc_routing's alpine sidecar
+                    # programs the same rule. SDKs require 169.254.170.2
+                    # (not host.docker.internal) for the creds URI.
                     cap_add=["NET_ADMIN"],
                     labels={
                         "localemu.service": "ecs",
@@ -1080,13 +1073,13 @@ class DockerTaskManager:
                                 task_info=task_info,
                             )
 
-                    # #79: Install DNAT so 169.254.170.2:80 inside this
-                    # container is redirected to our host-bound task-
-                    # credentials server. Done post-start because we need
-                    # the container's netns. host.docker.internal resolves
-                    # inside the container via --add-host above.
+                    # #79/#154: DNAT 169.254.170.2:80 → LocalEmu compose IP
+                    # (same host as AWS_ENDPOINT_URL). Not host.docker.internal:
+                    # compose publishes the creds port on 127.0.0.1 only.
                     if task_role_arn and network_mode != "host":
-                        self._install_task_creds_dnat(docker_name, _creds_port)
+                        self._install_task_creds_dnat(
+                            docker_name, _creds_port, _gw_host,
+                        )
 
                     container_info = EcsContainerInfo(
                         container_name=c_name,
@@ -1243,45 +1236,66 @@ class DockerTaskManager:
                 exc_info=True,
             )
 
-    def _install_task_creds_dnat(self, docker_name: str, creds_port: int) -> None:
-        """Install iptables DNAT rule redirecting 169.254.170.2:80 → host:creds_port.
+    def _install_task_creds_dnat(
+        self, docker_name: str, creds_port: int, creds_host: str,
+    ) -> None:
+        """DNAT 169.254.170.2:80 → LocalEmu ``creds_host:creds_port`` (#154).
 
-        Runs inside the target container's netns (requires NET_ADMIN).
-        Must land before the container's entrypoint issues any AWS SDK
-        call; we serialise on docker exec so by the time run_task
-        returns, the rule is in place.
+        ``creds_host`` is the same compose-network IP used for
+        ``AWS_ENDPOINT_URL`` (#269). Compose publishes the creds port on
+        host ``127.0.0.1`` only, so DNATing to ``host.docker.internal``
+        never reaches the listener inside LocalEmu.
 
-        host.docker.internal is resolved at rule-install time via
-        ``getent hosts``; if the resolution fails or iptables is absent
-        (bare / distroless user images), we log at WARNING and leave
-        the container running — the user's AWS SDK calls will then hit
-        169.254.170.2 directly and fail at the network layer rather
-        than silently talking to real AWS.
+        Programs the container netns via ``vpc_routing._sh`` so images
+        without iptables (alpine, many Lambda/distroless bases) still get
+        the rule through the privileged alpine sidecar. Also installs a
+        /32 fib for 169.254.170.2 so ENETUNREACH does not fire before
+        nat OUTPUT DNAT when the task has no default route.
         """
-        # getent ahostsv4 only returns IPv4 addresses — vital because
-        # iptables (nf_tables) rejects IPv6 literals here and Docker
-        # Desktop's host.docker.internal resolves to both families.
+        try:
+            import ipaddress as _ipaddress
+
+            _ipaddress.ip_address(creds_host)
+            host_lit = creds_host
+            resolve = False
+        except ValueError:
+            host_lit = ""
+            resolve = True
+
+        # Resolve host.docker.internal only when endpoint target fell back.
+        # ahostsv4 → IPv4 only (nf_tables rejects IPv6 DNAT literals).
+        if resolve:
+            resolve_part = (
+                'CREDS_IP=$(getent ahostsv4 host.docker.internal 2>/dev/null '
+                '| awk \'/STREAM/ {print $1; exit}\'); '
+                'if [ -z "$CREDS_IP" ]; then '
+                '  CREDS_IP=$(getent hosts host.docker.internal 2>/dev/null '
+                '| awk \'$1 !~ /:/ {print $1; exit}\'); '
+                'fi; '
+            )
+        else:
+            resolve_part = f'CREDS_IP={shlex.quote(host_lit)}; '
+
         script = (
             'set -e; '
-            'HOST_IP=$(getent ahostsv4 host.docker.internal 2>/dev/null '
-            '| awk \'/STREAM/ {print $1; exit}\'); '
-            'if [ -z "$HOST_IP" ]; then '
-            '  HOST_IP=$(getent hosts host.docker.internal 2>/dev/null '
-            '| awk \'$1 !~ /:/ {print $1; exit}\'); '
-            'fi; '
-            'if [ -z "$HOST_IP" ]; then echo "host.docker.internal unresolvable" >&2; exit 1; fi; '
+            + resolve_part
+            + 'if [ -z "$CREDS_IP" ]; then echo "creds host unresolvable" >&2; exit 1; fi; '
+            # Fib before DNAT — private awsvpc tasks have no default route.
+            'ip route replace 169.254.170.2/32 via "$CREDS_IP" 2>/dev/null '
+            '|| ip route replace 169.254.170.2/32 via "$CREDS_IP"; '
             'iptables -t nat -C OUTPUT -d 169.254.170.2 -p tcp --dport 80 '
-            f'-j DNAT --to-destination ${{HOST_IP}}:{creds_port} 2>/dev/null '
+            f'-j DNAT --to-destination ${{CREDS_IP}}:{int(creds_port)} 2>/dev/null '
             '|| iptables -t nat -A OUTPUT -d 169.254.170.2 -p tcp --dport 80 '
-            f'-j DNAT --to-destination ${{HOST_IP}}:{creds_port}'
+            f'-j DNAT --to-destination ${{CREDS_IP}}:{int(creds_port)}'
         )
         try:
-            out, err = DOCKER_CLIENT.exec_in_container(
-                docker_name, ["sh", "-c", script],
-            )
+            from localemu.services.ec2.docker.vpc_routing import _sh
+
+            # exec → awsbox-rt netns sidecar when the image has no iptables
+            _sh(docker_name, script)
             LOG.debug(
-                "task-creds DNAT installed on %s (stdout=%r stderr=%r)",
-                docker_name, out, err,
+                "task-creds DNAT installed on %s → %s:%s",
+                docker_name, creds_host, creds_port,
             )
         except Exception as e:
             LOG.warning(

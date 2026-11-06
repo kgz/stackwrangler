@@ -83,8 +83,8 @@ esac
 CLUSTER="${P}-cluster"
 FAMILY="${P}-family"
 BODY="ecs-qurl-${TS}"
-# Env keys: in-container 169.254.170.2 DNAT for task-role creds is broken under
-# compose (ecs-authz-smoke.sh). QueueUrl host inject is what this smoke asserts.
+# Env keys: static admin keys here — QueueUrl host inject is what this smoke
+# asserts. Task-role via 169.254 DNAT: ecs-authz-smoke.sh (#154).
 KEY="${AWS_ACCESS_KEY_ID}"
 SECRET="${AWS_SECRET_ACCESS_KEY}"
 aws ecs create-cluster --cluster-name "$CLUSTER" >/dev/null
