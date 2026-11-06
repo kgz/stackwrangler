@@ -73,6 +73,10 @@ Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 
 Do **not** treat the parent as finished until gaps are ticketed (or explicitly N/A in the PR).
 
+## Verify as the live principal
+
+When you use awsbox to check a stack, a policy or a workload, **act as the principal that runs it live**: the CI deploy role for deploys, the task or execution role for workloads. Admin keys skip IAM, so a check run with them can't fail on permissions and proves nothing about them. If an emulator gap forces you to loosen a statement, loosen only that one and say so. See [docs/serverless-stackwrangler.md](docs/serverless-stackwrangler.md#deploy-as-the-deploy-role-admin-keys-skip-iam).
+
 ## Maintainers
 
 Maintainers with GitHub **project** access may use `bin/board-status.sh` / `bin/board-tracker.tsv`. That loop is optional for external contributors and is not documented here (private board; clone ≠ project access).

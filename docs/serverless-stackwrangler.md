@@ -138,6 +138,21 @@ aws cloudformation deploy \
 
 `package` still needs a valid Access/License key (licence host is not AWS DNS). `./bin/stackwrangler sls -- … deploy` treats a CLI exit 0 with no `Service deployed` / stack-complete marker as failure.
 
+### Deploy as the deploy role (admin keys skip IAM)
+
+`stackwrangler sls` deploys with the admin keys. Admin keys skip IAM, so the deploy **can't fail on permissions**. A stack that deploys cleanly here can still get `AccessDenied` in CI, where it runs as a deploy role.
+
+Example: a deploy role's policy scoped `logs:DescribeLogGroups` to log group ARNs. That action has no resource-level permissions (AWS service reference), so a scoped grant never matches, and CloudFormation's `AWS::Logs::LogGroup` handler calls it on every operation. Acting as a role with that exact statement, LocalEmu **denies** `describe-log-groups`, as AWS does. The stack had been deployed with admin keys, so it never showed.
+
+When the question is "will this deploy in CI", deploy as the role CI uses:
+
+1. Create the role from the real policy, with ARNs rewritten for the emulator (account `000000000000`, your region and stage), and a trust policy for the local root.
+2. `aws sts assume-role` against the emulator, then export `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`.
+3. Today: `package` via the redirect, then `aws cloudformation deploy` (fallback above) with those credentials. Built in: `stackwrangler sls --role-arn` ([#522](https://github.com/kgz/awsl/issues/522)).
+4. Read the stack events for `AccessDenied`; also `remove` the stack, since rollback and delete need their own permissions.
+
+Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)) and `iam:SimulateCustomPolicy` ([#517](https://github.com/kgz/awsl/issues/517)). Loosen only the affected statement, and say so.
+
 ### Lambda → SQS from inside the function
 
 This fixture validates **host SNS publish → SQS → Lambda ESM → S3**. Producers that call `SendMessage` with a QueueUrl host `sqs.<region>.localhost` from inside a Lambda container need [#459](https://github.com/kgz/awsl/issues/459).
@@ -150,3 +165,4 @@ This fixture validates **host SNS publish → SQS → Lambda ESM → S3**. Produ
 | `serverless-domain-manager` | [#329](https://github.com/kgz/awsl/issues/329) |
 | Smoke sad path (v3) | [#330](https://github.com/kgz/awsl/issues/330) |
 | Smoke sad path (v4) | covered in `serverless-v4-smoke.sh` ([#460](https://github.com/kgz/awsl/issues/460)) |
+| Deploy as a given role (`--role-arn`) | [#522](https://github.com/kgz/awsl/issues/522) |
