@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>demo-update-bucket — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-change-set-detail" data-nav="cloudformation-stack-detail" data-service="cloudformation" data-title="demo-update-bucket" data-crumb="demo-update-bucket">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">demo-update-bucket</h1>
+          <div class="aws-subtitle-row">
+            <span class="aws-status aws-status-success">CREATE_COMPLETE</span>
+            <span>Execution status: AVAILABLE</span>
+            <span>Stack: <a href="cloudformation-stack-detail.html">awsbox-demo</a></span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-changeset">Delete</button>
+        <button type="button" class="btn btn-primary" data-od-id="btn-execute-changeset">Execute change set</button>
+      </div>
+
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Overview</h2>
+          <dl class="aws-kv" data-od-id="changeset-overview">
+            <div><dt>Change set ID</dt><dd><code class="aws-mono">arn:aws:cloudformation:ap-southeast-2:445772506418:changeSet/demo-update-bucket/abc</code></dd></div>
+            <div><dt>Stack</dt><dd><a href="cloudformation-stack-detail.html">awsbox-demo</a></dd></div>
+            <div><dt>Description</dt><dd>Bump DemoBucket description</dd></div>
+            <div><dt>Creation time</dt><dd>2026-11-06 08:12:44</dd></div>
+            <div><dt>Status</dt><dd><span class="aws-status aws-status-success">CREATE_COMPLETE</span></dd></div>
+            <div><dt>Execution status</dt><dd>AVAILABLE</dd></div>
+          </dl>
+
+          <h2 class="aws-section-title" style="margin-top:20px">Changes</h2>
+          <div class="aws-table-wrap">
+            <table class="aws-table" data-od-id="changes-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Action</span></th>
+                  <th scope="col"><span class="th-inner">Logical ID</span></th>
+                  <th scope="col"><span class="th-inner">Resource type</span></th>
+                  <th scope="col"><span class="th-inner">Replacement</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Modify</td>
+                  <td>DemoBucket</td>
+                  <td>AWS::S3::Bucket</td>
+                  <td>False</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

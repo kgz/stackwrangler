@@ -32,7 +32,15 @@
               <div class="aws-subtitle-row"><span class="aws-status aws-status-success">CREATE_COMPLETE</span><span>Created 2026-10-12 08:41:15</span></div>
             </div>
             <button type="button" class="btn btn-normal" data-od-id="btn-delete-stack" title="To implement" disabled aria-disabled="true">Delete</button>
-            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Update ▾</button>
+            <div style="position:relative;display:inline-flex;gap:0" data-od-id="update-menu">
+              <details>
+                <summary class="btn btn-normal" style="list-style:none;cursor:pointer" data-od-id="btn-update-stack">Update ▾</summary>
+                <div class="aws-menu open" style="position:absolute;right:0;top:100%;margin-top:4px;min-width:200px">
+                  <a href="cloudformation-update-stack.html" data-od-id="menu-update-stack">Update stack</a>
+                  <a href="cloudformation-create-change-set.html" data-od-id="menu-create-changeset">Create change set</a>
+                </div>
+              </details>
+            </div>
             <button type="button" class="btn btn-primary" disabled aria-disabled="true" title="To implement">Create stack ▾</button>
           </div>
           <section class="aws-card" data-od-id="content-card">
@@ -43,6 +51,7 @@
               <button type="button" class="aws-tab" data-tab="outputs">Outputs</button>
               <button type="button" class="aws-tab" data-tab="parameters">Parameters</button>
               <button type="button" class="aws-tab" data-tab="template">Template</button>
+              <button type="button" class="aws-tab" data-tab="changesets">Change sets</button>
             </div>
             <div class="aws-card-body aws-tab-panels">
               <div data-tab-panel="info" data-od-id="panel-info">
@@ -105,6 +114,45 @@ Description: Demo stack for local labs
 Resources:
   DemoBucket:
     Type: AWS::S3::Bucket</pre>
+              </div>
+              <div data-tab-panel="changesets" hidden data-od-id="panel-changesets">
+                <div class="aws-toolbar" style="margin-bottom:12px" data-od-id="changeset-toolbar">
+                  <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+                  <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row" data-od-id="btn-execute-changeset">Execute</button>
+                  <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row" data-od-id="btn-delete-changeset">Delete</button>
+                  <div class="spacer"></div>
+                  <a class="btn btn-primary" href="cloudformation-create-change-set.html" data-od-id="btn-create-changeset">Create change set</a>
+                </div>
+                <div class="aws-table-wrap">
+                  <table class="aws-table" data-od-id="changesets-table">
+                    <thead>
+                      <tr>
+                        <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                        <th scope="col"><span class="th-inner">Change set name</span></th>
+                        <th scope="col"><span class="th-inner">Status</span></th>
+                        <th scope="col"><span class="th-inner">Execution status</span></th>
+                        <th scope="col"><span class="th-inner">Creation time</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="check"><input type="checkbox" aria-label="Select demo-update-bucket" /></td>
+                        <td><a href="cloudformation-change-set-detail.html" data-od-id="cs-demo-update-bucket">demo-update-bucket</a></td>
+                        <td><span class="aws-status aws-status-success">CREATE_COMPLETE</span></td>
+                        <td>AVAILABLE</td>
+                        <td>2026-11-06 08:12:44</td>
+                      </tr>
+                      <tr>
+                        <td class="check"><input type="checkbox" aria-label="Select demo-add-topic" /></td>
+                        <td><a href="cloudformation-change-set-detail.html" data-od-id="cs-demo-add-topic">demo-add-topic</a></td>
+                        <td><span class="aws-status aws-status-success">CREATE_COMPLETE</span></td>
+                        <td>AVAILABLE</td>
+                        <td>2026-11-05 16:40:02</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="aws-desc" style="margin-top:12px"><a href="cloudformation-change-sets-empty.html">Empty change sets twin</a></p>
               </div>
             </div>
           </section>

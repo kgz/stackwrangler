@@ -20,6 +20,9 @@ import { AccessManagementPage } from './pages/AccessManagementPage'
 import { SpecialtyBucketsPage } from './pages/SpecialtyBucketsPage'
 import { StorageInsightsPage } from './pages/StorageInsightsPage'
 import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
+import { CloudFormationUpdateStackPage } from './pages/CloudFormationUpdateStackPage'
+import { CloudFormationCreateChangeSetPage } from './pages/CloudFormationCreateChangeSetPage'
+import { CloudFormationChangeSetDetailPage } from './pages/CloudFormationChangeSetDetailPage'
 import { TransferServersPage } from './pages/TransferServersPage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
 import { EcsClustersPage } from './pages/EcsClustersPage'
@@ -48,6 +51,18 @@ export default function App() {
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route path="cloudformation" element={<CloudFormationStacksPage />} />
+          <Route
+            path="cloudformation/stacks/:name/update"
+            element={<CloudFormationUpdateStackPage />}
+          />
+          <Route
+            path="cloudformation/stacks/:name/change-sets/create"
+            element={<CloudFormationCreateChangeSetPage />}
+          />
+          <Route
+            path="cloudformation/stacks/:name/change-sets/:changeSetName"
+            element={<CloudFormationChangeSetDetailPage />}
+          />
           <Route
             path="cloudformation/stacks/:name"
             element={<CloudFormationStacksPage />}

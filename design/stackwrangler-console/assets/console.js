@@ -266,6 +266,9 @@
           items: [
             { id: "cloudformation-stacks", label: "Stacks", href: "cloudformation-stacks.html" },
             { id: "cloudformation-stack-detail", label: "Stack detail", href: "cloudformation-stack-detail.html" },
+            { id: "cloudformation-update-stack", label: "Update stack", href: "cloudformation-update-stack.html" },
+            { id: "cloudformation-create-change-set", label: "Create change set", href: "cloudformation-create-change-set.html" },
+            { id: "cloudformation-change-set-detail", label: "Change set detail", href: "cloudformation-change-set-detail.html" },
           ],
         },
       ],

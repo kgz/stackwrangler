@@ -153,3 +153,25 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete, Schedule key deletion
 - Working: find field (`data-find-table`), pager chrome, Services/search → `kms-keys.html`
 
+## Issue #94 — CloudFormation Update + change sets
+
+### Mode
+- Web-clone of AWS CFN **Update stack** / **Change sets** into grey-rose console chrome
+- OD `./bin/od-design-run.sh --issue 94` started (project `stackwrangler-console-94`); container agents failed (cursor-agent GLIBC_2.36; opencode EACCES on `~/.config/opencode`). Mocks landed to match existing CFN screens + AWS tab layout.
+- Designs under `screens/`; React follows in `console/`
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `cloudformation-stack-detail.html` | Change sets tab + Update ▾ → update / create change set |
+| `cloudformation-stacks.html` | Update ▾ menu links |
+| `cloudformation-update-stack.html` | Template replace (paste / upload) |
+| `cloudformation-create-change-set.html` | Name + description + template body |
+| `cloudformation-change-set-detail.html` | Overview + changes table · Execute / Delete |
+| `cloudformation-change-sets-empty.html` | Empty twin |
+
+### Dead controls
+- `title="To implement"`: Create stack ▾, Refresh, S3 template URL, Stack actions
+- `title="Select a row"`: Execute / Delete on change-set list when none selected
+- Working (mock hrefs): Update stack, Create change set, change set name → detail
+

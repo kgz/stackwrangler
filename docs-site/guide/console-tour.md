@@ -18,7 +18,7 @@ Functions list against LocalEmu (`:4566`). Create and detail (Monaco) are wired 
 
 ## CloudFormation
 
-Stacks console for the local CFN path used by CDK / SAM / examples.
+Stacks console for the local CFN path used by CDK / SAM / examples. Update stack (template replace) and change sets (list / detail / execute / delete) are wired; Create stack remains [#93](https://github.com/kgz/awsl/issues/93).
 
 ![CloudFormation stacks](/assets/console/cloudformation-stacks.png)
 

@@ -1,12 +1,20 @@
 import {
   CloudFormationClient,
+  CreateChangeSetCommand,
+  DeleteChangeSetCommand,
   DeleteStackCommand,
+  DescribeChangeSetCommand,
   DescribeStackEventsCommand,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
+  ExecuteChangeSetCommand,
   GetTemplateCommand,
+  ListChangeSetsCommand,
   ListStacksCommand,
   StackStatus,
+  UpdateStackCommand,
+  type Change,
+  type ChangeSetSummary,
   type Output,
   type Parameter,
   type Stack,
@@ -91,4 +99,111 @@ export async function deleteStack(stackName: string): Promise<void> {
   await client().send(new DeleteStackCommand({ StackName: stackName }))
 }
 
-export type { Output, Parameter, Stack, StackEvent, StackResource, StackSummary }
+export async function updateStack(input: {
+  stackName: string
+  templateBody: string
+}): Promise<void> {
+  await client().send(
+    new UpdateStackCommand({
+      StackName: input.stackName,
+      TemplateBody: input.templateBody,
+    }),
+  )
+}
+
+export async function listChangeSets(
+  stackName: string,
+): Promise<ChangeSetSummary[]> {
+  const out = await client().send(
+    new ListChangeSetsCommand({ StackName: stackName }),
+  )
+  return out.Summaries ?? []
+}
+
+export type ChangeSetDetail = {
+  changeSetName?: string
+  changeSetId?: string
+  stackName?: string
+  description?: string
+  status?: string
+  statusReason?: string
+  executionStatus?: string
+  creationTime?: Date
+  changes: Change[]
+}
+
+export async function describeChangeSet(input: {
+  stackName: string
+  changeSetName: string
+}): Promise<ChangeSetDetail> {
+  const out = await client().send(
+    new DescribeChangeSetCommand({
+      StackName: input.stackName,
+      ChangeSetName: input.changeSetName,
+    }),
+  )
+  return {
+    changeSetName: out.ChangeSetName,
+    changeSetId: out.ChangeSetId,
+    stackName: out.StackName,
+    description: out.Description,
+    status: out.Status,
+    statusReason: out.StatusReason,
+    executionStatus: out.ExecutionStatus,
+    creationTime: out.CreationTime,
+    changes: out.Changes ?? [],
+  }
+}
+
+export async function createChangeSet(input: {
+  stackName: string
+  changeSetName: string
+  description?: string
+  templateBody: string
+}): Promise<string | undefined> {
+  const out = await client().send(
+    new CreateChangeSetCommand({
+      StackName: input.stackName,
+      ChangeSetName: input.changeSetName,
+      Description: input.description,
+      TemplateBody: input.templateBody,
+      ChangeSetType: 'UPDATE',
+    }),
+  )
+  return out.Id
+}
+
+export async function executeChangeSet(input: {
+  stackName: string
+  changeSetName: string
+}): Promise<void> {
+  await client().send(
+    new ExecuteChangeSetCommand({
+      StackName: input.stackName,
+      ChangeSetName: input.changeSetName,
+    }),
+  )
+}
+
+export async function deleteChangeSet(input: {
+  stackName: string
+  changeSetName: string
+}): Promise<void> {
+  await client().send(
+    new DeleteChangeSetCommand({
+      StackName: input.stackName,
+      ChangeSetName: input.changeSetName,
+    }),
+  )
+}
+
+export type {
+  Change,
+  ChangeSetSummary,
+  Output,
+  Parameter,
+  Stack,
+  StackEvent,
+  StackResource,
+  StackSummary,
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton } from '../components/S3Ui'
@@ -18,12 +18,16 @@ import {
 } from '../components/ServiceUi'
 import { formatServiceDate } from '../lib/format'
 import {
+  deleteChangeSet,
   deleteStack,
   describeStack,
+  executeChangeSet,
   getStackTemplate,
+  listChangeSets,
   listStackEvents,
   listStackResources,
   listStacks,
+  type ChangeSetSummary,
   type Output,
   type Parameter,
   type Stack,
@@ -33,6 +37,65 @@ import {
 } from '../lib/cfn'
 
 type DetailTab = (typeof DETAIL_TABS)[number][0]
+
+function UpdateMenu({
+  stackName,
+  disabled,
+}: {
+  stackName: string | null
+  disabled?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  const gated = !stackName || disabled
+  const base = stackName
+    ? `/cloudformation/stacks/${encodeURIComponent(stackName)}`
+    : ''
+
+  return (
+    <div className="aws-pop" ref={rootRef}>
+      <button
+        type="button"
+        className="btn btn-normal"
+        disabled={gated}
+        title={stackName ? undefined : 'Select a row'}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        Update ▾
+      </button>
+      {open && stackName ? (
+        <div className="aws-menu open left" role="menu">
+          <Link
+            to={`${base}/update`}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            Update stack
+          </Link>
+          <Link
+            to={`${base}/change-sets/create`}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            Create change set
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 function StacksList() {
   const [stacks, setStacks] = useState<StackSummary[]>([])
@@ -112,7 +175,7 @@ function StacksList() {
           >
             Delete
           </button>
-          <DeadButton>Update ▾</DeadButton>
+          <UpdateMenu stackName={selected} disabled={busy} />
           <DeadButton>Stack actions ▾</DeadButton>
           <label className="field-inline">
             Filter status
@@ -154,27 +217,27 @@ function StacksList() {
             />
           ) : (
             filtered.map((s) => {
-              const name = s.StackName ?? ''
-              const isSelected = selected === name
+              const n = s.StackName ?? ''
+              const isSelected = selected === n
               return (
                 <tr
-                  key={s.StackId ?? name}
+                  key={s.StackId ?? n}
                   className={`selectable${isSelected ? ' selected' : ''}`}
-                  onClick={() => toggle(name)}
+                  onClick={() => toggle(n)}
                 >
                   <SelectCell
                     name="selected-stack"
-                    id={name}
+                    id={n}
                     selected={isSelected}
                     onToggle={toggle}
                   />
                   <td>
-                    <ResourceLabel ids={[name, s.StackId]}>
+                    <ResourceLabel ids={[n, s.StackId]}>
                       <Link
-                        to={`/cloudformation/stacks/${encodeURIComponent(name)}`}
+                        to={`/cloudformation/stacks/${encodeURIComponent(n)}`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {name}
+                        {n}
                       </Link>
                     </ResourceLabel>
                   </td>
@@ -200,7 +263,172 @@ const DETAIL_TABS = [
   ['outputs', 'Outputs'],
   ['parameters', 'Parameters'],
   ['template', 'Template'],
+  ['changesets', 'Change sets'],
 ] as const
+
+function ChangeSetsPanel({ stackName }: { stackName: string }) {
+  const [sets, setSets] = useState<ChangeSetSummary[]>([])
+  const [selected, setSelected] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const list = await listChangeSets(stackName)
+      setSets(list)
+      setSelected((cur) =>
+        cur && list.some((s) => s.ChangeSetName === cur) ? cur : null,
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }, [stackName])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  function toggle(id: string) {
+    setSelected((cur) => (cur === id ? null : id))
+  }
+
+  async function onExecute() {
+    if (!selected) return
+    setBusy(true)
+    setError(null)
+    setToast(null)
+    try {
+      await executeChangeSet({
+        stackName,
+        changeSetName: selected,
+      })
+      setToast(`Execute started for ${selected}`)
+      setSelected(null)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onDelete() {
+    if (!selected) return
+    setBusy(true)
+    setError(null)
+    setToast(null)
+    try {
+      await deleteChangeSet({
+        stackName,
+        changeSetName: selected,
+      })
+      setToast(`Deleted ${selected}`)
+      setSelected(null)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <Notices error={error} toast={toast} />
+      <div className="aws-toolbar" style={{ marginBottom: 12 }}>
+        <RefreshButton onClick={() => void refresh()} />
+        <button
+          type="button"
+          className="btn btn-normal"
+          disabled={!selected || busy}
+          title={selected ? undefined : 'Select a row'}
+          onClick={() => void onExecute()}
+        >
+          Execute
+        </button>
+        <button
+          type="button"
+          className="btn btn-normal"
+          data-testid="btn-delete-changeset"
+          disabled={!selected || busy}
+          title={selected ? undefined : 'Select a row'}
+          onClick={() => void onDelete()}
+        >
+          Delete
+        </button>
+        <div className="spacer" />
+        <Link
+          className="btn btn-primary"
+          to={`/cloudformation/stacks/${encodeURIComponent(stackName)}/change-sets/create`}
+        >
+          Create change set
+        </Link>
+      </div>
+      <div className="aws-table-wrap">
+        <table className="aws-table" data-testid="changesets-table">
+          <thead>
+            <tr>
+              <SelectHeader />
+              <PlainHeader>Change set name</PlainHeader>
+              <PlainHeader>Status</PlainHeader>
+              <PlainHeader>Execution status</PlainHeader>
+              <PlainHeader>Creation time</PlainHeader>
+            </tr>
+          </thead>
+          <tbody>
+            {sets.length === 0 ? (
+              <EmptyRow
+                colSpan={5}
+                loading={loading}
+                loadingText="Loading change sets…"
+                title="No change sets"
+                text="This stack has no change sets."
+              />
+            ) : (
+              sets.map((cs) => {
+                const csName = cs.ChangeSetName ?? ''
+                const isSelected = selected === csName
+                return (
+                  <tr
+                    key={cs.ChangeSetId ?? csName}
+                    className={`selectable${isSelected ? ' selected' : ''}`}
+                    onClick={() => toggle(csName)}
+                  >
+                    <SelectCell
+                      name="selected-changeset"
+                      id={csName}
+                      selected={isSelected}
+                      onToggle={toggle}
+                    />
+                    <td>
+                      <Link
+                        to={`/cloudformation/stacks/${encodeURIComponent(stackName)}/change-sets/${encodeURIComponent(csName)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {csName}
+                      </Link>
+                    </td>
+                    <td>
+                      <StatusBadge status={cs.Status} />
+                    </td>
+                    <td>{cs.ExecutionStatus ?? '—'}</td>
+                    <td>{formatServiceDate(cs.CreationTime)}</td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
 
 function StackDetail({ name }: { name: string }) {
   const navigate = useNavigate()
@@ -312,7 +540,7 @@ function StackDetail({ name }: { name: string }) {
           >
             Delete
           </button>
-          <DeadButton>Update ▾</DeadButton>
+          <UpdateMenu stackName={name} disabled={busy} />
           <DeadButton variant="primary">Create stack ▾</DeadButton>
         </div>
 
@@ -321,7 +549,7 @@ function StackDetail({ name }: { name: string }) {
         <section className="aws-card">
           <TabBar<DetailTab> tabs={DETAIL_TABS} active={tab} onChange={setTab} />
           <div className="aws-card-body">
-            {loading ? (
+            {loading && tab !== 'changesets' ? (
               <p className="aws-desc">Loading…</p>
             ) : tab === 'info' ? (
               <>
@@ -512,13 +740,15 @@ function StackDetail({ name }: { name: string }) {
                   </tbody>
                 </table>
               </div>
-            ) : (
+            ) : tab === 'template' ? (
               <pre
                 className="aws-mono"
                 style={{ whiteSpace: 'pre-wrap', margin: 0 }}
               >
                 {template || '(empty template)'}
               </pre>
+            ) : (
+              <ChangeSetsPanel stackName={name} />
             )}
           </div>
         </section>
