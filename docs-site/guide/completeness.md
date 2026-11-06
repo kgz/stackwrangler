@@ -78,7 +78,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 | VPC / SG / ELBv2 / Route 53 (public + private) | **Partial** with smokes |
 | WAFv2 (API GW associate; not real edge WAF) | **Partial** thin |
 | API Gateway HTTP + REST | **Partial** |
-| KMS / Secrets Manager / ACM | **Partial** |
+| KMS / Secrets Manager / ACM | **Partial** · Secrets thin list [#176](https://github.com/kgz/awsl/issues/176); store/detail [#535](https://github.com/kgz/awsl/issues/535) |
 | Multi-account + OIDC assume | **CLI + smoke** |
 
 ### IaC against the same account

@@ -31,6 +31,12 @@ const lists: Array<{
     disabled: ['Actions ▾', 'Create state machine'],
   },
   {
+    path: '/secretsmanager',
+    heading: 'Secrets',
+    columns: ['Name', 'Description', 'Last retrieved', 'Created on'],
+    disabled: ['Delete', 'Rotate', 'Store a new secret'],
+  },
+  {
     path: '/apigateway',
     heading: 'APIs',
     columns: ['Name', 'API ID', 'Created date', 'Endpoint'],

@@ -56,7 +56,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | DynamoDB | yes | **yes** | — | no → [#174](https://github.com/kgz/awsl/issues/174) | `dynamodb-smoke.sh`, `dynamodb-authz-smoke.sh` |
 | DynamoDB depth (GSI, conditions, UpdateItem, transactions, TTL) | yes (CFN slice `serverless-v3-rest/slices/ddb`) | **yes** (Allow on index ARN / table ARN only, Deny on index; Batch/Transact table-scoped [#306](https://github.com/kgz/awsl/issues/306)) | duplicate put, failed update condition, cancelled transaction; index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) | — | `dynamodb-depth-smoke.sh` |
 | Step Functions | yes | **yes** | — | thin list [#175](https://github.com/kgz/awsl/issues/175) · create/detail [#533](https://github.com/kgz/awsl/issues/533) | `sfn-smoke.sh`, `sfn-authz-smoke.sh` · console e2e `sfn-state-machines.spec.ts` |
-| Secrets Manager | yes | **yes** | — | no → [#176](https://github.com/kgz/awsl/issues/176) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` |
+| Secrets Manager | yes | **yes** | — | thin list [#176](https://github.com/kgz/awsl/issues/176) · store/detail [#535](https://github.com/kgz/awsl/issues/535) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` · console e2e `secrets-list.spec.ts` |
 | KMS | yes | **yes** | — | no → [#177](https://github.com/kgz/awsl/issues/177) | `kms-smoke.sh`, `kms-authz-smoke.sh` |
 | Resource policies (SM, KMS, S3) | yes (delegation allows) | **yes** (explicit deny / no key-policy delegation) | cross-account [#233](https://github.com/kgz/awsl/issues/233) | — | `resource-policy-smoke.sh` |
 | Kinesis | yes | **yes** | — | no → [#178](https://github.com/kgz/awsl/issues/178) | `kinesis-smoke.sh`, `kinesis-authz-smoke.sh` |
