@@ -11,6 +11,7 @@ import {
   ExecuteChangeSetCommand,
   GetTemplateCommand,
   ListChangeSetsCommand,
+  ListStackSetsCommand,
   ListStacksCommand,
   StackStatus,
   UpdateStackCommand,
@@ -22,6 +23,7 @@ import {
   type Stack,
   type StackEvent,
   type StackResource,
+  type StackSetSummary,
   type StackSummary,
 } from '@aws-sdk/client-cloudformation'
 import { emuCreds } from './emu'
@@ -225,6 +227,29 @@ export async function deleteChangeSet(input: {
   )
 }
 
+/** ListStackSets — LocalEmu often returns [] even after CreateStackSet (see docs/cfn-stacksets-nested.md). */
+export async function listStackSets(): Promise<StackSetSummary[]> {
+  const out = await client().send(new ListStackSetsCommand({}))
+  return out.Summaries ?? []
+}
+
+/** Extract stack name from a stack ARN or bare name. */
+export function stackNameFromId(stackIdOrName: string | undefined): string | null {
+  if (!stackIdOrName) return null
+  const trimmed = stackIdOrName.trim()
+  if (!trimmed) return null
+  const arn = /^arn:aws:cloudformation:[^:]+:[^:]*:stack\/([^/]+)\//.exec(
+    trimmed,
+  )
+  if (arn?.[1]) return arn[1]
+  if (trimmed.includes('/')) return null
+  return trimmed
+}
+
+export function isNestedStackResource(resourceType: string | undefined): boolean {
+  return resourceType === 'AWS::CloudFormation::Stack'
+}
+
 export type {
   Change,
   ChangeSetSummary,
@@ -233,5 +258,6 @@ export type {
   Stack,
   StackEvent,
   StackResource,
+  StackSetSummary,
   StackSummary,
 }

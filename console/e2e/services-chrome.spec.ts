@@ -108,6 +108,17 @@ const lists: Array<{
     disabled: ['Update ▾', 'Stack actions ▾'],
   },
   {
+    path: '/cloudformation/stacksets',
+    heading: 'StackSets',
+    columns: [
+      'StackSet name',
+      'Description',
+      'Status',
+      'Permission model',
+    ],
+    disabled: ['Create StackSet'],
+  },
+  {
     path: '/transfer',
     heading: 'Servers',
     columns: ['Server ID', 'Protocol', 'Endpoint type', 'State', 'Users'],

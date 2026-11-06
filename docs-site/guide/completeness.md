@@ -87,7 +87,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 |------|--------|
 | Terraform (S3+Lambda + S3 backend/lock) | **Working** |
 | CDK / SAM samples | **Working** |
-| CloudFormation | **Partial** |
+| CloudFormation | **Partial** · StackSets/nested chrome [#95](https://github.com/kgz/awsl/issues/95) |
 | Serverless Framework v3 | **Partial** |
 | CodeDeploy (ECS blue/green + Lambda canary control plane) | **CLI + smoke** |
 

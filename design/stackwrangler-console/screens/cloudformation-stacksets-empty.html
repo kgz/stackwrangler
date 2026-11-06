@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StackSets — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-stacksets-empty" data-nav="cloudformation-stacksets" data-service="cloudformation" data-title="StackSets" data-crumb="StackSets">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">StackSets</h1>
+      <p class="aws-desc">StackSets extend the functionality of stacks by enabling you to create, update, or delete stacks across multiple accounts and Regions with a single operation.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-stackset" title="To implement">Create StackSet</button>
+          </div>
+          <div class="aws-empty-panel" data-od-id="empty-state">
+            <strong>No StackSets</strong>
+            <p>You do not have any StackSets in this region. LocalEmu may accept CreateStackSet but ListStackSets often returns empty — see docs/cfn-stacksets-nested.md.</p>
+            <p class="aws-desc" style="margin-top:12px"><a href="cloudformation-stacksets.html">View sample rows</a></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

@@ -47,6 +47,19 @@ test.describe('docs-capture', () => {
     })
   })
 
+  test('cloudformation stacksets', async ({ page }) => {
+    await shot(
+      page,
+      'cloudformation-stacksets.png',
+      '/cloudformation/stacksets',
+      async () => {
+        await expect(
+          page.getByRole('heading', { name: 'StackSets' }),
+        ).toBeVisible({ timeout: 30_000 })
+      },
+    )
+  })
+
   test('ecs clusters', async ({ page }) => {
     await shot(page, 'ecs-clusters.png', '/ecs', async () => {
       await expect(

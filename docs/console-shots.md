@@ -9,6 +9,7 @@ PNG paths are under `docs/assets/console/` (docs-site serves them via `public/as
 | `empty-specialty-buckets.png` | `/directory-buckets` | Empty chrome is honest |
 | `lambda-functions.png` | `/lambda` | Optional: seed a tiny function for non-empty list |
 | `cloudformation-stacks.png` | `/cloudformation` | List page; empty OK if honest |
+| `cloudformation-stacksets.png` | `/cloudformation/stacksets` | StackSets list; empty OK + honesty [#95](https://github.com/kgz/awsl/issues/95) |
 | `ecs-clusters.png` | `/ecs` | List page |
 | `ec2-instances.png` | `/ec2` | List page |
 | `sfn-state-machines.png` | `/stepfunctions` | Optional: seed via `sfn-smoke.sh` / e2e create; empty OK |

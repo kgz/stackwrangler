@@ -23,11 +23,13 @@ import {
   describeStack,
   executeChangeSet,
   getStackTemplate,
+  isNestedStackResource,
   isStackBusy,
   listChangeSets,
   listStackEvents,
   listStackResources,
   listStacks,
+  stackNameFromId,
   type ChangeSetSummary,
   type Output,
   type Parameter,
@@ -222,6 +224,7 @@ function StacksList() {
             filtered.map((s) => {
               const n = s.StackName ?? ''
               const isSelected = selected === n
+              const nested = Boolean(stackNameFromId(s.ParentId))
               return (
                 <tr
                   key={s.StackId ?? n}
@@ -242,6 +245,9 @@ function StacksList() {
                       >
                         {n}
                       </Link>
+                      {nested ? (
+                        <span className="aws-quiet"> · nested</span>
+                      ) : null}
                     </ResourceLabel>
                   </td>
                   <td>
@@ -499,6 +505,9 @@ function StackDetail({ name }: { name: string }) {
   const outputs: Output[] = stack?.Outputs ?? []
   const parameters: Parameter[] = stack?.Parameters ?? []
   const tags = stack?.Tags ?? []
+  const parentName = stackNameFromId(stack?.ParentId)
+  const rootName = stackNameFromId(stack?.RootId)
+  const isNested = Boolean(parentName || rootName)
 
   return (
     <div className="aws-detail-split">
@@ -540,6 +549,7 @@ function StackDetail({ name }: { name: string }) {
               <div className="aws-subtitle-row">
                 <StatusBadge status={stack.StackStatus} />
                 <span>Created {formatServiceDate(stack.CreationTime)}</span>
+                {isNested ? <span className="aws-quiet">Nested stack</span> : null}
               </div>
             ) : null}
           </div>
@@ -571,6 +581,32 @@ function StackDetail({ name }: { name: string }) {
                   rows={[
                     ['Stack ID', <Mono key="id">{stack?.StackId ?? '—'}</Mono>],
                     ['Description', stack?.Description ?? '—'],
+                    [
+                      'Parent stack',
+                      parentName ? (
+                        <Link
+                          key="parent"
+                          to={`/cloudformation/stacks/${encodeURIComponent(parentName)}`}
+                        >
+                          {parentName}
+                        </Link>
+                      ) : (
+                        '—'
+                      ),
+                    ],
+                    [
+                      'Root stack',
+                      rootName ? (
+                        <Link
+                          key="root"
+                          to={`/cloudformation/stacks/${encodeURIComponent(rootName)}`}
+                        >
+                          {rootName}
+                        </Link>
+                      ) : (
+                        '—'
+                      ),
+                    ],
                     ['Created time', formatServiceDate(stack?.CreationTime)],
                     [
                       'Last updated time',
@@ -673,20 +709,46 @@ function StackDetail({ name }: { name: string }) {
                         title="No resources"
                       />
                     ) : (
-                      resources.map((r) => (
-                        <tr key={r.LogicalResourceId}>
-                          <td>{r.LogicalResourceId ?? '—'}</td>
-                          <td>
-                            <ResourceLabel ids={[r.PhysicalResourceId]}>
-                              <Mono>{r.PhysicalResourceId ?? '—'}</Mono>
-                            </ResourceLabel>
-                          </td>
-                          <td>{r.ResourceType ?? '—'}</td>
-                          <td>
-                            <StatusBadge status={r.ResourceStatus} />
-                          </td>
-                        </tr>
-                      ))
+                      resources.map((r) => {
+                        const nestedName = isNestedStackResource(r.ResourceType)
+                          ? stackNameFromId(r.PhysicalResourceId) ??
+                            stackNameFromId(r.LogicalResourceId)
+                          : null
+                        const logical = r.LogicalResourceId ?? '—'
+                        const physical = r.PhysicalResourceId ?? '—'
+                        return (
+                          <tr key={r.LogicalResourceId}>
+                            <td>
+                              {nestedName ? (
+                                <Link
+                                  to={`/cloudformation/stacks/${encodeURIComponent(nestedName)}`}
+                                >
+                                  {logical}
+                                </Link>
+                              ) : (
+                                logical
+                              )}
+                            </td>
+                            <td>
+                              <ResourceLabel ids={[r.PhysicalResourceId]}>
+                                {nestedName ? (
+                                  <Link
+                                    to={`/cloudformation/stacks/${encodeURIComponent(nestedName)}`}
+                                  >
+                                    <Mono>{physical}</Mono>
+                                  </Link>
+                                ) : (
+                                  <Mono>{physical}</Mono>
+                                )}
+                              </ResourceLabel>
+                            </td>
+                            <td>{r.ResourceType ?? '—'}</td>
+                            <td>
+                              <StatusBadge status={r.ResourceStatus} />
+                            </td>
+                          </tr>
+                        )
+                      })
                     )}
                   </tbody>
                 </table>

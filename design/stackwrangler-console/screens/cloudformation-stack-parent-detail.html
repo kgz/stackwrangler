@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>app-root — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-stack-parent-detail" data-nav="cloudformation-stack-detail" data-service="cloudformation" data-title="app-root" data-crumb="app-root">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+      <div class="aws-detail-split" data-od-id="cfn-detail-layout" data-tabs>
+        <aside class="aws-card" data-od-id="cfn-stack-rail">
+          <div class="aws-card-body">
+            <div class="aws-toolbar" style="margin-bottom:8px">
+              <strong>Stacks (3)</strong>
+              <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            </div>
+            <ul class="aws-rail-list">
+              <li><a class="active" href="cloudformation-stack-parent-detail.html"><span class="rail-name">app-root</span><span class="aws-status aws-status-success">CREATE_COMPLETE</span></a></li>
+              <li><a href="cloudformation-stack-detail.html"><span class="rail-name">app-root-NestedBucketStack-ABCD</span><span class="aws-status aws-status-success">CREATE_COMPLETE</span></a></li>
+              <li><a href="cloudformation-stacks.html"><span class="rail-name">network-base</span><span class="aws-status aws-status-success">UPDATE_COMPLETE</span></a></li>
+            </ul>
+          </div>
+        </aside>
+        <div>
+          <div class="aws-toolbar" data-od-id="detail-toolbar">
+            <div style="flex:1;min-width:0">
+              <h1 class="aws-h1" data-od-id="page-title" style="margin:0">app-root</h1>
+              <div class="aws-subtitle-row"><span class="aws-status aws-status-success">CREATE_COMPLETE</span><span>Created 2026-10-12 08:41:00</span></div>
+            </div>
+            <button type="button" class="btn btn-normal" title="To implement" disabled aria-disabled="true">Delete</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Update ▾</button>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" title="To implement">Create stack ▾</button>
+          </div>
+          <section class="aws-card" data-od-id="content-card">
+            <div class="aws-tabs" role="tablist" data-od-id="cfn-detail-tabs">
+              <button type="button" class="aws-tab active" data-tab="info" aria-current="page">Stack info</button>
+              <button type="button" class="aws-tab" data-tab="events">Events</button>
+              <button type="button" class="aws-tab" data-tab="resources">Resources</button>
+              <button type="button" class="aws-tab" data-tab="outputs">Outputs</button>
+              <button type="button" class="aws-tab" data-tab="parameters">Parameters</button>
+              <button type="button" class="aws-tab" data-tab="template">Template</button>
+            </div>
+            <div class="aws-card-body aws-tab-panels">
+              <div data-tab-panel="info" data-od-id="panel-info">
+                <h2 class="aws-section-title">Overview</h2>
+                <dl class="aws-kv" data-od-id="stack-overview">
+                  <div><dt>Stack ID</dt><dd><code class="aws-mono">arn:aws:cloudformation:ap-southeast-2:445772506418:stack/app-root/abc</code></dd></div>
+                  <div><dt>Description</dt><dd>Root stack with nested child</dd></div>
+                  <div><dt>Parent stack</dt><dd>—</dd></div>
+                  <div><dt>Root stack</dt><dd>—</dd></div>
+                  <div><dt>Created time</dt><dd>2026-10-12 08:41:00</dd></div>
+                  <div><dt>Status</dt><dd><span class="aws-status aws-status-success">CREATE_COMPLETE</span></dd></div>
+                </dl>
+              </div>
+              <div data-tab-panel="events" hidden></div>
+              <div data-tab-panel="resources" hidden data-od-id="panel-resources">
+                <div class="aws-table-wrap">
+                  <table class="aws-table" data-od-id="resources-table">
+                    <thead><tr><th scope="col"><span class="th-inner">Logical ID</span></th><th scope="col"><span class="th-inner">Physical ID</span></th><th scope="col"><span class="th-inner">Type</span></th><th scope="col"><span class="th-inner">Status</span></th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="cloudformation-stack-detail.html" data-od-id="nested-logical">NestedBucketStack</a></td>
+                        <td><a href="cloudformation-stack-detail.html" data-od-id="nested-physical"><code class="aws-mono">arn:aws:cloudformation:ap-southeast-2:445772506418:stack/app-root-NestedBucketStack-ABCD/def</code></a></td>
+                        <td>AWS::CloudFormation::Stack</td>
+                        <td><span class="aws-status aws-status-success">CREATE_COMPLETE</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div data-tab-panel="outputs" hidden></div>
+              <div data-tab-panel="parameters" hidden></div>
+              <div data-tab-panel="template" hidden>
+                <pre class="aws-mono" style="white-space:pre-wrap;margin:0">Resources:
+  NestedBucketStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://…/nested.yaml</pre>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

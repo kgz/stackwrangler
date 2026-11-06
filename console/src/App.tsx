@@ -29,6 +29,7 @@ import { CloudFormationStacksPage } from './pages/CloudFormationStacksPage'
 import { CloudFormationUpdateStackPage } from './pages/CloudFormationUpdateStackPage'
 import { CloudFormationCreateChangeSetPage } from './pages/CloudFormationCreateChangeSetPage'
 import { CloudFormationChangeSetDetailPage } from './pages/CloudFormationChangeSetDetailPage'
+import { CloudFormationStackSetsPage } from './pages/CloudFormationStackSetsPage'
 import { TransferServersPage } from './pages/TransferServersPage'
 import { RdsCreateDatabasePage } from './pages/RdsCreateDatabasePage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
@@ -88,6 +89,10 @@ export default function App() {
           <Route
             path="cloudformation/stacks/:name"
             element={<CloudFormationStacksPage />}
+          />
+          <Route
+            path="cloudformation/stacksets"
+            element={<CloudFormationStackSetsPage />}
           />
           <Route path="transfer" element={<TransferServersPage />} />
           <Route

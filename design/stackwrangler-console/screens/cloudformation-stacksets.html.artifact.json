@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/cloudformation-stacksets.html",
+  "entry": "screens/cloudformation-stacksets.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": ["html", "pdf", "zip"],
+  "createdAt": "2026-11-06T09:44:37.000Z",
+  "updatedAt": "2026-11-06T09:44:37.000Z",
+  "metadata": { "inferred": true, "reconciled": true }
+}
