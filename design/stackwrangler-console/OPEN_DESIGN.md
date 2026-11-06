@@ -1,11 +1,11 @@
-# Open Design — awsbox-console
+# Open Design — stackwrangler-console
 
 - Project id: `2ce89424-6266-4cc3-a273-3b68c3049183`
-- Name: `awsbox-console`
-- On disk: this folder (imported with `baseDir` — edits here are the OD project)
-- Theme: `design/awsbox/` (grey rose) — required for new screens
+- Name: `stackwrangler-console`
+- On disk: this folder (imported with `baseDir` — edits here are the OD project). After a path rename, re-import this folder in OD (`baseDir` is immutable; keep the same project id conversation by renaming the project to `stackwrangler-console`).
+- Theme: `design/stackwrangler/` (grey rose) — required for new screens
 - Skills: prefer `web-clone` for real AWS console screens; `frontend-design` for craft
-- Role: awsbox console mocks. Not the runtime product UI.
+- Role: stackwrangler console mocks. Not the runtime product UI.
 
 Board: web UI tickets use status **designing** while OD runs (`./bin/od-design-run.sh --issue <n>` sets it). Move to **in-progress** only after mocks land here.
 

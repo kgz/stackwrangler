@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Start an Open Design run attached to a project conversation (visible in OD UI).
+# Theme: design/stackwrangler/ · mocks: design/stackwrangler-console/
 #
 # Usage:
 #   ./bin/od-design-run.sh --issue 4 "Design AWS console frame…"
@@ -7,7 +8,7 @@
 #   ./bin/od-design-run.sh -f prompt.md
 #
 # Env (optional):
-#   OD_PROJECT          default: 2ce89424-6266-4cc3-a273-3b68c3049183 (console OD project)
+#   OD_PROJECT          default: 2ce89424-6266-4cc3-a273-3b68c3049183 (stackwrangler-console OD project)
 #   OD_CONVERSATION     default: main project conversation
 #   OD_DAEMON_URL       default: http://127.0.0.1:7456
 #   OD_WEB_URL          default: http://127.0.0.1:7456

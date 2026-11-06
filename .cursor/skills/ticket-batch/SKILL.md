@@ -98,7 +98,7 @@ Issue: #<n>
 Repo rules to follow (from AGENTS.md, in-repo rules, and owner board rule ~/.cursor/rules/stackwrangler-board.mdc):
 - Branch is feature/<issue>-<slug> (already exists if continuing). Base is origin/<base> — rebase onto it before finishing if the branch is behind.
 - If an open PR already exists for this branch, update that PR; do not open a duplicate.
-- Web UI / console tickets: Open Design first. Set board to `designing`, run `./bin/od-design-run.sh --issue <n> "…"`, use theme `design/awsbox/` (grey rose), prefer skill `web-clone` when the screen exists in real AWS (read-only screenshots OK). Land mocks under `design/awsbox-console/` before React. Unwired controls: `disabled` + `title="To implement"` (+ Debt if v1). Never-ship controls: omit. No enabled no-ops. Only then `export STACKWRANGLER_AGENT=cursor-batch-<slug>; ./bin/board-status.sh in-progress <n>` (Project field Agent — no per-agent labels; AWSBOX_AGENT still works as fallback). Non-UI tickets start at in-progress the same way.
+- Web UI / console tickets: Open Design first. Set board to `designing`, run `./bin/od-design-run.sh --issue <n> "…"`, use theme `design/stackwrangler/` (grey rose), prefer skill `web-clone` when the screen exists in real AWS (read-only screenshots OK). Land mocks under `design/stackwrangler-console/` before React. Unwired controls: `disabled` + `title="To implement"` (+ Debt if v1). Never-ship controls: omit. No enabled no-ops. Only then `export STACKWRANGLER_AGENT=cursor-batch-<slug>; ./bin/board-status.sh in-progress <n>` (Project field Agent — no per-agent labels; AWSBOX_AGENT still works as fallback). Non-UI tickets start at in-progress the same way.
 - Move the board to in-progress before code edits (after designing when UI), and to in-review when the PR is open/updated, using only the repo's script. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
 - Do not mark the ticket done.
 - Run the tests the ticket and the repo docs require. Warm LocalEmu once; do not force-recreate between edits unless patches/compose/hooks changed. Start the long smoke in the background (log under /tmp/<n>-smoke.log), do docs/gap-check/PR text in parallel, then wait on the log. Use KEEP=1 while iterating; full teardown on final green (or note KEEP left on in the PR). One full smoke at the end — do not bisect unrelated beta failures unless they block this ticket's AC.
@@ -137,7 +137,7 @@ You decide each `potential-follow-up`. File a backlog ticket only when the gap i
 
 v1 that leaves out an AWS console UI for that service is Debt. Do not skip it as not worth tracking. Title `Debt: <service> console (from #<n>)`. Label with `$(cat docs/CURRENT_RELEASE)`. If `./bin/od-design-run.sh` exists, the debt's designs go through Open Design `web-clone`, not a guessed layout.
 
-Web UI PRs that skipped Open Design / `designing` (no mocks under `design/awsbox-console/` matching `design/awsbox/`) are must-fix — send back to designing, do not batch.
+Web UI PRs that skipped Open Design / `designing` (no mocks under `design/stackwrangler-console/` matching `design/stackwrangler/`) are must-fix — send back to designing, do not batch.
 
 Move the board to in-review when the PR is open. Leave it there.
 

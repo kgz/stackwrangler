@@ -1,7 +1,7 @@
-# awsbox-console · clone notes
+# stackwrangler-console · clone notes
 
 ## Brand
-- Spec: `design/awsbox/DESIGN.md` + `tokens.css` → project `brand-spec.md`
+- Spec: `design/stackwrangler/DESIGN.md` + `tokens.css` → project `brand-spec.md`
 - Paint: grey rose `#B48AA0` Create / mark / focus; links `#E6D0DA`; page `#141414`; chrome `#1C1C1C`
 - Forbidden: AWS orange, sky-blue links, blue-charcoal chrome, Amazon smile, Ember, earlier teal/green
 

@@ -1,6 +1,6 @@
-# Brand spec — awsbox grey rose
+# Brand spec — stackwrangler grey rose
 
-Source: `design/awsbox/DESIGN.md` + `design/awsbox/tokens.css`. Dense dark operations console; same skeleton as AWS Console, different skin.
+Source: `design/stackwrangler/DESIGN.md` + `design/stackwrangler/tokens.css`. Dense dark operations console; same skeleton as AWS Console, different skin.
 
 ## System (one sentence)
 
