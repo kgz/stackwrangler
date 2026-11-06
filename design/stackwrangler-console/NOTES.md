@@ -161,6 +161,24 @@ Open `index.html` in Open Design preview or a static file server from this direc
 ## License / trademark
 AWS name, logo, and console UI are Amazon trademarks. Local design reference only — do not publish as an AWS product.
 
+## Issue #172 — SNS Topics list
+
+### Mode
+- Web-clone of the AWS SNS **Topics** list into grey-rose console chrome
+- Designs only for OD pass — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure follows `kinesis-streams.html` / `secrets-list.html`: h1 + description + card toolbar + find/pager + table
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `sns-topics.html` | Name / Type / ARN · 3 rows (`orders-events`, `awsbox-sns-demo.fifo`, `app-alerts`) |
+| `sns-topics-empty.html` | Empty twin · Refresh + Create topic + empty panel · link to sample rows |
+
+### Dead controls
+- `title="To implement"`: Create topic, Refresh, table settings, column filters, topic name dead links
+- `title="Select a row"`: Delete
+- Working: find field (`data-find-table`), pager chrome, Services/search → `sns-topics.html`
+
 ## Issue #177 — KMS Customer managed keys list
 
 ### Mode

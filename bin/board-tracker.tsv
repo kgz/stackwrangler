@@ -131,7 +131,7 @@
 169	done	Logs PutLogEvents AccessDenied
 170	done	API GW CreateApi AccessDenied
 171	done	EC2 RunInstances AccessDenied
-172	backlog	Debt: SNS console (from #65)
+172	in-review	Debt: SNS console (from #65) — thin list; create/detail #546
 173	backlog	Debt: EventBridge console (from #66)
 174	backlog	Debt: DynamoDB console (from #59)
 175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
@@ -310,4 +310,6 @@
 539	backlog	Debt: Kinesis create/detail (from #178)
 540	backlog	Debt: KMS create/detail (from #177)
 543	backlog	Debt: API Gateway REST create/deploy controls (from #189)
+546	backlog	Debt: SNS create topic + topic detail (from #172)
 561	backlog	Doc: REST APIs console screenshot (from #189)
+562	backlog	Doc: SNS Topics console screenshot (from #172)

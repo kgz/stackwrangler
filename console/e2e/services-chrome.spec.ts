@@ -37,6 +37,12 @@ const lists: Array<{
     disabled: ['Delete', 'Rotate', 'Store a new secret'],
   },
   {
+    path: '/kinesis',
+    heading: 'Data streams',
+    columns: ['Name', 'Status', 'Capacity mode', 'Monitoring', 'Created'],
+    disabled: ['Delete', 'Create data stream'],
+  },
+  {
     path: '/kms',
     heading: 'Customer managed keys',
     columns: [
@@ -48,6 +54,12 @@ const lists: Array<{
       'Creation date',
     ],
     disabled: ['Create key'],
+  },
+  {
+    path: '/sns',
+    heading: 'Topics',
+    columns: ['Name', 'Type', 'ARN'],
+    disabled: ['Delete', 'Create topic'],
   },
   {
     path: '/apigateway',

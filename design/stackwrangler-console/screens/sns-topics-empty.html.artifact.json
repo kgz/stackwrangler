@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sns-topics-empty.html",
+  "entry": "screens/sns-topics-empty.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T09:45:00.000Z",
+  "updatedAt": "2026-11-06T09:45:00.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}
