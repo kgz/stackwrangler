@@ -5,7 +5,9 @@
 #   ./bin/stackwrangler-profile remove
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Image mode may export ROOT=/data (config) while this script lives under /opt/….
+_SCRIPT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="${ROOT:-$_SCRIPT_ROOT}"
 PROFILE_NAME="local"
 SERVICES_NAME="stackwrangler"
 MARKER="# stackwrangler-managed"
@@ -14,7 +16,7 @@ LEGACY_SERVICES_NAME="awsbox"
 
 STACKWRANGLER_ENV_DEFER=1
 # shellcheck disable=SC1091
-source "$ROOT/bin/stackwrangler-env.sh"
+source "$_SCRIPT_ROOT/bin/stackwrangler-env.sh"
 
 if [[ -n "${AWS_SHARED_CREDENTIALS_FILE:-}" ]]; then
 	CREDS_FILE="$AWS_SHARED_CREDENTIALS_FILE"

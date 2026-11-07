@@ -129,6 +129,6 @@ aws --profile local s3 ls
 | Tickets | GitHub Project #8 |
 | Milestones | GitHub milestones |
 | Delivery design | OpenSpec changes |
-| Console mocks | `design/awsbox-console/` |
+| Console mocks | `design/stackwrangler-console/` |
 | IaC examples | `examples/` |
 | Product entry | `./bin/stackwrangler` |

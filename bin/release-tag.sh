@@ -59,12 +59,23 @@ else
 fi
 
 if [[ "$NO_PUSH" -eq 0 ]]; then
-	git push origin "refs/tags/$VER"
+	# Create the GitHub Release BEFORE pushing the tag so publish-images.yml can
+	# upload install/stackwrangler (tag push alone races a missing release → 404).
 	if ! gh release view "$VER" >/dev/null 2>&1; then
-		gh release create "$VER" --target "$SHA" --title "stackwrangler $VER" --notes "Product release $VER. See docs/versioning.md. Catalogue milestones remain \`v1 — …\`; track this cut via label \`$VER\`."
+		gh release create "$VER" --target "$SHA" --title "stackwrangler $VER" \
+			--notes "Product release $VER. See docs/versioning.md / docs/docker-install.md. Catalogue milestones remain \`v1 — …\`; track this cut via label \`$VER\`."
 		echo "created GitHub release $VER"
 	else
 		echo "GitHub release $VER already exists"
+	fi
+	# `gh release create --target` may already have minted the tag on origin.
+	if git push origin "refs/tags/$VER"; then
+		echo "pushed tag $VER"
+	elif git ls-remote --exit-code --tags origin "refs/tags/${VER}" >/dev/null 2>&1; then
+		echo "tag $VER already on origin (ok)"
+	else
+		echo "error: failed to push tag $VER and it is missing on origin" >&2
+		exit 1
 	fi
 else
 	echo "skipped push/release (--no-push)"
@@ -72,4 +83,6 @@ fi
 
 printf '%s\n' "$VER" >"$ROOT/docs/CURRENT_RELEASE"
 echo "docs/CURRENT_RELEASE -> $VER"
-echo "New tickets: milestone v1 — <area> + label $VER"
+echo "New tickets: pillar milestone + Impact/Effort; release label only if cut gate matches"
+echo "GHCR images: tag push triggers .github/workflows/publish-images.yml (docs/docker-install.md)"
+echo "CLI asset: workflow uploads install/stackwrangler onto release $VER (contents:write + ensure-release)"

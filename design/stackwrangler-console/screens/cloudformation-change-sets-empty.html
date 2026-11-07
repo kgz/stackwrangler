@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Change sets (empty) — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-change-sets-empty" data-nav="cloudformation-stack-detail" data-service="cloudformation" data-title="awsbox-demo" data-crumb="awsbox-demo">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">awsbox-demo</h1>
+          <div class="aws-subtitle-row"><span class="aws-status aws-status-success">CREATE_COMPLETE</span><span>Created 2026-10-12 08:41:15</span></div>
+        </div>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-stack" title="To implement" disabled aria-disabled="true">Delete</button>
+        <div class="aws-dropdown" style="position:relative">
+          <button type="button" class="btn btn-normal" data-od-id="btn-update-stack" aria-haspopup="true">Update ▾</button>
+        </div>
+        <button type="button" class="btn btn-primary" title="To implement" disabled aria-disabled="true">Create stack ▾</button>
+      </div>
+
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-tabs" role="tablist" data-od-id="cfn-detail-tabs">
+          <a class="aws-tab" href="cloudformation-stack-detail.html">Stack info</a>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement">Events</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement">Resources</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement">Outputs</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement">Parameters</button>
+          <button type="button" class="aws-tab" disabled aria-disabled="true" title="To implement">Template</button>
+          <button type="button" class="aws-tab active" aria-current="page">Change sets</button>
+        </div>
+        <div class="aws-card-body">
+          <div class="aws-toolbar" style="margin-bottom:12px" data-od-id="changeset-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row" data-od-id="btn-execute-changeset">Execute</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row" data-od-id="btn-delete-changeset">Delete</button>
+            <div class="spacer"></div>
+            <a class="btn btn-primary" href="cloudformation-create-change-set.html" data-od-id="btn-create-changeset">Create change set</a>
+          </div>
+          <div class="aws-empty" data-od-id="changeset-empty">
+            <h2 class="aws-section-title">No change sets</h2>
+            <p class="aws-desc">This stack has no change sets. <a href="cloudformation-stack-detail.html">View sample change sets</a>.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

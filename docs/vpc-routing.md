@@ -6,7 +6,7 @@ Gateway endpoints (S3 / DynamoDB) install a prefix-list route to `vpce-*`. Priva
 
 ECS tasks still reach the injected `AWS_ENDPOINT_URL` (LocalEmu’s compose-network IP on `:4566`) without a default route: the task joins that network and the route filter allows the gateway `/32`. Host publish stays loopback-only for the CLI. Mapped `host.docker.internal` stays allowed so `./smokes/lambda/lambda-vpc-smoke.sh` keeps working.
 
-Route rules are re-applied after `docker start` (container restart / ECS resume). VPC Lambda containers stay **non-privileged**: iptables/route sync runs in a privileged alpine netns sidecar (`localemu/awsbox-rt`, `--network container:<workload>`). ECS `bridge` tasks keep docker0 for host ports and also join `localemu-vpc-<vpc-id>` (`./bin/vpc-egress-bridge-check.sh`).
+Route rules are re-applied after `docker start` (container restart / ECS resume). VPC Lambda containers stay **non-privileged**: iptables/route sync runs in a privileged alpine netns sidecar (`localemu/awsbox-rt`, `--network container:<workload>`). The same sidecar programs ECS task-role DNAT (`169.254.170.2` → LocalEmu creds) when the task image has no `iptables` (`./smokes/compute/ecs-bridge-no-iptables-authz-smoke.sh`, [#254](https://github.com/kgz/stackwrangler/issues/254)). ECS `bridge` tasks keep docker0 for host ports and also join `localemu-vpc-<vpc-id>` (`./bin/vpc-egress-bridge-check.sh`). LocalEmu itself needs a **Linux** docker CLI on `/usr/bin/docker` (compose mount; see [docker-install.md](docker-install.md)).
 
 ```bash
 ./smokes/networking/vpc-routing-smoke.sh          # EC2 private / peering / NAT (#204)

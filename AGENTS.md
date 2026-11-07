@@ -55,10 +55,10 @@ Root `README.md` is product-facing. Keep Board/workflow, Project #8, `/opsx-*`, 
 
 Any ticket that adds or changes **console / web UI** (`console/`, new service pages, chrome) must go through Open Design **before** React implementation:
 
-1. Theme: grey rose under `design/` (historic directory names — [#421](https://github.com/kgz/stackwrangler/issues/421)). Do not invent a new palette or copy AWS orange / sky blue / smile.
+1. Theme: `design/stackwrangler/` (grey rose). Do not invent a new palette or copy AWS orange / sky blue / smile.
 2. Mocks: `./bin/od-design-run.sh --issue <n> "…"`. Prefer skill **web-clone** when the screen exists in real AWS. Read-only AWS console screenshots are allowed; never create/update/delete real resources without explicit approval.
 3. **Dead controls:** not wired yet → `disabled` + `title="To implement"` (+ Debt if v1 needs it). Never ship it → omit from the mock. No enabled no-op / toast-only controls.
-4. Land mocks under the console design folder in `design/` (or the ticket’s ticket design folder; [#421](https://github.com/kgz/stackwrangler/issues/421)).
+4. Land mocks in `design/stackwrangler-console/` (or the ticket’s design folder)
 5. Then implement against the mocks.
 
 Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.

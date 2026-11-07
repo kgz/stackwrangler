@@ -5,6 +5,7 @@ const lists: Array<{
   heading: string | RegExp
   columns: string[]
   disabled: string[]
+  enabledLinks?: string[]
 }> = [
   {
     path: '/iam',
@@ -16,7 +17,8 @@ const lists: Array<{
     path: '/lambda',
     heading: 'Functions',
     columns: ['Function name', 'Package type', 'Runtime', 'Last modified'],
-    disabled: ['Actions ▾', 'Create function'],
+    disabled: ['Actions ▾'],
+    enabledLinks: ['Create function'],
   },
   {
     path: '/logs',
@@ -25,16 +27,116 @@ const lists: Array<{
     disabled: ['Actions ▾', 'Create log group'],
   },
   {
+    path: '/stepfunctions',
+    heading: 'State machines',
+    columns: ['Name', 'Type', 'Creation date'],
+    disabled: ['Actions ▾', 'Create state machine'],
+  },
+  {
+    path: '/secretsmanager',
+    heading: 'Secrets',
+    columns: ['Name', 'Description', 'Last retrieved', 'Created on'],
+    disabled: ['Delete', 'Rotate', 'Store a new secret'],
+  },
+  {
+    path: '/kinesis',
+    heading: 'Data streams',
+    columns: ['Name', 'Status', 'Capacity mode', 'Monitoring', 'Created'],
+    disabled: ['Delete', 'Create data stream'],
+  },
+  {
+    path: '/sqs',
+    heading: 'Queues',
+    columns: [
+      'Name',
+      'Type',
+      'Created',
+      'Messages available',
+      'Messages in flight',
+    ],
+    disabled: ['Delete', 'Create queue'],
+  },
+  {
+    path: '/events',
+    heading: 'Rules',
+    columns: ['Name', 'Status', 'Event bus', 'Type', 'Updated'],
+    disabled: ['Create rule'],
+  },
+  {
+    path: '/events/buses',
+    heading: 'Event buses',
+    columns: ['Name', 'Type', 'Description'],
+    disabled: ['Create event bus'],
+  },
+  {
+    path: '/kms',
+    heading: 'Customer managed keys',
+    columns: [
+      'Alias',
+      'Key ID',
+      'Status',
+      'Key spec',
+      'Key usage',
+      'Creation date',
+    ],
+    disabled: ['Create key'],
+  },
+  {
+    path: '/sns',
+    heading: 'Topics',
+    columns: ['Name', 'Type', 'ARN'],
+    disabled: ['Delete', 'Create topic'],
+  },
+  {
+    path: '/dynamodb',
+    heading: 'Tables',
+    columns: [
+      'Name',
+      'Status',
+      'Partition key',
+      'Sort key',
+      'Indexes',
+      'Capacity mode',
+    ],
+    disabled: ['Create table'],
+  },
+  {
     path: '/apigateway',
     heading: 'APIs',
     columns: ['Name', 'API ID', 'Created date', 'Endpoint'],
     disabled: ['Delete', 'Create'],
   },
   {
+    path: '/apigateway/rest-apis',
+    heading: 'APIs',
+    columns: [
+      'Name',
+      'API ID',
+      'Description',
+      'Created date',
+      'Protocol',
+      'Endpoint',
+    ],
+    disabled: ['Delete', 'Create'],
+  },
+  {
     path: '/cloudformation',
     heading: /^Stacks/,
     columns: ['Stack name', 'Status', 'Created time', 'Description'],
-    disabled: ['Update ▾', 'Stack actions ▾', 'Create stack ▾'],
+    // Update ▾ stays disabled until a row is selected (title Select a row); Create is a link.
+    disabled: ['Update ▾', 'Stack actions ▾'],
+    enabledLinks: ['Create stack ▾'],
+  },
+  {
+    path: '/cloudformation/stacksets',
+    heading: 'StackSets',
+    columns: [
+      'StackSet name',
+      'Description',
+      'Status',
+      'Permission model',
+    ],
+    disabled: ['Create StackSet'],
   },
   {
     path: '/transfer',
@@ -46,13 +148,14 @@ const lists: Array<{
     path: '/rds',
     heading: 'Databases',
     columns: ['DB identifier', 'Role', 'Engine', 'Region & AZ', 'Size', 'VPC'],
-    disabled: ['Actions ▾', 'Create database'],
+    disabled: ['Actions ▾'],
   },
   {
     path: '/ecs',
     heading: 'Clusters',
     columns: ['Cluster name', 'Registered container instances', 'Tasks running'],
-    disabled: ['Delete Cluster', 'Create Cluster'],
+    disabled: ['Delete Cluster'],
+    enabledLinks: ['Create Cluster'],
   },
   {
     path: '/ec2',
@@ -106,7 +209,13 @@ test.describe('Built service list chrome (#349)', () => {
           .filter({ hasText: new RegExp(`^${label}$`) })
           .first()
         await expect(btn).toBeDisabled()
-        await expect(btn).toHaveAttribute('title', 'To implement')
+        const title = await btn.getAttribute('title')
+        expect(['To implement', 'Select a row']).toContain(title)
+      }
+      for (const label of spec.enabledLinks ?? []) {
+        await expect(
+          page.getByRole('link', { name: label, exact: true }),
+        ).toBeVisible()
       }
       await expectDisabledControlsExplained(page)
     })

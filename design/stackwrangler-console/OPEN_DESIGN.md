@@ -1,0 +1,35 @@
+# Open Design — stackwrangler-console
+
+- Project id: `2ce89424-6266-4cc3-a273-3b68c3049183`
+- Name: `stackwrangler-console`
+- On disk: this folder (imported with `baseDir` — edits here are the OD project). After a path rename, re-import this folder in OD (`baseDir` is immutable; keep the same project id conversation by renaming the project to `stackwrangler-console`).
+- Theme: `design/stackwrangler/` (grey rose) — required for new screens
+- Skills: prefer `web-clone` for real AWS console screens; `frontend-design` for craft
+- Role: stackwrangler console mocks. Not the runtime product UI.
+
+Board: web UI tickets use status **designing** while OD runs (`./bin/od-design-run.sh --issue <n>` sets it). Move to **in-progress** only after mocks land here.
+
+Dead controls: not wired yet → `disabled` with `title="To implement"`. Will never ship → omit. Never leave an enabled button/link that does nothing (including toast-only).
+
+Start a run (shows in OD UI):
+
+```bash
+./bin/od-design-run.sh --issue <n> "Design …"
+```
+
+Visual refs: `refs/`. Paint with grey rose, not AWS orange / sky blue / smile.
+
+Daemon (Linux-first). From `~/tools/open-design/deploy`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+```
+
+Mount this repo into the daemon (add a volume bind in a local compose overlay if
+`docker-compose.linux.yml` does not already include it). Prefer a Linux-named
+local overlay for new setups; some hosts still keep a personal overlay named
+`docker-compose.wsl.yml`:
+
+```
+/home/mat/projects/awsl:/home/mat/projects/awsl:rw
+```

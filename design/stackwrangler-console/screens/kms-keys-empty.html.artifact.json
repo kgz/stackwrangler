@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/kms-keys-empty.html",
+  "entry": "screens/kms-keys-empty.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T07:56:55.706Z",
+  "updatedAt": "2026-11-06T07:56:55.706Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

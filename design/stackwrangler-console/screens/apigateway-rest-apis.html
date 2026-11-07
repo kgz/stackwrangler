@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>REST APIs — API Gateway</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="apigateway-rest-apis" data-nav="apigateway-rest-apis" data-service="apigateway" data-title="REST APIs" data-crumb="REST APIs">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">APIs</h1>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-tabs" role="tablist" data-od-id="api-type-tabs">
+          <a class="aws-tab" href="apigateway-http-apis.html" data-od-id="tab-http">HTTP APIs</a>
+          <a class="aws-tab active" href="apigateway-rest-apis.html" aria-current="page" data-od-id="tab-rest">REST APIs</a>
+        </div>
+        <div class="aws-card-body">
+          <p class="aws-desc">REST APIs offer more features than HTTP APIs, including API keys, request validation, AWS WAF integration, and private integrations.</p>
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-api" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-api" title="To implement" disabled aria-disabled="true">Create</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search APIs" data-find-table="#data-table" aria-label="Search APIs" data-od-id="find-apis" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="rest-apis-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">API ID <button type="button" class="filter" aria-label="Filter API ID" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Description <button type="button" class="filter" aria-label="Filter Description" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Created date <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Protocol</span></th>
+                  <th scope="col"><span class="th-inner">Endpoint <button type="button" class="filter" aria-label="Filter Endpoint" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="demo-rest">
+                  <td class="check"><input type="checkbox" aria-label="Select demo-rest" /></td>
+                  <td><a href="apigateway-rest-api-detail.html" data-od-id="api-demo-rest">demo-rest</a></td>
+                  <td><code class="aws-mono">r7stk9ab12</code></td>
+                  <td>OpenAPI import demo</td>
+                  <td>2026-10-18 09:14:22</td>
+                  <td>REST</td>
+                  <td><code class="aws-mono">https://r7stk9ab12.execute-api.ap-southeast-2.amazonaws.com/prod</code></td>
+                </tr>
+                <tr data-name="orders-api">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-api" /></td>
+                  <td><a href="apigateway-rest-api-detail.html" data-od-id="api-orders">orders-api</a></td>
+                  <td><code class="aws-mono">o3rd3rs99x</code></td>
+                  <td>REQUEST authorizer + aws_proxy · stage dev</td>
+                  <td>2026-10-22 16:03:41</td>
+                  <td>REST</td>
+                  <td><code class="aws-mono">https://o3rd3rs99x.execute-api.ap-southeast-2.amazonaws.com/dev</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

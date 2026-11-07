@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/ecs-create-cluster.html",
+  "entry": "screens/ecs-create-cluster.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T09:38:43.194Z",
+  "updatedAt": "2026-11-06T09:38:43.194Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

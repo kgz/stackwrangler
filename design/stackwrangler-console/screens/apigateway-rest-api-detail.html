@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>demo-rest — API Gateway</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="apigateway-rest-api-detail" data-nav="apigateway-rest-apis" data-service="apigateway" data-title="demo-rest" data-crumb="demo-rest">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">demo-rest</h1>
+          <div class="aws-subtitle-row">
+            <span>REST</span>
+            <span>Regional</span>
+            <span>Created 2026-10-18 09:14:22</span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-actions" disabled aria-disabled="true" title="To implement">Actions ▾</button>
+        <button type="button" class="btn btn-primary" data-od-id="btn-deploy" disabled aria-disabled="true" title="To implement">Deploy API</button>
+      </div>
+
+      <section class="aws-card" data-od-id="content-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="rest-api-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="overview" aria-current="page" data-od-id="tab-overview">Overview</button>
+          <button type="button" class="aws-tab" data-tab="invoke" data-od-id="tab-invoke">Invoke URL</button>
+          <button type="button" class="aws-tab" data-tab="resources" data-od-id="tab-resources">Resources</button>
+          <button type="button" class="aws-tab" data-tab="authorizers" data-od-id="tab-authorizers">Authorizers</button>
+          <button type="button" class="aws-tab" data-tab="stages" data-od-id="tab-stages">Stages</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="overview" data-od-id="panel-overview">
+            <h2 class="aws-section-title">API details</h2>
+            <dl class="aws-kv" data-od-id="api-overview">
+              <div>
+                <dt>Name</dt>
+                <dd>demo-rest</dd>
+              </div>
+              <div>
+                <dt>API ID</dt>
+                <dd><code class="aws-mono">r7stk9ab12</code></dd>
+              </div>
+              <div>
+                <dt>Description</dt>
+                <dd>OpenAPI import demo</dd>
+              </div>
+              <div>
+                <dt>API endpoint type</dt>
+                <dd>Regional</dd>
+              </div>
+              <div>
+                <dt>API endpoint</dt>
+                <dd><code class="aws-mono">https://r7stk9ab12.execute-api.ap-southeast-2.amazonaws.com</code></dd>
+              </div>
+              <div>
+                <dt>Created</dt>
+                <dd>2026-10-18 09:14:22</dd>
+              </div>
+              <div>
+                <dt>Binary media types</dt>
+                <dd>—</dd>
+              </div>
+              <div>
+                <dt>Minimum compression size</dt>
+                <dd>None</dd>
+              </div>
+              <div>
+                <dt>API key source</dt>
+                <dd>HEADER</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div data-tab-panel="invoke" hidden data-od-id="panel-invoke">
+            <h2 class="aws-section-title">Invoke URL</h2>
+            <p class="aws-desc">Stage invoke URLs for this REST API. Append a resource path after the stage.</p>
+            <dl class="aws-kv" data-od-id="invoke-urls">
+              <div>
+                <dt>prod</dt>
+                <dd><code class="aws-mono">https://r7stk9ab12.execute-api.ap-southeast-2.amazonaws.com/prod</code></dd>
+              </div>
+              <div>
+                <dt>LocalEmu edge</dt>
+                <dd><code class="aws-mono">http://127.0.0.1:4566/restapis/r7stk9ab12/prod/_user_request_/</code></dd>
+              </div>
+            </dl>
+          </div>
+
+          <div data-tab-panel="resources" hidden data-od-id="panel-resources">
+            <div class="aws-toolbar" data-od-id="resources-toolbar">
+              <h2 class="aws-section-title" style="margin:0;flex:1">Resources</h2>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-create-resource">Create resource</button>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-create-method">Create method</button>
+            </div>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="resources-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Resource</span></th>
+                    <th scope="col"><span class="th-inner">Method</span></th>
+                    <th scope="col"><span class="th-inner">Integration</span></th>
+                    <th scope="col"><span class="th-inner">Authorization</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code class="aws-mono">/</code></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td><code class="aws-mono">/hello</code></td>
+                    <td>GET</td>
+                    <td>Lambda (aws_proxy)</td>
+                    <td>NONE</td>
+                  </tr>
+                  <tr>
+                    <td><code class="aws-mono">/oauth/callback</code></td>
+                    <td>GET</td>
+                    <td>Lambda (aws_proxy)</td>
+                    <td>NONE</td>
+                  </tr>
+                  <tr>
+                    <td><code class="aws-mono">/orders</code></td>
+                    <td>GET</td>
+                    <td>Lambda (aws_proxy)</td>
+                    <td>REQUEST · demo-rest-authz</td>
+                  </tr>
+                  <tr>
+                    <td><code class="aws-mono">/orders</code></td>
+                    <td>POST</td>
+                    <td>Lambda (aws_proxy)</td>
+                    <td>REQUEST · demo-rest-authz</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div data-tab-panel="authorizers" hidden data-od-id="panel-authorizers">
+            <div class="aws-toolbar" data-od-id="authorizers-toolbar">
+              <h2 class="aws-section-title" style="margin:0;flex:1">Authorizers</h2>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-create-authorizer">Create authorizer</button>
+            </div>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="authorizers-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Name</span></th>
+                    <th scope="col"><span class="th-inner">Type</span></th>
+                    <th scope="col"><span class="th-inner">Lambda function</span></th>
+                    <th scope="col"><span class="th-inner">Identity sources</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>demo-rest-authz</td>
+                    <td>REQUEST</td>
+                    <td><code class="aws-mono">arn:aws:lambda:ap-southeast-2:445772506418:function:demo-rest-authorizer</code></td>
+                    <td><code class="aws-mono">method.request.header.Authorization</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div data-tab-panel="stages" hidden data-od-id="panel-stages">
+            <div class="aws-toolbar" data-od-id="stages-toolbar">
+              <h2 class="aws-section-title" style="margin:0;flex:1">Stages</h2>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-create-stage">Create</button>
+            </div>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="stages-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Stage</span></th>
+                    <th scope="col"><span class="th-inner">Deployment ID</span></th>
+                    <th scope="col"><span class="th-inner">Description</span></th>
+                    <th scope="col"><span class="th-inner">Last updated</span></th>
+                    <th scope="col"><span class="th-inner">Invoke URL</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>prod</td>
+                    <td><code class="aws-mono">d7pl0y9abc</code></td>
+                    <td>OpenAPI import deploy</td>
+                    <td>2026-10-18 09:15:01</td>
+                    <td><code class="aws-mono">https://r7stk9ab12.execute-api.ap-southeast-2.amazonaws.com/prod</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

@@ -180,6 +180,139 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  sfn: {
+    title: 'Step Functions',
+    sections: [
+      {
+        id: 'sfn-main',
+        label: 'Step Functions',
+        items: [
+          {
+            label: 'State machines',
+            to: '/stepfunctions',
+            active: under('/stepfunctions'),
+          },
+        ],
+      },
+    ],
+  },
+  secretsmanager: {
+    title: 'Secrets Manager',
+    sections: [
+      {
+        id: 'secrets-main',
+        label: 'Secrets',
+        items: [
+          {
+            label: 'Secrets',
+            to: '/secretsmanager',
+            active: under('/secretsmanager'),
+          },
+        ],
+      },
+    ],
+  },
+  kinesis: {
+    title: 'Kinesis',
+    sections: [
+      {
+        id: 'kinesis-main',
+        label: 'Data streams',
+        items: [
+          {
+            label: 'Data streams',
+            to: '/kinesis',
+            active: under('/kinesis'),
+          },
+        ],
+      },
+    ],
+  },
+  sqs: {
+    title: 'SQS',
+    sections: [
+      {
+        id: 'sqs-main',
+        label: 'SQS',
+        items: [
+          {
+            label: 'Queues',
+            to: '/sqs',
+            active: under('/sqs'),
+          },
+        ],
+      },
+    ],
+  },
+  eventbridge: {
+    title: 'EventBridge',
+    sections: [
+      {
+        id: 'eventbridge-main',
+        label: 'EventBridge',
+        items: [
+          {
+            label: 'Rules',
+            to: '/events',
+            active: exactly('/events'),
+          },
+          {
+            label: 'Event buses',
+            to: '/events/buses',
+            active: under('/events/buses'),
+          },
+        ],
+      },
+    ],
+  },
+  kms: {
+    title: 'Key Management Service',
+    sections: [
+      {
+        id: 'kms-main',
+        label: 'Key Management Service',
+        items: [
+          {
+            label: 'Customer managed keys',
+            to: '/kms',
+            active: under('/kms'),
+          },
+        ],
+      },
+    ],
+  },
+  sns: {
+    title: 'SNS',
+    sections: [
+      {
+        id: 'sns-main',
+        label: 'SNS',
+        items: [
+          {
+            label: 'Topics',
+            to: '/sns',
+            active: under('/sns'),
+          },
+        ],
+      },
+    ],
+  },
+  dynamodb: {
+    title: 'DynamoDB',
+    sections: [
+      {
+        id: 'dynamodb-main',
+        label: 'Tables',
+        items: [
+          {
+            label: 'Tables',
+            to: '/dynamodb',
+            active: under('/dynamodb'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [
@@ -187,7 +320,16 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
         id: 'apigw-apis',
         label: 'APIs',
         items: [
-          { label: 'HTTP APIs', to: '/apigateway', active: under('/apigateway') },
+          {
+            label: 'HTTP APIs',
+            to: '/apigateway',
+            active: (p) => p === '/apigateway' || p === '/apigateway/',
+          },
+          {
+            label: 'REST APIs',
+            to: '/apigateway/rest-apis',
+            active: under('/apigateway/rest-apis'),
+          },
         ],
       },
     ],
@@ -199,7 +341,18 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
         id: 'cfn-stacks',
         label: 'Stacks',
         items: [
-          { label: 'Stacks', to: '/cloudformation', active: under('/cloudformation') },
+          {
+            label: 'Stacks',
+            to: '/cloudformation',
+            active: (p) =>
+              (p === '/cloudformation' || p.startsWith('/cloudformation/stacks')) &&
+              !p.startsWith('/cloudformation/stacksets'),
+          },
+          {
+            label: 'StackSets',
+            to: '/cloudformation/stacksets',
+            active: under('/cloudformation/stacksets'),
+          },
         ],
       },
     ],
@@ -240,7 +393,13 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       {
         id: 'ec2-instances-sec',
         label: 'Instances',
-        items: [{ label: 'Instances', to: '/ec2', active: exactly('/ec2') }],
+        items: [
+          {
+            label: 'Instances',
+            to: '/ec2',
+            active: (p) => p === '/ec2' || p.startsWith('/ec2/instances/'),
+          },
+        ],
       },
       {
         id: 'ec2-network',

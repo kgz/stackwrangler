@@ -1,6 +1,7 @@
 import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import G6Diagram from './components/G6Diagram.vue'
+import '../../../design/stackwrangler/tokens.css'
 import './custom.css'
 
 export default {

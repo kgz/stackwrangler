@@ -47,6 +47,7 @@ const ids: {
   cluster?: string
   service?: string
   db?: string
+  instance?: string
 } = {}
 const vpcName = `e2e-vpc-${ts}`
 const subnetName = `e2e-subnet-${ts}`
@@ -54,6 +55,7 @@ const nlbName = `e2e-nlb-${ts}`
 const clusterName = `e2e-ecs-${ts}`
 const serviceName = `e2e-svc-${ts}`
 const dbId = `e2e-db-${ts}`
+const instanceName = `e2e-ec2-${ts}`
 const cidr = '10.231.0.0/16'
 const subnetCidr = '10.231.1.0/24'
 
@@ -201,9 +203,36 @@ test.describe('Built service detail pages (#349)', () => {
       'stackwrangler',
     ])
     ids.db = dbId
+
+    ids.instance = aws([
+      'ec2',
+      'run-instances',
+      '--image-id',
+      'ami-0localemu',
+      '--instance-type',
+      't3.micro',
+      '--subnet-id',
+      ids.subnet,
+      '--security-group-ids',
+      ids.sg,
+      '--tag-specifications',
+      `ResourceType=instance,Tags=[{Key=Name,Value=${instanceName}}]`,
+      '--query',
+      'Instances[0].InstanceId',
+      '--output',
+      'text',
+    ])
   })
 
   test.afterAll(() => {
+    if (ids.instance) {
+      tryAws([
+        'ec2',
+        'terminate-instances',
+        '--instance-ids',
+        ids.instance,
+      ])
+    }
     if (ids.db) {
       tryAws([
         'rds',
@@ -360,29 +389,117 @@ test.describe('Built service detail pages (#349)', () => {
       ).toBeVisible()
     }
     const overview = page.locator('.aws-kv').first()
-    for (const label of ['Status', 'ARN', 'Active services', 'Running tasks']) {
+    for (const label of [
+      'Status',
+      'ARN',
+      'Active services',
+      'Running tasks',
+      'Pending tasks',
+      'Registered container instances',
+    ]) {
       await expect(overview).toContainText(label)
     }
     await expect(overview).toContainText(`cluster/${clusterName}`)
     const services = page.getByTestId('ecs-services-table')
-    for (const col of ['Service name', 'Desired tasks', 'Running tasks']) {
+    for (const col of [
+      'Service name',
+      'Task definition',
+      'Launch type',
+      'Desired tasks',
+      'Running tasks',
+    ]) {
       await expect(services.locator('th').filter({ hasText: col })).toBeVisible()
     }
     await expect(services).toContainText(serviceName)
     const tasks = page.getByTestId('ecs-tasks-table')
-    for (const col of ['Task', 'Last status', 'Desired status', 'Launch type']) {
-      await expect(tasks.locator('th').filter({ hasText: col })).toBeVisible()
+    for (const col of [
+      'Task',
+      'Last status',
+      'Desired status',
+      'Task definition',
+      'Launch type',
+      'Started at',
+    ]) {
+      await expect(
+        tasks.getByRole('columnheader', { name: col, exact: true }),
+      ).toBeVisible()
     }
     await expect(tasks).toContainText('No tasks')
     await expectDisabledControlsExplained(page)
   })
 
+  test('ECS create cluster form', async ({ page }) => {
+    const created = `e2e-ecs-create-${ts}`
+    await page.goto('/ecs/create')
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Create cluster' }),
+    ).toBeVisible()
+    await page.getByTestId('ecs-cluster-name').fill(created)
+    await page.getByTestId('ecs-create-submit').click()
+    await expect(page).toHaveURL(
+      new RegExp(`/ecs/clusters/${created}$`),
+    )
+    await expect(
+      page.getByRole('heading', { level: 1, name: created }),
+    ).toBeVisible()
+    tryAws(['ecs', 'delete-cluster', '--cluster', created])
+  })
+
   test('ECS list links to the detail page', async ({ page }) => {
+    await page.goto('/ecs')
+    await page.getByRole('link', { name: 'Create Cluster', exact: true }).click()
+    await expect(page).toHaveURL(/\/ecs\/create$/)
     await page.goto('/ecs')
     await page.getByRole('link', { name: clusterName, exact: true }).click()
     await expect(page).toHaveURL(
       new RegExp(`/ecs/clusters/${clusterName}$`),
     )
+  })
+
+  test('EC2 instance detail: summary + networking', async ({ page }) => {
+    const id = ids.instance ?? ''
+    await page.goto(`/ec2/instances/${encodeURIComponent(id)}`)
+    await expect(
+      page.getByRole('heading', { level: 1, name: id }),
+    ).toBeVisible()
+    for (const section of ['Instance summary', 'Networking']) {
+      await expect(
+        page.getByRole('heading', { level: 2, name: section }),
+      ).toBeVisible()
+    }
+    const summary = page.locator('.aws-kv').first()
+    for (const label of [
+      'Instance ID',
+      'Name',
+      'Instance state',
+      'Instance type',
+      'Availability Zone',
+      'Launch time',
+      'AMI ID',
+    ]) {
+      await expect(summary).toContainText(label)
+    }
+    await expect(summary).toContainText(id)
+    await expect(summary).toContainText(instanceName)
+    const networking = page.locator('.aws-kv').nth(1)
+    for (const label of [
+      'Private IPv4 address',
+      'VPC ID',
+      'Subnet ID',
+      'Security groups',
+    ]) {
+      await expect(networking).toContainText(label)
+    }
+    await expect(networking).toContainText(ids.vpc ?? '')
+    await expect(networking).toContainText(ids.subnet ?? '')
+    await expectDisabledControlsExplained(page)
+  })
+
+  test('EC2 list links to the instance detail page', async ({ page }) => {
+    const id = ids.instance ?? ''
+    await page.goto('/ec2')
+    await page.getByRole('link', { name: id, exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`/ec2/instances/${id}$`))
   })
 
   test('VPC detail: details, CIDR blocks, subnets, tags tabs', async ({ page }) => {

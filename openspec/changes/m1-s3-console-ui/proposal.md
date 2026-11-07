@@ -7,7 +7,7 @@ Stack + CLI work; the missing M1 piece is an AWS-look console so learning happen
 - Vite/React console app that mimics AWS dark console chrome + S3 Buckets UI
 - Client of SeaweedFS via `@aws-sdk/client-s3` (ListBuckets, CreateBucket, ListObjectsV2, Put/Get/DeleteObject)
 - Served on localhost; `awsbox up` prints / opens the URL
-- Visual target: `design/awsbox-console/refs/aws-s3-console-dark-2026.png`
+- Visual target: `design/stackwrangler-console/refs/aws-s3-console-dark-2026.png`
 
 ## Non-goals
 

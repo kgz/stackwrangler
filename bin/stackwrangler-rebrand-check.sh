@@ -135,4 +135,47 @@ source "$ROOT/bin/stackwrangler-env.sh"
 	|| fail "helper should fall back to AWSBOX_* from .env"
 pass "stackwrangler-env.sh falls back to AWSBOX_*"
 
+# --- local-emu-env.sh (via stackwrangler-env.sh): STACKWRANGLER_* wins when both set ---
+unset STACKWRANGLER_ACCESS_KEY STACKWRANGLER_SECRET_KEY STACKWRANGLER_REGION \
+	STACKWRANGLER_ENDPOINT STACKWRANGLER_IAM_ENDPOINT \
+	AWSBOX_ACCESS_KEY AWSBOX_SECRET_KEY AWSBOX_REGION \
+	AWSBOX_ENDPOINT AWSBOX_IAM_ENDPOINT \
+	STACKWRANGLER_ALLOW_REAL_AWS AWSBOX_ALLOW_REAL_AWS || true
+cat >"$ROOT/.env" <<'EOF'
+STACKWRANGLER_ACCESS_KEY=newkey
+AWSBOX_ACCESS_KEY=onlyawsbox
+STACKWRANGLER_SECRET_KEY=newsecret
+AWSBOX_SECRET_KEY=onlyawsboxsecret
+STACKWRANGLER_REGION=us-east-1
+AWSBOX_REGION=eu-west-1
+STACKWRANGLER_ENDPOINT=http://127.0.0.1:8333
+STACKWRANGLER_IAM_ENDPOINT=http://127.0.0.1:4566
+EOF
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
+[[ "$AWS_ACCESS_KEY_ID" == "newkey" ]] \
+	|| fail "local-emu-env STACKWRANGLER_* should win (got: $AWS_ACCESS_KEY_ID)"
+[[ "$AWSBOX_ACCESS_KEY" == "newkey" ]] \
+	|| fail "local-emu-env should mirror winner onto AWSBOX_*"
+[[ "$STACKWRANGLER_ACCESS_KEY" == "newkey" ]] \
+	|| fail "local-emu-env should keep STACKWRANGLER_* as winner"
+pass "local-emu-env.sh prefers STACKWRANGLER_* when both set"
+
+unset STACKWRANGLER_ACCESS_KEY STACKWRANGLER_SECRET_KEY STACKWRANGLER_REGION \
+	STACKWRANGLER_ENDPOINT STACKWRANGLER_IAM_ENDPOINT \
+	AWSBOX_ACCESS_KEY AWSBOX_SECRET_KEY AWSBOX_REGION \
+	AWSBOX_ENDPOINT AWSBOX_IAM_ENDPOINT || true
+cat >"$ROOT/.env" <<'EOF'
+AWSBOX_ACCESS_KEY=onlyawsbox
+AWSBOX_SECRET_KEY=onlyawsboxsecret
+AWSBOX_REGION=eu-west-1
+AWSBOX_ENDPOINT=http://127.0.0.1:8333
+AWSBOX_IAM_ENDPOINT=http://127.0.0.1:4566
+EOF
+# shellcheck disable=SC1091
+source "$ROOT/smokes/lib/local-emu-env.sh"
+[[ "$AWS_ACCESS_KEY_ID" == "onlyawsbox" ]] \
+	|| fail "local-emu-env AWSBOX-only .env should still work (got: $AWS_ACCESS_KEY_ID)"
+pass "local-emu-env.sh falls back to AWSBOX-only .env"
+
 echo "stackwrangler-rebrand-check: all ok"

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1a2b3c4d5e6f — Elastic Container Service</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ecs-task-detail" data-nav="ecs-cluster-detail" data-service="ecs" data-title="1a2b3c4d5e6f" data-crumb="1a2b3c4d5e6f">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1"><code class="aws-mono">1a2b3c4d5e6f</code></h1>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Stop</button>
+      </div>
+      <div class="aws-subtitle-row">
+        <span class="aws-status aws-status-success">RUNNING</span>
+        <span>Cluster awsbox-lab · FARGATE</span>
+      </div>
+
+      <section class="aws-card" data-od-id="task-overview">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Configuration</h2>
+          <dl class="aws-kv" data-od-id="ecs-task-config">
+            <div><dt>Task ARN</dt><dd><code class="aws-mono">arn:aws:ecs:ap-southeast-2:445772506418:task/awsbox-lab/1a2b3c4d5e6f7890</code></dd></div>
+            <div><dt>Last status</dt><dd><span class="aws-status aws-status-success">RUNNING</span></dd></div>
+            <div><dt>Desired status</dt><dd>RUNNING</dd></div>
+            <div><dt>Launch type</dt><dd>FARGATE</dd></div>
+            <div><dt>Task definition</dt><dd><code class="aws-mono">awsbox-lab-web:3</code></dd></div>
+            <div><dt>Group</dt><dd>service:web</dd></div>
+            <div><dt>Platform version</dt><dd>1.4.0</dd></div>
+            <div><dt>CPU / Memory</dt><dd>256 / 512</dd></div>
+            <div><dt>Started at</dt><dd>2026-11-06 08:20:11 UTC</dd></div>
+            <div><dt>Stopped reason</dt><dd>—</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="aws-card" style="margin-top:16px" data-od-id="containers-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Containers</h2>
+          <div class="aws-table-wrap">
+            <table class="aws-table" data-od-id="ecs-containers-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Name</span></th>
+                  <th scope="col"><span class="th-inner">Last status</span></th>
+                  <th scope="col"><span class="th-inner">Image</span></th>
+                  <th scope="col"><span class="th-inner">Exit code</span></th>
+                  <th scope="col"><span class="th-inner">Network</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>web</td>
+                  <td><span class="aws-status aws-status-success">RUNNING</span></td>
+                  <td><code class="aws-mono">nginx:alpine</code></td>
+                  <td>—</td>
+                  <td>10.0.1.40</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" style="margin-top:16px" data-od-id="logs-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Logs</h2>
+          <p class="aws-desc" data-od-id="ecs-logs-stub">
+            Container log streaming is not wired in LocalEmu console yet. Use
+            <code class="aws-mono">aws logs</code> / CloudWatch Log groups when the task definition sets
+            <code class="aws-mono">awslogs</code>, or inspect the Docker container on the host.
+          </p>
+          <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-view-logs">View in CloudWatch Logs</button>
+        </div>
+      </section>
+
+      <p class="aws-desc" style="margin-top:16px"><a href="ecs-cluster-detail.html">Back to cluster</a></p>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

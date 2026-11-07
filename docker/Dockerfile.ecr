@@ -1,0 +1,3 @@
+# distribution/registry with stackwrangler push notification URL baked in.
+FROM registry:2
+COPY localemu-patches/ecr-registry.yml /etc/docker/registry/config.yml

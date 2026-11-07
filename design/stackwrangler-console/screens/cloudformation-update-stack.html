@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Update stack — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-update-stack" data-nav="cloudformation-stack-detail" data-service="cloudformation" data-title="Update stack" data-crumb="Update stack">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Update stack</h1>
+      <p class="aws-desc">Replace the current template for <strong>awsbox-demo</strong>, then submit the update.</p>
+
+      <section class="aws-card" data-od-id="update-form">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Stack</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="stack-name">Stack name</label>
+              <input class="aws-input" id="stack-name" name="stackName" type="text" value="awsbox-demo" readonly data-od-id="field-stack-name" />
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="template-section">
+            <h2 class="aws-section-title">Specify template</h2>
+            <p class="aws-desc" style="margin-bottom:12px">Replace current template — paste YAML/JSON or upload a file.</p>
+            <ul class="aws-radio-list" data-od-id="template-source-options">
+              <li>
+                <label>
+                  <input type="radio" name="templateSource" value="paste" checked data-od-id="template-paste" />
+                  <span>
+                    <strong>Replace current template</strong>
+                    <span class="sub">Paste a new template body.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="templateSource" value="upload" data-od-id="template-upload" />
+                  <span>
+                    <strong>Upload a template file</strong>
+                    <span class="sub">Choose a local <code class="aws-mono">.yaml</code> / <code class="aws-mono">.json</code> file.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="templateSource" value="url" disabled aria-disabled="true" title="To implement" data-od-id="template-url" />
+                  <span>
+                    <strong>Amazon S3 URL</strong>
+                    <span class="sub">Use a template object in S3.</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <div class="aws-field" style="margin-top:12px" data-od-id="template-body-field">
+              <label class="aws-label" for="template-body">Template body <span class="req" aria-hidden="true">*</span></label>
+              <textarea class="aws-input aws-mono" id="template-body" name="templateBody" rows="14" spellcheck="false" data-od-id="field-template-body" style="width:100%;min-height:240px;font-family:var(--awsbox-mono, ui-monospace, monospace);white-space:pre">AWSTemplateFormatVersion: '2010-09-09'
+Description: Demo stack for local labs (updated)
+Resources:
+  DemoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: awsbox-demo-bucket</textarea>
+            </div>
+            <div class="aws-field" style="margin-top:12px" data-od-id="template-file-field">
+              <label class="aws-label" for="template-file">Template file</label>
+              <input class="aws-input" id="template-file" name="templateFile" type="file" accept=".yaml,.yml,.json,application/json,text/yaml" data-od-id="field-template-file" />
+            </div>
+          </div>
+
+          <div class="aws-form-actions" data-od-id="update-actions">
+            <a class="btn btn-normal" href="cloudformation-stack-detail.html" data-od-id="btn-cancel">Cancel</a>
+            <button type="button" class="btn btn-primary" data-od-id="btn-update-stack">Update stack</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

@@ -1,14 +1,19 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
-// Pages (CI / GITHUB_PAGES=1): https://kgz.github.io/stackwrangler/
+// Hosted: https://kgz.github.io/stackwrangler/
 // Local `pnpm dev` / `pnpm preview` without the env → base `/` so you open http://127.0.0.1:5173/
+// CI / Pages builds always use `/stackwrangler/` (GITHUB_PAGES=1 or CI=true).
 const pages = process.env.GITHUB_PAGES === '1' || process.env.CI === 'true'
 const require = createRequire(import.meta.url)
 const dayjsRoot = path.dirname(require.resolve('dayjs/package.json'))
 const dayjsEsm = path.join(dayjsRoot, 'esm/index.js')
+const vitepressDir = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.resolve(vitepressDir, '../..')
+
 
 export default withMermaid(
   defineConfig({
@@ -16,18 +21,28 @@ export default withMermaid(
     description:
       'Local AWS-shaped account for real APIs, console, and IaC — then deploy to real AWS',
     base: pages ? '/stackwrangler/' : '/',
+    appearance: 'dark',
     ignoreDeadLinks: true,
     lastUpdated: true,
+    srcExclude: ['README.md'],
+    head: [
+      [
+        'link',
+        {
+          rel: 'icon',
+          type: 'image/svg+xml',
+          href: pages ? '/stackwrangler/mark.svg' : '/mark.svg',
+        },
+      ],
+    ],
     themeConfig: {
       siteTitle: 'stackwrangler',
+      logo: { src: '/mark.svg', alt: 'stackwrangler' },
       nav: [
-        { text: 'Home', link: '/' },
         { text: 'Why', link: '/guide/why' },
-        { text: 'Getting Started', link: '/guide/getting-started' },
-        { text: 'Vision', link: '/guide/vision' },
+        { text: 'Guide', link: '/guide/getting-started' },
+        { text: 'Changelog', link: '/guide/changelog' },
         { text: 'Completeness', link: '/guide/completeness' },
-        { text: 'Console tour', link: '/guide/console-tour' },
-        { text: 'Concepts', link: '/guide/concepts' },
         { text: 'Interactions', link: '/guide/interactions/' },
         {
           text: 'GitHub',
@@ -37,15 +52,22 @@ export default withMermaid(
       sidebar: {
         '/guide/': [
           {
-            text: 'Guide',
+            text: 'Start here',
             items: [
               { text: 'Why', link: '/guide/why' },
               { text: 'Getting Started', link: '/guide/getting-started' },
               { text: 'Vision', link: '/guide/vision' },
+              { text: 'Changelog', link: '/guide/changelog' },
               { text: 'Completeness / status', link: '/guide/completeness' },
+            ],
+          },
+          {
+            text: 'Product',
+            items: [
               { text: 'Console tour', link: '/guide/console-tour' },
               { text: 'Concepts', link: '/guide/concepts' },
               { text: 'Interactions', link: '/guide/interactions/' },
+              { text: 'Changelog', link: '/guide/changelog' },
             ],
           },
           {
@@ -91,6 +113,10 @@ export default withMermaid(
                 text: 'Transfer connector',
                 link: '/guide/interactions/transfer-connector',
               },
+              {
+                text: 'RDS Create → SQL',
+                link: '/guide/interactions/rds-create-sql',
+              },
             ],
           },
         ],
@@ -100,8 +126,9 @@ export default withMermaid(
       ],
       footer: {
         message:
-          'Not affiliated with Amazon Web Services. Independent MIT-licensed OSS.',
-        copyright: 'Copyright © stackwrangler contributors',
+          'MIT · Not affiliated with Amazon Web Services · Independent OSS · <a href="https://kgz.github.io/stackwrangler/">Docs</a> · <a href="https://github.com/kgz/stackwrangler">GitHub</a>',
+        copyright:
+          'Copyright © stackwrangler contributors · Run docs locally: cd docs-site && pnpm install && pnpm dev',
       },
       search: { provider: 'local' },
       editLink: {
@@ -109,6 +136,7 @@ export default withMermaid(
           'https://github.com/kgz/stackwrangler/edit/main/docs-site/:path',
         text: 'Edit this page on GitHub',
       },
+      outline: { level: [2, 3] },
     },
     markdown: {
       theme: { light: 'github-light', dark: 'github-dark' },
@@ -123,9 +151,22 @@ export default withMermaid(
       optimizeDeps: {
         include: ['dayjs', 'mermaid'],
       },
+      // theme imports design/stackwrangler/tokens.css outside docs-site/
+      server: {
+        fs: { allow: [repoRoot] },
+      },
     },
+
     mermaid: {
-      theme: 'neutral',
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#2a2428',
+        primaryTextColor: '#ececec',
+        primaryBorderColor: '#b48aa0',
+        lineColor: '#8d8d8d',
+        secondaryColor: '#242424',
+        tertiaryColor: '#1c1c1c',
+      },
     },
   }),
 )

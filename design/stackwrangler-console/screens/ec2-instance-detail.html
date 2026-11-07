@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>i-0abc123def456 — EC2</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ec2-instance-detail" data-nav="ec2-instances" data-service="ec2" data-title="i-0abc123def456" data-crumb="i-0abc123def456">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">i-0abc123def456</h1>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Instance state ▾</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Actions ▾</button>
+      </div>
+      <div class="aws-subtitle-row">
+        <span class="aws-status aws-status-success">Running</span>
+        <span>lab-web · t3.micro · ap-southeast-2a</span>
+      </div>
+
+      <section class="aws-card" data-od-id="instance-summary">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Instance summary</h2>
+          <dl class="aws-kv" data-od-id="ec2-summary">
+            <div><dt>Instance ID</dt><dd><code class="aws-mono">i-0abc123def456</code></dd></div>
+            <div><dt>Name</dt><dd>lab-web</dd></div>
+            <div><dt>Instance state</dt><dd><span class="aws-status aws-status-success">Running</span></dd></div>
+            <div><dt>Instance type</dt><dd>t3.micro</dd></div>
+            <div><dt>Availability Zone</dt><dd>ap-southeast-2a</dd></div>
+            <div><dt>Launch time</dt><dd>2026-11-06 08:14:22 UTC</dd></div>
+            <div><dt>AMI ID</dt><dd><code class="aws-mono">ami-0localemu</code></dd></div>
+            <div><dt>Platform details</dt><dd>Linux/UNIX</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="aws-card" style="margin-top:16px" data-od-id="networking-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Networking</h2>
+          <dl class="aws-kv" data-od-id="ec2-networking">
+            <div><dt>Public IPv4 DNS</dt><dd><code class="aws-mono">ec2-13-…ap-southeast-2.compute.amazonaws.com</code></dd></div>
+            <div><dt>Public IPv4 address</dt><dd>13.210.10.24</dd></div>
+            <div><dt>Private IPv4 DNS</dt><dd><code class="aws-mono">ip-10-0-1-24.ap-southeast-2.compute.internal</code></dd></div>
+            <div><dt>Private IPv4 address</dt><dd>10.0.1.24</dd></div>
+            <div><dt>VPC ID</dt><dd><code class="aws-mono">vpc-0a1b2c3d</code></dd></div>
+            <div><dt>Subnet ID</dt><dd><code class="aws-mono">subnet-0abc1111</code></dd></div>
+            <div><dt>Security groups</dt><dd>lab-web-sg (<code class="aws-mono">sg-0abc2222</code>)</dd></div>
+            <div><dt>Key pair name</dt><dd>lab-key</dd></div>
+            <div><dt>IAM role</dt><dd>lab-instance-profile</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <p class="aws-desc" style="margin-top:16px"><a href="ec2-instances.html">Back to instances</a></p>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

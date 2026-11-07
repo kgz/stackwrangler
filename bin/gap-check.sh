@@ -17,7 +17,7 @@ cat <<'EOF'
 [ ] Authz under workload principal smoked (not only admin)?
 [ ] Console: create/update/detail not stubbed/disabled without Debt ticket?
 [ ] v1 skipped an AWS console UI for this service? Debt filed (or N/A — AWS has no such UI)?
-[ ] Web UI went through Open Design (`designing` + mocks in design/ console theme dirs; rename → #421) before React?
+[ ] Web UI went through Open Design (`designing` + mocks in design/stackwrangler-console/ using design/stackwrangler/) before React?
 [ ] Dead controls: unwired = disabled + title="To implement" (+ Debt if v1); never-ship = omitted; no enabled no-ops?
 [ ] No silent sidecar/bridge without Debt ticket + docs link?
 [ ] README/docs status row links a Debt issue for Partial/Sidecar?

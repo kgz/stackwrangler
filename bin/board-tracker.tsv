@@ -71,9 +71,9 @@
 90	backlog	Epic: org-scale local staging for multi-service IaC
 91	backlog	Learning path: Transfer/SFTP → Lambda → S3 → ECS → RDS
 92	done	Console nav: link ECS + EC2
-93	backlog	Create stack wizard
-94	backlog	Update stack + change sets
-95	backlog	StackSets + nested stacks
+93	done	Create stack wizard
+94	done	Update stack + change sets
+95	done	StackSets + nested stacks
 96	backlog	CodePipeline
 97	backlog	CodeBuild
 98	done	CodeDeploy
@@ -116,36 +116,39 @@
 141	done	Transfer native SFTP auth — drop sidecar
 143	done	Debt: unify dual S3 backends
 144	done	Debt: workload IAM authz smokes
-145	backlog	Debt: RDS create UI + Aurora fidelity
-146	backlog	Debt: ECS/EC2 console depth
-147	backlog	Debt: CFN write-path audit vs #93–95
+145	done	Debt: RDS create UI + Aurora fidelity
+146	done	Debt: ECS/EC2 console depth
+147	done	Debt: CFN write-path audit vs #93–95
+564	backlog	Debt: CFN drift + stack notifications (from #147)
 150	done	Debt: smoke matrix sad paths — ECS task-role authz
-154	backlog	Debt: ECS in-container task-role creds DNAT (from #150)
+154	done	Debt: ECS in-container task-role creds DNAT (from #150)
 156	done	Real-AWS IAM AccessDenied parity (~$0)
 158	done	Transfer empty role AccessDenied smoke (from #150)
 159	done	RDS wrong-password auth deny smoke (from #150)
 162	backlog	Debt: unify single S3 brain (from #143)
 163	done	Real-AWS CFN S3+Lambda parity
 165	done	Real-AWS CFN Lambda AccessDenied parity
-167	backlog	Debt: SQS console (from #64)
+167	done	Debt: SQS console (from #64) — queues list
 169	done	Logs PutLogEvents AccessDenied
 170	done	API GW CreateApi AccessDenied
 171	done	EC2 RunInstances AccessDenied
-172	backlog	Debt: SNS console (from #65)
-173	backlog	Debt: EventBridge console (from #66)
-174	backlog	Debt: DynamoDB console (from #59)
-175	backlog	Debt: StepFunctions console (from #67)
-176	backlog	Debt: Secrets console (from #72)
-177	backlog	Debt: KMS console (from #71)
-178	backlog	Debt: Kinesis console (from #68)
+172	done	Debt: SNS console (from #65) — thin list; create/detail #546
+173	done	Debt: EventBridge console (from #66)
+174	done	Debt: DynamoDB console (from #59)
+549	backlog	Debt: DynamoDB create/detail (from #174)
+175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
+533	backlog	Debt: Step Functions create + state-machine detail (from #175)
+176	in-review	Debt: Secrets console (from #72) — OD approved; React list shipped
+177	done	Debt: KMS console (from #71)
+178	in-review	Debt: Kinesis console (from #68)
 180	backlog	Epic: settings/topology fidelity (hairpin etc)
-181	backlog	Debt: ECS same-host hairpin fidelity
+181	in-review	Debt: ECS same-host hairpin fidelity
 182	done	Real-AWS parity batch10 messaging/data
 184	done	v1 API GW REST APIs (OpenAPI import, authorizers)
 185	done	Serverless v3 deploy smoke
 186	done	VPC Lambda → host services via mapped hostnames
-187	backlog	Debt: non-VPC Lambda reaches mapped hosts (from #186)
-189	backlog	Debt: console REST APIs (from #184)
+187	in-review	Debt: non-VPC Lambda reaches mapped hosts (from #186)
+189	done	Debt: console REST APIs list/detail (from #184)
 190	done	Debt: REST authorizer Deny 401 vs 403 (from #184)
 191	done	Debt: REST custom domain routing (from #184)
 193	done	v1: resource-based policy evaluation
@@ -182,6 +185,7 @@
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+254	done	Debt: ECS bridge/awsvpc task-role creds when image has no iptables (from #252)
 256	done	v1: mirror/fixture tags for TF data sources
 257	done	v1: Document Terraform against awsbox (backend/lock)
 258	done	v1: VPC Interface endpoint private DNS
@@ -202,7 +206,7 @@
 300	backlog	Debt: Route 53 alias to API Gateway and public zones for the host (from #206)
 302	backlog	Debt: Real-AWS networking parity deferred (from full-flow)
 304	done	Design: S3 console missing UI via Open Design web-clone
-305	done	Rebrand awsbox to stackwrangler
+305	in-review	Rebrand awsbox to stackwrangler
 306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
 307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)
@@ -267,11 +271,11 @@
 413	in-review	Public OSS: flip repository visibility to public
 416	done	Public OSS: split public AGENTS vs owner board workflow
 423	done	Debt: align console e2e credential defaults to STACKWRANGLER_* (from #405)
-425	backlog	Debt: GitHub Pages Actions for docs-site (from #403)
+425	done	absorbed into #428 (Pages workflow)
 427	done	Debt: rename leftover awsbox doc/example/helper paths (from #415)
-431	backlog	Debt: enable branch protection after public/Pro (from #412)
+431	done	Debt: enable branch protection after public/Pro (from #412)
 433	done	Debt: scope stackwrangler-board.mdc (not alwaysApply global)
-435	backlog	Debt: execute public flip + secret scanning (from #413)
+435	done	Debt: execute public flip + secret scanning (from #413)
 438	backlog	Debt: Network Firewall console (from #109)
 439	backlog	Debt: Firewall Manager console (from #109)
 440	backlog	Debt: Network Firewall / FMS authz smoke (from #109)
@@ -303,3 +307,18 @@
 495	done	Debt: Linux-first OD start hints (from #491)
 498	done	Debt: smoke MaximumConcurrency without reserved (from #453)
 420	done	(batch/2026-11-04-v002-b)
+428	in-review	Public OSS: polish docs-site (Runa-grade + GitHub Pages prep)
+487	done	Public OSS: single Docker image install path
+535	backlog	Debt: Secrets Manager store + secret detail (from #176)
+539	backlog	Debt: Kinesis create/detail (from #178)
+540	backlog	Debt: KMS create/detail (from #177)
+543	backlog	Debt: API Gateway REST create/deploy controls (from #189)
+544	backlog	Debt: EC2 Launch instance wizard (from #146)
+545	backlog	Debt: ECS Run task / Create service / logs console (from #146)
+546	backlog	Debt: SNS create topic + topic detail (from #172)
+548	backlog	Debt: SQS create/detail/send (from #167)
+552	backlog	Debt: EventBridge create + rule/bus detail (from #173)
+556	done	Doc: RDS Create screenshot + interactions (from #145)
+561	done	Doc: REST APIs console screenshot (from #189)
+562	done	Doc: SNS Topics console screenshot (from #172)
+563	done	Doc: SQS queues console screenshot (from #167)

@@ -70,7 +70,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 |------|--------|
 | S3 general purpose (SeaweedFS UI + LocalEmu for IaC/events) | **Working** UI · **Partial** dual-brain |
 | Lambda (Docker invoke, console Create/detail) | **Working** |
-| DynamoDB / SQS / SNS / EventBridge / Step Functions / Kinesis | **Working** (CLI smokes; console often thin/Debt) |
+| DynamoDB / SQS / SNS / EventBridge / Step Functions / Kinesis | **Working** (CLI smokes; SFN thin list [#175](https://github.com/kgz/awsl/issues/175); create/detail [#533](https://github.com/kgz/awsl/issues/533); others often console Debt) |
 | CloudWatch Logs (basic) | **Working** |
 | Transfer Family (native SFTP → S3) | **Partial** · **Sidecar** |
 | EC2 / ECS / ECR | **Partial** · ECR registry **sidecar** |
@@ -78,7 +78,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 | VPC / SG / ELBv2 / Route 53 (public + private) | **Partial** with smokes |
 | WAFv2 (API GW associate; not real edge WAF) | **Partial** thin |
 | API Gateway HTTP + REST | **Partial** |
-| KMS / Secrets Manager / ACM | **Partial** |
+| KMS / Secrets Manager / ACM | **Partial** · Secrets thin list [#176](https://github.com/kgz/awsl/issues/176); store/detail [#535](https://github.com/kgz/awsl/issues/535) |
 | Multi-account + OIDC assume | **CLI + smoke** |
 
 ### IaC against the same account
@@ -87,7 +87,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 |------|--------|
 | Terraform (S3+Lambda + S3 backend/lock) | **Working** |
 | CDK / SAM samples | **Working** |
-| CloudFormation | **Partial** |
+| CloudFormation | **Partial** · StackSets/nested chrome [#95](https://github.com/kgz/awsl/issues/95) |
 | Serverless Framework v3 | **Partial** |
 | CodeDeploy (ECS blue/green + Lambda canary control plane) | **CLI + smoke** |
 
@@ -112,7 +112,7 @@ Open work that blocks calling the vision “done”. Prefer Debt tickets over si
 | IAM / workload-role **depth** | Authz must match AWS beyond the S3 deny lab | [#144](https://github.com/kgz/stackwrangler/issues/144) · resource-policy smokes exist |
 | Transfer console / LOGICAL / IdP / AS2 | SFTP bytes Partial; console & fidelity incomplete | [#321](https://github.com/kgz/stackwrangler/issues/321) · [#322](https://github.com/kgz/stackwrangler/issues/322) · [#314](https://github.com/kgz/stackwrangler/issues/314) |
 | ECS awsvpc / bridge / NLB fidelity | Org networking surprises | [#268](https://github.com/kgz/stackwrangler/issues/268) · [#247](https://github.com/kgz/stackwrangler/issues/247) · [#203](https://github.com/kgz/stackwrangler/issues/203) |
-| RDS create / Aurora / failover console | Sidecar DB ≠ full RDS product surface | [#145](https://github.com/kgz/stackwrangler/issues/145) · [#225](https://github.com/kgz/stackwrangler/issues/225) |
+| RDS Aurora failover | Instance Create (Postgres/MySQL) wired; Aurora console create out of scope — CLI smoke + failover | [#225](https://github.com/kgz/stackwrangler/issues/225) |
 | Console depth on Partial services | List-only or disabled Create → Debt | gap-check before `done` |
 
 ### Control plane / chrome (not “shipped”)
@@ -136,4 +136,4 @@ If a merge leaves a bridge, disabled console action, or happy-only smoke, file a
 
 ## Version cuts
 
-Product cuts (`v0.0.2`, `v0.0.3`, …) live in [`docs/version-plan.md`](https://github.com/kgz/stackwrangler/blob/main/docs/version-plan.md). Catalogue milestones are orthogonal to depth: **execution order follows data-plane value**, not milestone number.
+Product cuts (`v0.0.2`, `v0.0.3`, …) live in [`docs/version-plan.md`](https://github.com/kgz/stackwrangler/blob/main/docs/version-plan.md). Shipped cut notes: [Changelog](/guide/changelog). Catalogue milestones are orthogonal to depth: **execution order follows data-plane value**, not milestone number.

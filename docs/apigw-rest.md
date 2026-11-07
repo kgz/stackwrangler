@@ -19,7 +19,7 @@ Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/se
 | `HTTP_PROXY` request body | Working. Raw body is forwarded (including curl `-d` default `application/x-www-form-urlencoded`). Smoke: `./smokes/apigw/apigw-proxy-body-smoke.sh`. |
 | `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./smokes/apigw/apigw-nlb-ecs-smoke.sh` phase A. |
 | API keys + usage plans | Working: `x-api-key` (`apiKeySource` HEADER) or authorizer `usageIdentifierKey` (AUTHORIZER); missing / unknown / disabled / revoked key → 403; plan throttle and quota → 429. [Details](#api-keys-and-usage-plans) |
-| Console | HTTP APIs only → [#189](https://github.com/kgz/awsl/issues/189) · API keys / usage plans [#310](https://github.com/kgz/awsl/issues/310) |
+| Console | REST APIs list + detail ([#189](https://github.com/kgz/awsl/issues/189)) · API keys / usage plans [#310](https://github.com/kgz/awsl/issues/310) |
 
 ## Calling a stage
 

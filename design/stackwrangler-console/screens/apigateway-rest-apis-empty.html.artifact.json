@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/apigateway-rest-apis-empty.html",
+  "entry": "screens/apigateway-rest-apis-empty.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-06T08:04:34.923Z",
+  "updatedAt": "2026-11-06T08:04:34.923Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

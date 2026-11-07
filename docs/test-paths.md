@@ -27,6 +27,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
+| Public path: cold dir + copied `install/stackwrangler up` (no monorepo compose) | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` · [docker-install.md](docker-install.md) |
+| Public path: console HTTP on release nginx image | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
+| Public path: `aws --profile local` sts + s3 ls after image up | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
+| Public path: orchestrator `up` without `/var/run/docker.sock` | sad/other | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./smokes/s3/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./smokes/security/iam-access-denied.sh` + IAM console lab |
@@ -75,7 +79,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | REST backend task stopped → API 5xx (AWS 504/503, emulator 500) | sad/other | covered | `./smokes/apigw/apigw-nlb-ecs-smoke.sh` |
 | VPC Lambda → host service by mapped hostname | happy | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` |
-| Non-VPC Lambda blocked from private hosts | sad/other | missing | [#187](https://github.com/kgz/awsl/issues/187) |
+| Non-VPC Lambda blocked from mapped private hosts | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [#187](https://github.com/kgz/awsl/issues/187) |
 | Lambda reads per-stage secret → OAuth client-credentials token → POST to external HTTP API | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda stage isolation (stage=b uses b's secret) and env-var base URL drives the call | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda role missing `secretsmanager:GetSecretValue` → fails, external API sees no request | sad/authz | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
@@ -95,7 +99,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull authz | sad/authz | missing | [#219](https://github.com/kgz/awsl/issues/219) |
-| ECS in-container SDK via 169.254 creds URI | sad/authz | thin | [#154](https://github.com/kgz/awsl/issues/154) |
+| ECS in-container SDK via 169.254 creds URI (`AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` → DNAT → LocalEmu; empty task role PutObject AccessDenied; no host-side cred fetch) | sad/authz | covered | `./smokes/compute/ecs-authz-smoke.sh` |
+| ECS `bridge` task role on image **without** iptables (sidecar DNAT; no host iptables) | sad/authz | covered | `./smokes/compute/ecs-bridge-no-iptables-authz-smoke.sh` · [#254](https://github.com/kgz/stackwrangler/issues/254) |
 | Public hosted zone + UPSERT A / A-alias / CNAME; `list-resource-record-sets` | happy | covered | `./smokes/networking/route53-smoke.sh` · [r53.md](r53.md) |
 | Public zone names resolve via `dig @127.0.0.1` inside LocalEmu | happy | covered | `./smokes/networking/route53-smoke.sh` |
 | Profile `local` `route53 list-hosted-zones` includes the public zone | happy | covered | `./smokes/networking/route53-smoke.sh` |
@@ -159,6 +164,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./smokes/account/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./smokes/account/labels-smoke.sh` |
 | Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./smokes/account/labels-smoke.sh` |
+| Two awsvpc ECS tasks on one host: direct ENI works | happy | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
+| Same-host peer→NLB VIP fails under host DNAT (AWS-like hairpin) | sad/other | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
 | NLB TCP :443 → two instance targets | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [elbv2.md](elbv2.md) |
 | Internal NLB :10080 → two target ports; closed on the edge address | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | NLB target sees the client source IP | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
@@ -210,6 +217,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Prowler failing-API count ≤ baseline (ratchet) | sad/other | covered | `./smokes/security/prowler-smoke.sh` |
 | S3 Control GetPublicAccessBlock / ListAccessPoints (account) | happy | covered | `./smokes/security/prowler-smoke.sh` spot-check |
 | SQS send/receive/delete | happy | covered | `./smokes/messaging/sqs-smoke.sh` |
+| SQS console queues list | happy | covered | `console/e2e/sqs-queues.spec.ts` |
 | SQS MessageRetentionPeriod > 14d → InvalidAttributeValue | sad/other | covered | `./smokes/messaging/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./smokes/messaging/sqs-authz-smoke.sh` |
 | Lambda SendMessage using CreateQueue / !Ref QueueUrl (`sqs.<region>.localhost`) | happy | covered | `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459) |
@@ -233,6 +241,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` vs reserved concurrency (lower wins) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` alone (reserved unset) → in-flight ≤ MaximumConcurrency | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
+| SNS console Topics list | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./smokes/messaging/sns-max-message-size-smoke.sh` |
@@ -244,12 +253,16 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SNS → SQS queue CMK without `sns.amazonaws.com` `kms:GenerateDataKey` + `kms:Decrypt` → not delivered | sad/authz | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue CMK whose key policy Allows `sns.amazonaws.com` those actions → delivered | happy | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./smokes/messaging/events-smoke.sh` |
+| EventBridge console rules + event buses list | ui | covered | `console/e2e/eventbridge-rules.spec.ts` |
 | EventBridge deny PutEvents | sad/authz | covered | `./smokes/messaging/events-authz-smoke.sh` |
 | EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `disable-rule` stops scheduled invocations | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `cron(* * * * ? *)` rule invokes Lambda target (other cron/rate forms: [#317](https://github.com/kgz/awsl/issues/317)) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
+| EventBridge console Rules list | happy | covered | console e2e `eventbridge-rules.spec.ts` · thin list (Create/detail → [#552](https://github.com/kgz/awsl/issues/552)) |
+| EventBridge console Event buses list | happy | covered | console e2e `eventbridge-rules.spec.ts` (buses path) · thin list (Create/detail → [#552](https://github.com/kgz/awsl/issues/552)) |
 | DynamoDB put/get | happy | covered | `./smokes/data/dynamodb-smoke.sh` |
+| DynamoDB console tables list | ui | covered | `console/e2e/dynamodb-tables.spec.ts` |
 | DynamoDB deny PutItem | sad/authz | covered | `./smokes/data/dynamodb-authz-smoke.sh` |
 | DynamoDB table with GSI + TTL deployed via CloudFormation (serverless slice) | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB GSI query, table query, scan with filter | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
@@ -263,11 +276,14 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | DynamoDB `aws:ResourceTag` on index ARN | sad/authz | missing | [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions Pass execution | happy | covered | `./smokes/messaging/sfn-smoke.sh` |
 | Step Functions deny StartExecution | sad/authz | covered | `./smokes/messaging/sfn-authz-smoke.sh` |
+| Step Functions console state machines list | happy | covered | console e2e `sfn-state-machines.spec.ts` · thin list (Create/detail → [#533](https://github.com/kgz/awsl/issues/533)) |
 | Secrets create/get | happy | covered | `./smokes/security/secrets-smoke.sh` |
 | Secrets deny GetSecretValue | sad/authz | covered | `./smokes/security/secrets-authz-smoke.sh` |
 | Secret resource policy explicit deny beats Lambda-role IAM Allow (`GetSecretValue`, `DescribeSecret`) | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS encrypt/decrypt | happy | covered | `./smokes/security/kms-smoke.sh` |
 | KMS deny Decrypt | sad/authz | covered | `./smokes/security/kms-authz-smoke.sh` |
+| KMS console Customer managed keys list | ui | covered | `console/e2e/kms-keys.spec.ts` |
+| API Gateway REST APIs list + detail | ui | covered | `console/e2e/apigateway-rest-apis.spec.ts` |
 | KMS key policy delegates to IAM and role Encrypt/Decrypt/GenerateDataKey succeeds | happy | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy without IAM delegation denies a role IAM allows | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy explicit deny Encrypt | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
@@ -276,15 +292,19 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Secrets Manager CreateSecret/PutSecretValue with a CMK follows key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | SSM SecureString GetParameter/PutParameter follows CMK key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | Cross-account resource policy (identity and resource must both allow) | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) · needs [#213](https://github.com/kgz/awsl/issues/213) |
+| Kinesis console Data streams list | happy | covered | console e2e `kinesis-streams.spec.ts` · thin list (Create/detail → [#539](https://github.com/kgz/awsl/issues/539)) |
 | Kinesis put/get | happy | covered | `./smokes/messaging/kinesis-smoke.sh` |
 | Kinesis deny PutRecord | sad/authz | covered | `./smokes/messaging/kinesis-authz-smoke.sh` |
 | Logs deny PutLogEvents | sad/authz | covered | `./smokes/logs/logs-authz-smoke.sh` |
 | API GW deny CreateApi | sad/authz | covered | `./smokes/apigw/apigw-authz-smoke.sh` |
 | EC2 deny RunInstances | sad/authz | covered | `./smokes/compute/ec2-authz-smoke.sh` |
 | CFN console list/detail tabs | ui | covered | `console/e2e/cfn-stacks.spec.ts` |
+| CFN Create stack (paste/upload → poll) | ui | covered | `console/e2e/cfn-create-stack.spec.ts` · [#93](https://github.com/kgz/awsl/issues/93) |
+| CFN Update / change sets in console | ui | covered | `console/e2e/cfn-update-changesets.spec.ts` · [#94](https://github.com/kgz/awsl/issues/94) |
+| CFN StackSets list (often empty) + nested Parent/Root chrome | ui | covered | `console/e2e/cfn-stacksets.spec.ts` · [cfn-stacksets-nested.md](cfn-stacksets-nested.md) · [#95](https://github.com/kgz/awsl/issues/95) |
+| CFN drift detection + stack notification SNS chrome | ui | Debt | [#564](https://github.com/kgz/stackwrangler/issues/564) (from [#147](https://github.com/kgz/awsl/issues/147)) |
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
-| CFN Create/Update in console | ui | missing | [#93](https://github.com/kgz/awsl/issues/93)–[#95](https://github.com/kgz/awsl/issues/95) |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./smokes/transfer/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./smokes/transfer/transfer-dataplane-smoke.sh` |
@@ -305,7 +325,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./smokes/data/rds-smoke.sh` |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./smokes/data/rds-authz-smoke.sh` |
-| RDS IAM DB auth | sad/authz | missing | [#145](https://github.com/kgz/awsl/issues/145) |
+| RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |

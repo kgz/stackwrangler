@@ -1,0 +1,55 @@
+/* stackwrangler palette (--awsbox-* slots kept for screen CSS). Roles in DESIGN.md. */
+
+:root {
+  --awsbox-page: #141414;
+  --awsbox-chrome: #1c1c1c;
+  --awsbox-panel: #242424;
+  --awsbox-raised: #2e2e2e;
+  --awsbox-selected: #2a2428;
+
+  --awsbox-fg: #ececec;
+  --awsbox-body: #c4c4c4;
+  --awsbox-quiet: #8d8d8d;
+  --awsbox-on-accent: #1a1a1a;
+
+  --awsbox-accent: #b48aa0;
+  --awsbox-accent-hover: #c4a0b2;
+  --awsbox-accent-pressed: #9a7488;
+  --awsbox-link: #e6d0da;
+  --awsbox-link-hover: #f3e6ec;
+
+  --awsbox-danger: #e25b4a;
+  --awsbox-warning: #e2b15a;
+  --awsbox-success: #3ddc8a;
+
+  --awsbox-border: #3a3a3a;
+  --awsbox-hairline: #2a2a2a;
+  --awsbox-field: #5a5a5a;
+
+  --awsbox-font-sans: "Source Sans 3", "Segoe UI", sans-serif;
+  --awsbox-font-mono: "Source Code Pro", ui-monospace, monospace;
+  --awsbox-title: 20px;
+  --awsbox-section: 16px;
+  --awsbox-body-size: 14px;
+  --awsbox-meta: 12px;
+  --awsbox-mono: 13px;
+
+  --awsbox-space: 4px;
+  --awsbox-control: 32px;
+  --awsbox-row: 40px;
+  --awsbox-page-pad: 24px;
+  --awsbox-radius-control: 2px;
+  --awsbox-radius-panel: 4px;
+  --awsbox-motion: 120ms;
+
+  --color-background: var(--awsbox-page);
+  --color-surface: var(--awsbox-panel);
+  --color-text: var(--awsbox-fg);
+  --color-text-secondary: var(--awsbox-body);
+  --color-border: var(--awsbox-border);
+  --color-primary: var(--awsbox-accent);
+  --font-family: var(--awsbox-font-sans);
+  --code-font-family: var(--awsbox-font-mono);
+  --radius-control: var(--awsbox-radius-control);
+  --radius-card: var(--awsbox-radius-panel);
+}

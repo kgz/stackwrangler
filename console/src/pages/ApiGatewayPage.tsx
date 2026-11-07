@@ -8,6 +8,7 @@ import {
   localInvokeUrl,
 } from '../lib/apigw'
 import { listFunctions } from '../lib/lambda'
+import { ApiGatewayTypeTabs } from '../components/ApiGatewayTypeTabs'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton, TableTools } from '../components/S3Ui'
 import {
@@ -104,11 +105,7 @@ export function ApiGatewayPage() {
       <h1 className="aws-h1">APIs</h1>
       <Notices error={error} toast={toast} />
       <section className="aws-card">
-        <div className="aws-tabs" role="tablist">
-          <span className="aws-tab active" aria-current="page">
-            HTTP APIs
-          </span>
-        </div>
+        <ApiGatewayTypeTabs active="http" />
         <div className="aws-card-body">
           <p className="aws-desc">
             HTTP APIs enable you to create RESTful APIs with lower latency and

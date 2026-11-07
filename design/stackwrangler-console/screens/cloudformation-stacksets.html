@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StackSets — CloudFormation</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="cloudformation-stacksets" data-nav="cloudformation-stacksets" data-service="cloudformation" data-title="StackSets" data-crumb="StackSets">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">StackSets</h1>
+      <p class="aws-desc">StackSets extend the functionality of stacks by enabling you to create, update, or delete stacks across multiple accounts and Regions with a single operation. LocalEmu list support is limited — sample rows below are design chrome only.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-stackset" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-stackset" title="To implement">Create StackSet</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter StackSets by name" data-find-table="#data-table" aria-label="Filter StackSets by name" data-od-id="find-stacksets" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="cfn-stacksets-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">StackSet name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Description <button type="button" class="filter" aria-label="Filter Description" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Status <button type="button" class="filter" aria-label="Filter Status" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Permission model <button type="button" class="filter" aria-label="Filter Permission model" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="org-baseline">
+                  <td class="check"><input type="checkbox" aria-label="Select org-baseline" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="ss-org-baseline">org-baseline</button></td>
+                  <td>Shared baseline across member accounts</td>
+                  <td><span class="aws-status aws-status-success">ACTIVE</span></td>
+                  <td>SELF_MANAGED</td>
+                </tr>
+                <tr data-name="lab-demo-set">
+                  <td class="check"><input type="checkbox" aria-label="Select lab-demo-set" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="ss-lab-demo-set">lab-demo-set</button></td>
+                  <td>Local lab StackSet chrome sample</td>
+                  <td><span class="aws-status aws-status-success">ACTIVE</span></td>
+                  <td>SELF_MANAGED</td>
+                </tr>
+                <tr data-name="security-guardrails">
+                  <td class="check"><input type="checkbox" aria-label="Select security-guardrails" /></td>
+                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="ss-security-guardrails">security-guardrails</button></td>
+                  <td>Guardrail policies sample</td>
+                  <td><span class="aws-status aws-status-success">ACTIVE</span></td>
+                  <td>SERVICE_MANAGED</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
