@@ -217,13 +217,6 @@ _DDB_TX_WRITE_ACTIONS = {
 }
 
 
-def _ddb_table_arn(table: object, region: str, account_id: str) -> str:
-    if isinstance(table, str) and table.startswith("arn:"):
-        return table
-    name = table if isinstance(table, str) and table else "*"
-    return f"arn:aws:dynamodb:{region}:{account_id}:table/{name}"
-
-
 def expand_permission_checks(
     service: str,
     operation_name: str,
@@ -237,8 +230,19 @@ def expand_permission_checks(
     DynamoDB Transact* / Batch* have no top-level ``TableName``; a single
     ARN built from the request becomes ``table/*`` and never matches a
     table-scoped Allow (#306). Expand to per-item / per-table checks.
+    Table/index ARNs go through ``build_resource_arn`` → ``_dynamodb_arn``.
     """
     params = request_params or {}
+
+    def ddb_arn(table: object, index: object = None) -> str:
+        name = table if isinstance(table, str) and table else "*"
+        arn_params: dict = {"TableName": name}
+        if isinstance(index, str) and index:
+            arn_params["IndexName"] = index
+        return build_resource_arn(
+            "dynamodb", operation_name, arn_params, region, account_id
+        )
+
     if service == "dynamodb" and operation_name == "TransactWriteItems":
         checks: list[tuple[str, str]] = []
         for entry in params.get("TransactItems") or []:
@@ -248,9 +252,7 @@ def expand_permission_checks(
                 body = entry.get(key)
                 if not isinstance(body, dict):
                     continue
-                checks.append(
-                    (action, _ddb_table_arn(body.get("TableName"), region, account_id))
-                )
+                checks.append((action, ddb_arn(body.get("TableName"))))
                 break
         return checks
 
@@ -262,22 +264,14 @@ def expand_permission_checks(
             body = entry.get("Get")
             if not isinstance(body, dict):
                 continue
-            checks.append(
-                (
-                    "dynamodb:GetItem",
-                    _ddb_table_arn(body.get("TableName"), region, account_id),
-                )
-            )
+            checks.append(("dynamodb:GetItem", ddb_arn(body.get("TableName"))))
         return checks
 
     if service == "dynamodb" and operation_name == "BatchWriteItem":
         request_items = params.get("RequestItems") or {}
         if isinstance(request_items, dict):
             return [
-                (
-                    "dynamodb:BatchWriteItem",
-                    _ddb_table_arn(table, region, account_id),
-                )
+                ("dynamodb:BatchWriteItem", ddb_arn(table))
                 for table in request_items
             ]
         return []
@@ -288,18 +282,10 @@ def expand_permission_checks(
             return []
         checks = []
         for table, spec in request_items.items():
-            table_arn = _ddb_table_arn(table, region, account_id)
-            # BatchGetItem is table-scoped; if a caller passes IndexName on a
-            # table entry (non-AWS), honour index ARN the same way Query does.
-            index = None
-            if isinstance(spec, dict):
-                index = spec.get("IndexName")
-            if index:
-                checks.append(
-                    ("dynamodb:BatchGetItem", f"{table_arn}/index/{index}")
-                )
-            else:
-                checks.append(("dynamodb:BatchGetItem", table_arn))
+            # BatchGetItem is table-scoped; IndexName on an entry (non-AWS)
+            # still goes through _dynamodb_arn like Query.
+            index = spec.get("IndexName") if isinstance(spec, dict) else None
+            checks.append(("dynamodb:BatchGetItem", ddb_arn(table, index)))
         return checks
 
     actions = map_action(service, operation_name)

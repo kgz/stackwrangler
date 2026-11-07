@@ -275,4 +275,34 @@ expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
 	as dynamodb batch-write-item --request-items "file://$TMP/bw-t2.json"
 echo "OK: BatchWriteItem on t1 -> batch-write t1 ok, t2 denied"
 
+# GetItem on t1: TransactGet t1 ok, t2 denied.
+mkuser "awsbox-ddb-get1-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:GetItem\",\"Resource\":\"${TABLE_ARN}\"}]}"
+sleep 2
+cat >"$TMP/tg-t1.json" <<EOF
+[{"Get":{"TableName":"$TABLE","Key":{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}}}]
+EOF
+as dynamodb transact-get-items --transact-items "file://$TMP/tg-t1.json" >/dev/null \
+	|| fail "GetItem@t1 user cannot TransactGet from t1"
+cat >"$TMP/tg-t2.json" <<EOF
+[{"Get":{"TableName":"$TABLE2","Key":{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}}}]
+EOF
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb transact-get-items --transact-items "file://$TMP/tg-t2.json"
+echo "OK: GetItem on t1 -> TransactGet t1 ok, t2 denied"
+
+# BatchGetItem on t1 only: batch-get t1 ok, t2 denied.
+mkuser "awsbox-ddb-bg1-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:BatchGetItem\",\"Resource\":\"${TABLE_ARN}\"}]}"
+sleep 2
+cat >"$TMP/bg-t1.json" <<EOF
+{"$TABLE":{"Keys":[{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}]}}
+EOF
+as dynamodb batch-get-item --request-items "file://$TMP/bg-t1.json" >/dev/null \
+	|| fail "BatchGetItem@t1 user cannot batch-get t1"
+cat >"$TMP/bg-t2.json" <<EOF
+{"$TABLE2":{"Keys":[{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}]}}
+EOF
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb batch-get-item --request-items "file://$TMP/bg-t2.json"
+echo "OK: BatchGetItem on t1 -> batch-get t1 ok, t2 denied"
+
 echo "OK: dynamodb depth (${TABLE})"
