@@ -2,11 +2,13 @@
 
 Orgs need a **local AWS-shaped account** that fails for the same reasons real AWS does — then the same CLI, console, and IaC can move to a real account without rewriting the stack.
 
+**#1 reason to pick us:** most local AWS tools **default-allow permissions**. A bad IAM policy still looks fine until production. stackwrangler runs with **`IAM_ENFORCEMENT=1`** so wrong or missing policies **AccessDenied** on the laptop.
+
 ## The problem
 
 Teams stage cloud work on laptops and CI against emulators. Too often that is a **false green**:
 
-- **IAM that does not enforce** — missing or wrong policies still “succeed”
+- **Default-allow IAM** — missing or wrong policies still “succeed” (the biggest lie)
 - **Control plane ≠ data plane** — `create-*` returns 200; traffic, objects, and invokes never happen
 - **Catalogue theatre** — a long service list with thin or Pro-gated depth
 - **Endpoint sprawl** — CLI, console, and Lambda pointed at different S3 (or other) brains
@@ -30,6 +32,8 @@ You only discover the gap on real AWS: AccessDenied, empty buckets, tasks that c
 
 LocalEmu is the emulator; **stackwrangler** is the product (compose, profile `local`, console, smokes, honesty about depth). Swap the emulator if needed — the contract is **account behaviour**, not a vendor logo.
 
+**Spine:** same local AWS-shaped account as the free emulator class — but **not default-allow**: enforce IAM, harden with patches/console/sidecars, and **parity-check** deny paths against real AWS. See [Compare](./compare/) and [Use cases](./use-cases/).
+
 ## What “done” feels like
 
 ```text
@@ -43,4 +47,4 @@ aws --profile local …
 
 Not affiliated with Amazon Web Services. Independent MIT-licensed OSS — local test, then real AWS.
 
-Next: [Vision](./vision) (north star) · [Completeness](./completeness) (what exists / gaps / % depth) · [Getting Started](./getting-started).
+Next: [Getting Started](./getting-started) · [Compare](./compare/) · [Use cases](./use-cases/) · [Vision](./vision) · [Completeness](./completeness).

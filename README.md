@@ -2,7 +2,9 @@
 
 **Not affiliated with Amazon Web Services.** Independent open-source tooling to develop and test AWS-shaped stacks locally, then deploy to real AWS. Not an AWS product and not a hosted substitute for AWS.
 
-One **local AWS-shaped account** — real APIs, a grey-rose console on localhost, and IaC against profile `local`. Learn and stage without a cloud bill. Authz that **denies** when the policy is wrong — not a silent green.
+One **local AWS-shaped account** — real APIs, a grey-rose console on localhost, and IaC against profile `local`. Learn and stage without a cloud bill.
+
+**Most local stacks default-allow IAM** (wrong policies still “work”). stackwrangler does not: **`IAM_ENFORCEMENT=1`** — authz **denies** like AWS when the policy is wrong, then the same tools promote to a real account. [Compare](docs-site/guide/compare/) · [Use case: OpenTofu → Expo + IAM](docs-site/guide/use-cases/opentofu-expo-iam.md)
 
 North star: [docs/vision.md](docs/vision.md) · Docs: [docs-site/](docs-site/) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) · Status: [docs/status.md](docs/status.md) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
 
@@ -18,9 +20,9 @@ Live local console (grey rose chrome) — same account as CLI and IaC.
 
 ## Features
 
+- **Authz that denies (not default-allow)** — `IAM_ENFORCEMENT=1`; missing/wrong policies get `AccessDenied` locally, same as AWS
 - **One local account** — CLI (`aws --profile local`), console, and Terraform / CDK / SAM / Serverless hit the same endpoints
 - **Fully working bar** — create → configure → traffic or data moves → you can see it. Control-plane stubs stay labelled stubs (no catalogue theatre)
-- **Authz that denies** — LocalEmu with `IAM_ENFORCEMENT=1`; workload principals and resource policies fail like AWS when the policy is wrong
 - **Honest depth** — Working / Partial / Sidecar / Backlog are first-class; see [docs/status.md](docs/status.md)
 - **Local → real AWS** — stage here, then point the same tooling at a real account
 
@@ -77,11 +79,17 @@ cd stackwrangler
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Coming from older checkouts named `awsbox`: `./bin/awsbox` still shims to `stackwrangler`.
 
+## Built for
+
+Hosting-shaped paths such as **OpenTofu → VPC → Lambda / EC2 → SNS → Expo** with strict IAM and Secrets Manager — stage locally, then the same shape on real AWS. Details: [docs-site use case](docs-site/guide/use-cases/opentofu-expo-iam.md).
+
 ## Documentation
 
 - [Docker install](docs/docker-install.md) — public path (start here)
 - Public docs site: [docs-site/](docs-site/) (VitePress) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) after Pages is enabled on a public repo
 - Run docs locally: `cd docs-site && pnpm install && pnpm dev`
+- [Compare](docs-site/guide/compare/) — vs LocalEmu, Moto, LocalStack, real AWS, SAM Local, other emulators
+- [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM
 - [Vision](docs/vision.md) — north star (mirrored on the site)
 - [Service status](docs/status.md) — Working / Partial matrix
 - [Contributing](CONTRIBUTING.md)
