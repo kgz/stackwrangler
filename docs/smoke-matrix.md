@@ -19,6 +19,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Real AWS CFN S3+Lambda | **yes** (parity) | **yes** (empty role) | teardown | — | `aws-parity-cfn-s3-lambda.sh`, `aws-parity-cfn-authz.sh` |
 | Real AWS HF cheap (#296/#297/#190/#294/#230 VPCE) | **yes** (focused) | **yes** (Deny 403, missing/disabled key) | schedule quiet after disable | — | `aws-parity-hf-cheap.sh` · skipped gaps [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Lambda VPC → host service | yes | — | unmapped name; non-VPC mapped name ENOTFOUND ([#187](https://github.com/kgz/awsl/issues/187)) | — | `lambda-vpc-smoke.sh` |
+| VPC Docker network lifecycle (#479) | yes (same CIDR after `down`/`up` + VPC Lambda invoke) | — | CreateVpc InternalError + moto rollback when bridge stubbed; leftover `localemu-vpc-*` removed on down | — | `vpc-network-lifecycle-smoke.sh` |
 | Lambda → Secrets Manager → OAuth token → external API | yes (+ per-stage secret isolation, env-var base URL) | **yes** (role without `GetSecretValue`: mock sees no requests) | wrong client secret → 401, no document posted | — | `lambda-secret-oauth-smoke.sh` |
 | Lambda trust `aws:SourceAccount` | yes (same account; plain trust) | **yes** (other account refused) | — | — | `lambda-trust-condition-smoke.sh` |
 | Lambda trust `aws:SourceArn` | yes (function ARN) | **yes** (other function ARN refused) | — | — | `lambda-trust-sourcearn-smoke.sh` |
