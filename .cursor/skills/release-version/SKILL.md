@@ -4,7 +4,8 @@ description: >-
   Product release labels, git tags, and the cut loop (ship cut → publish →
   re-evaluate next) for awsbox/stackwrangler. Use when creating tickets with a
   release label, cutting a semver release, tagging vX.Y.Z, updating
-  CURRENT_RELEASE / versioning docs, or asking what to do after a cut ships.
+  CURRENT_RELEASE / versioning docs / docs-site changelog, or asking what to
+  do after a cut ships.
 ---
 
 # Release versioning
@@ -12,7 +13,7 @@ description: >-
 **Pillars** (milestones: `Platform`, `Identity & authz`, …) are categories.  
 **Product cuts** are **labels + git tags** (`v0.0.2` Public, `v0.0.3` Trust, …).
 
-Canonical docs: `docs/versioning.md`, `docs/version-plan.md`, `docs/CURRENT_RELEASE`.
+Canonical docs: `docs/versioning.md`, `docs/version-plan.md`, `docs/CURRENT_RELEASE`, docs-site changelog `docs-site/guide/changelog.md`.
 
 ## Development loop (cut → publish → re-evaluate)
 
@@ -27,15 +28,33 @@ Do **not** pre-label three versions ahead and grind forever. One open cut at a t
 
 ### 2. Publish when the theme is done
 
-Cut’s theme actually finished (or residuals explicitly waived):
+Cut’s theme actually finished (or residuals explicitly waived). **Only when the user asks.**
+
+#### Changelog (required before / with the tag)
+
+Ship a docs-site entry for the cut — do not leave GitHub Release as the only notes.
+
+1. Edit **`docs-site/guide/changelog.md`**: add `## vX.Y.Z — <Theme> (YYYY-MM-DD)` at the top (newest first). Include:
+   - Short theme blurb
+   - Grouped highlights (install/platform, identity, console, fidelity, …) with issue links
+   - **Install this cut** — full GHCR `docker run … up` using **`:vX.Y.Z`** (not only `:latest`); note that one `up` starts APIs + profile `local` + **console web app** on `:3000`; optional digest pin + thin Release CLI asset
+   - Link related examples (e.g. Terraform tour) when they exist
+2. Keep nav/sidebar **Changelog** → `/guide/changelog` in `docs-site/.vitepress/config.mts` (already wired; restore if removed).
+3. Link the cut from `docs-site/guide/completeness.md` / getting-started only if useful — do not duplicate the whole entry.
+4. Land the changelog (and any install copy tweaks) on **`main` before or in the same ship window as the tag** so Pages deploys the notes with the release.
+
+#### Tag + GitHub Release
 
 ```bash
 ./bin/release-tag.sh vX.Y.Z
 ```
 
-That tags `origin/main` (or `--sha`), creates the GitHub Release, ensures the label exists, writes `docs/CURRENT_RELEASE`. Commit the `CURRENT_RELEASE` bump if the tree should ship it.
+That tags `origin/main` (or `--sha`), creates the GitHub Release, ensures the label exists, writes `docs/CURRENT_RELEASE`.
 
-Only when the user asks. Not as a side effect of a feature ticket.  
+5. **Align Release body** with the docs changelog (same install one-liner + highlights). Prefer `gh api` PATCH of the release if `gh release edit` is unavailable.
+6. Confirm GHCR publish + Release asset `install/stackwrangler` (re-upload / `workflow_dispatch` publish-images if the tag-push job skipped the CLI asset).
+7. Commit the `CURRENT_RELEASE` bump to the **next** open cut (e.g. after `v0.0.2` → `v0.0.3`) and mark the shipped cut in `docs/version-plan.md`.
+
 Do not cut **Public** while open Impact ≥ 5 core trust bugs are unwaived.
 
 After publish, that cut’s board view should be empty (or only waived leftovers).
