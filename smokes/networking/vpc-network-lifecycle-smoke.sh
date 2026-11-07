@@ -75,7 +75,7 @@ assert_create_vpc_rolls_back() {
 	aws ec2 create-vpc --cidr-block 10.78.0.0/16 >/tmp/awsbox-479-create-vpc.err 2>&1 || err=$?
 	restore_bridge_boom
 	[[ "$err" -ne 0 ]] || fail "CreateVpc succeeded while bridge create was stubbed to fail"
-	rg -q "InternalError|could not allocate a Docker network|Docker network" /tmp/awsbox-479-create-vpc.err \
+	grep -qiE 'InternalError|could not allocate a Docker network|Docker network' /tmp/awsbox-479-create-vpc.err \
 		|| fail "CreateVpc error missing Docker-network message: $(cat /tmp/awsbox-479-create-vpc.err)"
 	after="$(aws ec2 describe-vpcs --query 'length(Vpcs)' --output text)"
 	[[ "$after" == "$before" ]] || fail "CreateVpc left a moto VPC after bridge failure (before=${before} after=${after})"
