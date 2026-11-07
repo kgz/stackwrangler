@@ -322,4 +322,56 @@ expect_deny AccessDenied "B bucket explicit Deny beats Allow" \
 	as_role s3api get-object --bucket "$BUCKET" --key probe.txt "$WORKDIR/denied2.txt"
 echo "OK: explicit Deny on B wins"
 
+# --- Root bypasses IAM evaluate: gate must still be action-specific ---
+ROOT_A="arn:aws:iam::${ACCOUNT_A}:root"
+python3 - "$WORKDIR/bucket-list-only.json" "$ROOT_A" "$BUCKET" <<'PY'
+import json, sys
+path, root, bucket = sys.argv[1:]
+json.dump({
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Sid": "AllowARootListOnly",
+        "Effect": "Allow",
+        "Principal": {"AWS": root},
+        "Action": "s3:ListBucket",
+        "Resource": f"arn:aws:s3:::{bucket}",
+    }],
+}, open(path, "w"))
+PY
+aws_as "$KEY_B" "$SECRET" "" s3api put-bucket-policy --bucket "$BUCKET" --policy "file://${WORKDIR}/bucket-list-only.json" >/dev/null
+aws_as "$KEY_A" "$SECRET" "" s3api head-bucket --bucket "$BUCKET" >/dev/null
+aws_as "$KEY_A" "$SECRET" "" s3api list-objects-v2 --bucket "$BUCKET" --query 'KeyCount' --output text >/dev/null
+expect_deny AccessDenied "A root GetObject denied when only ListBucket Allowed" \
+	aws_as "$KEY_A" "$SECRET" "" s3api get-object --bucket "$BUCKET" --key probe.txt "$WORKDIR/root-denied.txt"
+echo "OK: Root ListBucket Allow does not open GetObject"
+
+python3 - "$WORKDIR/bucket-root-deny-get.json" "$ROOT_A" "$BUCKET" <<'PY'
+import json, sys
+path, root, bucket = sys.argv[1:]
+json.dump({
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowARoot",
+            "Effect": "Allow",
+            "Principal": {"AWS": root},
+            "Action": ["s3:GetObject", "s3:ListBucket"],
+            "Resource": [f"arn:aws:s3:::{bucket}", f"arn:aws:s3:::{bucket}/*"],
+        },
+        {
+            "Sid": "DenyARootGetObject",
+            "Effect": "Deny",
+            "Principal": {"AWS": root},
+            "Action": "s3:GetObject",
+            "Resource": f"arn:aws:s3:::{bucket}/*",
+        },
+    ],
+}, open(path, "w"))
+PY
+aws_as "$KEY_B" "$SECRET" "" s3api put-bucket-policy --bucket "$BUCKET" --policy "file://${WORKDIR}/bucket-root-deny-get.json" >/dev/null
+aws_as "$KEY_A" "$SECRET" "" s3api list-objects-v2 --bucket "$BUCKET" --query 'KeyCount' --output text >/dev/null
+expect_deny AccessDenied "A root GetObject denied by explicit Deny despite Allow" \
+	aws_as "$KEY_A" "$SECRET" "" s3api get-object --bucket "$BUCKET" --key probe.txt "$WORKDIR/root-denied2.txt"
+echo "OK: Root explicit GetObject Deny wins"
+
 echo "cross-account resource policy smoke passed"
