@@ -37,7 +37,27 @@ First public-ready cut: install without a git clone, stackwrangler rebrand, docs
 
 Create/detail depth Debts on list surfaces stay backlog (Accuracy). Aurora console/failover remains [#225](https://github.com/kgz/stackwrangler/issues/225).
 
-**Install:** [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md) · [Getting started](/guide/getting-started)
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS S3, ECR registry, AWS profile `local` (CLI), and the **console web app** at <http://127.0.0.1:3000>. No separate console install. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.0.2
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.2 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
+
+Digest pin (immutable): `ghcr.io/kgz/stackwrangler@sha256:c851e41580e0670a871054b214fc06a1e0a0538c142f5b926889c782abb0486c`.
+
+Optional thin host CLI (wraps the same `docker run`): [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.2/stackwrangler).
+
+Full reference: [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md) · [Getting started](/guide/getting-started)
 
 ## v0.0.1 — Baseline (2026-10-26)
 

@@ -40,7 +40,28 @@ docker run --rm --network host \
   ghcr.io/kgz/stackwrangler:latest up
 ```
 
-Console: <http://127.0.0.1:3000> · S3: `:8333` · LocalEmu: `:4566`
+That single `up` brings APIs **and** the baked console web app (nginx image) — open <http://127.0.0.1:3000>. Also: S3 `:8333` · LocalEmu `:4566`. Profile `local` is written for the AWS CLI.
+
+Pin a product cut with a version tag (sibling LocalEmu/console/ECR images use the same tag):
+
+```bash
+docker pull ghcr.io/kgz/stackwrangler:v0.0.2
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.2 up
+```
+
+Immutable digest (example for `v0.0.2` — re-check with `docker buildx imagetools inspect` after republish):
+
+```bash
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler@sha256:c851e41580e0670a871054b214fc06a1e0a0538c142f5b926889c782abb0486c up
+```
 
 ### Thin host CLI (release asset)
 
