@@ -272,7 +272,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | DynamoDB duplicate conditional put / failed update condition → `ConditionalCheckFailedException` | sad/other | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB cancelled transaction → `TransactionCanceledException`, no partial write | sad/other | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB Allow on index ARN only / table ARN only / Deny on index ARN | sad/authz | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
-| DynamoDB Batch*/Transact* under table-scoped policy | sad/authz | missing | [#306](https://github.com/kgz/awsl/issues/306) |
+| DynamoDB Batch*/Transact* under table-scoped policy | sad/authz | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB `aws:ResourceTag` on index ARN | sad/authz | missing | [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions Pass execution | happy | covered | `./smokes/messaging/sfn-smoke.sh` |
 | Step Functions deny StartExecution | sad/authz | covered | `./smokes/messaging/sfn-authz-smoke.sh` |

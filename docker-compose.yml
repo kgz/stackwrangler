@@ -105,6 +105,9 @@ services:
       - ./localemu-patches/ecs_ec2_services.py:/opt/code/localemu/src/localemu/services/ecs/ec2_services.py:ro
       # DynamoDB index ARNs (#296): Query/Scan IndexName -> table/<t>/index/<i>
       - ./localemu-patches/iam_arn_builder.py:/opt/code/localemu/src/localemu/services/iam_enforcement/arn_builder.py:ro
+      # DynamoDB Transact*/Batch* per-item/table IAM (#306)
+      - ./localemu-patches/service_action_map.py:/opt/code/localemu/src/localemu/services/iam_enforcement/service_action_map.py:ro
+      - ./localemu-patches/iam_enforcer.py:/opt/code/localemu/src/localemu/services/iam_enforcement/enforcer.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro
       # CFN lifecycle (#212): failed-create rollback, delete-stack cleanup, honest status

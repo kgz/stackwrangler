@@ -85,7 +85,7 @@ Smoke: `./smokes/account/mirror-smoke.sh` · `./smokes/account/mirror-tags-smoke
 
 | RDS (Postgres) | Docker DB via `RDS_DOCKER_BACKEND` | Databases + Create + `psql` hint | **Working** (instance create/list/detail) · Aurora console out of scope |
 | RDS (MySQL / Aurora MySQL) | Docker DB · writer/reader · `rds!` secret | Databases + Create (MySQL instance) + `mysql` hint | **Partial** · Aurora via CLI smoke · failover [#225](https://github.com/kgz/awsl/issues/225) |
-| DynamoDB | put/get · GSI query · scan filter · conditional writes · UpdateItem expressions · TransactWriteItems · TTL sweep · IAM on table/index ARNs | Tables list | **Working** (CLI) · console list [#174](https://github.com/kgz/awsl/issues/174) · create/detail [#549](https://github.com/kgz/awsl/issues/549) · `./smokes/data/dynamodb-depth-smoke.sh` · Batch/Transact table-scoped IAM [#306](https://github.com/kgz/awsl/issues/306) · index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) |
+| DynamoDB | put/get · GSI query · scan filter · conditional writes · UpdateItem expressions · TransactWriteItems · TTL sweep · IAM on table/index ARNs | Tables list | **Working** (CLI) · console list [#174](https://github.com/kgz/awsl/issues/174) · create/detail [#549](https://github.com/kgz/awsl/issues/549) · `./smokes/data/dynamodb-depth-smoke.sh` · Batch/Transact table-scoped IAM · index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) |
 | ElastiCache / other DBs | — | — | **Backlog** |
 
 Smoke: `./smokes/data/rds-smoke.sh` · sad: `./smokes/data/rds-authz-smoke.sh` (needs host `psql`) · MySQL/Aurora: `./smokes/data/rds-mysql-smoke.sh` (needs host `mysql`)
