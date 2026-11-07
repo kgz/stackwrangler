@@ -54,7 +54,7 @@ docker run --rm --network host \
 
 Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
 
-Digest pin (immutable): `ghcr.io/kgz/stackwrangler@sha256:c851e41580e0670a871054b214fc06a1e0a0538c142f5b926889c782abb0486c`.
+Digest pin (immutable): `ghcr.io/kgz/stackwrangler@sha256:fc20e100bf1146355b0ef38b9ff094c75658049b0cc485268fcf34fe1e30d831`.
 
 Optional thin host CLI (wraps the same `docker run`): [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.2/stackwrangler).
 
