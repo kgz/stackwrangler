@@ -18,6 +18,7 @@ COPY localemu-patches/iam_arn_builder.py /opt/code/localemu/src/localemu/service
 COPY localemu-patches/resource_policies.py /opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py
 COPY localemu-patches/cfn_v2_provider.py /opt/code/localemu/src/localemu/services/cloudformation/v2/provider.py
 COPY localemu-patches/cfn_change_set_model_executor.py /opt/code/localemu/src/localemu/services/cloudformation/engine/v2/change_set_model_executor.py
+COPY localemu-patches/cfn_deploy_credentials.py /opt/code/localemu/src/localemu/services/cloudformation/cfn_deploy_credentials.py
 COPY localemu-patches/vpc_routing.py /opt/code/localemu/src/localemu/services/ec2/docker/vpc_routing.py
 COPY localemu-patches/sg_enforcement.py /opt/code/localemu/src/localemu/services/ec2/docker/sg_enforcement.py
 COPY localemu-patches/vpce_private_dns.py /opt/code/localemu/src/localemu/services/ec2/docker/vpce_private_dns.py
