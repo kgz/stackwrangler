@@ -13,8 +13,11 @@ hero:
       text: Why
       link: /guide/why
     - theme: alt
-      text: Vision
-      link: /guide/vision
+      text: Compare
+      link: /guide/compare/
+    - theme: alt
+      text: Use cases
+      link: /guide/use-cases/
     - theme: alt
       text: GitHub
       link: https://github.com/kgz/stackwrangler
@@ -24,18 +27,18 @@ hero:
     type: tip
 
 features:
+  - title: Not default-allow
+    details: Most local stacks let bad IAM “succeed.” We run IAM_ENFORCEMENT=1 — AccessDenied when the policy is wrong, like AWS.
+  - title: Authz that denies
+    details: Workload principals and resource policies fail the same way as AWS — smokes and parity on deny paths, not a silent green.
   - title: Fully working bar
     details: Create → configure → traffic or data moves → you can see it in CLI and console. Control-plane stubs stay labelled stubs.
-  - title: Authz that denies
-    details: Workload principals and resource policies fail the same way as AWS when the policy is wrong — not a silent green.
   - title: Honest depth map
     details: Working, Partial, Sidecar, and Backlog are first-class. We do not market create-* as shipped.
   - title: Local → real AWS
     details: Stage on stackwrangler, then point the same tooling at a real account. Independent OSS, MIT license.
   - title: One account surface
     details: Console, aws --profile local, and Terraform / CDK / SAM / Pulumi talk to the same local account.
-  - title: Sidecars when needed
-    details: Prefer a real data plane (Postgres, SFTP listener) over pretending the emulator can do everything.
 ---
 
 <div class="sw-home-section">
@@ -66,8 +69,8 @@ aws --profile local \
 
 :::
 
-::: tip LocalEmu vs stackwrangler
-**LocalEmu** is the emulator (`:4566`, `IAM_ENFORCEMENT=1`). **stackwrangler** is the product — compose, profile `local`, grey-rose console, smokes, and honesty about depth. Not Cloudflare Wrangler.
+::: tip Not default-allow
+Most free emulators **default-allow** IAM. stackwrangler enforces (`IAM_ENFORCEMENT=1`) so bad policies fail locally — then harden with patches, console, and parity checks. **LocalEmu** is the engine; **stackwrangler** is the product. [Compare](/guide/compare/) · [Use cases](/guide/use-cases/) · not Cloudflare Wrangler.
 :::
 
 ### Console strip
@@ -95,8 +98,8 @@ More shots: [Console tour](/guide/console-tour).
 
 <div class="sw-why-grid">
   <div class="sw-why-card">
-    <strong>No false greens</strong>
-    <p>Missing IAM, wrong trust, or a hop that never moves data fails locally the same way it would on real AWS.</p>
+    <strong>Not default-allow</strong>
+    <p>Missing IAM, wrong trust, or a hop that never moves data fails locally the same way it would on real AWS — AccessDenied on the laptop, not in prod.</p>
   </div>
   <div class="sw-why-card">
     <strong>Same tooling path</strong>
@@ -112,7 +115,7 @@ More shots: [Console tour](/guide/console-tour).
   </div>
 </div>
 
-Ready? [Getting Started](/guide/getting-started) · [Changelog](/guide/changelog) · [Vision](/guide/vision) · [Completeness](/guide/completeness)
+Ready? [Getting Started](/guide/getting-started) · [Compare](/guide/compare/) · [Use cases](/guide/use-cases/) · [Changelog](/guide/changelog) · [Completeness](/guide/completeness)
 
 Docs also run locally: `cd docs-site && pnpm install && pnpm dev` → [docs-site README](https://github.com/kgz/stackwrangler/blob/main/docs-site/README.md). Hosted target: [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/).
 

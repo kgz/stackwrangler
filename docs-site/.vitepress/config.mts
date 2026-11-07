@@ -41,6 +41,8 @@ export default withMermaid(
       nav: [
         { text: 'Why', link: '/guide/why' },
         { text: 'Guide', link: '/guide/getting-started' },
+        { text: 'Compare', link: '/guide/compare/' },
+        { text: 'Use cases', link: '/guide/use-cases/' },
         { text: 'Changelog', link: '/guide/changelog' },
         { text: 'Completeness', link: '/guide/completeness' },
         { text: 'Interactions', link: '/guide/interactions/' },
@@ -56,9 +58,39 @@ export default withMermaid(
             items: [
               { text: 'Why', link: '/guide/why' },
               { text: 'Getting Started', link: '/guide/getting-started' },
+              { text: 'Compare', link: '/guide/compare/' },
+              { text: 'Use cases', link: '/guide/use-cases/' },
               { text: 'Vision', link: '/guide/vision' },
               { text: 'Changelog', link: '/guide/changelog' },
               { text: 'Completeness / status', link: '/guide/completeness' },
+            ],
+          },
+          {
+            text: 'Compare',
+            items: [
+              { text: 'Overview', link: '/guide/compare/' },
+              { text: 'vs LocalEmu', link: '/guide/compare/vs-localemu' },
+              { text: 'vs Moto', link: '/guide/compare/vs-moto' },
+              { text: 'vs LocalStack', link: '/guide/compare/vs-localstack' },
+              { text: 'vs real AWS', link: '/guide/compare/vs-real-aws' },
+              {
+                text: 'vs SAM Local',
+                link: '/guide/compare/vs-sam-local',
+              },
+              {
+                text: 'vs other emulators',
+                link: '/guide/compare/vs-other-emulators',
+              },
+            ],
+          },
+          {
+            text: 'Use cases',
+            items: [
+              { text: 'Overview', link: '/guide/use-cases/' },
+              {
+                text: 'OpenTofu → Expo + IAM',
+                link: '/guide/use-cases/opentofu-expo-iam',
+              },
             ],
           },
           {
