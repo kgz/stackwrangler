@@ -4,7 +4,9 @@
 
 One **local AWS-shaped account** — real APIs, a grey-rose console on localhost, and IaC against profile `local`. Learn and stage without a cloud bill.
 
-**Most local stacks default-allow IAM** (wrong policies still “work”). stackwrangler does not: **`IAM_ENFORCEMENT=1`** — authz **denies** like AWS when the policy is wrong, then the same tools promote to a real account. [Compare](docs-site/guide/compare/) · [Use case: OpenTofu → Expo + IAM](docs-site/guide/use-cases/opentofu-expo-iam.md)
+**Most local stacks default-allow IAM** (wrong policies still “work”). stackwrangler does not: **`IAM_ENFORCEMENT=1`** — authz **denies** like AWS when the policy is wrong, then the same tools promote to a real account.
+
+**IaC verification sandbox** for OpenTofu / Terraform (and CDK / SAM / Serverless) — console and clients included — **not** a generic LocalStack clone. [Compare](docs-site/guide/compare/) · [Use case: OpenTofu → Expo + IAM](docs-site/guide/use-cases/opentofu-expo-iam.md)
 
 North star: [docs/vision.md](docs/vision.md) · Docs: [docs-site/](docs-site/) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) · Status: [docs/status.md](docs/status.md) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
 
