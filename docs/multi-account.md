@@ -13,7 +13,7 @@ Patch: `localemu-patches/init/start.d/21-multi-account.py` (mounted with the oth
 
 Per-key entries win. A key created inside an account (`AKIA…` user key, `ASIA…` `AssumeRole` session) stays on that account when the account id is one of the values above, or the default `000000000000`. A production `AKIA` / `ASIA` key whose account is not in that set still resolves to the default account.
 
-Listing buckets was already per account. `HeadBucket` and object calls on another account's bucket return Access Denied. A bucket policy that grants the other account is [#233](https://github.com/kgz/awsl/issues/233). Compose also sets `MOTO_S3_ALLOW_CROSSACCOUNT_ACCESS=false` for the moto S3 path.
+Listing buckets was already per account. `HeadBucket` and object calls on another account's bucket return Access Denied unless that bucket's policy Allows the caller (identity policy must also Allow). Compose also sets `MOTO_S3_ALLOW_CROSSACCOUNT_ACCESS=false` for the moto S3 path.
 
 ```bash
 # .env — then ./bin/stackwrangler up
@@ -54,6 +54,6 @@ Trust statements honour:
 
 `Action` must be `sts:AssumeRole`, `sts:*`, or `*`. An explicit `Deny` that matches wins. Service principals (`lambda.amazonaws.com` and the rest) are unchanged.
 
-Organizations (OU, SCP) are not evaluated. A bucket or key policy that grants the other account is [#233](https://github.com/kgz/awsl/issues/233).
+Organizations (OU, SCP) are not evaluated. Cross-account secret / key / bucket access needs Allow on both the caller identity policy and the resource policy (`./smokes/security/resource-policy-cross-account-smoke.sh`).
 
 Smoke: `./smokes/security/multi-account-smoke.sh`. Lambda trust `aws:SourceAccount` / `aws:SourceArn`: `./smokes/lambda/lambda-trust-condition-smoke.sh`, `./smokes/lambda/lambda-trust-sourcearn-smoke.sh`.

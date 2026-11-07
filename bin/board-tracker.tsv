@@ -177,7 +177,7 @@
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
-233	backlog	Debt: cross-account resource policy coverage (from #193)
+233	in-progress	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
 241	backlog	Debt: ELBv2 console (from #203)
