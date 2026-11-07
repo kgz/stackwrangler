@@ -26,6 +26,7 @@ First public-ready cut: install without a git clone, stackwrangler rebrand, docs
 - RDS Create database (Postgres/MySQL) ([#145](https://github.com/kgz/stackwrangler/issues/145))
 - API Gateway REST APIs list/detail ([#189](https://github.com/kgz/stackwrangler/issues/189))
 - SQS, SNS, EventBridge, DynamoDB, Step Functions, Secrets, KMS, Kinesis lists ([#167](https://github.com/kgz/stackwrangler/issues/167)–[#178](https://github.com/kgz/stackwrangler/issues/178))
+- Lambda **Deploy from zip**: styled `Upload .zip` control aligned with the name field (hotfix on `:v0.0.2` images)
 
 ### Fidelity / networking
 

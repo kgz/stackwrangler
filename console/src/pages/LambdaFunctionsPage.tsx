@@ -234,20 +234,35 @@ export function LambdaFunctionsPage() {
             Node zip with <code>index.js</code> exporting <code>handler</code>.
             Uses selected name, or the name field, or creates a new one.
           </p>
-          <div className="aws-toolbar">
-            <label className="field-inline">
-              Function name
+          <div className="aws-toolbar" style={{ alignItems: 'flex-end', marginBottom: 0 }}>
+            <div className="aws-field" style={{ flex: '1 1 240px', maxWidth: 320 }}>
+              <label className="aws-label" htmlFor="deploy-fn-name">
+                Function name
+              </label>
               <input
+                className="aws-input"
+                id="deploy-fn-name"
                 type="text"
                 value={deployName}
                 placeholder={selected ?? 'stackwrangler-deploy-…'}
                 onChange={(e) => setDeployName(e.target.value)}
+                disabled={busy}
+                style={{ maxWidth: '100%' }}
               />
-            </label>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={busy}
+              onClick={() => fileRef.current?.click()}
+            >
+              Upload .zip
+            </button>
             <input
               ref={fileRef}
               type="file"
               accept=".zip,application/zip"
+              hidden
               aria-label="Lambda zip file"
               disabled={busy}
               onChange={(e) => {
