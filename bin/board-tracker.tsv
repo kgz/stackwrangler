@@ -322,4 +322,4 @@
 561	done	Doc: REST APIs console screenshot (from #189)
 562	done	Doc: SNS Topics console screenshot (from #172)
 563	done	Doc: SQS queues console screenshot (from #167)
-518	in-progress	sns:Protocol/Endpoint on Subscribe
+518	in-review	sns:Protocol/Endpoint on Subscribe
