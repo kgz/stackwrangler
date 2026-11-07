@@ -80,6 +80,8 @@ Project #8 should keep a view per active cut plus triage views. Filters/sorts: [
 
 ## Cut a release
 
+Before / with the tag, add a **docs-site changelog** entry in [`docs-site/guide/changelog.md`](../docs-site/guide/changelog.md) (nav: Changelog). Include install one-liner (`ghcr.io/kgz/stackwrangler:vX.Y.Z` `docker run … up` — APIs + CLI profile + console web app) and issue-linked highlights. Align the GitHub Release body with that page. Agent loop: skill `release-version`.
+
 ```bash
 ./bin/release-tag.sh v0.0.3
 ```
@@ -90,5 +92,7 @@ That script:
 2. Creates a GitHub Release
 3. Ensures the label exists
 4. Writes `docs/CURRENT_RELEASE`
+
+Then bump `CURRENT_RELEASE` to the **next** open cut and mark the shipped cut in [version-plan.md](version-plan.md).
 
 Do not cut a public GitHub Release while open Impact ≥ 5 core trust bugs are unwaived.
