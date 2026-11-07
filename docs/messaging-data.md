@@ -15,6 +15,7 @@ docker compose up -d --force-recreate localstack
 | SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter; CMK with SNS grant) | same (wrong/missing queue `SourceArn`; `alias/aws/sqs` KMS; CMK without SNS grant; unsubscribe) |
 | EventBridge | `events-smoke.sh` | `events-authz-smoke.sh` |
 | DynamoDB | `dynamodb-smoke.sh` | `dynamodb-authz-smoke.sh` |
+| DynamoDB resource policy + SourceVpce | `dynamodb-resource-policy-smoke.sh` | same (Deny without VPCE; wrong VPCE; PrincipalArn exception) |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs); gaps [#306](https://github.com/kgz/awsl/issues/306), [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions | `sfn-smoke.sh` | `sfn-authz-smoke.sh` |
 | Secrets Manager | `secrets-smoke.sh` | `secrets-authz-smoke.sh` |
