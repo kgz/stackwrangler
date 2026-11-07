@@ -26,4 +26,4 @@ cd console && yarn playwright test --ui   # interactive
 
 Needs: Docker, AWS CLI v2, Node 20+, yarn.
 
-IaC smokes (LocalEmu `:4566`): `./smokes/iac/iac-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/iac/serverless-v4-smoke.sh`, `./smokes/iac/serverless-v4-workspace-smoke.sh` ([docs/serverless-stackwrangler.md](serverless-stackwrangler.md)).
+IaC smokes (LocalEmu `:4566`): `./smokes/iac/iac-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/iac/serverless-v4-smoke.sh`, `./smokes/iac/serverless-v4-workspace-smoke.sh`, `./smokes/iac/serverless-v4-role-arn-smoke.sh` ([docs/serverless-stackwrangler.md](serverless-stackwrangler.md)).

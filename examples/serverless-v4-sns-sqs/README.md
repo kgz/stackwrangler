@@ -52,9 +52,11 @@ export AWSBOX_SLS4_TOPIC_EXPORT=awsbox-sls4-topic-local-TopicArn
 
 ```bash
 ./smokes/iac/serverless-v4-smoke.sh
+./smokes/iac/serverless-v4-role-arn-smoke.sh   # --role-arn / --use-session-env (#522)
 ```
 
 Happy: deploy topic → consumer → SNS publish (filter keep) → Lambda writes S3 → redeploy → remove.
 Sad ([#460](https://github.com/kgz/awsl/issues/460)): missing auth; host aws without `AWS_ENDPOINT_URL` refuses real AWS; TLS-down connection error; missing `Fn::ImportValue` deploy fails; filter-drop never reaches S3. DNS log asserts AWS names → proxy only.
+Deploy-as-role ([#522](https://github.com/kgz/awsl/issues/522)): see [Deploy as the deploy role](../../docs/serverless-stackwrangler.md#deploy-as-the-deploy-role-admin-keys-skip-iam).
 
 **Note:** This path is host SNS publish → SQS → Lambda ESM → S3. It does not exercise Lambda→SQS `SendMessage` with `sqs.<region>.localhost` QueueUrls ([#459](https://github.com/kgz/awsl/issues/459)).
