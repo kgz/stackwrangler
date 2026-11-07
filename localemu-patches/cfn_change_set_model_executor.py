@@ -15,11 +15,11 @@ from localemu.aws.api.cloudformation import (
     ResourceStatus,
     StackStatus,
 )
-from localemu.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localemu.services.cloudformation.analytics import (
     emit_stack_failure,
     track_resource_operation,
 )
+from localemu.services.cloudformation.cfn_deploy_credentials import stack_deploy_credentials
 from localemu.services.cloudformation.deployment_utils import log_not_available_message
 from localemu.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
@@ -60,6 +60,34 @@ REGEX_OUTPUT_APIGATEWAY = re.compile(
 )
 
 _T = TypeVar("_T")
+
+
+def _iam_or_exception_message(exc: BaseException) -> str:
+    """Prefer service Error.Message (AccessDenied text) over boto/wrapper str."""
+    response = getattr(exc, "response", None)
+    if isinstance(response, dict):
+        err = response.get("Error") or {}
+        if isinstance(err, dict) and err.get("Message"):
+            return err["Message"]
+    return str(exc)
+
+
+def _enrich_failure_message(event: ProgressEvent) -> ProgressEvent:
+    """Lift IAM deny text into ProgressEvent.message for stack events (#524)."""
+    if event.status != OperationStatus.FAILED:
+        return event
+    exception = event.custom_context.get("exception") if event.custom_context else None
+    if exception is None:
+        return event
+    reason = _iam_or_exception_message(exception)
+    if not reason:
+        return event
+    message = event.message or ""
+    if not message or message.startswith("Failed to delete resource") or message.startswith(
+        "Resource provider operation failed"
+    ):
+        event.message = reason
+    return event
 
 
 @dataclass
@@ -698,8 +726,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 event = self.resource_provider_executor.deploy_loop(
                     resource_provider, extra_resource_properties, payload
                 )
+                event = _enrich_failure_message(event)
             except Exception as e:
-                reason = str(e)
+                reason = _iam_or_exception_message(e)
                 LOG.warning(
                     "Resource provider operation failed: '%s'",
                     reason,
@@ -708,7 +737,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 event = ProgressEvent(
                     OperationStatus.FAILED,
                     resource_model={},
-                    message=f"Resource provider operation failed: {reason}",
+                    message=reason,
                     custom_context={"exception": e},
                 )
         elif should_ignore_unsupported_resource_type(
@@ -778,7 +807,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     # TODO: do we actually need this line?
                     resolved_resource.update(extra_resource_properties)
             case OperationStatus.FAILED:
+                event = _enrich_failure_message(event)
                 reason = event.message
+                exception = event.custom_context.get("exception")
                 LOG.warning(
                     "Resource provider operation failed: '%s'",
                     reason,
@@ -786,7 +817,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
                 resolved_resource["ResourceStatusReason"] = reason
 
-                exception = event.custom_context.get("exception")
                 emit_stack_failure(reason, exception=exception)
 
             case other:
@@ -803,11 +833,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         before_properties: PreprocProperties | None,
         after_properties: PreprocProperties | None,
     ) -> ResourceProviderPayload | None:
-        # FIXME: use proper credentials
+        # Caller session or stack RoleARN (#524); admin/root keeps internal sentinel.
+        resolved = stack_deploy_credentials(self._change_set.stack)
         creds: Credentials = {
-            "accessKeyId": self._change_set.stack.account_id,
-            "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
-            "sessionToken": "",
+            "accessKeyId": resolved["accessKeyId"],
+            "secretAccessKey": resolved["secretAccessKey"],
+            "sessionToken": resolved.get("sessionToken") or "",
         }
         before_properties_value = before_properties.properties if before_properties else None
         after_properties_value = after_properties.properties if after_properties else None
