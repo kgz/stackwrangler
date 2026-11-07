@@ -27,6 +27,7 @@ Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/is
 | Lambda VPC → host service | working | `lambda-vpc-smoke.sh` | non-VPC mapped name | [lambda-vpc-host](./lambda-vpc-host) |
 | SQS → Lambda (event source) | partial | see page | — | [sqs-to-lambda](./sqs-to-lambda) |
 | ECS task → ECR image pull | partial | `ecr-smoke.sh` | — | [ecs-ecr-pull](./ecs-ecr-pull) |
+| Lambda ImageUri → ECR pull | shipped | `lambda-ecr-smoke.sh` | — | [lambda-ecr-pull](./lambda-ecr-pull) |
 | SNS large topic → SQS / Lambda | partial | `sns-max-message-size-smoke.sh` | — | [sns-large-topic](./sns-large-topic) |
 | Transfer connector S3 → remote SFTP | partial | `transfer-connector-smoke.sh` | — | [transfer-connector](./transfer-connector) |
 | RDS Create database → SQL | shipped | `rds-smoke.sh`, `rds-mysql-smoke.sh` | [rds-databases](/assets/console/rds-databases.png) | [rds-create-sql](./rds-create-sql) |
