@@ -322,4 +322,4 @@
 561	done	Doc: REST APIs console screenshot (from #189)
 562	done	Doc: SNS Topics console screenshot (from #172)
 563	done	Doc: SQS queues console screenshot (from #167)
-517	in-progress	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
+517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
