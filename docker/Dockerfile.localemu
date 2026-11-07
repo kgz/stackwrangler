@@ -26,4 +26,5 @@ COPY localemu-patches/elbv2_listener_router.py /opt/code/localemu/src/localemu/s
 COPY localemu-patches/elbv2_provider.py /opt/code/localemu/src/localemu/services/elbv2/provider.py
 COPY localemu-patches/dns_common.py /opt/awsbox/dns/awsbox_dns_common.py
 COPY localemu-patches/esm_common.py /opt/awsbox/esm/awsbox_esm_common.py
+COPY localemu-patches/ecr_pull.py /opt/awsbox/ecr/awsbox_ecr_pull.py
 COPY localemu-patches/r53_private_resolver.py /opt/code/localemu/src/localemu/services/route53/private_resolver.py
