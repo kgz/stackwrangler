@@ -79,6 +79,8 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Host docker CLI for VPC bridge create + host iptables helpers (ECS awsvpc DNAT / #154).
+      - /usr/bin/docker:/usr/bin/docker:ro
       # Prowler compat (#196): S3 Control reads + EC2/IAM stubs.
       # start.d also routes REST custom domains (#191) and Deny→403 (#190).
       # Multi-account (#213): localemu-patches/init/start.d/21-multi-account.py

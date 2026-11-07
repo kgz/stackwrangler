@@ -17,7 +17,8 @@ const lists: Array<{
     path: '/lambda',
     heading: 'Functions',
     columns: ['Function name', 'Package type', 'Runtime', 'Last modified'],
-    disabled: ['Actions ▾', 'Create function'],
+    disabled: ['Actions ▾'],
+    enabledLinks: ['Create function'],
   },
   {
     path: '/logs',
@@ -122,7 +123,9 @@ const lists: Array<{
     path: '/cloudformation',
     heading: /^Stacks/,
     columns: ['Stack name', 'Status', 'Created time', 'Description'],
+    // Update ▾ stays disabled until a row is selected (title Select a row); Create is a link.
     disabled: ['Update ▾', 'Stack actions ▾'],
+    enabledLinks: ['Create stack ▾'],
   },
   {
     path: '/cloudformation/stacksets',
@@ -206,7 +209,8 @@ test.describe('Built service list chrome (#349)', () => {
           .filter({ hasText: new RegExp(`^${label}$`) })
           .first()
         await expect(btn).toBeDisabled()
-        await expect(btn).toHaveAttribute('title', 'To implement')
+        const title = await btn.getAttribute('title')
+        expect(['To implement', 'Select a row']).toContain(title)
       }
       for (const label of spec.enabledLinks ?? []) {
         await expect(

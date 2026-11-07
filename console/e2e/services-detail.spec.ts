@@ -420,7 +420,9 @@ test.describe('Built service detail pages (#349)', () => {
       'Launch type',
       'Started at',
     ]) {
-      await expect(tasks.locator('th').filter({ hasText: col })).toBeVisible()
+      await expect(
+        tasks.getByRole('columnheader', { name: col, exact: true }),
+      ).toBeVisible()
     }
     await expect(tasks).toContainText('No tasks')
     await expectDisabledControlsExplained(page)
