@@ -127,6 +127,8 @@ services:
       - ./localemu-patches/dns_common.py:/opt/awsbox/dns/awsbox_dns_common.py:ro
       # Shared ESM/SQS request + function lookup helpers (#266 / #363)
       - ./localemu-patches/esm_common.py:/opt/awsbox/esm/awsbox_esm_common.py:ro
+      # Shared ECR BatchGetImage + local-registry rewrite (#211 / #219)
+      - ./localemu-patches/ecr_pull.py:/opt/awsbox/ecr/awsbox_ecr_pull.py:ro
 
       # Private hosted zones (#206): answered by the same process as VPCE DNS (vpce_private_dns serve)
       - ./localemu-patches/r53_private_resolver.py:/opt/code/localemu/src/localemu/services/route53/private_resolver.py:ro

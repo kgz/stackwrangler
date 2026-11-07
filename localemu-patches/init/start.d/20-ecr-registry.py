@@ -1,26 +1,24 @@
-"""Record local-registry pushes in moto ECR and rewrite Lambda ECR image URIs (#211)."""
+"""Record local-registry pushes in moto ECR and rewrite Lambda ECR image URIs (#211).
+
+#219: image-based Lambda cold starts call ``ecr:BatchGetImage`` as the
+function execution role before rewriting to the local registry. Shared
+helpers live in ``awsbox_ecr_pull`` (also used by ECS task_manager).
+"""
 
 import json
 import logging
 import os
-import re
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+if "/opt/awsbox/ecr" not in sys.path:
+    sys.path.insert(0, "/opt/awsbox/ecr")
+import awsbox_ecr_pull as ecr_pull  # noqa: E402
+
 LOG = logging.getLogger("localemu.awsbox.ecr")
 
-_ECR_IMAGE_RE = re.compile(
-    r"^(?P<account>\d+)\.dkr\.ecr\.(?P<region>[a-z0-9-]+)\.amazonaws\.com/(?P<ref>.+)$"
-)
 _HOOK_PORT = int(os.environ.get("AWSBOX_ECR_HOOK_PORT", "5099"))
-
-
-def _local_ref(image: str) -> str:
-    match = _ECR_IMAGE_RE.match(image)
-    if not match:
-        return image
-    registry = os.environ.get("AWSBOX_ECR_REGISTRY", "127.0.0.1:5000").strip().rstrip("/")
-    return f"{registry}/{match.group('ref')}"
 
 
 def _backend_for_repository(name: str):
@@ -117,9 +115,22 @@ def _patch_lambda_images() -> None:
 
     def get_image(self):
         image = original(self)
-        resolved = _local_ref(image)
-        if resolved == image:
+        match = ecr_pull.ECR_IMAGE_RE.match(image)
+        if not match:
             return image
+        role_arn = getattr(getattr(self.function_version, "config", None), "role", None)
+        vid = self.function_version.id
+        region = getattr(vid, "region", None) or match.group("region")
+        account_id = getattr(vid, "account", None) or match.group("account")
+        fn_name = getattr(vid, "function_name", "lambda") or "lambda"
+        resolved = ecr_pull.resolve_ecr_image(
+            image,
+            role_arn=role_arn,
+            region=region,
+            account_id=account_id,
+            session_name=f"lambda-ecr-{fn_name}"[:64],
+            role_label="function role",
+        )
         try:
             DOCKER_CLIENT.pull_image(resolved)
         except Exception:
@@ -127,7 +138,10 @@ def _patch_lambda_images() -> None:
         return resolved
 
     DockerRuntimeExecutor.get_image = get_image
-    LOG.info("lambda ECR image URIs rewrite to %s", os.environ.get("AWSBOX_ECR_REGISTRY", "127.0.0.1:5000"))
+    LOG.info(
+        "lambda ECR image URIs rewrite to %s (BatchGetImage via function role)",
+        os.environ.get("AWSBOX_ECR_REGISTRY", "127.0.0.1:5000"),
+    )
 
 
 threading.Thread(target=_serve, name="awsbox-ecr-hook", daemon=True).start()

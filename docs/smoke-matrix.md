@@ -41,6 +41,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | CodeDeploy | yes (ECS BG + Lambda canary DG) | no → [#341](https://github.com/kgz/awsl/issues/341) | bad ECS revision → Failed · Lambda alias weight [#340](https://github.com/kgz/awsl/issues/340) | no → [#341](https://github.com/kgz/awsl/issues/341) | `codedeploy-smoke.sh` |
 | EC2 | yes | **yes** (`ec2-authz-smoke.sh`, instance-profile + `ssm:SendCommand` in `ec2-imds-smoke.sh`) | user-data | list | `ec2-smoke.sh`, `ec2-imds-smoke.sh`, `ec2-authz-smoke.sh` |
 | ECR | yes | **yes** (execution role without `ecr:BatchGetImage`) | — | no → [#217](https://github.com/kgz/awsl/issues/217) | `ecr-smoke.sh` |
+| Lambda ImageUri ECR pull | yes | **yes** (function role without `ecr:BatchGetImage`) | — | — | `lambda-ecr-smoke.sh` |
 | VPC routes (private / peering / NAT) | yes | no | no default route; route removed | — | `vpc-routing-smoke.sh` |
 | VPC egress (Lambda + S3 GW endpoint + bridge attach) | yes (S3 via prefix list, peer, IGW restore, IGW attach/detach keeps `localemu-vpc-*` id [#386](https://github.com/kgz/awsl/issues/386), restart replay, ECS bridge on VPC net) | n/a (route fidelity) | public host blocked; S3 without GW endpoint | — | `vpc-egress-smoke.sh` |
 | Egress via proxy (private ECS task, no default route) | yes (fetch via `HTTP_PROXY`, proxy log); emulator via `NO_PROXY` | **yes** (proxy allowlist refusal 403) | no direct route without proxy env | — | `egress-proxy-smoke.sh` |
