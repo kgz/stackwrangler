@@ -7,11 +7,11 @@
 console/dist
 console/playwright-report
 console/test-results
-# Keep design/awsbox + design/awsbox-console/assets for console image build.
-design/awsbox-console/screens
-design/awsbox-console/refs
-design/awsbox-console/RECON
-design/awsbox-console/scripts
+# Keep design/stackwrangler + design/stackwrangler-console/assets for console image build.
+design/stackwrangler-console/screens
+design/stackwrangler-console/refs
+design/stackwrangler-console/RECON
+design/stackwrangler-console/scripts
 docs-site
 openspec
 smokes

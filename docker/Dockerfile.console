@@ -5,9 +5,9 @@ COPY console/package.json console/yarn.lock /repo/console/
 WORKDIR /repo/console
 RUN yarn install --frozen-lockfile
 COPY console/ /repo/console/
-# tokens.css is imported as ../../design/awsbox/tokens.css from src/
-COPY design/awsbox/ /repo/design/awsbox/
-COPY design/awsbox-console/assets/ /repo/design/awsbox-console/assets/
+# tokens.css is imported as ../../design/stackwrangler/tokens.css from src/
+COPY design/stackwrangler/ /repo/design/stackwrangler/
+COPY design/stackwrangler-console/assets/ /repo/design/stackwrangler-console/assets/
 # Defaults match .env.example / public install docs (product demo keys, not cloud secrets).
 ARG VITE_AWS_ACCESS_KEY_ID=stackwrangler
 ARG VITE_AWS_SECRET_ACCESS_KEY=stackwranglerstackwrangler
