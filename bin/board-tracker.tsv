@@ -174,7 +174,7 @@
 218	backlog	Debt: docker push via repositoryUri hostname (from #211)
 219	backlog	Debt: Lambda image pull ECR authz (from #211)
 220	backlog	Debt: real-account mirror read path (from #216)
-223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
+223	in-progress	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	backlog	Debt: cross-account resource policy coverage (from #193)

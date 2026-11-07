@@ -15,4 +15,4 @@ Trust-policy condition keys are `<provider-host-and-path>:sub` and `:aud`, for e
 
 `iam:PassRole` is checked when a non-root caller passes a role ARN to a service (`Role`, `RoleArn`, `taskRoleArn`, `executionRoleArn`, …). The request context includes `iam:PassedToService` (`events.amazonaws.com`, `states.amazonaws.com`, `lambda.amazonaws.com`, …). Root keys skip this check.
 
-`aws:ResourceTag/*` is evaluated for tagged IAM roles (and the services the enforcer already loads). `kms:ViaService`, `aws:SourceArn`, and service-origin `aws:SourceAccount` are not set by the calling service yet — an Allow that requires them fails closed. Follow-up: [#223](https://github.com/kgz/awsl/issues/223).
+`aws:ResourceTag/*` is evaluated for tagged IAM roles (and the services the enforcer already loads). S3 SSE-KMS sets service-origin `kms:ViaService` (`s3.<region>.amazonaws.com`), `aws:SourceArn` (bucket), and `aws:SourceAccount` on the mediated KMS check — not from client headers. EC2 `IamInstanceProfile` is resolved to role ARNs for `iam:PassRole` / `iam:PassedToService=ec2.amazonaws.com`. Smoke: `./smokes/security/service-origin-condition-keys-smoke.sh`.

@@ -21,6 +21,9 @@ echo "==> IAM AccessDenied"
 echo "==> IAM OIDC + PassRole"
 ./smokes/security/oidc-smoke.sh
 
+echo "==> Service-origin condition keys (ViaService / SourceArn / EC2 PassRole)"
+./smokes/security/service-origin-condition-keys-smoke.sh
+
 echo "==> Lambda smoke"
 ./smokes/lambda/lambda-smoke.sh
 
