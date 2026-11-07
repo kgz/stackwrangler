@@ -151,7 +151,7 @@ When the question is "will this deploy in CI", deploy as the role CI uses:
 3. Today: `package` via the redirect, then `aws cloudformation deploy` (fallback above) with those credentials. Built in: `stackwrangler sls --role-arn` ([#522](https://github.com/kgz/awsl/issues/522)).
 4. Read the stack events for `AccessDenied`; also `remove` the stack, since rollback and delete need their own permissions.
 
-Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)) and `iam:SimulateCustomPolicy` ([#517](https://github.com/kgz/awsl/issues/517)). Loosen only the affected statement, and say so.
+Known blind spots: `iam:SimulateCustomPolicy` ([#517](https://github.com/kgz/awsl/issues/517)) and other request-parameter condition keys listed in [iam-request-condition-keys.md](iam-request-condition-keys.md) (SNS Subscribe `sns:Protocol` / `sns:Endpoint` fixed in [#518](https://github.com/kgz/awsl/issues/518)). Loosen only the affected statement, and say so.
 
 ### Lambda → SQS from inside the function
 

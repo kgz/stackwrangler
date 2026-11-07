@@ -15,4 +15,4 @@ Trust-policy condition keys are `<provider-host-and-path>:sub` and `:aud`, for e
 
 `iam:PassRole` is checked when a non-root caller passes a role ARN to a service (`Role`, `RoleArn`, `taskRoleArn`, `executionRoleArn`, …). The request context includes `iam:PassedToService` (`events.amazonaws.com`, `states.amazonaws.com`, `lambda.amazonaws.com`, …). Root keys skip this check.
 
-`aws:ResourceTag/*` is evaluated for tagged IAM roles (and the services the enforcer already loads). `kms:ViaService`, `aws:SourceArn`, and service-origin `aws:SourceAccount` are not set by the calling service yet — an Allow that requires them fails closed. Follow-up: [#223](https://github.com/kgz/awsl/issues/223).
+`aws:ResourceTag/*` is evaluated for tagged IAM roles (and the services the enforcer already loads). `kms:ViaService`, `aws:SourceArn`, and service-origin `aws:SourceAccount` are not set by the calling service yet — an Allow that requires them fails closed. Follow-up: [#223](https://github.com/kgz/awsl/issues/223). Request-parameter keys (e.g. `sns:Protocol` on Subscribe): [iam-request-condition-keys.md](iam-request-condition-keys.md).

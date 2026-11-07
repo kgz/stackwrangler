@@ -244,6 +244,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SNS console Topics list | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
+| SNS Subscribe `sns:Protocol` / `sns:Endpoint` allow intake sqs; deny other-queue / https | happy + sad/authz | covered | `./smokes/messaging/sns-subscribe-conditions-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./smokes/messaging/sns-max-message-size-smoke.sh` |
 | SNS large-topic (>256 KiB) subscribe: http/email/sms/application → InvalidParameter; sqs/lambda/firehose ok; Set refused with http sub | sad/happy | covered | `./smokes/messaging/sns-max-message-size-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
