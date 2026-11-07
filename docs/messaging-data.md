@@ -15,7 +15,7 @@ docker compose up -d --force-recreate localstack
 | SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter; CMK with SNS grant) | same (wrong/missing queue `SourceArn`; `alias/aws/sqs` KMS; CMK without SNS grant; unsubscribe) |
 | EventBridge | `events-smoke.sh` | `events-authz-smoke.sh` |
 | DynamoDB | `dynamodb-smoke.sh` | `dynamodb-authz-smoke.sh` |
-| DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs); gaps [#306](https://github.com/kgz/awsl/issues/306), [#307](https://github.com/kgz/awsl/issues/307) |
+| DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs; Batch/Transact [#306](https://github.com/kgz/awsl/issues/306); index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307)) |
 | Step Functions | `sfn-smoke.sh` | `sfn-authz-smoke.sh` |
 | Secrets Manager | `secrets-smoke.sh` | `secrets-authz-smoke.sh` |
 | KMS | `kms-smoke.sh` | `kms-authz-smoke.sh` |
@@ -31,5 +31,5 @@ HF cheap (DDB depth + schedule + REST/keys + S3 GW VPCE): `./smokes/parity/aws-p
 
 `./smokes/data/dynamodb-depth-smoke.sh` deploys `examples/serverless-v3-rest/slices/ddb/resources.yml` (token table, GSI `tokenHash-index`, TTL `expiresAt`) through CloudFormation.
 
-- IAM: `Query`/`Scan` with `IndexName` are evaluated on `table/<t>/index/<i>` (patch `localemu-patches/iam_arn_builder.py`). Allow on the table ARN does not cover the index.
+- IAM: `Query`/`Scan` with `IndexName` are evaluated on `table/<t>/index/<i>` (patch `localemu-patches/iam_arn_builder.py`). Allow on the table ARN does not cover the index. Index ARNs inherit table tags for `aws:ResourceTag/*` (`localemu-patches/resource_tag_loader.py`, #307).
 - TTL: LocalEmu sweeps hourly. The smoke triggers the sweep with `DELETE <endpoint>/_aws/dynamodb/expired` (not an AWS API; override with `AWSBOX_DDB_EXPIRE_URL`). Real AWS deletes within about 48h.

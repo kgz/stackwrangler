@@ -208,7 +208,7 @@
 304	done	Design: S3 console missing UI via Open Design web-clone
 305	in-review	Rebrand awsbox to stackwrangler
 306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
-307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
+307	in-review	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)
 310	backlog	Debt: Console for API Gateway API keys and usage plans (from #294)
 311	backlog	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
