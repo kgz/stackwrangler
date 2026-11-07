@@ -80,6 +80,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | VPC Lambda → host service by mapped hostname | happy | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` |
 | Non-VPC Lambda blocked from mapped private hosts | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [#187](https://github.com/kgz/awsl/issues/187) |
+| `down`/`up` drops stale `localemu-vpc-*`; same CIDR VPC Lambda invoke works | happy | covered | `./smokes/networking/vpc-network-lifecycle-smoke.sh` · [#479](https://github.com/kgz/stackwrangler/issues/479) · [lambda-vpc.md](lambda-vpc.md) |
+| CreateVpc fails + rolls back when Docker bridge is not ready | sad/other | covered | `./smokes/networking/vpc-network-lifecycle-smoke.sh` (stubbed bridge create) · [#479](https://github.com/kgz/stackwrangler/issues/479) |
 | Lambda reads per-stage secret → OAuth client-credentials token → POST to external HTTP API | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda stage isolation (stage=b uses b's secret) and env-var base URL drives the call | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda role missing `secretsmanager:GetSecretValue` → fails, external API sees no request | sad/authz | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |

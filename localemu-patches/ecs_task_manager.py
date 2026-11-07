@@ -1503,7 +1503,10 @@ class DockerTaskManager:
                 ensured = vpcm.ensure_network_for_vpc(vpc_id)
             except Exception:
                 ensured = None
-            vpc_network = ensured or f"localemu-vpc-{vpc_id}"
+            # Do not invent localemu-vpc-* when ensure failed (#479).
+            if not ensured:
+                return None
+            vpc_network = ensured
             try:
                 DOCKER_CLIENT.inspect_network(vpc_network)
             except Exception:
@@ -1592,7 +1595,15 @@ class DockerTaskManager:
                 LOG.debug(
                     "ensure_network_for_vpc(%s) failed", vpc_id, exc_info=True,
                 )
-            vpc_network = ensured or f"localemu-vpc-{vpc_id}"
+            # Do not invent localemu-vpc-* when ensure failed (#479).
+            if not ensured:
+                LOG.warning(
+                    "ECS awsvpc task %s: no Docker network for VPC %s — "
+                    "cannot pin subnet IP (CreateVpc bridge failed?)",
+                    docker_name, vpc_id,
+                )
+                return None
+            vpc_network = ensured
             try:
                 DOCKER_CLIENT.inspect_network(vpc_network)
             except Exception:

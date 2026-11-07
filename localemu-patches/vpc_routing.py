@@ -236,10 +236,15 @@ def lambda_subnet_networks(executor: object) -> list[str]:
     if not vpc_id:
         return []
     try:
-        manager.ensure_network_for_vpc(vpc_id)
+        ensured = manager.ensure_network_for_vpc(vpc_id)
     except Exception:
         LOG.debug("ensure VPC network %s failed", vpc_id, exc_info=True)
-    return [f"localemu-vpc-{vpc_id}"]
+        return []
+    # Do not invent a bridge name when ensure failed (#479); docker run
+    # against a missing localemu-vpc-* is an opaque Internal error later.
+    if not ensured:
+        return []
+    return [ensured]
 
 
 def peered_vpc_ids(vpc_id: str) -> list[str]:

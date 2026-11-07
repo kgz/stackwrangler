@@ -23,6 +23,8 @@ Workloads attach to the Docker network of the subnet's VPC (`localemu-vpc-<vpc-i
 
 `AttachInternetGateway` / `DetachInternetGateway` keep the same `localemu-vpc-*` Docker network (they do not delete+recreate to flip `--internal`). Egress still follows the subnet route table; the smoke asserts the bridge id is unchanged across attach/detach ([#386](https://github.com/kgz/awsl/issues/386)). See also [lambda-vpc.md](lambda-vpc.md).
 
+`./bin/stackwrangler down` / `up` remove empty `localemu-vpc-*` bridges (and this project's leftover Lambda containers) so a restart can recreate the same CIDR ([#479](https://github.com/kgz/stackwrangler/issues/479)). `CreateVpc` fails if a bridge still cannot be allocated; Lambda/ECS retry `ensure_network_for_vpc` when they first need it.
+
 ECS `awsvpc` tasks pin an address from the subnet CIDR via `SubnetAllocator` (same as EC2/RDS). `DescribeTasks` attachment `privateIPv4Address` is that container address, so ip-type target registration from `describe-tasks` reaches the task (`./smokes/apigw/apigw-nlb-ecs-smoke.sh`, [#268](https://github.com/kgz/awsl/issues/268)).
 
 Console route tables stay with [#146](https://github.com/kgz/awsl/issues/146).

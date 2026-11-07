@@ -208,6 +208,43 @@ free_sftp_host_port() {
 	return 1
 }
 
+# Drop leftover localemu-vpc-* / localemu-pcx-* bridges after compose down (#479).
+# Shared Docker hosts may have other worktrees: only force-remove containers that
+# belong to this compose project (or LocalEmu-owned sidecars), then delete networks
+# that have no remaining endpoints.
+cleanup_localemu_vpc_networks() {
+	local project net id name force_prefix
+	local -a nets=() ids=()
+	if ! command -v docker >/dev/null 2>&1; then
+		return 0
+	fi
+	project="$(compose_project_name 2>/dev/null || true)"
+	force_prefix=""
+	if [[ -n "$project" ]]; then
+		force_prefix="${project}-localstack"
+	fi
+	mapfile -t nets < <(docker network ls --format '{{.Name}}' 2>/dev/null | awk '/^localemu-vpc-|^localemu-pcx-/ {print}' || true)
+	[[ ${#nets[@]} -eq 0 ]] && return 0
+	for net in "${nets[@]}"; do
+		[[ -n "$net" ]] || continue
+		mapfile -t ids < <(docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null || true)
+		for id in "${ids[@]}"; do
+			[[ -n "$id" ]] || continue
+			name="$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##')" || name=""
+			if [[ -n "$force_prefix" && "$name" == "$force_prefix"* ]]; then
+				docker rm -f "$id" >/dev/null 2>&1 || true
+				continue
+			fi
+			if [[ "$name" == localemu-* ]]; then
+				docker rm -f "$id" >/dev/null 2>&1 || true
+			fi
+		done
+		if [[ -z "$(docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null | awk 'NF{print; exit}')" ]]; then
+			docker network rm "$net" >/dev/null 2>&1 || true
+		fi
+	done
+}
+
 cmd_up() {
 	if ! command -v docker >/dev/null 2>&1; then
 		echo "error: Docker is required (not found on PATH)" >&2
@@ -215,6 +252,8 @@ cmd_up() {
 	fi
 	ensure_env
 	free_sftp_host_port
+	# Orphans with no endpoints (and this project's leftover lambda containers).
+	cleanup_localemu_vpc_networks
 	"${COMPOSE[@]}" up -d
 	wait_healthy
 	"$ROOT/bin/stackwrangler-profile" write "$@"
@@ -248,6 +287,7 @@ cmd_down() {
 		rm -f "$CONSOLE_PID_FILE"
 	fi
 	"${COMPOSE[@]}" down "$@"
+	cleanup_localemu_vpc_networks
 	if [[ "$remove_profile" -eq 1 ]]; then
 		"$ROOT/bin/stackwrangler-profile" remove
 	fi
