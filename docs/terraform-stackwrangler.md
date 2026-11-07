@@ -2,20 +2,26 @@
 
 Point Terraform at LocalEmu (`AWSBOX_IAM_ENDPOINT`, default `http://127.0.0.1:4566`) so apply works with IAM on, remote state + DynamoDB lock, and a second plan that is empty.
 
-Worked example: [`examples/terraform/stackwrangler-backend/`](../examples/terraform/stackwrangler-backend/). Opt-in smoke: `./smokes/iac/terraform-backend-smoke.sh` (see Opt-in smoke).
+Worked examples:
+
+- [`examples/terraform/v002-tour/`](../examples/terraform/v002-tour/) — v0.0.2 public-path tour (SQS/SNS/Events/Kinesis/DynamoDB/Secrets/KMS/SFN/ECS/REST/RDS + Lambda/S3)
+- [`examples/terraform/stackwrangler-backend/`](../examples/terraform/stackwrangler-backend/) — remote state + DynamoDB lock
+- [`examples/terraform/s3-lambda/`](../examples/terraform/s3-lambda/) · [`ecs-nginx/`](../examples/terraform/ecs-nginx/)
+
+Opt-in smoke: `./smokes/iac/terraform-backend-smoke.sh` (see Opt-in smoke).
 
 Related: dual S3 brains in [s3-backends.md](s3-backends.md) — remote state for this flow uses **LocalEmu S3**, not SeaweedFS.
 
 ## Credentials (IAM enforced)
 
-LocalEmu runs with IAM enforcement. The provider must use the awsbox admin keys (defaults `awsbox` / `awsboxawsbox` from `.env`).
+LocalEmu runs with IAM enforcement. The provider must use the product admin keys (defaults `stackwrangler` / `stackwranglerstackwrangler` from `.env` / GHCR install).
 
 Placeholder keys such as `test` / `test` get a **403** from EC2 (and similar from other services) with a generic “security token invalid” style message — that is IAM rejecting the caller, not a missing endpoint.
 
 ```hcl
 provider "aws" {
-  access_key = "awsbox"
-  secret_key = "awsboxawsbox"
+  access_key = "stackwrangler"
+  secret_key = "stackwranglerstackwrangler"
   # …
 }
 ```
