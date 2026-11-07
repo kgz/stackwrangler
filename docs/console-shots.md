@@ -16,5 +16,9 @@ PNG paths are under `docs/assets/console/` (docs-site serves them via `public/as
 | `secrets-list.png` | `/secretsmanager` | Optional: seed via `secrets-smoke.sh` / e2e create; empty OK |
 | `kms-keys.png` | `/kms` | Optional: seed via `kms-smoke.sh` / e2e create; empty OK |
 | `eventbridge-rules.png` | `/events` | Optional: seed via `events-smoke.sh` / e2e create; empty OK |
+| `rds-databases.png` | `/rds` | Optional: seed via `rds-smoke.sh` / Create database e2e; empty OK |
+| `apigateway-rest-apis.png` | `/apigateway/rest-apis` | Optional: seed via `apigw-rest-smoke.sh`; empty OK |
+| `sns-topics.png` | `/sns` | Optional: seed via `sns-sqs-fanout-smoke.sh`; empty OK |
+| `sqs-queues.png` | `/sqs` | Optional: seed via `sns-sqs-fanout-smoke.sh`; empty OK |
 
 No seed for a new shot → file **Doc:**; do not invent images or use `design/**/refs/` AWS recon PNGs.

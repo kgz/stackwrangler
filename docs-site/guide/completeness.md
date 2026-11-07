@@ -136,4 +136,4 @@ If a merge leaves a bridge, disabled console action, or happy-only smoke, file a
 
 ## Version cuts
 
-Product cuts (`v0.0.2`, `v0.0.3`, …) live in [`docs/version-plan.md`](https://github.com/kgz/stackwrangler/blob/main/docs/version-plan.md). Catalogue milestones are orthogonal to depth: **execution order follows data-plane value**, not milestone number.
+Product cuts (`v0.0.2`, `v0.0.3`, …) live in [`docs/version-plan.md`](https://github.com/kgz/stackwrangler/blob/main/docs/version-plan.md). Shipped cut notes: [Changelog](/guide/changelog). Catalogue milestones are orthogonal to depth: **execution order follows data-plane value**, not milestone number.

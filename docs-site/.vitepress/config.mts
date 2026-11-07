@@ -41,7 +41,7 @@ export default withMermaid(
       nav: [
         { text: 'Why', link: '/guide/why' },
         { text: 'Guide', link: '/guide/getting-started' },
-        { text: 'Vision', link: '/guide/vision' },
+        { text: 'Changelog', link: '/guide/changelog' },
         { text: 'Completeness', link: '/guide/completeness' },
         { text: 'Interactions', link: '/guide/interactions/' },
         {
@@ -57,6 +57,7 @@ export default withMermaid(
               { text: 'Why', link: '/guide/why' },
               { text: 'Getting Started', link: '/guide/getting-started' },
               { text: 'Vision', link: '/guide/vision' },
+              { text: 'Changelog', link: '/guide/changelog' },
               { text: 'Completeness / status', link: '/guide/completeness' },
             ],
           },
@@ -66,6 +67,7 @@ export default withMermaid(
               { text: 'Console tour', link: '/guide/console-tour' },
               { text: 'Concepts', link: '/guide/concepts' },
               { text: 'Interactions', link: '/guide/interactions/' },
+              { text: 'Changelog', link: '/guide/changelog' },
             ],
           },
           {
@@ -110,6 +112,10 @@ export default withMermaid(
               {
                 text: 'Transfer connector',
                 link: '/guide/interactions/transfer-connector',
+              },
+              {
+                text: 'RDS Create → SQL',
+                link: '/guide/interactions/rds-create-sql',
               },
             ],
           },

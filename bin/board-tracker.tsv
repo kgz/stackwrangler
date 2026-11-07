@@ -185,6 +185,7 @@
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+254	done	Debt: ECS bridge/awsvpc task-role creds when image has no iptables (from #252)
 256	done	v1: mirror/fixture tags for TF data sources
 257	done	v1: Document Terraform against awsbox (backend/lock)
 258	done	v1: VPC Interface endpoint private DNS
@@ -317,7 +318,7 @@
 546	backlog	Debt: SNS create topic + topic detail (from #172)
 548	backlog	Debt: SQS create/detail/send (from #167)
 552	backlog	Debt: EventBridge create + rule/bus detail (from #173)
-556	backlog	Doc: RDS Create screenshot + interactions (from #145)
-561	backlog	Doc: REST APIs console screenshot (from #189)
-562	backlog	Doc: SNS Topics console screenshot (from #172)
-563	backlog	Doc: SQS queues console screenshot (from #167)
+556	done	Doc: RDS Create screenshot + interactions (from #145)
+561	done	Doc: REST APIs console screenshot (from #189)
+562	done	Doc: SNS Topics console screenshot (from #172)
+563	done	Doc: SQS queues console screenshot (from #167)

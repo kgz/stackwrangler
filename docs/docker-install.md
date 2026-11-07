@@ -19,6 +19,7 @@ Honest limits of this shape:
 - **Published ports bind `127.0.0.1`** — fine on Linux; Docker Desktop / non-Linux networking may need docs from sibling Public OSS cards.
 - **Dual S3** still applies: console buckets → SeaweedFS `:8333`; many IaC/Lambda paths → LocalEmu S3 `:4566` ([s3-backends.md](s3-backends.md)).
 - Console image bakes default credentials (`stackwrangler` / `stackwranglerstackwrangler`). Changing keys in `~/.stackwrangler/.env` updates profile `local` but not the baked SPA until a custom console image rebuild (contributor `Dockerfile.console` build args).
+- **Linux docker CLI inside LocalEmu** — contributor `docker-compose.yml` bind-mounts `${STACKWRANGLER_DOCKER_CLI:-/usr/bin/docker}` at `/usr/bin/docker` so LocalEmu can create VPC bridges and install ECS task-role DNAT. On Linux that default path is usually correct. Docker Desktop (macOS/Windows) ships a host-OS CLI that will **not** run inside the Linux LocalEmu container — download a static Linux `docker` binary for your CPU, point `STACKWRANGLER_DOCKER_CLI` at it, and recreate LocalEmu.
 
 ## Prerequisites
 

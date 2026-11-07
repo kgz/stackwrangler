@@ -126,5 +126,45 @@ test.describe('docs-capture', () => {
       },
     )
   })
+
+  test('rds databases list', async ({ page }) => {
+    await shot(page, 'rds-databases.png', '/rds', async () => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Databases' }),
+      ).toBeVisible({ timeout: 30_000 })
+    })
+  })
+
+  test('apigateway rest apis list', async ({ page }) => {
+    await shot(
+      page,
+      'apigateway-rest-apis.png',
+      '/apigateway/rest-apis',
+      async () => {
+        await expect(
+          page.getByRole('heading', { level: 1, name: 'APIs' }),
+        ).toBeVisible({ timeout: 30_000 })
+        await expect(page.getByText('Loading REST APIs…')).toHaveCount(0, {
+          timeout: 30_000,
+        })
+      },
+    )
+  })
+
+  test('sns topics list', async ({ page }) => {
+    await shot(page, 'sns-topics.png', '/sns', async () => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Topics' }),
+      ).toBeVisible({ timeout: 30_000 })
+    })
+  })
+
+  test('sqs queues list', async ({ page }) => {
+    await shot(page, 'sqs-queues.png', '/sqs', async () => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Queues' }),
+      ).toBeVisible({ timeout: 30_000 })
+    })
+  })
 })
 

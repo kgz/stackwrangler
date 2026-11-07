@@ -39,4 +39,4 @@ Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.p
 
 Aurora **MySQL** is exercised by `./smokes/data/rds-mysql-smoke.sh` (`create-db-cluster` + reader instance + managed secret). Console **Create database** does not create Aurora clusters — the Aurora engine tile is disabled with `title="To implement"`. Aurora PostgreSQL / failover beyond the MySQL smoke remains [#225](https://github.com/kgz/awsl/issues/225).
 
-Docs screenshot / interactions follow-up: [#556](https://github.com/kgz/awsl/issues/556).
+Interactions: [rds-create-sql](../docs-site/guide/interactions/rds-create-sql.md) · shot `docs/assets/console/rds-databases.png`.

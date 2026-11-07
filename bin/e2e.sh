@@ -54,6 +54,9 @@ echo "==> ECS smoke"
 echo "==> ECS authz (sad: empty taskRole PutObject)"
 ./smokes/compute/ecs-authz-smoke.sh
 
+echo "==> ECS bridge no-iptables task-role (#254)"
+./smokes/compute/ecs-bridge-no-iptables-authz-smoke.sh
+
 echo "==> ECS taskdef (secrets / host ports / failed-start)"
 ./smokes/compute/ecs-taskdef-smoke.sh
 
