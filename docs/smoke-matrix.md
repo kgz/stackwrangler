@@ -13,6 +13,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | S3 SeaweedFS | yes | no (parity gaps) | dual-split | yes | `s3-parity.sh`, `s3-dual-endpoint-smoke.sh` |
 | IAM AccessDenied lab | — | **yes** (deny user) | — | yes | `iam-access-denied.sh` |
 | IAM OIDC + PassRole | yes (`environment:prod`, `repo:org/*`, events PassRole, tagged GetRole) | **yes** (feature ref, other org, bad aud, bad signature, states PassRole, untagged GetRole) | — | no | `oidc-smoke.sh` |
+| IAM `iam:PermissionsBoundary` key (#525) | yes (create-role + attach with matching boundary) | **yes** (create without boundary; attach to role without boundary) | — | no | `iam-permissions-boundary-key-smoke.sh` |
 | Multi-account AssumeRole | yes (A assumes B) | **yes** (C, missing ExternalId, user without sts:AssumeRole, unknown condition) | A's bucket/role hidden from B | — | `multi-account-smoke.sh` |
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |
 | Real AWS CFN S3+Lambda | **yes** (parity) | **yes** (empty role) | teardown | — | `aws-parity-cfn-s3-lambda.sh`, `aws-parity-cfn-authz.sh` |
