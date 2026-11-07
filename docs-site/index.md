@@ -112,6 +112,8 @@ More shots: [Console tour](/guide/console-tour).
   </div>
 </div>
 
-Ready? [Getting Started](/guide/getting-started) · [Vision](/guide/vision) · [Completeness](/guide/completeness)
+Ready? [Getting Started](/guide/getting-started) · [Changelog](/guide/changelog) · [Vision](/guide/vision) · [Completeness](/guide/completeness)
 
 Docs also run locally: `cd docs-site && pnpm install && pnpm dev` → [docs-site README](https://github.com/kgz/stackwrangler/blob/main/docs-site/README.md). Hosted target: [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/).
+
+</div>
