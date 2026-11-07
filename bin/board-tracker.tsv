@@ -172,7 +172,7 @@
 216	done	v1: mirror real account fixture (scaffold)
 217	backlog	Debt: ECR console (from #211)
 218	backlog	Debt: docker push via repositoryUri hostname (from #211)
-219	in-progress	Debt: Lambda image pull ECR authz (from #211)
+219	in-review	Debt: Lambda image pull ECR authz (from #211)
 220	backlog	Debt: real-account mirror read path (from #216)
 223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
