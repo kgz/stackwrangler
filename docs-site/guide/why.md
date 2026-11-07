@@ -4,6 +4,8 @@ Orgs need a **local AWS-shaped account** that fails for the same reasons real AW
 
 **#1 reason to pick us:** most local AWS tools **default-allow permissions**. A bad IAM policy still looks fine until production. stackwrangler runs with **`IAM_ENFORCEMENT=1`** so wrong or missing policies **AccessDenied** on the laptop.
 
+Think **IaC verification sandbox** for OpenTofu / Terraform (and CDK / SAM / Serverless) — console and clients included — **not** a generic LocalStack clone.
+
 ## The problem
 
 Teams stage cloud work on laptops and CI against emulators. Too often that is a **false green**:

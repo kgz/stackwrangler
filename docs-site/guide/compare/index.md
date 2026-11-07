@@ -4,6 +4,8 @@
 
 stackwrangler turns that around: **`IAM_ENFORCEMENT=1` by default** — workload principals and resource policies **AccessDenied** when the policy is wrong, with smokes / real-AWS parity on deny paths. Same local AWS-shaped account as the free emulator class — then **hardened** (patches, console, sidecars) so a green `apply` is not false confidence.
 
+**Positioning:** an **IaC verification sandbox** for OpenTofu / Terraform (and CDK / SAM / Serverless) plus console / mobile clients — **not** a generic LocalStack clone.
+
 | Same as the emulator class | Hardened how |
 |----------------------------|----------------|
 | AWS APIs on localhost | **Authz that denies** (`IAM_ENFORCEMENT=1`) — not default-allow |
