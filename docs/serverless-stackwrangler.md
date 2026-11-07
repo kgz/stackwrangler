@@ -149,7 +149,7 @@ When the question is "will this deploy in CI", deploy as the role CI uses:
 1. Create the role from the real policy, with ARNs rewritten for the emulator (account `000000000000`, your region and stage), and a trust policy for the local root.
 2. `aws sts assume-role` against the emulator, then export `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`.
 3. Today: `package` via the redirect, then `aws cloudformation deploy` (fallback above) with those credentials. Built in: `stackwrangler sls --role-arn` ([#522](https://github.com/kgz/awsl/issues/522)).
-4. Read the stack events for `AccessDenied`; also `remove` the stack, since rollback and delete need their own permissions.
+4. Read the stack events for `AccessDenied`; also `remove` the stack, since rollback and delete need their own permissions. CFN resource creates/deletes now run as the caller (or stack `RoleARN`) through IAM ([#524](https://github.com/kgz/awsl/issues/524)); smoke: `./smokes/iac/cfn-caller-iam-smoke.sh`.
 
 Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)). Loosen only the affected statement, and say so.
 

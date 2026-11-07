@@ -83,6 +83,7 @@ from localemu.aws.api.cloudformation import (
 )
 from localemu.aws.connect import connect_to
 from localemu.services.cloudformation import api_utils
+from localemu.services.cloudformation.cfn_deploy_credentials import bind_deploy_credentials
 from localemu.services.cloudformation.engine import template_preparer
 from localemu.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localemu.services.cloudformation.engine.transformers import FailedTransformationException
@@ -531,6 +532,9 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 # propagate capabilities from create change set request
                 stack.capabilities = request.get("Capabilities") or []
 
+        if request.get("RoleARN"):
+            stack.role_arn = request.get("RoleARN")
+
         # TODO: test if rollback status is allowed as well
         if (
             change_set_type == ChangeSetType.CREATE
@@ -659,6 +663,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set.set_execution_status(ExecutionStatus.EXECUTE_IN_PROGRESS)
         # propagate the tags as this is done during execution
         change_set.stack.tags = change_set.tags
+        # Resource ops as the execute caller (or stack RoleARN) — #524
+        bind_deploy_credentials(change_set.stack, context)
         change_set.stack.set_stack_status(
             StackStatus.UPDATE_IN_PROGRESS
             if change_set.change_set_type == ChangeSetType.UPDATE
@@ -940,6 +946,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
+        bind_deploy_credentials(stack, context, role_arn=request.get("RoleARN"))
 
         # TODO: reconsider the way parameters are modelled in the update graph process.
         #  The options might be reduce to using the current style, or passing the extra information
@@ -1063,6 +1070,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             stack_description["DeletionTime"] = stack.deletion_time
         if stack.capabilities:
             stack_description["Capabilities"] = stack.capabilities
+        if role_arn := getattr(stack, "role_arn", None):
+            stack_description["RoleARN"] = role_arn
         # TODO: confirm the logic for this
         if change_set_id := stack.change_set_id:
             stack_description["ChangeSetId"] = change_set_id
@@ -1635,6 +1644,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         if not change_set.has_changes():
             raise ValidationError("No updates are to be performed.")
 
+        bind_deploy_credentials(stack, context, role_arn=request.get("RoleARN"))
         stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
         change_set_executor = ChangeSetModelExecutor(change_set)
 
@@ -1720,6 +1730,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
         force_delete = deletion_mode == DeletionMode.FORCE_DELETE_STACK
+        bind_deploy_credentials(stack, context, role_arn=role_arn)
 
         # create a dummy change set
         change_set = ChangeSet(
