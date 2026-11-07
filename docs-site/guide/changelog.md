@@ -57,6 +57,8 @@ Digest pin (immutable): `ghcr.io/kgz/stackwrangler@sha256:c851e41580e0670a871054
 
 Optional thin host CLI (wraps the same `docker run`): [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.2/stackwrangler).
 
+Terraform tour of the v0.0.2 surfaces (SQS/SNS/Events/Kinesis/DynamoDB/Secrets/KMS/SFN/ECS/REST/RDS + Lambda/S3): [`examples/terraform/v002-tour/`](https://github.com/kgz/stackwrangler/tree/main/examples/terraform/v002-tour).
+
 Full reference: [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md) · [Getting started](/guide/getting-started)
 
 ## v0.0.1 — Baseline (2026-10-26)
