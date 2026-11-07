@@ -1,6 +1,6 @@
 # Fidelity — settings & topology (planning)
 
-Not v1 width. Companion to data-plane + authz in [vision.md](vision.md).
+Not v1 width. Companion to data-plane + authz in [vision.md](vision.md). Public summary: [docs-site/guide/fidelity.md](../docs-site/guide/fidelity.md).
 
 ## Intent
 

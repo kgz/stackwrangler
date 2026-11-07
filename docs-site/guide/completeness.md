@@ -1,6 +1,6 @@
 # Completeness / status
 
-Honest depth vs the [Vision](./vision) bar (data plane + authz, not catalogue theatre). For *why* this bar exists, see [Why](./why). Source of truth for row-level notes: [README status matrix](https://github.com/kgz/stackwrangler/blob/main/README.md). Stubs stay stubs.
+Honest depth vs the [Vision](./vision) bar (data plane + authz, not catalogue theatre). For *why* this bar exists, see [Why](./why). How the pieces assemble: [Architecture](./architecture). Awkward topology / settings: [Fidelity](./fidelity). Source of truth for row-level notes: [README status matrix](https://github.com/kgz/stackwrangler/blob/main/README.md). Stubs stay stubs.
 
 ## Vision progress
 

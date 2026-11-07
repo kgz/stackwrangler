@@ -26,4 +26,6 @@ LocalEmu is the emulator engine. **stackwrangler** is the account product (compo
 
 Hero path: [Use case — OpenTofu → Expo + IAM](../use-cases/opentofu-expo-iam).
 
+How the assembly works: [Architecture](../architecture) · awkward paths: [Fidelity](../fidelity).
+
 Not affiliated with Amazon Web Services.
