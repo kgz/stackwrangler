@@ -562,6 +562,40 @@ def load_kms_key_policy(key_ref: str | None, account_id: str, region: str) -> di
     return _parse_policy(getattr(found[0], "policy", None))
 
 
+def load_dynamodb_resource_policy(
+    resource_arn: str, account_id: str, region: str,
+) -> dict | None:
+    """Load a DynamoDB table resource policy from moto (#516).
+
+    Policies are stored under the table ARN by ``PutResourcePolicy``. Index
+    ARNs (``…/index/…``) inherit the table document.
+    """
+    if not resource_arn or not isinstance(resource_arn, str):
+        return None
+    table_arn = resource_arn.split("/index/", 1)[0]
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("dynamodb")[account_id][region]
+        policies = getattr(backend, "resource_policies", None) or {}
+        policy = policies.get(table_arn) or policies.get(resource_arn)
+        if policy is None and policies:
+            # ARN account/region drift: match by table name suffix.
+            table_name = table_arn.rsplit("/", 1)[-1]
+            for key, candidate in policies.items():
+                if isinstance(key, str) and key.endswith(f"/{table_name}"):
+                    policy = candidate
+                    break
+        if policy is None:
+            return None
+        return _parse_policy(getattr(policy, "policy_doc", None))
+    except Exception as exc:
+        LOG.debug(
+            "dynamodb resource policy load failed for %s: %s", resource_arn, exc,
+        )
+        return None
+
+
 def key_id_from_ciphertext(blob: Any) -> str | None:
     """Pull the moto key id out of a Decrypt ciphertext blob."""
     if blob is None:

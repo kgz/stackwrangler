@@ -264,6 +264,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | DynamoDB put/get | happy | covered | `./smokes/data/dynamodb-smoke.sh` |
 | DynamoDB console tables list | ui | covered | `console/e2e/dynamodb-tables.spec.ts` |
 | DynamoDB deny PutItem | sad/authz | covered | `./smokes/data/dynamodb-authz-smoke.sh` |
+| DynamoDB table resource policy Deny (no `aws:SourceVpce`) → AccessDeniedException with resource-based deny | sad/authz | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB resource policy `NotAction` admin ops still allowed | happy | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB resource policy `aws:PrincipalArn` exception in same `StringNotEquals` block | sad/authz | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB gateway VPCE A allows / B denies via `aws:SourceVpce` (two RTs) | sad/authz | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB `aws:SourceVpce` list `[A,B]` allows both Lambdas | happy | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
 | DynamoDB table with GSI + TTL deployed via CloudFormation (serverless slice) | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB GSI query, table query, scan with filter | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB UpdateItem expression (`SET`, `if_not_exists`, `REMOVE`) | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
