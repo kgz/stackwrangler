@@ -18,6 +18,7 @@ Focus: services on the local serverless / authz path. Not an exhaustive SAR dump
 
 | Service | Missing request-parameter keys (examples) | Notes |
 |---------|---------------------------------------------|-------|
+| **IAM** | `iam:PermissionsBoundary` on `CreateRole` / `PutRolePolicy` / `AttachRolePolicy` | Same request-parameter class as SNS Subscribe; tracked / fixed in [#525](https://github.com/kgz/awsl/issues/525) (PR [#581](https://github.com/kgz/stackwrangler/pull/581)) — not yet on `main` |
 | **KMS** | `kms:EncryptionContext`, `kms:EncryptionContextKeys`, `kms:EncryptionAlgorithm`, `kms:KeyUsage` / `kms:KeySpec` (CreateKey), `kms:BypassPolicyLockoutSafetyCheck`, grant constraint keys | Crypto-context conditions common in least-privilege; ViaService is [#223](https://github.com/kgz/awsl/issues/223) |
 | **DynamoDB** | `dynamodb:LeadingKeys`, `dynamodb:Attributes`, `dynamodb:Select`, `dynamodb:ReturnValues`, `dynamodb:ReturnConsumedCapacity` | FGAC / attribute-level policies fail closed |
 | **S3** | `s3:prefix`, `s3:delimiter`, `s3:x-amz-acl`, `s3:x-amz-copy-source`, `s3:VersionId`, `s3:object-lock-*`, … | List/Get scoping by prefix is a frequent gap |
