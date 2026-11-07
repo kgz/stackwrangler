@@ -40,7 +40,7 @@ docker run --rm --network host \
   ghcr.io/kgz/stackwrangler:latest up
 ```
 
-Then open <http://127.0.0.1:3000> and:
+That `up` starts APIs **and** the console web app. Open <http://127.0.0.1:3000>, then:
 
 ```bash
 aws --profile local s3 ls

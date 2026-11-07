@@ -23,7 +23,9 @@ docker run --rm --network host \
   ghcr.io/kgz/stackwrangler:latest up
 ```
 
-That pulls sibling images (LocalEmu with patches, SeaweedFS, console nginx, ECR registry), starts them on the **host** Docker engine, and writes AWS profile `local`. Config lives in `~/.stackwrangler`.
+Pin a cut with `:v0.0.2` (or a digest) instead of `:latest` — see [Changelog](./changelog) and [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md).
+
+That pulls sibling images (LocalEmu with patches, SeaweedFS, **console web app**, ECR registry), starts them on the **host** Docker engine, and writes AWS profile `local`. Config lives in `~/.stackwrangler`. One `up` = APIs + CLI profile + web console — no extra step for the UI.
 
 Tear down with the same image and `down` (thin CLI: `stackwrangler down`; optional `--remove-profile` drops profile `local`).
 
@@ -33,7 +35,7 @@ Tear down with the same image and `down` (thin CLI: `stackwrangler down`; option
 
 ## 2. Open the console
 
-Browse <http://127.0.0.1:3000> — the release path serves a baked static console (no Vite).
+Browse <http://127.0.0.1:3000> — already running after `up` (baked static console on the release nginx image; no Vite).
 
 Grey-rose chrome, same account as the CLI. Home opens on **S3 general purpose buckets** (SeaweedFS):
 
