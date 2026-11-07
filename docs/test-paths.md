@@ -198,6 +198,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN delete as role without `iam:DeleteRole` → `DELETE_FAILED` | sad/authz | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
 | CFN admin-key create unchanged | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh`, `./smokes/iac/cfn-smoke.sh` |
 | CFN CreateStack `RoleARN` — resource ops as service role (`iam:PassRole`) | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
+| CFN admin CreateStack with limited `RoleARN` → resource IAM deny (no internal elevate) | sad/authz | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` |
 | Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |

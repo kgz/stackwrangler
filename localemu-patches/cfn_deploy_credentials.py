@@ -109,8 +109,9 @@ def _assume_service_role(
 def bind_deploy_credentials(stack: Any, context: Any, role_arn: str | None = None) -> None:
     """Attach deployer credentials to ``stack`` for the upcoming resource ops.
 
-    Root / admin keys keep the internal sentinel (IAM skipped), matching prior
-    behaviour. Non-root callers use their session, or the stack RoleARN when set.
+    RoleARN (request or stack) always wins — including for root/admin callers.
+    Without RoleARN, root/admin keep the internal sentinel; other callers use
+    their own session.
     """
     from localemu.services.iam_enforcement.enforcer import _extract_access_key
     from localemu.services.iam_enforcement.identity import resolve_caller
@@ -123,17 +124,7 @@ def bind_deploy_credentials(stack: Any, context: Any, role_arn: str | None = Non
     account_id = getattr(context, "account_id", None) or stack.account_id
     region = getattr(context, "region", None) or stack.region_name
 
-    caller = resolve_caller(access_key, account_id, region) if access_key else None
-    if not caller or caller.principal_type == "Root":
-        stack.deploy_credentials = _internal_credentials()
-        LOG.info(
-            "CFN deploy creds: stack=%s using internal sentinel (caller=%s key=%s)",
-            getattr(stack, "stack_name", "?"),
-            getattr(caller, "principal_type", None),
-            (access_key or "")[:8],
-        )
-        return
-
+    # Honour stack RoleARN before any admin short-circuit (AWS CreateStack RoleARN).
     if effective_role:
         try:
             stack.deploy_credentials = _assume_service_role(
@@ -153,6 +144,17 @@ def bind_deploy_credentials(stack: Any, context: Any, role_arn: str | None = Non
             getattr(stack, "stack_name", "?"),
             effective_role,
             stack.deploy_credentials["accessKeyId"][:8],
+        )
+        return
+
+    caller = resolve_caller(access_key, account_id, region) if access_key else None
+    if not caller or caller.principal_type == "Root":
+        stack.deploy_credentials = _internal_credentials()
+        LOG.info(
+            "CFN deploy creds: stack=%s using internal sentinel (caller=%s key=%s)",
+            getattr(stack, "stack_name", "?"),
+            getattr(caller, "principal_type", None),
+            (access_key or "")[:8],
         )
         return
 

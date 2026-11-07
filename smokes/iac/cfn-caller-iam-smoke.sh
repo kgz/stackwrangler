@@ -42,11 +42,13 @@ cleanup() {
 	aws_admin cloudformation delete-stack --stack-name "$STACK_OK" >/dev/null 2>&1 || true
 	aws_admin cloudformation delete-stack --stack-name "$STACK_ADMIN" >/dev/null 2>&1 || true
 	aws_admin cloudformation delete-stack --stack-name "$STACK_DEL" >/dev/null 2>&1 || true
-	for r in "$CFN_ONLY_ROLE" "$FULL_ROLE" "$NODELETE_ROLE" "awsbox-cfn-svc-${TS}" "awsbox-cfn-passer-${TS}"; do
+	for r in "$CFN_ONLY_ROLE" "$FULL_ROLE" "$NODELETE_ROLE" \
+		"awsbox-cfn-svc-${TS}" "awsbox-cfn-passer-${TS}" "awsbox-cfn-svc-limited-${TS}"; do
 		aws_admin iam delete-role-policy --role-name "$r" --policy-name inline >/dev/null 2>&1 || true
 		aws_admin iam delete-role --role-name "$r" >/dev/null 2>&1 || true
 	done
 	aws_admin cloudformation delete-stack --stack-name "awsbox-cfn-caller-rolearn-${TS}" >/dev/null 2>&1 || true
+	aws_admin cloudformation delete-stack --stack-name "awsbox-cfn-caller-admin-rolearn-${TS}" >/dev/null 2>&1 || true
 	rm -rf "$WORKDIR"
 }
 trap cleanup EXIT
@@ -374,14 +376,53 @@ echo "    RoleARN status=${ST}"
 }
 echo "OK: RoleARN service role → CREATE_COMPLETE"
 
+echo "==> admin + limited RoleARN: must not elevate via internal sentinel"
+LIMITED_SVC="awsbox-cfn-svc-limited-${TS}"
+STACK_ADMIN_ROLEARN="awsbox-cfn-caller-admin-rolearn-${TS}"
+aws_admin iam create-role --role-name "$LIMITED_SVC" \
+	--assume-role-policy-document "file://${WORKDIR}/cfn-trust.json" >/dev/null
+# Service role can only call CloudFormation — resource creates must fail if RoleARN is used.
+aws_admin iam put-role-policy --role-name "$LIMITED_SVC" --policy-name inline \
+	--policy-document "file://${WORKDIR}/cfn-only.json" >/dev/null
+unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
+export AWS_ACCESS_KEY_ID="$KEY"
+export AWS_SECRET_ACCESS_KEY="$SECRET"
+aws_admin cloudformation create-stack \
+	--stack-name "$STACK_ADMIN_ROLEARN" \
+	--template-body "file://${EX}/template.yaml" \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--role-arn "arn:aws:iam::${ACCOUNT}:role/${LIMITED_SVC}" \
+	--parameters \
+	"ParameterKey=RoleName,ParameterValue=${PROBE_ROLE}-f" \
+	"ParameterKey=QueueName,ParameterValue=${PROBE_QUEUE}-f" \
+	"ParameterKey=LogGroupName,ParameterValue=${PROBE_LG}-f" >/dev/null
+ST="$(wait_stack_terminal "$STACK_ADMIN_ROLEARN" 60)"
+echo "    admin+RoleARN status=${ST}"
+case "$ST" in
+	CREATE_FAILED|*ROLLBACK*) ;;
+	*)
+		echo "FAIL: admin+limited RoleARN expected CREATE_FAILED/ROLLBACK, got ${ST}" >&2
+		events_blob "$STACK_ADMIN_ROLEARN" >&2
+		exit 1
+		;;
+esac
+BLOB="$(events_blob "$STACK_ADMIN_ROLEARN")"
+echo "$BLOB" | grep -qiE 'not authorized|AccessDenied|iam:CreateRole|sqs:CreateQueue|logs:CreateLogGroup' || {
+	echo "FAIL: expected IAM deny under limited RoleARN (admin must not use internal sentinel):" >&2
+	echo "$BLOB" >&2
+	exit 1
+}
+echo "OK: admin + limited RoleARN → resource IAM deny"
+
 # cleanup extras for RoleARN
 unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
 aws_admin cloudformation delete-stack --stack-name "$STACK_ROLEARN" >/dev/null 2>&1 || true
-aws_admin iam delete-role-policy --role-name "$SVC_ROLE" --policy-name inline >/dev/null 2>&1 || true
-aws_admin iam delete-role --role-name "$SVC_ROLE" >/dev/null 2>&1 || true
-aws_admin iam delete-role-policy --role-name "$PASS_ROLE" --policy-name inline >/dev/null 2>&1 || true
-aws_admin iam delete-role --role-name "$PASS_ROLE" >/dev/null 2>&1 || true
+aws_admin cloudformation delete-stack --stack-name "$STACK_ADMIN_ROLEARN" >/dev/null 2>&1 || true
+for r in "$SVC_ROLE" "$PASS_ROLE" "$LIMITED_SVC"; do
+	aws_admin iam delete-role-policy --role-name "$r" --policy-name inline >/dev/null 2>&1 || true
+	aws_admin iam delete-role --role-name "$r" >/dev/null 2>&1 || true
+done
 
 echo "OK: cfn-caller-iam-smoke (${TS})"
