@@ -79,11 +79,11 @@ New catalogue services stay **unlabelled** until a cut is deliberately opened fo
 
 First tagged account. Leftovers finish or roll forward unlabelled / into a matching later cut.
 
-### v0.0.2 — Public *(active until public theme done)*
+### v0.0.2 — Public *(shipped 2026-11-07)*
 
 Install path, docs-site minimum, public hygiene. Gate: `public-ready` or blocks first public OSS cut.
 
-### v0.0.3 — Trust
+### v0.0.3 — Trust *(active)*
 
 Core-stack bugs + security/authz that create false confidence. Gate: Impact ≥ 4 (Impact 5 always). Prefer shipping Trust beside Public — do not declare public “done” while open Impact ≥ 5 core trust bugs are unwaived.
 
