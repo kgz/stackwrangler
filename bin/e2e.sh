@@ -18,6 +18,9 @@ echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
 echo "==> IAM AccessDenied"
 ./smokes/security/iam-access-denied.sh
 
+echo "==> IAM SimulateCustomPolicy / SimulatePrincipalPolicy"
+./smokes/security/iam-simulate-policy-smoke.sh
+
 echo "==> IAM OIDC + PassRole"
 ./smokes/security/oidc-smoke.sh
 
