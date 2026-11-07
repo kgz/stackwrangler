@@ -322,4 +322,4 @@
 561	done	Doc: REST APIs console screenshot (from #189)
 562	done	Doc: SNS Topics console screenshot (from #172)
 563	done	Doc: SQS queues console screenshot (from #167)
-525	in-progress	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
+525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
