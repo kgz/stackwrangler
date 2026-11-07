@@ -34,6 +34,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./smokes/s3/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./smokes/security/iam-access-denied.sh` + IAM console lab |
+| IAM SimulateCustomPolicy / SimulatePrincipalPolicy (allow, implicitDeny, explicitDeny, ContextEntries) | happy/authz | covered | `./smokes/security/iam-simulate-policy-smoke.sh` · matches enforcer, not real AWS simulator quirks |
 | OIDC `sub=repo:org/app:environment:prod` assumes tight role | happy | covered | `./smokes/security/oidc-smoke.sh` · [oidc.md](oidc.md) |
 | OIDC `sub=repo:org/*` assumes any repo in the org | happy | covered | `./smokes/security/oidc-smoke.sh` |
 | OIDC feature ref / other org / wrong aud / bad signature denied | sad/authz | covered | `./smokes/security/oidc-smoke.sh` |

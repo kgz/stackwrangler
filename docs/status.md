@@ -24,7 +24,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | Console shell (grey rose) | **Working** | Chrome from `design/stackwrangler-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
 | Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [labels.md](labels.md) · `./smokes/account/labels-smoke.sh` |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [s3-backends.md](s3-backends.md) · smoke `./smokes/s3/s3-dual-endpoint-smoke.sh` |
-| IAM enforcement | **Partial** | resource policies `./smokes/security/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM enforcement | **Partial** | simulate `./smokes/security/iam-simulate-policy-smoke.sh` · resource policies `./smokes/security/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [custom-ids.md](custom-ids.md) · `./smokes/account/custom-id-smoke.sh` |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
@@ -107,7 +107,7 @@ Smoke: `./smokes/messaging/sqs-smoke.sh` · `./smokes/messaging/sns-smoke.sh` ·
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** · resource policies `./smokes/security/resource-policy-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) · Create/detail UI [#353](https://github.com/kgz/awsl/issues/353) · roles [#251](https://github.com/kgz/awsl/issues/251) |
+| IAM users + AccessDenied lab | Enforced on LocalEmu S3 demo | Users + lab | **Partial** · simulate `./smokes/security/iam-simulate-policy-smoke.sh` · resource policies `./smokes/security/resource-policy-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) · Create/detail UI [#353](https://github.com/kgz/awsl/issues/353) · roles [#251](https://github.com/kgz/awsl/issues/251) |
 | IAM OIDC / web identity | `AssumeRoleWithWebIdentity` checks a local JWKS; trust `StringEquals`/`StringLike` on `<issuer>:sub` and `:aud`. `repo:org/*` matches every repo in the org (risky). `iam:PassRole` is limited by `iam:PassedToService` | — | **CLI + smoke** · [oidc.md](oidc.md) · service-origin `kms:ViaService` / `aws:SourceArn` [#223](https://github.com/kgz/awsl/issues/223) |
 | STS | Enabled | — | **Control plane** (polish backlog) |
 | KMS | encrypt/decrypt · key policy on Encrypt/Decrypt/GenerateDataKey | list (+ empty) | **Partial** · key policy `./smokes/security/resource-policy-smoke.sh` · console CMK list [#177](https://github.com/kgz/awsl/issues/177) · create/detail [#540](https://github.com/kgz/awsl/issues/540) |
