@@ -72,6 +72,9 @@ echo "==> CodeDeploy (Lambda canary DG + ECS blue/green)"
 echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
 ./smokes/compute/ecr-smoke.sh
 
+echo "==> Lambda ImageUri ECR pull (sad: no BatchGetImage)"
+./smokes/lambda/lambda-ecr-smoke.sh
+
 echo "==> Transfer authz (sad: empty role PutObject)"
 ./smokes/transfer/transfer-authz-smoke.sh
 
