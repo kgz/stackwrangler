@@ -47,4 +47,4 @@ aws --profile local …
 
 Not affiliated with Amazon Web Services. Independent MIT-licensed OSS — local test, then real AWS.
 
-Next: [Getting Started](./getting-started) · [Compare](./compare/) · [Use cases](./use-cases/) · [Vision](./vision) · [Completeness](./completeness).
+Next: [Getting Started](./getting-started) · [Compare](./compare/) · [Architecture](./architecture) · [Fidelity](./fidelity) · [Use cases](./use-cases/) · [Completeness](./completeness).

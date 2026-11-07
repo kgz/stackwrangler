@@ -43,6 +43,7 @@ export default withMermaid(
         { text: 'Guide', link: '/guide/getting-started' },
         { text: 'Compare', link: '/guide/compare/' },
         { text: 'Use cases', link: '/guide/use-cases/' },
+        { text: 'Architecture', link: '/guide/architecture' },
         { text: 'Changelog', link: '/guide/changelog' },
         { text: 'Completeness', link: '/guide/completeness' },
         { text: 'Interactions', link: '/guide/interactions/' },
@@ -60,6 +61,8 @@ export default withMermaid(
               { text: 'Getting Started', link: '/guide/getting-started' },
               { text: 'Compare', link: '/guide/compare/' },
               { text: 'Use cases', link: '/guide/use-cases/' },
+              { text: 'Architecture', link: '/guide/architecture' },
+              { text: 'Fidelity', link: '/guide/fidelity' },
               { text: 'Vision', link: '/guide/vision' },
               { text: 'Changelog', link: '/guide/changelog' },
               { text: 'Completeness / status', link: '/guide/completeness' },
@@ -96,6 +99,8 @@ export default withMermaid(
           {
             text: 'Product',
             items: [
+              { text: 'Architecture', link: '/guide/architecture' },
+              { text: 'Fidelity', link: '/guide/fidelity' },
               { text: 'Console tour', link: '/guide/console-tour' },
               { text: 'Concepts', link: '/guide/concepts' },
               { text: 'Interactions', link: '/guide/interactions/' },

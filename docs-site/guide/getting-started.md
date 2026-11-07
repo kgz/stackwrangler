@@ -77,6 +77,8 @@ Clone the repo when changing the product (smokes, patches, console source). See 
 ## 5. Next
 
 - [Compare](./compare/) — same as LocalEmu / Moto / LocalStack / real AWS, hardened how
+- [Architecture](./architecture) — LocalEmu + patches + sidecars
+- [Fidelity](./fidelity) — awkward topology / settings bar
 - [Use case: OpenTofu → Expo + IAM](./use-cases/opentofu-expo-iam) — hero path
 - [Vision](./vision) — what “fully working” means
 - [Completeness](./completeness) — Working vs Partial vs stub

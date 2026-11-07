@@ -6,7 +6,7 @@ Short public framing. Deep notes stay in the repo `docs/` tree.
 
 stackwrangler’s emulator process is **LocalEmu** on `http://127.0.0.1:4566`. We need **IAM enforcement** (`IAM_ENFORCEMENT=1`) so wrong workload policies fail locally. LocalStack Community’s weak IAM is exactly the false-green lesson in [Vision](./vision).
 
-stackwrangler is the **product** around that emulator: Compose, profile `local`, console, smokes, examples, and honesty about depth. Swap the emulator if needed — the contract is account behaviour.
+stackwrangler is the **product** around that emulator: Compose, profile `local`, console, smokes, examples, and honesty about depth. Swap the emulator if needed — the contract is account behaviour. Layers diagram: [Architecture](./architecture).
 
 ## Dual S3
 
@@ -37,3 +37,5 @@ Sidecars are honest engineering when the emulator cannot deliver the data plane.
 ## Local → real AWS
 
 Workflow: build and break on stackwrangler → deploy the same shape to a real account. See [THIRD_PARTY.md](https://github.com/kgz/stackwrangler/blob/main/THIRD_PARTY.md) and the product disclaimer: **not affiliated with Amazon**, not a hosted AWS substitute.
+
+Awkward SG / route / hairpin behaviour: [Fidelity](./fidelity).
