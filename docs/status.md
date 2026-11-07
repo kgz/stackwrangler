@@ -24,7 +24,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | Console shell (grey rose) | **Working** | Chrome from `design/stackwrangler-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
 | Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [labels.md](labels.md) · `./smokes/account/labels-smoke.sh` |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [s3-backends.md](s3-backends.md) · smoke `./smokes/s3/s3-dual-endpoint-smoke.sh` |
-| IAM enforcement | **Partial** | resource policies `./smokes/security/resource-policy-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM enforcement | **Partial** | resource policies `./smokes/security/resource-policy-smoke.sh` · cross-account `./smokes/security/resource-policy-cross-account-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [custom-ids.md](custom-ids.md) · `./smokes/account/custom-id-smoke.sh` |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
@@ -112,13 +112,13 @@ Smoke: `./smokes/messaging/sqs-smoke.sh` · `./smokes/messaging/sns-smoke.sh` ·
 | STS | Enabled | — | **Control plane** (polish backlog) |
 | KMS | encrypt/decrypt · key policy on Encrypt/Decrypt/GenerateDataKey | list (+ empty) | **Partial** · key policy `./smokes/security/resource-policy-smoke.sh` · console CMK list [#177](https://github.com/kgz/awsl/issues/177) · create/detail [#540](https://github.com/kgz/awsl/issues/540) |
 | Secrets Manager | create/get · resource policy on Get/Describe | list (+ empty) | **Partial** · resource policy `./smokes/security/resource-policy-smoke.sh` · thin console list [#176](https://github.com/kgz/awsl/issues/176) · store/detail [#535](https://github.com/kgz/awsl/issues/535) |
-| Multiple accounts | Key→account, isolated state, cross-account AssumeRole | — | **CLI + smoke** · [multi-account.md](multi-account.md) |
+| Multiple accounts | Key→account, isolated state, cross-account AssumeRole + resource policies | — | **CLI + smoke** · [multi-account.md](multi-account.md) |
 | ACM | request / import / describe / list · ARN on API custom domain + ALB HTTPS listener ([acm.md](acm.md)) | — ([#333](https://github.com/kgz/awsl/issues/333)) | **Partial** · TLS handshake [#242](https://github.com/kgz/awsl/issues/242) |
 | Cognito / detection | — | — | **Backlog** |
 | IAM Identity Center | — | — | **Backlog** |
 | Prowler posture scan | Isolated CLI smoke vs LocalEmu | — | **Working** (scoped) · full catalog [#197](https://github.com/kgz/awsl/issues/197) · [prowler.md](prowler.md) |
 
-Smoke: `./smokes/security/iam-access-denied.sh` · `./smokes/security/resource-policy-smoke.sh` · `./smokes/security/oidc-smoke.sh` · `./smokes/security/acm-smoke.sh` · `./smokes/security/prowler-smoke.sh` · `./smokes/security/multi-account-smoke.sh` · real AWS (~$0): `./smokes/parity/aws-parity-iam-denied.sh` ([aws-parity-agent-iam.md](aws-parity-agent-iam.md))  
+Smoke: `./smokes/security/iam-access-denied.sh` · `./smokes/security/resource-policy-smoke.sh` · `./smokes/security/resource-policy-cross-account-smoke.sh` · `./smokes/security/oidc-smoke.sh` · `./smokes/security/acm-smoke.sh` · `./smokes/security/prowler-smoke.sh` · `./smokes/security/multi-account-smoke.sh` · real AWS (~$0): `./smokes/parity/aws-parity-iam-denied.sh` ([aws-parity-agent-iam.md](aws-parity-agent-iam.md))  
 CFN parity (local + real, short-lived): `./smokes/parity/aws-parity-cfn-s3-lambda.sh` · sad: `./smokes/parity/aws-parity-cfn-authz.sh` ([aws-parity-cfn.md](aws-parity-cfn.md))  
 HF cheap parity (#296/#297/#190/#294/#230 VPCE; skipped WAF/R53/Transfer/…): `./smokes/parity/aws-parity-hf-cheap.sh` ([aws-parity-hf-cheap.md](aws-parity-hf-cheap.md))
 

@@ -46,7 +46,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `sts:AssumeRole` role in B trusts `arn:aws:iam::<A>:root` + `sts:ExternalId`; user in A assumes | happy | covered | `./smokes/security/multi-account-smoke.sh` |
 | AssumeRole without ExternalId / from account C / user missing `sts:AssumeRole` | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
 | Trust `StringEquals` `aws:PrincipalOrgID` does not allow | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
-| Cross-account resource policy Allow | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) |
+| Cross-account resource policy Allow | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./smokes/parity/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./smokes/lambda/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./smokes/lambda/lambda-deploy-smoke.sh` |
@@ -291,7 +291,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Secrets Manager CMK GetSecretValue follows key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | Secrets Manager CreateSecret/PutSecretValue with a CMK follows key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | SSM SecureString GetParameter/PutParameter follows CMK key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
-| Cross-account resource policy (identity and resource must both allow) | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) · needs [#213](https://github.com/kgz/awsl/issues/213) |
+| Cross-account resource policy (identity and resource must both allow) | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
 | Kinesis console Data streams list | happy | covered | console e2e `kinesis-streams.spec.ts` · thin list (Create/detail → [#539](https://github.com/kgz/awsl/issues/539)) |
 | Kinesis put/get | happy | covered | `./smokes/messaging/kinesis-smoke.sh` |
 | Kinesis deny PutRecord | sad/authz | covered | `./smokes/messaging/kinesis-authz-smoke.sh` |
@@ -356,6 +356,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./smokes/lambda/lambda-smoke.sh           # happy
 ./smokes/lambda/lambda-authz-smoke.sh     # sad/authz
 ./smokes/security/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
+./smokes/security/resource-policy-cross-account-smoke.sh # A role vs B secret/key/bucket policies
 ./smokes/transfer/transfer-key-smoke.sh
 ./smokes/transfer/transfer-dataplane-smoke.sh
 ./smokes/transfer/transfer-connector-smoke.sh
