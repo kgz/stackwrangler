@@ -229,6 +229,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./smokes/parity/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./smokes/parity/aws-parity-cfn-authz.sh` |
 | Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./smokes/parity/aws-parity-hf-cheap.sh` (~$0–cents; ask before real) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
+| Real AWS Trust (v0.0.3) | happy+sad | covered | `./smokes/parity/aws-parity-trust-v003.sh` (KMS 7d residual) |
 | Real AWS HF skipped: WAF, R53 zone, ACM without DNS, Transfer, CodeDeploy target stack, Batch/ASG compute | — | skipped (cost) | [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) skipped gaps |
 | Prowler aws scan (isolated, scoped unused-services) | happy | covered | `./smokes/security/prowler-smoke.sh` · [prowler.md](prowler.md) |
 | Prowler failing-API count ≤ baseline (ratchet) | sad/other | covered | `./smokes/security/prowler-smoke.sh` |
