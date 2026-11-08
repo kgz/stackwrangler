@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awsbox-events-demo — EventBridge</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="eventbridge-rule-detail" data-nav="eventbridge-rules" data-service="eventbridge" data-title="awsbox-events-demo" data-crumb="awsbox-events-demo">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">awsbox-events-demo</h1>
+          <div class="aws-subtitle-row">
+            <span>ENABLED</span>
+            <span>default</span>
+            <span>Event pattern</span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-rule" disabled aria-disabled="true" title="To implement">Delete</button>
+        <button type="button" class="btn btn-primary" data-od-id="btn-edit-rule" disabled aria-disabled="true" title="To implement">Edit</button>
+      </div>
+
+      <p class="aws-desc"><a href="eventbridge-rules.html" data-od-id="back-list">← Rules</a></p>
+
+      <section class="aws-card" data-od-id="content-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="rule-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="details" aria-current="page" data-od-id="tab-details">Details</button>
+          <button type="button" class="aws-tab" data-tab="targets" data-od-id="tab-targets">Targets</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="details" data-od-id="panel-details">
+            <h2 class="aws-section-title">Rule details</h2>
+            <dl class="aws-kv" data-od-id="rule-overview">
+              <div>
+                <dt>Name</dt>
+                <dd>awsbox-events-demo</dd>
+              </div>
+              <div>
+                <dt>ARN</dt>
+                <dd><code class="aws-mono">arn:aws:events:us-east-1:000000000000:rule/awsbox-events-demo</code></dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>ENABLED</dd>
+              </div>
+              <div>
+                <dt>Event bus</dt>
+                <dd>default</dd>
+              </div>
+              <div>
+                <dt>Type</dt>
+                <dd>Event pattern</dd>
+              </div>
+              <div>
+                <dt>Description</dt>
+                <dd>Demo rule for local EventBridge</dd>
+              </div>
+              <div>
+                <dt>Event pattern</dt>
+                <dd><pre class="aws-mono" style="margin:0;white-space:pre-wrap">{
+{
+  "source": ["awsbox.demo"]
+}</pre></dd>
+              </div>
+            </dl>
+          </div>
+
+          <div data-tab-panel="targets" hidden data-od-id="panel-targets">
+            <h2 class="aws-section-title">Targets</h2>
+            <p class="aws-desc">Targets from LocalEmu <code>ListTargetsByRule</code>.</p>
+            <div class="aws-toolbar" style="margin-bottom:12px">
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-remove-targets">Remove</button>
+              <div class="spacer"></div>
+              <button type="button" class="btn btn-primary" disabled aria-disabled="true" title="To implement" data-od-id="btn-add-target">Add target</button>
+            </div>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="targets-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Id</span></th>
+                    <th scope="col"><span class="th-inner">ARN</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td><code class="aws-mono">arn:aws:lambda:us-east-1:000000000000:function:awsbox-events-demo</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

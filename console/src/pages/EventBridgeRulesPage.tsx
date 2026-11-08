@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton } from '../components/S3Ui'
 import {
-  DeadLink,
   EmptyRow,
   FilterHeader,
   ListCard,
@@ -70,7 +70,9 @@ export function EventBridgeRulesPage() {
             Delete
           </DeadButton>
           <div className="spacer" />
-          <DeadButton variant="primary">Create rule</DeadButton>
+          <Link className="btn btn-primary" to="/events/create">
+            Create rule
+          </Link>
         </>
       }
       placeholder="Filter rules by name"
@@ -99,7 +101,7 @@ export function EventBridgeRulesPage() {
             />
           ) : (
             filtered.map((r) => {
-              const id = r.arn || r.name
+              const id = r.arn || `${r.eventBusName}/${r.name}`
               const isSelected = selected === id
               return (
                 <tr
@@ -115,7 +117,12 @@ export function EventBridgeRulesPage() {
                   />
                   <td>
                     <ResourceLabel ids={[r.name, r.arn]} detail={isSelected}>
-                      <DeadLink>{r.name}</DeadLink>
+                      <Link
+                        to={`/events/rules/${encodeURIComponent(r.name)}?bus=${encodeURIComponent(r.eventBusName)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {r.name}
+                      </Link>
                     </ResourceLabel>
                   </td>
                   <td>{r.status}</td>

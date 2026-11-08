@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton } from '../components/S3Ui'
 import {
-  DeadLink,
   EmptyRow,
   FilterHeader,
   ListCard,
@@ -68,7 +68,9 @@ export function EventBridgeBusesPage() {
             Delete
           </DeadButton>
           <div className="spacer" />
-          <DeadButton variant="primary">Create event bus</DeadButton>
+          <Link className="btn btn-primary" to="/events/buses/create">
+            Create event bus
+          </Link>
         </>
       }
       placeholder="Filter event buses by name"
@@ -111,7 +113,7 @@ export function EventBridgeBusesPage() {
                   />
                   <td>
                     <ResourceLabel ids={[b.name, b.arn]} detail={isSelected}>
-                      <DeadLink>{b.name}</DeadLink>
+                      {b.name}
                     </ResourceLabel>
                   </td>
                   <td>{b.type}</td>

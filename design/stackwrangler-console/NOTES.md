@@ -350,3 +350,16 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="To implement"`: Create rule / Create event bus, Refresh, table settings, column filters, name dead links
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `eventbridge-rules.html` / `eventbridge-buses.html`
+
+
+## Issue #552 — EventBridge create + rule detail
+
+### Mode
+- Hand mocks (OD agents unavailable: cursor-agent conversation messages 404; opencode ENOENT)
+- Screens: `eventbridge-create-rule.html`, `eventbridge-create-event-bus.html`, `eventbridge-rule-detail.html`
+- List mocks: Create rule / Create event bus enabled; rule names link to detail; Delete stays selection-gated / stub
+
+### Wired in React
+- Create rule (pattern + schedule) → LocalEmu `PutRule`
+- Create event bus → LocalEmu `CreateEventBus`
+- Rule detail: pattern/schedule + targets via `DescribeRule` / `ListTargetsByRule`
