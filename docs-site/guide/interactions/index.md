@@ -24,6 +24,7 @@ Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/is
 | Transfer SFTP → S3 | partial | `transfer-dataplane-smoke.sh`, `transfer-key-smoke.sh` | — | [transfer-sftp-s3](./transfer-sftp-s3) |
 | Dual S3 (SeaweedFS + LocalEmu) | partial | `s3-dual-endpoint-smoke.sh` | [home-s3-buckets](/assets/console/home-s3-buckets.png) | [dual-s3](./dual-s3) |
 | IAM AccessDenied lab | shipped | `iam-access-denied.sh` | — | [iam-deny](./iam-deny) |
+| IAM role path in resource ARN | shipped | `iam-role-path-arn-smoke.sh` | — | [iam-role-path](./iam-role-path) |
 | S3 SSE-KMS ViaService / SourceArn | shipped | `service-origin-condition-keys-smoke.sh` | — | [s3-kms-via-service](./s3-kms-via-service) |
 | Lambda VPC → host service | working | `lambda-vpc-smoke.sh` | non-VPC mapped name | [lambda-vpc-host](./lambda-vpc-host) |
 | SQS → Lambda (event source) | partial | see page | — | [sqs-to-lambda](./sqs-to-lambda) |

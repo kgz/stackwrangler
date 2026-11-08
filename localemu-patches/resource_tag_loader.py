@@ -138,7 +138,8 @@ def _iam_resource_tags(arn: str, account_id: str) -> dict[str, str]:
             return {}
         return _normalize_tag_list(getattr(user, "tags", []))
     if path.startswith("role/"):
-        name = path.split("/", 1)[1]
+        # ARN is role{path}{name}; RoleName is the final segment (#647).
+        name = path.rsplit("/", 1)[-1]
         try:
             role = backend.get_role(name)
         except Exception:
