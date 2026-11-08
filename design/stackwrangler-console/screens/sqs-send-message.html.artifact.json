@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sqs-send-message.html",
+  "entry": "screens/sqs-send-message.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-08T11:56:57.000Z",
+  "updatedAt": "2026-11-08T11:56:57.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true,
+    "handMock": true,
+    "issue": 548,
+    "note": "OD run failed: opencode ENOENT (cli_not_installed); hand mock for SendMessage form (Standard + FIFO fields)"
+  }
+}

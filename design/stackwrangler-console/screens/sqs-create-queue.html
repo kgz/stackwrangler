@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create queue — SQS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sqs-create-queue" data-nav="sqs-queues" data-service="sqs" data-title="Create queue" data-crumb="Create queue">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create queue</h1>
+      <p class="aws-desc">
+        Create a Standard or FIFO queue. LocalEmu maps this form to
+        <code>CreateQueue</code> with the attributes below.
+      </p>
+
+      <section class="aws-card" data-od-id="details-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="queue-name">Name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="queue-name" name="name" type="text" autocomplete="off" placeholder="my-queue" value="awsbox-sqs-demo" data-od-id="field-name" />
+              <p class="aws-hint">Up to 80 characters. FIFO names must end with <code>.fifo</code>.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="type-section">
+            <h2 class="aws-section-title">Type</h2>
+            <ul class="aws-radio-list" data-od-id="type-options">
+              <li>
+                <label>
+                  <input type="radio" name="queueType" value="Standard" checked data-od-id="type-standard" />
+                  <span>
+                    <strong>Standard</strong>
+                    <span class="sub">Unlimited throughput, at-least-once delivery, best-effort ordering.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="queueType" value="FIFO" data-od-id="type-fifo" />
+                  <span>
+                    <strong>FIFO</strong>
+                    <span class="sub">Exactly-once processing and first-in-first-out ordering within a message group.</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <div class="aws-field" style="margin-top:12px" data-od-id="content-based-dedup">
+              <label>
+                <input type="checkbox" name="contentBasedDeduplication" data-od-id="field-content-based" />
+                Content-based deduplication (FIFO)
+              </label>
+              <p class="aws-hint">When enabled, SQS can generate a deduplication ID from the message body.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="configuration-section">
+            <h2 class="aws-section-title">Configuration</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="visibility-timeout">Visibility timeout (seconds)</label>
+              <input class="aws-input" id="visibility-timeout" name="VisibilityTimeout" type="number" min="0" max="43200" value="30" data-od-id="field-visibility" style="max-width:160px" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="message-retention">Message retention period (seconds)</label>
+              <input class="aws-input" id="message-retention" name="MessageRetentionPeriod" type="number" min="60" max="1209600" value="345600" data-od-id="field-retention" style="max-width:160px" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="delivery-delay">Delivery delay (seconds)</label>
+              <input class="aws-input" id="delivery-delay" name="DelaySeconds" type="number" min="0" max="900" value="0" data-od-id="field-delay" style="max-width:160px" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="receive-wait">Receive message wait time (seconds)</label>
+              <input class="aws-input" id="receive-wait" name="ReceiveMessageWaitTimeSeconds" type="number" min="0" max="20" value="0" data-od-id="field-receive-wait" style="max-width:160px" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="max-message-size">Maximum message size (bytes)</label>
+              <input class="aws-input" id="max-message-size" name="MaximumMessageSize" type="number" min="1024" max="262144" value="262144" data-od-id="field-max-size" style="max-width:160px" />
+            </div>
+          </div>
+
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Additional settings</h2>
+            <div class="aws-field">
+              <label class="aws-label">Access policy</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-policy">Configure access policy…</button>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Encryption</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-encryption">Configure encryption…</button>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Dead-letter queue</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-dlq">Configure redrive…</button>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Tags</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-tags">Add tags…</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-actions">
+        <a class="btn btn-normal" href="sqs-queues.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <a class="btn btn-primary" href="sqs-queue-detail.html" data-od-id="btn-create">Create queue</a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

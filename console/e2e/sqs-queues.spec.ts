@@ -23,8 +23,29 @@ function aws(args: string[]): string {
   )
 }
 
-test.describe('SQS queues UI (#167)', () => {
-  test('lists a seeded queue', async ({ page }) => {
+function deleteQuiet(queueUrl: string) {
+  try {
+    aws(['sqs', 'delete-queue', '--queue-url', queueUrl])
+  } catch {
+    /* ignore */
+  }
+}
+
+function queueUrlForName(name: string): string {
+  return aws([
+    'sqs',
+    'get-queue-url',
+    '--queue-name',
+    name,
+    '--query',
+    'QueueUrl',
+    '--output',
+    'text',
+  ]).trim()
+}
+
+test.describe('SQS queues UI (#167 / #548)', () => {
+  test('lists a seeded queue and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-sqs-ui-${ts}`
     let queueUrl = ''
@@ -46,23 +67,128 @@ test.describe('SQS queues UI (#167)', () => {
       ).toBeVisible()
       await expect(page.getByTestId('sqs-queues-table')).toBeVisible()
       await expect(
-        page.getByRole('button', { name, exact: true }),
+        page.getByRole('link', { name, exact: true }),
       ).toBeVisible({ timeout: 15000 })
       await expect(
-        page.getByRole('button', { name: 'Create queue' }),
-      ).toBeDisabled()
-      await expect(
-        page.getByRole('button', { name: 'Create queue' }),
-      ).toHaveAttribute('title', 'To implement')
-      await expect(page.getByRole('button', { name: 'Delete' })).toBeDisabled()
-      await expect(page.getByRole('button', { name: 'Delete' })).toHaveAttribute(
+        page.getByRole('link', { name: 'Create queue' }),
+      ).toBeVisible()
+      await expect(page.getByTestId('sqs-delete')).toBeDisabled()
+      await expect(page.getByTestId('sqs-delete')).toHaveAttribute(
         'title',
         'Select a row',
       )
+
+      await page.getByRole('link', { name, exact: true }).click()
+      await expect(page).toHaveURL(new RegExp(`/sqs/queues/${name}$`))
+      await expect(
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible()
+      await expect(page.getByTestId('sqs-tab-details')).toBeVisible()
+      await expect(page.getByText('Standard').first()).toBeVisible()
+      await expect(page.getByText('Messages available')).toBeVisible()
     } finally {
-      if (queueUrl) {
+      if (queueUrl) deleteQuiet(queueUrl)
+    }
+  })
+
+  test('creates a standard queue, sends a message, and deletes it', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-sqs-create-${ts}`
+    let created = false
+
+    try {
+      await page.goto('/sqs')
+      await page.getByRole('link', { name: 'Create queue' }).click()
+      await expect(page).toHaveURL(/\/sqs\/create$/)
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Create queue' }),
+      ).toBeVisible()
+      await page.getByTestId('sqs-create-name').fill(name)
+      await page.getByTestId('sqs-type-standard').check()
+      await page.getByTestId('sqs-create-submit').click()
+      await expect(page).toHaveURL(new RegExp(`/sqs/queues/${name}$`), {
+        timeout: 20000,
+      })
+      created = true
+      await expect(
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible()
+      await expect(page.getByText('Standard').first()).toBeVisible({
+        timeout: 15000,
+      })
+
+      await page.getByTestId('sqs-send-open').click()
+      await page.getByTestId('sqs-send-body').fill('{"hello":"sqs"}')
+      await page.getByTestId('sqs-send-submit').click()
+      await expect(page.getByRole('status')).toContainText('Message sent', {
+        timeout: 15000,
+      })
+      await expect(page.getByText('Messages available')).toBeVisible()
+
+      await page.getByRole('link', { name: '← Queues' }).click()
+      await expect(page).toHaveURL(/\/sqs$/)
+      const rowLink = page.getByRole('link', { name, exact: true })
+      await expect(rowLink).toBeVisible({ timeout: 15000 })
+      await rowLink
+        .locator('xpath=ancestor::tr[1]')
+        .getByRole('radio')
+        .check()
+      await page.getByTestId('sqs-delete').click()
+      await page.getByTestId('sqs-confirm-delete').click()
+      await expect(rowLink).toHaveCount(0, { timeout: 20000 })
+      created = false
+    } finally {
+      if (created) {
         try {
-          aws(['sqs', 'delete-queue', '--queue-url', queueUrl])
+          deleteQuiet(queueUrlForName(name))
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  })
+
+  test('creates a FIFO queue from the console', async ({ page }) => {
+    const ts = Date.now()
+    const name = `e2e-sqs-fifo-${ts}.fifo`
+    let created = false
+
+    try {
+      await page.goto('/sqs/create')
+      await page.getByTestId('sqs-type-fifo').check()
+      await page.getByTestId('sqs-create-name').fill(name)
+      await page.getByTestId('sqs-content-based').check()
+      await page.getByTestId('sqs-create-submit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/sqs/queues/${name.replace('.', '\\.')}$`),
+        { timeout: 20000 },
+      )
+      created = true
+      await expect(page.getByText('FIFO').first()).toBeVisible({
+        timeout: 15000,
+      })
+      await expect(
+        page.getByText('Content-based deduplication'),
+      ).toBeVisible()
+
+      await page.getByTestId('sqs-send-open').click()
+      await page.getByTestId('sqs-send-body').fill('fifo-body')
+      await page.getByTestId('sqs-send-group-id').fill('g1')
+      await page.getByTestId('sqs-send-submit').click()
+      await expect(page.getByRole('status')).toContainText('Message sent', {
+        timeout: 15000,
+      })
+
+      await page.getByTestId('sqs-detail-delete').click()
+      await page.getByTestId('sqs-confirm-delete').click()
+      await expect(page).toHaveURL(/\/sqs$/, { timeout: 20000 })
+      created = false
+    } finally {
+      if (created) {
+        try {
+          deleteQuiet(queueUrlForName(name))
         } catch {
           /* ignore */
         }

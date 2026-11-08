@@ -17,10 +17,10 @@
       <section class="aws-card" data-od-id="content-card">
         <div class="aws-card-body">
           <div class="aws-toolbar" data-od-id="action-toolbar">
-            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn-icon" aria-label="Refresh" title="Refresh" data-od-id="btn-refresh">↻</button>
             <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-queue" title="Select a row">Delete</button>
             <div class="spacer"></div>
-            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-queue" title="To implement">Create queue</button>
+            <a class="btn btn-primary" href="sqs-create-queue.html" data-od-id="btn-create-queue">Create queue</a>
           </div>
           <div class="aws-table-tools">
             <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
@@ -48,7 +48,7 @@
               <tbody>
                 <tr data-name="awsbox-sqs-demo">
                   <td class="check"><input type="checkbox" aria-label="Select awsbox-sqs-demo" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="queue-awsbox-sqs-demo">awsbox-sqs-demo</button></td>
+                  <td><a href="sqs-queue-detail.html" data-od-id="queue-awsbox-sqs-demo">awsbox-sqs-demo</a></td>
                   <td>Standard</td>
                   <td>2026-11-02 14:18:03</td>
                   <td>12</td>
@@ -56,7 +56,7 @@
                 </tr>
                 <tr data-name="notifications.fifo">
                   <td class="check"><input type="checkbox" aria-label="Select notifications.fifo" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="queue-notifications-fifo">notifications.fifo</button></td>
+                  <td><a href="sqs-queue-detail.html" data-od-id="queue-notifications-fifo">notifications.fifo</a></td>
                   <td>FIFO</td>
                   <td>2026-10-22 08:41:16</td>
                   <td>3</td>
@@ -64,7 +64,7 @@
                 </tr>
                 <tr data-name="orders-ingress">
                   <td class="check"><input type="checkbox" aria-label="Select orders-ingress" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="queue-orders-ingress">orders-ingress</button></td>
+                  <td><a href="sqs-queue-detail.html" data-od-id="queue-orders-ingress">orders-ingress</a></td>
                   <td>Standard</td>
                   <td>2026-09-14 11:05:49</td>
                   <td>0</td>
