@@ -307,6 +307,10 @@
 491	done	Public OSS: drop WSL-centric copy; Linux primary
 495	done	Debt: Linux-first OD start hints (from #491)
 498	done	Debt: smoke MaximumConcurrency without reserved (from #453)
+420	done	(batch/2026-11-04-v002-b)
+428	in-review	Public OSS: polish docs-site (Runa-grade + GitHub Pages prep)
+487	done	Public OSS: single Docker image install path
+499	in-review	Debt: SQS FIFO ESM + MaximumConcurrency message-group ordering (from #453)
 517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
 518	in-review	sns:Protocol/Endpoint on Subscribe
 522	in-review	stackwrangler sls --role-arn deploy as live principal
