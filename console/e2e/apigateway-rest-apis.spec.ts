@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { e2eCreds } from './helpers/env'
 
 const EP = e2eCreds.iamEndpoint
@@ -21,6 +24,50 @@ function aws(args: string[]): string {
       },
     },
   )
+}
+
+function seedLambda(name: string): void {
+  const dir = mkdtempSync(join(tmpdir(), 'e2e-rest-lambda-'))
+  const zipPath = join(dir, 'fn.zip')
+  try {
+    writeFileSync(
+      join(dir, 'index.js'),
+      'exports.handler = async () => ({ statusCode: 200, body: "ok" });\n',
+    )
+    execFileSync('zip', ['-j', zipPath, join(dir, 'index.js')])
+    const roleName = 'awsbox-lambda-basic'
+    const roleArn = `arn:aws:iam::000000000000:role/${roleName}`
+    const trust =
+      '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+    try {
+      aws(['iam', 'get-role', '--role-name', roleName])
+    } catch {
+      aws([
+        'iam',
+        'create-role',
+        '--role-name',
+        roleName,
+        '--assume-role-policy-document',
+        trust,
+      ])
+    }
+    aws([
+      'lambda',
+      'create-function',
+      '--function-name',
+      name,
+      '--runtime',
+      'nodejs20.x',
+      '--role',
+      roleArn,
+      '--handler',
+      'index.handler',
+      '--zip-file',
+      `fileb://${zipPath}`,
+    ])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 }
 
 function seedRestApi(name: string): string {
@@ -142,7 +189,7 @@ function seedRestApi(name: string): string {
   return apiId
 }
 
-test.describe('API Gateway REST APIs UI (#189 / #543)', () => {
+test.describe('API Gateway REST APIs UI (#189 / #543 / #616)', () => {
   test('lists a seeded REST API and opens detail tabs', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-rest-ui-${ts}`
@@ -240,14 +287,17 @@ test.describe('API Gateway REST APIs UI (#189 / #543)', () => {
         .fill('console create path')
       await page.getByTestId('rest-api-create-submit').click()
 
-      await expect(page).toHaveURL(/\/apigateway\/rest-apis\/[^/]+$/, {
-        timeout: 30_000,
-      })
+      await expect(page).toHaveURL(
+        /\/apigateway\/rest-apis\/(?!create$)[^/]+$/,
+        { timeout: 30_000 },
+      )
       await expect(
         page.getByRole('heading', { level: 1, name }),
       ).toBeVisible()
 
-      const match = page.url().match(/\/apigateway\/rest-apis\/([^/?#]+)/)
+      const match = page
+        .url()
+        .match(/\/apigateway\/rest-apis\/(?!create$)([^/?#]+)/)
       apiId = match ? decodeURIComponent(match[1]) : ''
       expect(apiId).toBeTruthy()
 
@@ -264,6 +314,7 @@ test.describe('API Gateway REST APIs UI (#189 / #543)', () => {
         label: '/ping',
       })
       await page.getByTestId('rest-create-method-http').selectOption('GET')
+      await page.getByTestId('rest-create-method-type').selectOption('MOCK')
       await page.getByTestId('rest-create-method-submit').click()
       await expect(page.getByText('GET', { exact: true }).first()).toBeVisible({
         timeout: 15_000,
@@ -284,6 +335,108 @@ test.describe('API Gateway REST APIs UI (#189 / #543)', () => {
         } catch {
           /* ignore */
         }
+      }
+    }
+  })
+
+  test('creates Lambda and HTTP_PROXY methods and edits integration (#616)', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    const ts = Date.now()
+    const name = `e2e-rest-integ-${ts}`
+    const fnName = `e2e-rest-integ-fn-${ts}`
+    let apiId = ''
+    try {
+      seedLambda(fnName)
+
+      await page.goto('/apigateway/rest-apis')
+      await page.getByRole('link', { name: 'Create' }).click()
+      await page.getByTestId('rest-api-create-name').fill(name)
+      await page.getByTestId('rest-api-create-submit').click()
+      await expect(page).toHaveURL(
+        /\/apigateway\/rest-apis\/(?!create$)[^/]+$/,
+        { timeout: 30_000 },
+      )
+      const match = page
+        .url()
+        .match(/\/apigateway\/rest-apis\/(?!create$)([^/?#]+)/)
+      apiId = match ? decodeURIComponent(match[1]) : ''
+      expect(apiId).toBeTruthy()
+
+      await page.getByTestId('rest-api-tab-resources').click()
+      await page.getByTestId('rest-create-resource-open').click()
+      await page.getByTestId('rest-create-resource-path').fill('lambda')
+      await page.getByTestId('rest-create-resource-submit').click()
+      await expect(page.getByText('/lambda', { exact: true })).toBeVisible({
+        timeout: 15_000,
+      })
+
+      await page.getByTestId('rest-create-resource-open').click()
+      await page.getByTestId('rest-create-resource-path').fill('http')
+      await page.getByTestId('rest-create-resource-submit').click()
+      await expect(page.getByText('/http', { exact: true })).toBeVisible({
+        timeout: 15_000,
+      })
+
+      await page.getByTestId('rest-create-method-open').click()
+      await page
+        .getByTestId('rest-create-method-resource')
+        .selectOption({ label: '/lambda' })
+      await page.getByTestId('rest-create-method-http').selectOption('GET')
+      await page
+        .getByTestId('rest-create-method-type')
+        .selectOption('AWS_PROXY')
+      await page.getByTestId('rest-create-method-lambda').selectOption(fnName)
+      await page.getByTestId('rest-create-method-submit').click()
+      await expect(
+        page.getByText('Lambda (aws_proxy)', { exact: true }).first(),
+      ).toBeVisible({ timeout: 30_000 })
+
+      await page.getByTestId('rest-create-method-open').click()
+      await page
+        .getByTestId('rest-create-method-resource')
+        .selectOption({ label: '/http' })
+      await page.getByTestId('rest-create-method-http').selectOption('POST')
+      await page
+        .getByTestId('rest-create-method-type')
+        .selectOption('HTTP_PROXY')
+      await page
+        .getByTestId('rest-create-method-uri')
+        .fill('http://127.0.0.1:9/echo')
+      await page
+        .getByTestId('rest-create-method-integ-http')
+        .selectOption('POST')
+      await page.getByTestId('rest-create-method-submit').click()
+      await expect(
+        page.getByText('HTTP_PROXY', { exact: true }).first(),
+      ).toBeVisible({ timeout: 15_000 })
+
+      await page
+        .getByRole('row', { name: /\/http/ })
+        .getByRole('radio')
+        .check()
+      await page.getByTestId('rest-edit-integration-open').click()
+      await expect(
+        page.getByTestId('rest-edit-integration-modal'),
+      ).toBeVisible()
+      await page.getByTestId('rest-edit-integration-type').selectOption('MOCK')
+      await page.getByTestId('rest-edit-integration-submit').click()
+      await expect(page.getByText('MOCK', { exact: true }).first()).toBeVisible({
+        timeout: 15_000,
+      })
+    } finally {
+      if (apiId) {
+        try {
+          aws(['apigateway', 'delete-rest-api', '--rest-api-id', apiId])
+        } catch {
+          /* ignore */
+        }
+      }
+      try {
+        aws(['lambda', 'delete-function', '--function-name', fnName])
+      } catch {
+        /* ignore */
       }
     }
   })

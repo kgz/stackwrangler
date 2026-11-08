@@ -357,3 +357,10 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - OD daemon reachable but agents failed (`cursor-agent` missing; `opencode` spawn ENOENT). Hand mocks landed instead of a successful `./bin/od-design-run.sh` web-clone.
 - Screens: `apigateway-rest-api-create.html`, `apigateway-rest-api-deploy.html`; list/detail Create + Deploy API enabled and linked. Delete / Actions / Create resource|method|authorizer|stage stay `title="To implement"` in mocks (resource/method wired in React).
 
+## Issue #616 — REST method integration picker (hand mocks)
+
+### Mode
+- OD daemon reachable; hand grey-rose mock (same path as #543) for Create method with integration type picker.
+- Screen: `apigateway-rest-api-create-method.html`. Wired types: MOCK, Lambda `AWS_PROXY`, `HTTP_PROXY`. Disabled `title="To implement"`: AWS (non-proxy), HTTP (non-proxy), VPC link.
+- Detail resources toolbar: Create method links to create-method mock; Edit integration present (disabled until a method row is selected in React).
+

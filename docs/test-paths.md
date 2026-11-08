@@ -311,6 +311,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | KMS console Customer managed keys list | ui | covered | `console/e2e/kms-keys.spec.ts` |
 | API Gateway REST APIs list + detail | ui | covered | `console/e2e/apigateway-rest-apis.spec.ts` |
 | API Gateway REST create + deploy + resource/method | ui | covered | `console/e2e/apigateway-rest-apis.spec.ts` (#543 create path) |
+| API Gateway REST method integration picker (MOCK / Lambda / HTTP_PROXY + edit) | ui | covered | `console/e2e/apigateway-rest-apis.spec.ts` (#616) |
 | KMS key policy delegates to IAM and role Encrypt/Decrypt/GenerateDataKey succeeds | happy | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy without IAM delegation denies a role IAM allows | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy explicit deny Encrypt | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |

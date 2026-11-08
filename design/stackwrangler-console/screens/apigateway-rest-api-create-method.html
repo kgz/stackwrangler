@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create method — API Gateway</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="apigateway-rest-api-create-method" data-nav="apigateway-rest-apis" data-service="apigateway" data-title="Create method" data-crumb="Create method">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">Create method</h1>
+          <div class="aws-subtitle-row">
+            <span>demo-rest</span>
+            <span>REST</span>
+            <span>Regional</span>
+          </div>
+        </div>
+      </div>
+      <p class="aws-desc">
+        <a href="apigateway-rest-api-detail.html">← demo-rest</a>
+      </p>
+      <p class="aws-desc">
+        Add an HTTP method with NONE authorization and a LocalEmu-backed integration
+        (MOCK, Lambda proxy, or HTTP proxy).
+      </p>
+
+      <section class="aws-card" data-od-id="create-method-form">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Method</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="method-resource">Resource <span class="req" aria-hidden="true">*</span></label>
+              <select class="aws-input aws-select" id="method-resource" name="resourceId" data-od-id="field-resource">
+                <option value="root">/</option>
+                <option value="orders" selected>/orders</option>
+                <option value="hello">/hello</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="http-method">HTTP method <span class="req" aria-hidden="true">*</span></label>
+              <select class="aws-input aws-select" id="http-method" name="httpMethod" data-od-id="field-http-method">
+                <option>GET</option>
+                <option selected>POST</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+                <option>HEAD</option>
+                <option>OPTIONS</option>
+                <option>ANY</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Integration</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="integration-type">Integration type <span class="req" aria-hidden="true">*</span></label>
+              <select class="aws-input aws-select" id="integration-type" name="integrationType" data-od-id="field-integration-type">
+                <option value="MOCK">MOCK</option>
+                <option value="AWS_PROXY" selected>Lambda function (AWS_PROXY)</option>
+                <option value="HTTP_PROXY">HTTP proxy</option>
+                <option value="AWS" disabled title="To implement">AWS (non-proxy)</option>
+                <option value="HTTP" disabled title="To implement">HTTP (non-proxy)</option>
+                <option value="VPC_LINK" disabled title="To implement">VPC link</option>
+              </select>
+              <p class="aws-hint">Types LocalEmu can run are enabled. Others stay disabled until wired.</p>
+            </div>
+            <div class="aws-field" data-od-id="field-lambda">
+              <label class="aws-label" for="lambda-fn">Lambda function <span class="req" aria-hidden="true">*</span></label>
+              <select class="aws-input aws-select" id="lambda-fn" name="lambdaFunction" data-od-id="field-lambda-fn">
+                <option>demo-rest-handler</option>
+                <option>demo-rest-authorizer</option>
+              </select>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="http-uri">HTTP endpoint</label>
+              <input class="aws-input" id="http-uri" name="httpUri" type="url" placeholder="http://127.0.0.1:8080/path" disabled title="Shown when Integration type is HTTP proxy" data-od-id="field-http-uri" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="integration-http-method">Integration HTTP method</label>
+              <select class="aws-input aws-select" id="integration-http-method" name="integrationHttpMethod" disabled title="Shown when Integration type is HTTP proxy" data-od-id="field-integration-http">
+                <option>POST</option>
+                <option>GET</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+                <option>ANY</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-method-actions">
+        <a class="btn btn-normal" href="apigateway-rest-api-detail.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-create-method">Create</button>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
