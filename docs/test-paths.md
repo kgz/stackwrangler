@@ -194,6 +194,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ELBv2 ModifyListener reloads default ACM keypair; Add first-default only | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#594](https://github.com/kgz/awsl/issues/594) |
 | ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |
 | ELBv2 RemoveListenerCertificates secondary no-flip; clear-default → LocalEmu PEM | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#628](https://github.com/kgz/awsl/issues/628) |
+| ELBv2 HTTPS ALB ModifyListener / Add first-default ACM reload | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#629](https://github.com/kgz/awsl/issues/629) |
 | ACM request DNS-validated cert + describe/list | happy | covered | `./smokes/security/acm-smoke.sh` · [acm.md](acm.md) |
 | ACM import-certificate | happy | covered | `./smokes/security/acm-smoke.sh` |
 | ACM ARN on API GW custom domain | happy | covered | `./smokes/security/acm-smoke.sh` |
