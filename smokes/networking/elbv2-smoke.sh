@@ -521,6 +521,60 @@ echo "  ${TLS_BODY}"
 echo "$TLS_BODY" | grep -q BTLS || fail "TLS listener did not reach BTLS (${TLS_BODY})"
 echo "OK: TLS forward"
 
+echo "==> TLS presents ACM certificate (#242)"
+ACM_PEM="$(aws acm get-certificate --certificate-arn "$CERT" --query Certificate --output text)"
+[[ -n "$ACM_PEM" && "$ACM_PEM" == -----BEGIN* ]] || fail "acm get-certificate returned no PEM"
+DEFAULT_PEM="$(docker exec -i "$LS" /opt/code/localemu/.venv/bin/python - <<'PY'
+from localemu.utils.ssl import get_cert_pem_file_path, install_predefined_cert_if_available
+install_predefined_cert_if_available()
+path = get_cert_pem_file_path()
+with open(path, "r", encoding="utf-8") as fh:
+    print(fh.read())
+PY
+)"
+[[ -n "$DEFAULT_PEM" && "$DEFAULT_PEM" == -----BEGIN* ]] || fail "LocalEmu default cert unavailable"
+pem_sha256() {
+	# First CERTIFICATE block → DER → sha256 hex (no colons).
+	printf '%s\n' "$1" | awk '
+		/BEGIN CERTIFICATE/{p=1}
+		p{print}
+		/END CERTIFICATE/{exit}
+	' | openssl x509 -outform DER 2>/dev/null | openssl dgst -sha256 -hex | awk '{print $NF}'
+}
+ACM_FP="$(pem_sha256 "$ACM_PEM")"
+DEFAULT_FP="$(pem_sha256 "$DEFAULT_PEM")"
+[[ -n "$ACM_FP" && -n "$DEFAULT_FP" ]] || fail "could not fingerprint ACM/default certs"
+[[ "$ACM_FP" != "$DEFAULT_FP" ]] || fail "ACM cert fingerprint matches LocalEmu default"
+PEER_FP="$(python3 - "$EDGE" "$TLS_PORT" <<'PY'
+import hashlib, socket, ssl, sys
+ctx = ssl._create_unverified_context()
+raw = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)
+ss = ctx.wrap_socket(raw, server_hostname="elbv2.local")
+print(hashlib.sha256(ss.getpeercert(binary_form=True)).hexdigest())
+ss.close()
+PY
+)"
+[[ "$PEER_FP" == "$ACM_FP" ]] || fail "listener presented ${PEER_FP}, expected ACM ${ACM_FP}"
+echo "  peer fingerprint matches ACM (${PEER_FP:0:16}…)"
+DEFAULT_CERT="$(printf '%s\n' "$DEFAULT_PEM" | awk '
+	/BEGIN CERTIFICATE/{p=1}
+	p{print}
+	/END CERTIFICATE/{exit}
+')"
+[[ -n "$DEFAULT_CERT" ]] || fail "LocalEmu default cert block missing"
+PIN_RC=0
+python3 - "$EDGE" "$TLS_PORT" "$DEFAULT_CERT" <<'PY' 2>/dev/null || PIN_RC=$?
+import socket, ssl, sys
+pin = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+pin.verify_mode = ssl.CERT_REQUIRED
+pin.check_hostname = False
+pin.load_verify_locations(cadata=sys.argv[3])
+raw = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)
+pin.wrap_socket(raw, server_hostname="elbv2.local")
+PY
+[[ "$PIN_RC" -ne 0 ]] || fail "client pinning LocalEmu default accepted ACM listener"
+echo "OK: ACM cert presented; LocalEmu-default pin rejected"
+
 echo "==> unhealthy target drops out"
 docker exec "$CA" sh -c 'kill "$(cat /tmp/tcp-443.pid)"' || fail "could not stop A443"
 UNHEALTHY=""

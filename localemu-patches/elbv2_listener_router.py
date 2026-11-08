@@ -2,13 +2,14 @@
 
 HTTP listeners honour host and path rules. TCP listeners bind the
 requested port and, when host iptables is available, DNAT in the host
-netns so instance targets see the client source address. TLS listeners
-terminate with the LocalEmu certificate and then forward bytes.
+netns so instance targets see the client source address. TLS/HTTPS
+listeners terminate with the ACM certificate attached to the listener
+when present, otherwise LocalEmu's default self-signed certificate.
 
 Scope:
 - HTTP listeners: plain HTTP reverse proxy.
-- HTTPS listeners: real TLS termination using LocalEmu's self-signed
-  certificate (``utils/ssl.py``); decrypted request is forwarded as
+- HTTPS listeners: real TLS termination using the listener ACM
+  certificate (or LocalEmu default); decrypted request is forwarded as
   HTTP to the target with ``X-Forwarded-Proto: https``.
 - Round-robin across healthy targets (falls back to all registered if none
   are healthy yet, so initial requests don't 503 while health checks warm up).
@@ -17,12 +18,14 @@ Scope:
 
 from __future__ import annotations
 
+import hashlib
 import http.client
 import http.server
 import logging
 import os
 import socket
 import ssl
+import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
@@ -718,6 +721,54 @@ def _localemu_cert_path() -> str:
     return get_cert_pem_file_path()
 
 
+def _acm_cert_pem_path(certificate_arn: str) -> Optional[str]:
+    """Write the ACM keypair to a combined PEM and return its path.
+
+    Looks the ARN up in moto's ACM backend (same process as LocalEmu).
+    Returns ``None`` when the ARN is missing or the keypair cannot be
+    loaded so callers can fall back to the LocalEmu default cert.
+    """
+    if not certificate_arn:
+        return None
+    parts = certificate_arn.split(":")
+    if len(parts) < 6 or parts[2] != "acm":
+        return None
+    region = parts[3]
+    account_id = parts[4]
+    try:
+        import moto.backends as moto_backends
+
+        acm = moto_backends.get_backend("acm")[account_id][region]
+        bundle = acm.get_certificate(certificate_arn)
+        key = bundle.key if isinstance(bundle.key, bytes) else bundle.key.encode()
+        cert = bundle.cert if isinstance(bundle.cert, bytes) else bundle.cert.encode()
+    except Exception as exc:
+        LOG.warning("ACM certificate %s not loadable: %s", certificate_arn, exc)
+        return None
+
+    digest = hashlib.sha256(certificate_arn.encode()).hexdigest()[:16]
+    path = os.path.join(tempfile.gettempdir(), f"localemu-elbv2-acm-{digest}.pem")
+    payload = key.rstrip(b"\n") + b"\n" + cert
+    if not cert.endswith(b"\n"):
+        payload += b"\n"
+    try:
+        with open(path, "wb") as fh:
+            fh.write(payload)
+    except OSError as exc:
+        LOG.warning("Could not write ACM PEM for %s: %s", certificate_arn, exc)
+        return None
+    return path
+
+
+def _tls_cert_path(certificate_arn: Optional[str] = None) -> str:
+    """Prefer the listener ACM keypair; otherwise LocalEmu's default cert."""
+    if certificate_arn:
+        acm_path = _acm_cert_pem_path(certificate_arn)
+        if acm_path:
+            return acm_path
+    return _localemu_cert_path()
+
+
 def _allocate_port() -> int:
     """Allocate an ephemeral TCP port by binding to :0 and releasing."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -867,21 +918,22 @@ class ListenerRouter:
         target_group_arn: str,
         scheme: str = "internet-facing",
         vpc_networks: Optional[list[str]] = None,
+        certificate_arn: Optional[str] = None,
     ) -> int:
         """Start a listener on the requested port and return that port.
 
-        HTTPS listeners terminate TLS using LocalEmu's self-signed
-        certificate (``utils/ssl.get_cert_pem_file_path()``) — the same
-        PEM served by the main gateway, so test clients only have to
-        trust one root. Without this wrap, a TLS ClientHello on the
-        listener port is interpreted as plain HTTP and the server
-        replies with a 400 that the TLS client can't parse.
+        HTTPS listeners terminate TLS with the ACM certificate attached
+        to the listener when present, otherwise LocalEmu's default
+        self-signed PEM (``utils/ssl.get_cert_pem_file_path()``). Without
+        this wrap, a TLS ClientHello on the listener port is interpreted
+        as plain HTTP and the server replies with a 400 that the TLS
+        client can't parse.
         """
         proto = (protocol or "").upper()
         if proto in {"TCP", "TLS"}:
             return self._start_l4(
                 lb_arn, listener_arn, proto, requested_port, target_group_arn,
-                scheme, list(vpc_networks or []),
+                scheme, list(vpc_networks or []), certificate_arn,
             )
 
         port = int(requested_port or 80)
@@ -909,7 +961,7 @@ class ListenerRouter:
 
         if (protocol or "").upper() in {"HTTPS", "TLS"}:
             try:
-                cert_pem_path = _localemu_cert_path()
+                cert_pem_path = _tls_cert_path(certificate_arn)
                 ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
                 ssl_ctx.load_cert_chain(certfile=cert_pem_path)
                 server.socket = ssl_ctx.wrap_socket(server.socket, server_side=True)
@@ -1008,6 +1060,7 @@ class ListenerRouter:
     def _start_l4(
         self, lb_arn: str, listener_arn: str, protocol: str, requested_port: int,
         target_group_arn: str, scheme: str, vpc_networks: list[str],
+        certificate_arn: Optional[str] = None,
     ) -> int:
         port = int(requested_port or 0)
         if port <= 0:
@@ -1021,7 +1074,7 @@ class ListenerRouter:
         if protocol == "TLS":
             try:
                 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                ctx.load_cert_chain(certfile=_localemu_cert_path())
+                ctx.load_cert_chain(certfile=_tls_cert_path(certificate_arn))
                 l4.ssl_ctx = ctx
             except Exception as exc:
                 LOG.warning("ELBv2 TLS listener %s has no cert: %s", listener_arn, exc)
