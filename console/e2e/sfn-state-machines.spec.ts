@@ -23,11 +23,14 @@ function aws(args: string[]): string {
   )
 }
 
-test.describe('Step Functions state machines UI (#175)', () => {
-  test('lists a seeded state machine', async ({ page }) => {
+test.describe('Step Functions state machines UI (#175 / #610)', () => {
+  test('lists a seeded state machine, opens detail, starts execution', async ({
+    page,
+  }) => {
     const ts = Date.now()
     const name = `e2e-sfn-ui-${ts}`
     const role = `e2e-sfn-role-${ts}`
+    const execName = `run-${ts}`
     const trust =
       '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
     const def =
@@ -76,14 +79,35 @@ test.describe('Step Functions state machines UI (#175)', () => {
         page.getByTestId('sfn-state-machines-table'),
       ).toBeVisible()
       await expect(
-        page.getByRole('button', { name, exact: true }),
+        page.getByRole('link', { name, exact: true }),
       ).toBeVisible({ timeout: 15000 })
       await expect(
         page.getByRole('button', { name: 'Create state machine' }),
       ).toBeDisabled()
+
+      await page.getByRole('link', { name, exact: true }).click()
+      await expect(page).toHaveURL(
+        new RegExp(`/stepfunctions/state-machines/${name}$`),
+      )
       await expect(
-        page.getByRole('button', { name: 'Create state machine' }),
-      ).toHaveAttribute('title', 'To implement')
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible()
+      await expect(page.getByTestId('sfn-tab-details')).toBeVisible()
+      await page.getByTestId('sfn-tab-definition').click()
+      await expect(page.getByTestId('sfn-definition')).toContainText('Pass')
+
+      await page.getByTestId('sfn-start-execution').click()
+      await expect(page.getByTestId('sfn-start-modal')).toBeVisible()
+      await page.getByTestId('sfn-exec-name').fill(execName)
+      await page.getByTestId('sfn-exec-input').fill('{"ping":true}')
+      await page.getByTestId('sfn-start-submit').click()
+
+      await expect(page.getByTestId('sfn-executions-table')).toBeVisible({
+        timeout: 15000,
+      })
+      await expect(
+        page.getByTestId('sfn-executions-table').getByText(execName),
+      ).toBeVisible({ timeout: 15000 })
     } finally {
       if (smArn) {
         try {

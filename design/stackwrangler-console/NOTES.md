@@ -350,3 +350,20 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="To implement"`: Create rule / Create event bus, Refresh, table settings, column filters, name dead links
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `eventbridge-rules.html` / `eventbridge-buses.html`
+
+## Issue #610 — Step Functions Start execution (from #533)
+
+### Mode
+- Enable **Start execution** on the #533 state-machine detail mock (grey-rose)
+- List name cells → detail so Start is reachable without Create (#533)
+- React wires StartExecution modal (optional name + JSON input) against LocalEmu
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `sfn-state-machine-detail.html` | Start execution enabled (header + Executions tab) |
+| `sfn-state-machines.html` | Name → detail |
+
+### Dead controls
+- `title="To implement"`: Actions ▾, Refresh (static mock), Create state machine (list; #533)
+- Working: name → detail, Start execution buttons

@@ -138,6 +138,7 @@
 549	backlog	Debt: DynamoDB create/detail (from #174)
 175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
 533	backlog	Debt: Step Functions create + state-machine detail (from #175)
+610	in-progress	Debt: Step Functions Start execution (from #533)
 176	in-review	Debt: Secrets console (from #72) — OD approved; React list shipped
 177	done	Debt: KMS console (from #71)
 178	in-review	Debt: Kinesis console (from #68)

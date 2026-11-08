@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { StateMachineListItem } from '@aws-sdk/client-sfn'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton } from '../components/S3Ui'
 import {
-  DeadLink,
   EmptyRow,
   FilterHeader,
   ListCard,
@@ -13,14 +13,7 @@ import {
   SortHeader,
 } from '../components/ServiceUi'
 import { formatServiceDate } from '../lib/format'
-import { listStateMachines } from '../lib/sfn'
-
-function typeLabel(type: string | undefined): string {
-  if (!type) return '—'
-  if (type === 'STANDARD') return 'Standard'
-  if (type === 'EXPRESS') return 'Express'
-  return type
-}
+import { listStateMachines, typeLabel } from '../lib/sfn'
 
 export function StepFunctionsPage() {
   const [machines, setMachines] = useState<StateMachineListItem[]>([])
@@ -117,7 +110,12 @@ export function StepFunctionsPage() {
                   />
                   <td>
                     <ResourceLabel ids={[name, arn]} detail={isSelected}>
-                      <DeadLink>{name}</DeadLink>
+                      <Link
+                        to={`/stepfunctions/state-machines/${encodeURIComponent(name)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {name}
+                      </Link>
                     </ResourceLabel>
                   </td>
                   <td>{typeLabel(m.type)}</td>
