@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton } from '../components/S3Ui'
 import {
-  DeadLink,
   EmptyRow,
   FilterHeader,
   ListCard,
@@ -67,7 +67,9 @@ export function SnsTopicsPage() {
             Delete
           </DeadButton>
           <div className="spacer" />
-          <DeadButton variant="primary">Create topic</DeadButton>
+          <Link className="btn btn-primary" to="/sns/create">
+            Create topic
+          </Link>
         </>
       }
       placeholder="Filter topics by name"
@@ -109,7 +111,12 @@ export function SnsTopicsPage() {
                   />
                   <td>
                     <ResourceLabel ids={[t.name, t.arn]} detail={isSelected}>
-                      <DeadLink>{t.name}</DeadLink>
+                      <Link
+                        to={`/sns/topics/${encodeURIComponent(t.name)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {t.name}
+                      </Link>
                     </ResourceLabel>
                   </td>
                   <td>{t.type}</td>

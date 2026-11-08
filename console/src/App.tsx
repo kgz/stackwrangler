@@ -17,6 +17,8 @@ import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
 import { EventBridgeBusesPage } from './pages/EventBridgeBusesPage'
 import { KmsKeysPage } from './pages/KmsKeysPage'
+import { SnsCreateTopicPage } from './pages/SnsCreateTopicPage'
+import { SnsTopicDetailPage } from './pages/SnsTopicDetailPage'
 import { SnsTopicsPage } from './pages/SnsTopicsPage'
 import { DynamoDBTablesPage } from './pages/DynamoDBTablesPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
@@ -66,6 +68,11 @@ export default function App() {
           <Route path="events/buses" element={<EventBridgeBusesPage />} />
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="sns" element={<SnsTopicsPage />} />
+          <Route path="sns/create" element={<SnsCreateTopicPage />} />
+          <Route
+            path="sns/topics/:name"
+            element={<SnsTopicDetailPage />}
+          />
           <Route path="dynamodb" element={<DynamoDBTablesPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route

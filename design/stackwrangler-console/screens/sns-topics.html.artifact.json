@@ -11,9 +11,12 @@
     "zip"
   ],
   "createdAt": "2026-11-06T09:45:00.000Z",
-  "updatedAt": "2026-11-06T09:45:00.000Z",
+  "updatedAt": "2026-11-08T11:57:00.000Z",
   "metadata": {
     "inferred": true,
-    "reconciled": true
+    "reconciled": true,
+    "handMock": true,
+    "issue": 546,
+    "note": "Wired Create topic + name→detail links for #546; Delete stays stubbed."
   }
 }
