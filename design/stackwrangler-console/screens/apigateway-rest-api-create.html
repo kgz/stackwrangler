@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create REST API — API Gateway</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="apigateway-rest-api-create" data-nav="apigateway-rest-apis" data-service="apigateway" data-title="Create REST API" data-crumb="Create REST API">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create REST API</h1>
+      <p class="aws-desc">
+        Create an empty REST API, then add resources and methods and deploy a stage.
+        Import from OpenAPI stays on the CLI / Serverless path for now.
+      </p>
+
+      <section class="aws-card" data-od-id="create-method">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Choose an API type</h2>
+          <div class="aws-choice-row" role="group" aria-label="API type" data-od-id="api-type-options">
+            <button type="button" class="aws-choice is-selected" aria-pressed="true" data-od-id="opt-rest-new">
+              <strong>New API</strong>
+              <span>Start with an empty REST API (Regional).</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-clone">
+              <strong>Clone from existing</strong>
+              <span>Copy resources and methods from another API.</span>
+            </button>
+            <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-import">
+              <strong>Import from OpenAPI</strong>
+              <span>Use an OpenAPI 3 definition.</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" style="margin-top:16px" data-od-id="settings">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Settings</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="api-name">API name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="api-name" name="apiName" type="text" autocomplete="off" placeholder="my-rest-api" value="orders-api" data-od-id="field-api-name" />
+              <p class="aws-hint">Letters, numbers, and spaces. Shown in the REST APIs list.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="api-desc">Description — optional</label>
+              <input class="aws-input" id="api-desc" name="description" type="text" placeholder="Optional" data-od-id="field-description" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">API endpoint type</label>
+              <ul class="aws-radio-list" data-od-id="endpoint-type">
+                <li>
+                  <label>
+                    <input type="radio" name="endpointType" value="REGIONAL" checked data-od-id="endpoint-regional" />
+                    <span>
+                      <strong>Regional</strong>
+                      <span class="sub">Default for LocalEmu. Clients call the regional endpoint.</span>
+                    </span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="endpointType" value="EDGE" disabled title="To implement" data-od-id="endpoint-edge" />
+                    <span>
+                      <strong>Edge-optimized</strong>
+                      <span class="sub">CloudFront distribution in front of the API.</span>
+                    </span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="endpointType" value="PRIVATE" disabled title="To implement" data-od-id="endpoint-private" />
+                    <span>
+                      <strong>Private</strong>
+                      <span class="sub">Accessible only from a VPC endpoint.</span>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-actions">
+        <a class="btn btn-normal" href="apigateway-rest-apis.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-create-api">Create API</button>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
