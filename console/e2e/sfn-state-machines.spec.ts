@@ -98,6 +98,13 @@ test.describe('Step Functions state machines UI (#175 / #610)', () => {
 
       await page.getByTestId('sfn-start-execution').click()
       await expect(page.getByTestId('sfn-start-modal')).toBeVisible()
+      await page.getByTestId('sfn-exec-input').fill('{not-json')
+      await page.getByTestId('sfn-start-submit').click()
+      await expect(page.getByTestId('sfn-start-modal')).toBeVisible()
+      await expect(
+        page.getByTestId('sfn-start-modal').getByText('Input must be valid JSON'),
+      ).toBeVisible()
+
       await page.getByTestId('sfn-exec-name').fill(execName)
       await page.getByTestId('sfn-exec-input').fill('{"ping":true}')
       await page.getByTestId('sfn-start-submit').click()

@@ -48,6 +48,7 @@ export function StepFunctionsDetailPage() {
   const [executions, setExecutions] = useState<ExecutionListItem[]>([])
   const [tab, setTab] = useState<DetailTab>('details')
   const [error, setError] = useState<string | null>(null)
+  const [startError, setStartError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
@@ -84,14 +85,14 @@ export function StepFunctionsDetailPage() {
   function openStart() {
     setExecName('')
     setExecInput(DEFAULT_INPUT)
-    setError(null)
+    setStartError(null)
     setShowStart(true)
   }
 
   async function onStart() {
     if (!detail) return
     setBusy(true)
-    setError(null)
+    setStartError(null)
     setToast(null)
     setStarting(true)
     try {
@@ -101,11 +102,12 @@ export function StepFunctionsDetailPage() {
         input: execInput,
       })
       setShowStart(false)
+      setStartError(null)
       setTab('executions')
       setToast(`Started ${result.executionArn.split(':').pop() ?? 'execution'}`)
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setStartError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
       setStarting(false)
@@ -295,6 +297,7 @@ export function StepFunctionsDetailPage() {
         <div className="modal-backdrop">
           <div className="modal" data-testid="sfn-start-modal">
             <h3>Start execution</h3>
+            <Notices error={startError} />
             <label htmlFor="sfn-exec-name">Name — optional</label>
             <input
               id="sfn-exec-name"
