@@ -28,7 +28,10 @@ export function EventBridgeRulesPage() {
       const list = await listRules()
       setRules(list)
       setSelected((prev) =>
-        prev && list.some((r) => (r.arn || r.name) === prev) ? prev : null,
+        prev &&
+        list.some((r) => (r.arn || `${r.eventBusName}/${r.name}`) === prev)
+          ? prev
+          : null,
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
