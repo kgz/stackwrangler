@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Send and receive messages — SQS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sqs-send-receive" data-nav="sqs-queues" data-service="sqs" data-title="Send and receive messages" data-crumb="Send and receive messages">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Send and receive messages</h1>
+      <p class="aws-desc">
+        Queue <strong>awsbox-sqs-demo</strong> · LocalEmu
+        <code>SendMessage</code> / <code>ReceiveMessage</code> / <code>DeleteMessage</code>.
+      </p>
+      <p class="aws-desc"><a href="sqs-queue-detail.html" data-od-id="back-detail">← awsbox-sqs-demo</a></p>
+
+      <section class="aws-card" data-od-id="send-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Send message</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="message-body">Body <span class="req" aria-hidden="true">*</span></label>
+              <textarea class="aws-input" id="message-body" name="body" rows="6" placeholder='{"hello":"world"}' data-od-id="field-body">{"event":"checkout","orderId":"42"}</textarea>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="delay-seconds">Delay seconds</label>
+              <input class="aws-input" id="delay-seconds" name="DelaySeconds" type="number" min="0" max="900" value="0" data-od-id="field-delay" style="max-width:160px" />
+              <p class="aws-hint">0–900. Overrides the queue default delay for this message.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="fifo-section">
+            <h2 class="aws-section-title">FIFO parameters</h2>
+            <p class="aws-desc">Shown when the target queue is FIFO.</p>
+            <div class="aws-field">
+              <label class="aws-label" for="message-group-id">Message group ID <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="message-group-id" name="MessageGroupId" type="text" value="default" data-od-id="field-group-id" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="message-dedup-id">Message deduplication ID</label>
+              <input class="aws-input" id="message-dedup-id" name="MessageDeduplicationId" type="text" placeholder="optional when content-based dedup is on" data-od-id="field-dedup-id" />
+            </div>
+          </div>
+
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Message attributes</h2>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-attrs">Add attribute…</button>
+          </div>
+
+          <div class="aws-toolbar" data-od-id="send-actions">
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" data-od-id="btn-send">Send message</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" style="margin-top:16px" data-od-id="receive-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Receive messages</h2>
+          <p class="aws-desc">
+            Poll peeks with <code>VisibilityTimeout=0</code> so messages stay available
+            (AWS console behaviour). Delete removes them via <code>DeleteMessage</code>.
+          </p>
+          <div class="aws-toolbar" data-od-id="receive-toolbar" style="margin-bottom:12px">
+            <div class="aws-field" style="margin:0">
+              <label class="aws-label" for="max-messages">Max number of messages</label>
+              <input class="aws-input" id="max-messages" type="number" min="1" max="10" value="10" data-od-id="field-max-messages" style="max-width:100px" />
+            </div>
+            <button type="button" class="btn btn-normal" data-od-id="btn-poll">Poll for messages</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row" data-od-id="btn-delete-messages">Delete</button>
+          </div>
+          <table class="aws-table" data-od-id="messages-table">
+            <thead>
+              <tr>
+                <th scope="col" style="width:2.5rem"></th>
+                <th scope="col">Message ID</th>
+                <th scope="col">Body</th>
+                <th scope="col">Size</th>
+                <th scope="col">Receive count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5" class="aws-empty">No messages polled yet. Choose <strong>Poll for messages</strong>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="page-actions">
+        <a class="btn btn-normal" href="sqs-queue-detail.html" data-od-id="btn-cancel">Back to queue</a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

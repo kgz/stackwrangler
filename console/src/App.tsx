@@ -15,6 +15,7 @@ import { SecretsPage } from './pages/SecretsPage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { SqsCreateQueuePage } from './pages/SqsCreateQueuePage'
 import { SqsQueueDetailPage } from './pages/SqsQueueDetailPage'
+import { SqsSendReceivePage } from './pages/SqsSendReceivePage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
 import { EventBridgeBusesPage } from './pages/EventBridgeBusesPage'
@@ -65,6 +66,10 @@ export default function App() {
           <Route path="kinesis" element={<KinesisStreamsPage />} />
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="sqs/create" element={<SqsCreateQueuePage />} />
+          <Route
+            path="sqs/queues/:name/send-receive"
+            element={<SqsSendReceivePage />}
+          />
           <Route
             path="sqs/queues/:name"
             element={<SqsQueueDetailPage />}

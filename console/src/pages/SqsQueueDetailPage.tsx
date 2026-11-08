@@ -6,7 +6,7 @@ import { formatServiceDate } from '../lib/format'
 import {
   deleteQueue,
   describeQueue,
-  sendQueueMessage,
+  purgeQueue,
   type SqsQueueDetail,
 } from '../lib/sqs'
 
@@ -17,15 +17,11 @@ export function SqsQueueDetailPage() {
   const [detail, setDetail] = useState<SqsQueueDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const [sendError, setSendError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [sendOpen, setSendOpen] = useState(false)
+  const [confirmPurge, setConfirmPurge] = useState(false)
+  const [purgeTyped, setPurgeTyped] = useState('')
   const [busy, setBusy] = useState(false)
-  const [messageBody, setMessageBody] = useState('')
-  const [delaySeconds, setDelaySeconds] = useState('0')
-  const [messageGroupId, setMessageGroupId] = useState('default')
-  const [messageDeduplicationId, setMessageDeduplicationId] = useState('')
 
   const refresh = useCallback(async () => {
     if (!name) return
@@ -60,61 +56,25 @@ export function SqsQueueDetailPage() {
     }
   }
 
-  function contentBasedDedupEnabled(queue: SqsQueueDetail): boolean {
-    return queue.contentBasedDeduplication === 'true'
-  }
-
-  async function onSend() {
+  async function onPurge() {
     if (!detail) return
-    const body = messageBody
-    if (!body.trim()) {
-      setSendError('Message body is required')
-      return
-    }
-    const delay = Number(delaySeconds)
-    if (!Number.isFinite(delay) || delay < 0 || delay > 900) {
-      setSendError('Delay seconds must be between 0 and 900')
-      return
-    }
-    if (detail.fifoQueue && !messageGroupId.trim()) {
-      setSendError('Message group ID is required for FIFO queues')
-      return
-    }
-    const needsDedupId =
-      detail.fifoQueue && !contentBasedDedupEnabled(detail)
-    if (needsDedupId && !messageDeduplicationId.trim()) {
-      setSendError(
-        'Message deduplication ID is required when content-based deduplication is off',
-      )
+    if (purgeTyped.trim().toLowerCase() !== 'purge') {
+      setError('Type purge to confirm')
       return
     }
     setBusy(true)
-    setSendError(null)
+    setError(null)
     setNotice(null)
     try {
-      const messageId = await sendQueueMessage({
-        queueUrl: detail.url,
-        body,
-        delaySeconds: delay,
-        messageGroupId: detail.fifoQueue
-          ? messageGroupId.trim()
-          : undefined,
-        messageDeduplicationId:
-          detail.fifoQueue && messageDeduplicationId.trim()
-            ? messageDeduplicationId.trim()
-            : undefined,
-      })
-      setSendOpen(false)
-      setSendError(null)
-      setMessageBody('')
-      setNotice(
-        messageId
-          ? `Message sent (${messageId})`
-          : 'Message sent',
-      )
+      await purgeQueue(detail.url)
+      setConfirmPurge(false)
+      setPurgeTyped('')
+      setNotice(`Purged queue ${detail.name}`)
       await refresh()
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err))
+      setConfirmPurge(false)
+      setPurgeTyped('')
     } finally {
       setBusy(false)
     }
@@ -175,24 +135,42 @@ export function SqsQueueDetailPage() {
               type="button"
               className="btn btn-normal"
               disabled={busy || !detail}
+              onClick={() => {
+                setError(null)
+                setPurgeTyped('')
+                setConfirmPurge(true)
+              }}
+              data-testid="sqs-detail-purge"
+            >
+              Purge
+            </button>
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={busy || !detail}
               onClick={() => setConfirmDelete(true)}
               data-testid="sqs-detail-delete"
             >
               Delete
             </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={busy || !detail}
-              onClick={() => {
-                setNotice(null)
-                setSendError(null)
-                setSendOpen(true)
-              }}
-              data-testid="sqs-send-open"
-            >
-              Send and receive messages
-            </button>
+            {detail ? (
+              <Link
+                className="btn btn-primary"
+                to={`/sqs/queues/${encodeURIComponent(detail.name)}/send-receive`}
+                data-testid="sqs-send-open"
+              >
+                Send and receive messages
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled
+                data-testid="sqs-send-open"
+              >
+                Send and receive messages
+              </button>
+            )}
           </>
         }
       />
@@ -266,97 +244,33 @@ export function SqsQueueDetailPage() {
         </div>
       ) : null}
 
-      {sendOpen && detail ? (
+      {confirmPurge && detail ? (
         <div className="modal-backdrop">
           <div
             className="modal"
             role="dialog"
             aria-modal="true"
-            style={{ maxWidth: 640, width: '100%' }}
-            data-testid="sqs-send-modal"
+            data-testid="sqs-purge-modal"
           >
-            <h3>Send message</h3>
+            <h3>Purge queue?</h3>
             <p style={{ color: 'var(--awsbox-quiet)', marginTop: 0 }}>
-              Send a message to <strong>{detail.name}</strong> via{' '}
-              <code>SendMessage</code>.
+              Delete all messages in <strong>{detail.name}</strong>, including
+              in-flight messages. This cannot be undone. Type{' '}
+              <code>purge</code> to confirm.
             </p>
-            <Notices error={sendError} />
-            <div className="aws-form-stack">
-              <div className="aws-field">
-                <label className="aws-label" htmlFor="sqs-message-body">
-                  Body <span className="req">*</span>
-                </label>
-                <textarea
-                  className="aws-input"
-                  id="sqs-message-body"
-                  rows={8}
-                  value={messageBody}
-                  onChange={(e) => setMessageBody(e.target.value)}
-                  data-testid="sqs-send-body"
-                />
-              </div>
-              <div className="aws-field">
-                <label className="aws-label" htmlFor="sqs-delay-seconds">
-                  Delay seconds
-                </label>
-                <input
-                  className="aws-input"
-                  id="sqs-delay-seconds"
-                  type="number"
-                  min={0}
-                  max={900}
-                  value={delaySeconds}
-                  onChange={(e) => setDelaySeconds(e.target.value)}
-                  data-testid="sqs-send-delay"
-                  style={{ maxWidth: 160 }}
-                />
-              </div>
-              {detail.fifoQueue ? (
-                <>
-                  <div className="aws-field">
-                    <label
-                      className="aws-label"
-                      htmlFor="sqs-message-group-id"
-                    >
-                      Message group ID <span className="req">*</span>
-                    </label>
-                    <input
-                      className="aws-input"
-                      id="sqs-message-group-id"
-                      type="text"
-                      value={messageGroupId}
-                      onChange={(e) => setMessageGroupId(e.target.value)}
-                      data-testid="sqs-send-group-id"
-                    />
-                  </div>
-                  <div className="aws-field">
-                    <label
-                      className="aws-label"
-                      htmlFor="sqs-message-dedup-id"
-                    >
-                      Message deduplication ID
-                      {!contentBasedDedupEnabled(detail) ? (
-                        <span className="req">*</span>
-                      ) : null}
-                    </label>
-                    <input
-                      className="aws-input"
-                      id="sqs-message-dedup-id"
-                      type="text"
-                      value={messageDeduplicationId}
-                      onChange={(e) =>
-                        setMessageDeduplicationId(e.target.value)
-                      }
-                      data-testid="sqs-send-dedup-id"
-                      placeholder={
-                        contentBasedDedupEnabled(detail)
-                          ? 'optional when content-based dedup is on'
-                          : undefined
-                      }
-                    />
-                  </div>
-                </>
-              ) : null}
+            <div className="aws-field">
+              <label className="aws-label" htmlFor="sqs-purge-confirm">
+                Confirm
+              </label>
+              <input
+                className="aws-input"
+                id="sqs-purge-confirm"
+                type="text"
+                value={purgeTyped}
+                onChange={(e) => setPurgeTyped(e.target.value)}
+                data-testid="sqs-purge-confirm-input"
+                autoComplete="off"
+              />
             </div>
             <div className="modal-actions">
               <button
@@ -364,8 +278,8 @@ export function SqsQueueDetailPage() {
                 className="btn btn-normal"
                 disabled={busy}
                 onClick={() => {
-                  setSendError(null)
-                  setSendOpen(false)
+                  setConfirmPurge(false)
+                  setPurgeTyped('')
                 }}
               >
                 Cancel
@@ -373,11 +287,13 @@ export function SqsQueueDetailPage() {
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={busy}
-                onClick={() => void onSend()}
-                data-testid="sqs-send-submit"
+                disabled={
+                  busy || purgeTyped.trim().toLowerCase() !== 'purge'
+                }
+                onClick={() => void onPurge()}
+                data-testid="sqs-confirm-purge"
               >
-                {busy ? 'Sending…' : 'Send message'}
+                {busy ? 'Purging…' : 'Purge'}
               </button>
             </div>
           </div>

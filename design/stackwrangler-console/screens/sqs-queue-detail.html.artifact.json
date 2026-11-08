@@ -11,12 +11,12 @@
     "zip"
   ],
   "createdAt": "2026-11-08T11:56:57.000Z",
-  "updatedAt": "2026-11-08T11:56:57.000Z",
+  "updatedAt": "2026-11-08T12:36:05.000Z",
   "metadata": {
     "inferred": true,
     "reconciled": true,
     "handMock": true,
-    "issue": 548,
-    "note": "OD run failed: opencode ENOENT (cli_not_installed); hand mock vs kinesis-stream-detail / GetQueueAttributes fields"
+    "issue": 627,
+    "note": "Extended for #627 Purge + link to send-receive; prior #548 hand mock"
   }
 }
