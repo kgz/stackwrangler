@@ -18,7 +18,6 @@ Scope:
 
 from __future__ import annotations
 
-import hashlib
 import http.client
 import http.server
 import logging
@@ -721,6 +720,10 @@ def _localemu_cert_path() -> str:
     return get_cert_pem_file_path()
 
 
+# ARN -> combined PEM path (mkstemp, mode 0o600). Reused across listeners.
+_acm_pem_cache: dict[str, str] = {}
+
+
 def _acm_cert_pem_path(certificate_arn: str) -> Optional[str]:
     """Write the ACM keypair to a combined PEM and return its path.
 
@@ -730,6 +733,9 @@ def _acm_cert_pem_path(certificate_arn: str) -> Optional[str]:
     """
     if not certificate_arn:
         return None
+    cached = _acm_pem_cache.get(certificate_arn)
+    if cached and os.path.isfile(cached):
+        return cached
     parts = certificate_arn.split(":")
     if len(parts) < 6 or parts[2] != "acm":
         return None
@@ -746,17 +752,31 @@ def _acm_cert_pem_path(certificate_arn: str) -> Optional[str]:
         LOG.warning("ACM certificate %s not loadable: %s", certificate_arn, exc)
         return None
 
-    digest = hashlib.sha256(certificate_arn.encode()).hexdigest()[:16]
-    path = os.path.join(tempfile.gettempdir(), f"localemu-elbv2-acm-{digest}.pem")
     payload = key.rstrip(b"\n") + b"\n" + cert
     if not cert.endswith(b"\n"):
         payload += b"\n"
+    fd = -1
+    path = ""
     try:
-        with open(path, "wb") as fh:
+        fd, path = tempfile.mkstemp(prefix="localemu-elbv2-acm-", suffix=".pem")
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as fh:
+            fd = -1  # owned by fh
             fh.write(payload)
     except OSError as exc:
+        if fd >= 0:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+        if path:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
         LOG.warning("Could not write ACM PEM for %s: %s", certificate_arn, exc)
         return None
+    _acm_pem_cache[certificate_arn] = path
     return path
 
 
