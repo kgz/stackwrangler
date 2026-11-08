@@ -17,6 +17,8 @@ docker compose up -d --force-recreate localstack
 | DynamoDB | `dynamodb-smoke.sh` | `dynamodb-authz-smoke.sh` |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs; Batch/Transact [#306](https://github.com/kgz/awsl/issues/306); index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307)) |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs + Transact/Batch table-scoped); gap [#307](https://github.com/kgz/awsl/issues/307) |
+| DynamoDB resource policy + SourceVpce | `dynamodb-resource-policy-smoke.sh` | same (Deny without VPCE; wrong VPCE; PrincipalArn exception) |
+| DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs); gaps [#306](https://github.com/kgz/awsl/issues/306), [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions | `sfn-smoke.sh` | `sfn-authz-smoke.sh` |
 | Secrets Manager | `secrets-smoke.sh` | `secrets-authz-smoke.sh` |
 | KMS | `kms-smoke.sh` | `kms-authz-smoke.sh` |

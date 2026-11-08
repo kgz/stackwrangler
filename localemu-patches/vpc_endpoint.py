@@ -319,6 +319,30 @@ class VpcEndpointManager:
             ep = self._endpoints.get(endpoint_id)
             return ep.get("dns_name") if ep else None
 
+    def resolve_endpoint_id_by_ip(self, ip: str) -> str | None:
+        """Map a proxy container IP (any attached network) to its endpoint id."""
+        if not ip:
+            return None
+        with self._lock:
+            items = list(self._endpoints.items())
+        for endpoint_id, ep in items:
+            if ep.get("proxy_ip") == ip:
+                return endpoint_id
+            container_name = ep.get("container_name")
+            if not container_name:
+                continue
+            try:
+                info = DOCKER_CLIENT.inspect_container(container_name)
+            except Exception:
+                continue
+            networks = (info.get("NetworkSettings") or {}).get("Networks") or {}
+            for net in networks.values():
+                if not isinstance(net, dict):
+                    continue
+                if net.get("IPAddress") == ip:
+                    return endpoint_id
+        return None
+
     def get_endpoints_for_vpc(self, vpc_id: str) -> list[dict]:
         """Return all VPC Endpoints for a VPC."""
         with self._lock:
