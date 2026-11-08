@@ -232,17 +232,6 @@ expect_err 'AccessDenied|not authorized|ExplicitDeny' \
 	as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}"
 echo "OK: explicit Deny on index ARN -> GSI Query denied, table Query ok"
 
-# Index aws:ResourceTag inherits table tags (#307).
-aws dynamodb tag-resource --resource-arn "$TABLE_ARN" --tags Key=env,Value=prod >/dev/null
-mkuser "awsbox-ddb-rtag-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:Query\",\"Resource\":\"${INDEX_ARN}\",\"Condition\":{\"StringEquals\":{\"aws:ResourceTag/env\":\"prod\"}}}]}"
-sleep 2
-as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}" --select COUNT >/dev/null \
-	|| fail "ResourceTag user cannot Query GSI on tagged table"
-aws dynamodb untag-resource --resource-arn "$TABLE_ARN" --tag-keys env >/dev/null
-sleep 1
-expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
-	as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}"
-echo "OK: aws:ResourceTag/env=prod on index ARN -> tagged allow, untagged deny"
 echo "== IAM Transact/Batch table-scoped (#306)"
 TABLE2="awsbox-tokens-other-${TS}"
 aws dynamodb create-table --table-name "$TABLE2" \
@@ -315,5 +304,19 @@ EOF
 expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
 	as dynamodb batch-get-item --request-items "file://$TMP/bg-t2.json"
 echo "OK: BatchGetItem on t1 -> batch-get t1 ok, t2 denied"
+
+echo "OK: dynamodb depth (${TABLE})"
+
+# Index aws:ResourceTag inherits table tags (#307).
+aws dynamodb tag-resource --resource-arn "$TABLE_ARN" --tags Key=env,Value=prod >/dev/null
+mkuser "awsbox-ddb-rtag-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:Query\",\"Resource\":\"${INDEX_ARN}\",\"Condition\":{\"StringEquals\":{\"aws:ResourceTag/env\":\"prod\"}}}]}"
+sleep 2
+as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}" --select COUNT >/dev/null \
+	|| fail "ResourceTag user cannot Query GSI on tagged table"
+aws dynamodb untag-resource --resource-arn "$TABLE_ARN" --tag-keys env >/dev/null
+sleep 1
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}"
+echo "OK: aws:ResourceTag/env=prod on index ARN -> tagged allow, untagged deny"
 
 echo "OK: dynamodb depth (${TABLE})"
