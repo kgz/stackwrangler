@@ -14,6 +14,8 @@ import { LogsPage } from './pages/LogsPage'
 import { LogsCreateLogGroupPage } from './pages/LogsCreateLogGroupPage'
 import { LogsLogGroupDetailPage } from './pages/LogsLogGroupDetailPage'
 import { LogsLogStreamEventsPage } from './pages/LogsLogStreamEventsPage'
+import { StepFunctionsCreatePage } from './pages/StepFunctionsCreatePage'
+import { StepFunctionsDetailPage } from './pages/StepFunctionsDetailPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { SecretsPage } from './pages/SecretsPage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
@@ -73,6 +75,14 @@ export default function App() {
           />
           <Route path="cloudtrail" element={<ApiCallLogPage />} />
           <Route path="stepfunctions" element={<StepFunctionsPage />} />
+          <Route
+            path="stepfunctions/create"
+            element={<StepFunctionsCreatePage />}
+          />
+          <Route
+            path="stepfunctions/state-machines/:name"
+            element={<StepFunctionsDetailPage />}
+          />
           <Route path="secretsmanager" element={<SecretsPage />} />
           <Route path="kinesis" element={<KinesisStreamsPage />} />
           <Route path="sqs" element={<SqsQueuesPage />} />

@@ -312,7 +312,7 @@
 518	in-review	sns:Protocol/Endpoint on Subscribe
 522	in-review	stackwrangler sls --role-arn deploy as live principal
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
-533	backlog	Debt: Step Functions create + state-machine detail (from #175)
+533	in-review	Debt: Step Functions create + state-machine detail (from #175)
 535	backlog	Debt: Secrets Manager store + secret detail (from #176)
 539	backlog	Debt: Kinesis create/detail (from #178)
 540	backlog	Debt: KMS create/detail (from #177)
@@ -335,3 +335,4 @@
 603	backlog	Debt: preserve ELBv2 host_override across RegisterTargets (from #247)
 608	backlog	Doc: CloudWatch Logs create/detail console screenshot (from #352)
 609	backlog	Debt: CloudWatch Logs Tail poll distinct from Search (from #352)
+610	backlog	Debt: Step Functions Start execution (from #533)

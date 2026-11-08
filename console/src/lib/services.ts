@@ -204,6 +204,7 @@ const CRUMBS: Record<string, string> = {
   '/logs': 'Log groups',
   '/cloudtrail': 'API call log',
   '/stepfunctions': 'State machines',
+  '/stepfunctions/create': 'Create state machine',
   '/secretsmanager': 'Secrets',
   '/kinesis': 'Data streams',
   '/sqs': 'Queues',
