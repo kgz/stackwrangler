@@ -464,8 +464,77 @@ resolve_serverless_auth_env() {
 	fi
 }
 
+# Resolve AWS creds for sls container: admin keys (default), --role-arn, or --use-session-env.
+# Prints the caller ARN. Sets: key, secret, session_token, region (caller locals).
+sls_resolve_aws_creds() {
+	local role_arn="$1"
+	local session_name="$2"
+	local use_session_env="$3"
+	local iam_ep admin_key admin_secret creds_json principal
+
+	region="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
+	iam_ep="$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT "$IAM_ENDPOINT_DEFAULT")"
+	session_token=""
+
+	if [[ "$use_session_env" -eq 1 ]]; then
+		if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" || -z "${AWS_SESSION_TOKEN:-}" ]]; then
+			echo "error: --use-session-env needs AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN" >&2
+			exit 1
+		fi
+		key="$AWS_ACCESS_KEY_ID"
+		secret="$AWS_SECRET_ACCESS_KEY"
+		session_token="$AWS_SESSION_TOKEN"
+	elif [[ -n "$role_arn" ]]; then
+		admin_key="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
+		admin_secret="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
+		creds_json="$(
+			AWS_ACCESS_KEY_ID="$admin_key" AWS_SECRET_ACCESS_KEY="$admin_secret" \
+				AWS_DEFAULT_REGION="$region" AWS_REGION="$region" \
+				env -u AWS_SESSION_TOKEN -u AWS_SECURITY_TOKEN -u AWS_PROFILE \
+				aws --endpoint-url "$iam_ep" --region "$region" sts assume-role \
+				--role-arn "$role_arn" \
+				--role-session-name "$session_name" \
+				--output json
+		)" || {
+			echo "error: sts assume-role failed for ${role_arn} via ${iam_ep}" >&2
+			exit 1
+		}
+		key="$(printf '%s' "$creds_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["Credentials"]["AccessKeyId"])')"
+		secret="$(printf '%s' "$creds_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["Credentials"]["SecretAccessKey"])')"
+		session_token="$(printf '%s' "$creds_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["Credentials"]["SessionToken"])')"
+	else
+		key="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
+		secret="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
+	fi
+
+	if [[ -n "$session_token" ]]; then
+		principal="$(
+			AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" AWS_SESSION_TOKEN="$session_token" \
+				AWS_DEFAULT_REGION="$region" AWS_REGION="$region" \
+				env -u AWS_PROFILE \
+				aws --endpoint-url "$iam_ep" --region "$region" sts get-caller-identity \
+				--query Arn --output text
+		)" || {
+			echo "error: sts get-caller-identity failed with resolved credentials" >&2
+			exit 1
+		}
+	else
+		principal="$(
+			AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" \
+				AWS_DEFAULT_REGION="$region" AWS_REGION="$region" \
+				env -u AWS_SESSION_TOKEN -u AWS_SECURITY_TOKEN -u AWS_PROFILE \
+				aws --endpoint-url "$iam_ep" --region "$region" sts get-caller-identity \
+				--query Arn --output text
+		)" || {
+			echo "error: sts get-caller-identity failed with resolved credentials" >&2
+			exit 1
+		}
+	fi
+	echo "sls: deploying as ${principal}" >&2
+}
+
 # Run Serverless CLI in a container on the aws-redirect DNS/TLS path (no AWS_ENDPOINT_URL).
-# Usage: stackwrangler sls [--cwd DIR] [--] deploy|remove|package …
+# Usage: stackwrangler sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] [--] deploy|remove|package …
 cmd_sls() {
 	load_root_env
 	resolve_serverless_auth_env
@@ -476,11 +545,26 @@ cmd_sls() {
 	fi
 
 	local cwd="$PWD"
+	local role_arn=""
+	local session_name="stackwrangler-sls"
+	local use_session_env=0
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 			--cwd)
 				cwd="$2"
 				shift 2
+				;;
+			--role-arn)
+				role_arn="$2"
+				shift 2
+				;;
+			--session-name)
+				session_name="$2"
+				shift 2
+				;;
+			--use-session-env)
+				use_session_env=1
+				shift
 				;;
 			--)
 				shift
@@ -491,6 +575,10 @@ cmd_sls() {
 				;;
 		esac
 	done
+	if [[ -n "$role_arn" && "$use_session_env" -eq 1 ]]; then
+		echo "error: use either --role-arn or --use-session-env, not both" >&2
+		exit 1
+	fi
 	if [[ ! -d "$cwd" ]]; then
 		echo "error: sls cwd not a directory: ${cwd}" >&2
 		exit 1
@@ -524,10 +612,8 @@ cmd_sls() {
 	work_dir="/work"
 	[[ -n "$rel" ]] && work_dir="/work/${rel}"
 
-	local key secret region image sls_home host_uid host_gid
-	key="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
-	secret="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
-	region="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
+	local key secret session_token region image sls_home host_uid host_gid
+	sls_resolve_aws_creds "$role_arn" "$session_name" "$use_session_env"
 	image="${STACKWRANGLER_SLS_IMAGE:-${AWSBOX_SLS_IMAGE:-node:20-bookworm}}"
 	# Persist Framework download + npm cache across runs; must be writable by --user.
 	sls_home="${STACKWRANGLER_SLS_HOME:-${AWSBOX_SLS_HOME:-$ROOT/.awsbox/sls-home}}"
@@ -535,8 +621,8 @@ cmd_sls() {
 	host_uid="$(id -u)"
 	host_gid="$(id -g)"
 
-	# Fake keys only; no ~/.aws; no AWS_ENDPOINT_URL — DNS+TLS does the redirect.
-	# Licence / access key still phones home (non-AWS host resolves upstream).
+	# Creds from admin / assumed role / session env; no ~/.aws; no AWS_ENDPOINT_URL —
+	# DNS+TLS does the redirect. Licence / access key still phones home (non-AWS host).
 	# Run as host uid:gid so .serverless / build output are not root-owned on the mount (#469).
 	local -a docker_env=(
 		-e "HOME=/sls-home"
@@ -550,6 +636,12 @@ cmd_sls() {
 		-e "SLS_INTERACTIVE_SETUP_ENABLE=0"
 		-e "CI=1"
 	)
+	if [[ -n "$session_token" ]]; then
+		docker_env+=(-e "AWS_SESSION_TOKEN=${session_token}")
+	else
+		# Ensure a host-exported token cannot leak into the admin-key path.
+		docker_env+=(-e "AWS_SESSION_TOKEN=")
+	fi
 	# Drop any inherited endpoint override so SDK v2 cannot mix modes.
 	docker_env+=(-e "AWS_ENDPOINT_URL=" -e "AWS_ENDPOINT_URL_S3=")
 	[[ -n "${SERVERLESS_LICENSE_KEY:-}" ]] && docker_env+=(-e "SERVERLESS_LICENSE_KEY=${SERVERLESS_LICENSE_KEY}")
@@ -650,7 +742,7 @@ case "${1:-}" in
 		exec "$ROOT/bin/awsl-mirror.sh" "$@"
 		;;
 	*)
-		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | sls [--cwd DIR] -- … | hosts … | mirror … | apply <fixture>" >&2
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] -- … | hosts … | mirror … | apply <fixture>" >&2
 		exit 1
 		;;
 esac

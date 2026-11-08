@@ -323,3 +323,5 @@
 562	done	Doc: SNS Topics console screenshot (from #172)
 563	done	Doc: SQS queues console screenshot (from #167)
 517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
+522	in-review	stackwrangler sls --role-arn deploy as live principal
+579	done	Debt: CFN resource providers skip caller IAM (from #522)
