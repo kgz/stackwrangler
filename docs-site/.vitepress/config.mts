@@ -145,6 +145,7 @@ export default withMermaid(
         { text: 'Console tour', link: '/guide/console-tour' },
         { text: 'Concepts', link: '/guide/concepts' },
         { text: 'Interactions', link: '/guide/interactions/' },
+        { text: 'Changelog', link: '/guide/changelog' },
         {
           text: 'GitHub',
           link: 'https://github.com/kgz/stackwrangler',
@@ -162,6 +163,7 @@ export default withMermaid(
               { text: 'Console tour', link: '/guide/console-tour' },
               { text: 'Concepts', link: '/guide/concepts' },
               { text: 'Interactions', link: '/guide/interactions/' },
+              { text: 'Changelog', link: '/guide/changelog' },
             ],
           },
           {

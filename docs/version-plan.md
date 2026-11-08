@@ -87,9 +87,13 @@ Install path, docs-site minimum, public hygiene. Gate: `public-ready` or blocks 
 
 Core-stack bugs + security/authz that create false confidence. Gate: Impact ≥ 4 (Impact 5 always). 
 
-### v0.0.4 — Accuracy *(active)*
+### v0.0.4 — Accuracy *(shipped 2026-11-09)*
 
 Core Debt/docs/smoke-matrix/console depth on already-shipped services. Gate: Impact ≥ 3.
+
+### v0.0.5 — Security / deps *(active — `CURRENT_RELEASE`)*
+
+Dependabot + lockfile hygiene: clear open alerts on shipped surfaces (console, docs-site) and triage example locks (refresh or dismiss). Gate: Impact ≥ 3 for product-surface deps; Impact ≥ 2 OK for example-only when clearing this cut. Theme label — not a dump for unrelated Accuracy debt.
 
 ### v0.1.0 — Org path
 
@@ -120,6 +124,7 @@ Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche 
 | **v0.0.2** | `label:v0.0.2` | Impact ↓, Effort ↑ |
 | **v0.0.3** | `label:v0.0.3` | Impact ↓, Effort ↑ |
 | **v0.0.4** | `label:v0.0.4` | Impact ↓, Effort ↑ |
+| **v0.0.5** | `label:v0.0.5` | Impact ↓, Effort ↑ |
 | **v0.1.0** | `label:v0.1.0` | Impact ↓, Effort ↑ |
 | **High Impact** | Impact ≥ 4 (or `label:high-focus` until scored) | Impact ↓, Effort ↑ |
 | **Unscored** | Impact empty | Updated ↓ |
