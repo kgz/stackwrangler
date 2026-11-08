@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awsbox-kinesis-demo — Kinesis</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="kinesis-stream-detail" data-nav="kinesis-streams" data-service="kinesis" data-title="awsbox-kinesis-demo" data-crumb="awsbox-kinesis-demo">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">awsbox-kinesis-demo</h1>
+          <div class="aws-subtitle-row">
+            <span>ACTIVE</span>
+            <span>Provisioned</span>
+            <span>Created 2026-11-02 14:18:03</span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-stream" disabled aria-disabled="true" title="To implement">Delete</button>
+        <button type="button" class="btn btn-primary" data-od-id="btn-put-record" disabled aria-disabled="true" title="To implement">Put records</button>
+      </div>
+
+      <p class="aws-desc"><a href="kinesis-streams.html" data-od-id="back-list">← Data streams</a></p>
+
+      <section class="aws-card" data-od-id="content-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="stream-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="details" aria-current="page" data-od-id="tab-details">Details</button>
+          <button type="button" class="aws-tab" data-tab="shards" data-od-id="tab-shards">Shards</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="details" data-od-id="panel-details">
+            <h2 class="aws-section-title">Data stream details</h2>
+            <dl class="aws-kv" data-od-id="stream-overview">
+              <div>
+                <dt>Name</dt>
+                <dd>awsbox-kinesis-demo</dd>
+              </div>
+              <div>
+                <dt>ARN</dt>
+                <dd><code class="aws-mono">arn:aws:kinesis:us-east-1:000000000000:stream/awsbox-kinesis-demo</code></dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>ACTIVE</dd>
+              </div>
+              <div>
+                <dt>Capacity mode</dt>
+                <dd>Provisioned</dd>
+              </div>
+              <div>
+                <dt>Open shard count</dt>
+                <dd>1</dd>
+              </div>
+              <div>
+                <dt>Retention period (hours)</dt>
+                <dd>24</dd>
+              </div>
+              <div>
+                <dt>Encryption</dt>
+                <dd>NONE</dd>
+              </div>
+              <div>
+                <dt>Created</dt>
+                <dd>2026-11-02 14:18:03</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div data-tab-panel="shards" hidden data-od-id="panel-shards">
+            <h2 class="aws-section-title">Shards summary</h2>
+            <p class="aws-desc">Open shards from LocalEmu <code>ListShards</code>.</p>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="shards-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Shard ID</span></th>
+                    <th scope="col"><span class="th-inner">Starting hash key</span></th>
+                    <th scope="col"><span class="th-inner">Ending hash key</span></th>
+                    <th scope="col"><span class="th-inner">Starting sequence</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code class="aws-mono">shardId-000000000000</code></td>
+                    <td><code class="aws-mono">0</code></td>
+                    <td><code class="aws-mono">340282366920938463463374607431768211455</code></td>
+                    <td><code class="aws-mono">0</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

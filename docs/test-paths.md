@@ -318,7 +318,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Secrets Manager CreateSecret/PutSecretValue with a CMK follows key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | SSM SecureString GetParameter/PutParameter follows CMK key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | Cross-account resource policy (identity and resource must both allow) | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
-| Kinesis console Data streams list | happy | covered | console e2e `kinesis-streams.spec.ts` · thin list (Create/detail → [#539](https://github.com/kgz/awsl/issues/539)) |
+| Kinesis console Data streams list / create / detail / delete | happy | covered | console e2e `kinesis-streams.spec.ts` (#178 list · #539 create/detail/delete) |
 | Kinesis put/get | happy | covered | `./smokes/messaging/kinesis-smoke.sh` |
 | Kinesis deny PutRecord | sad/authz | covered | `./smokes/messaging/kinesis-authz-smoke.sh` |
 | Logs deny PutLogEvents | sad/authz | covered | `./smokes/logs/logs-authz-smoke.sh` |
