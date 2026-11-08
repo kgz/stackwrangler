@@ -184,7 +184,7 @@
 242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
-247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+247	in-progress	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
 254	done	Debt: ECS bridge/awsvpc task-role creds when image has no iptables (from #252)
 256	done	v1: mirror/fixture tags for TF data sources
 257	done	v1: Document Terraform against awsbox (backend/lock)

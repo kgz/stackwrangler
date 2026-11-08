@@ -101,6 +101,10 @@ class Target:
     host: str  # resolved host/IP to connect to (empty for Lambda targets)
     health: str = "initial"  # initial | healthy | unhealthy
     lambda_arn: Optional[str] = None  # set when this target is a Lambda function
+    # ECS bridge host ports are published on the Docker host, not the EC2
+    # container VPC address. Callers set this so health + forward dial there
+    # instead of rewriting to the instance IP (#247).
+    host_override: Optional[str] = None
 
 
 @dataclass
@@ -980,6 +984,19 @@ class ListenerRouter:
                 if rule:
                     rule.priority = str(priority)
 
+    def set_listener_target_group(self, listener_arn: str, target_group_arn: str) -> None:
+        """Point an existing listener at a new default target group (ModifyListener)."""
+        if not listener_arn or not target_group_arn:
+            return
+        with self._lock:
+            l4 = self.l4_listeners.get(listener_arn)
+            listener = self.listeners.get(listener_arn)
+            if l4 is not None:
+                l4.target_group_arn = target_group_arn
+            if listener is not None:
+                listener.target_group_arn = target_group_arn
+        self._refresh_dnat()
+
     def stop_listener(self, listener_arn: str) -> None:
         with self._lock:
             l4 = self.l4_listeners.pop(listener_arn, None)
@@ -1350,6 +1367,13 @@ def _instance_endpoint(instance_id: str) -> tuple[str, str]:
 
 def _resolve_target(target: Target) -> None:
     if target.lambda_arn:
+        return
+    if target.host_override:
+        target.host = target.host_override
+        if target.target_id.startswith("i-"):
+            _host, net = _instance_endpoint(target.target_id)
+            if net:
+                _join_network(net)
         return
     if target.target_id.startswith("i-"):
         host, net = _instance_endpoint(target.target_id)

@@ -10,8 +10,9 @@
 #   6) CODE_DEPLOY service starts blue tasks; blue/green launches v2 on green,
 #      swaps the listener, stops blue; a killed green task is replaced
 #
-# Traffic goes through a 127.0.0.1 forwarder inside LocalEmu (not published on
-# the host). The #203 VPC listener cannot reach bridge host ports yet (#247).
+# Traffic goes through the #203 VPC-scoped NLB listener inside LocalEmu
+# (not published on the host). Bridge host ports dial via host.docker.internal
+# (Target.host_override — #247).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -187,6 +188,26 @@ LIS="$(aws elbv2 create-listener --load-balancer-arn "$LB" --protocol TCP --port
 	--default-actions "Type=forward,TargetGroupArn=${TG}" --query 'Listeners[0].ListenerArn' --output text)"
 LIS_BG="$(aws elbv2 create-listener --load-balancer-arn "$LB_BG" --protocol TCP --port "$BG_PORT" \
 	--default-actions "Type=forward,TargetGroupArn=${TG_BLUE}" --query 'Listeners[0].ListenerArn' --output text)"
+LB_DNS="$(aws elbv2 describe-load-balancers --load-balancer-arns "$LB" --query 'LoadBalancers[0].DNSName' --output text)"
+LB_BG_DNS="$(aws elbv2 describe-load-balancers --load-balancer-arns "$LB_BG" --query 'LoadBalancers[0].DNSName' --output text)"
+
+# Internal listeners bind LocalEmu's address on localemu-vpc-$VPC (not loopback).
+lb_vpc_ip() {
+	local i ip
+	for i in $(seq 1 40); do
+		ip="$(docker inspect "$LS" --format '{{json .NetworkSettings.Networks}}' | python3 -c '
+import json, sys
+nets = json.load(sys.stdin)
+want = "localemu-vpc-'"$VPC"'"
+print((nets.get(want) or {}).get("IPAddress") or "")
+')"
+		[[ -n "$ip" ]] && { echo "$ip"; return 0; }
+		sleep 1
+	done
+	return 1
+}
+LB_IP="$(lb_vpc_ip)" || fail "LocalEmu never joined localemu-vpc-${VPC}"
+echo "nlb vpc ip=${LB_IP} dns=${LB_DNS} bg_dns=${LB_BG_DNS}"
 
 write_taskdef() {
 	local family="$1" dest="$2" body="$3" image="${4:-nginx:1.27-alpine}"
@@ -266,12 +287,12 @@ tg_ids() {
 
 nlb_names() {
 	local port="$1"
-	docker exec -i "$LS" /opt/code/localemu/.venv/bin/python - "$port" <<'PY'
+	docker exec -i "$LS" /opt/code/localemu/.venv/bin/python - "$LB_IP" "$port" <<'PY'
 import socket, sys
-port = int(sys.argv[1])
+host, port = sys.argv[1], int(sys.argv[2])
 names = []
 for _ in range(12):
-    s = socket.create_connection(("127.0.0.1", port), 5)
+    s = socket.create_connection((host, port), 5)
     s.sendall(b"GET / HTTP/1.0\r\nHost: nlb\r\nConnection: close\r\n\r\n")
     s.settimeout(5)
     data = b""
@@ -324,6 +345,20 @@ PORTS_BEFORE="$(tg_ports "$TG")"
 echo "ports=${PORTS_BEFORE}"
 [[ "$(echo "$PORTS_BEFORE" | wc -w)" -eq 2 ]] || fail "expected 2 host ports (${PORTS_BEFORE})"
 host_closed "$NLB_PORT" || fail "internal NLB accepted a connection on the host"
+# No #207 loopback stand-in: VPC listener only (DNS → VPC IP inside LocalEmu).
+if docker exec -i "$LS" /opt/code/localemu/.venv/bin/python - "$NLB_PORT" <<'PY'
+import socket, sys
+try:
+    socket.create_connection(("127.0.0.1", int(sys.argv[1])), 2).close()
+except OSError:
+    raise SystemExit(0)
+raise SystemExit(1)
+PY
+then
+	:
+else
+	fail "internal NLB still bound on 127.0.0.1 (loopback forwarder should be gone)"
+fi
 NAMES="$(nlb_names "$NLB_PORT")"
 echo "$NAMES"
 UNIQUE="$(echo "$NAMES" | sort -u | grep -c . || true)"

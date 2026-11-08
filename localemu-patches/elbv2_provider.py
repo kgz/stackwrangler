@@ -237,6 +237,44 @@ def _handle_delete_listener(
     return result
 
 
+def _forward_tg_arn(actions: list | None) -> str:
+    for action in actions or []:
+        if not isinstance(action, dict):
+            continue
+        if action.get("Type") != "forward":
+            continue
+        tg = action.get("TargetGroupArn") or ""
+        if tg:
+            return str(tg)
+        fw = action.get("ForwardConfig") or {}
+        tgs = fw.get("TargetGroups") or []
+        if tgs and isinstance(tgs[0], dict):
+            return str(tgs[0].get("TargetGroupArn") or "")
+    return ""
+
+
+def _handle_modify_listener(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    """Keep the dataplane default TG in sync when DefaultActions change.
+
+    CodeDeploy blue/green (and any ModifyListener swap) used to rely on the
+    ECS loopback forwarder re-reading moto each accept. With #247 that
+    stand-in is gone, so the L4/HTTP listener must retarget here.
+    """
+    result = call_moto(context)
+    listener_arn = str(request.get("ListenerArn") or "")
+    tg_arn = _forward_tg_arn(request.get("DefaultActions"))
+    if not tg_arn:
+        for listener in result.get("Listeners", []) or []:
+            if str(listener.get("ListenerArn") or "") == listener_arn:
+                tg_arn = _forward_tg_arn(listener.get("DefaultActions"))
+                break
+    if listener_arn and tg_arn:
+        get_router().set_listener_target_group(listener_arn, tg_arn)
+    return result
+
+
 def _record_rule(rule: dict) -> None:
     """Mirror a moto-returned Rule into the proxy router so request
     routing actually honours its conditions/actions on the next hit."""
@@ -352,6 +390,7 @@ _INTERCEPTED_OPS = {
     "DeregisterTargets": _handle_deregister_targets,
     "CreateListener": _handle_create_listener,
     "DeleteListener": _handle_delete_listener,
+    "ModifyListener": _handle_modify_listener,
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,
     "ModifyRule": _handle_modify_rule,

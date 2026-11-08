@@ -5,7 +5,7 @@
 #   2) ECS blue/green (shares #207 runtime): missing task def → Failed;
 #      good revision → Succeeded and listener forwards to the green TG
 #
-# Traffic goes through a 127.0.0.1 forwarder inside LocalEmu (same as #207).
+# Traffic goes through the VPC-scoped NLB listener inside LocalEmu (#203/#247).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -192,6 +192,23 @@ LB_BG="$(aws elbv2 create-load-balancer --name "cdb${TS}" --type network --schem
 	--subnets "$SUB_A" "$SUB_B" --query 'LoadBalancers[0].LoadBalancerArn' --output text)"
 LIS_BG="$(aws elbv2 create-listener --load-balancer-arn "$LB_BG" --protocol TCP --port "$BG_PORT" \
 	--default-actions "Type=forward,TargetGroupArn=${TG_BLUE}" --query 'Listeners[0].ListenerArn' --output text)"
+LB_BG_DNS="$(aws elbv2 describe-load-balancers --load-balancer-arns "$LB_BG" --query 'LoadBalancers[0].DNSName' --output text)"
+lb_vpc_ip() {
+	local i ip
+	for i in $(seq 1 40); do
+		ip="$(docker inspect "$LS" --format '{{json .NetworkSettings.Networks}}' | python3 -c '
+import json, sys
+nets = json.load(sys.stdin)
+want = "localemu-vpc-'"$VPC"'"
+print((nets.get(want) or {}).get("IPAddress") or "")
+')"
+		[[ -n "$ip" ]] && { echo "$ip"; return 0; }
+		sleep 1
+	done
+	return 1
+}
+LB_IP="$(lb_vpc_ip)" || fail "LocalEmu never joined localemu-vpc-${VPC}"
+echo "nlb vpc ip=${LB_IP} dns=${LB_BG_DNS}"
 
 write_taskdef() {
 	local family="$1" dest="$2" body="$3"
@@ -268,12 +285,12 @@ wait_healthy() {
 }
 nlb_names() {
 	local port="$1"
-	docker exec -i "$LS" /opt/code/localemu/.venv/bin/python - "$port" <<'PY'
+	docker exec -i "$LS" /opt/code/localemu/.venv/bin/python - "$LB_IP" "$port" <<'PY'
 import socket, sys
-port = int(sys.argv[1])
+host, port = sys.argv[1], int(sys.argv[2])
 names = []
 for _ in range(12):
-    s = socket.create_connection(("127.0.0.1", port), 5)
+    s = socket.create_connection((host, port), 5)
     s.sendall(b"GET / HTTP/1.0\r\nHost: nlb\r\nConnection: close\r\n\r\n")
     s.settimeout(5)
     data = b""
