@@ -67,9 +67,7 @@ export function LogsPage() {
       toolbar={
         <>
           <RefreshButton onClick={() => void refreshGroups()} />
-          <DeadButton title={selected ? undefined : 'Select a row'}>
-            Actions ▾
-          </DeadButton>
+          <DeadButton>Actions ▾</DeadButton>
           <div className="spacer" />
           <Link className="btn btn-primary" to="/logs/create">
             Create log group

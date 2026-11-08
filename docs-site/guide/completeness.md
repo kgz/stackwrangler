@@ -71,7 +71,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 | S3 general purpose (SeaweedFS UI + LocalEmu for IaC/events) | **Working** UI · **Partial** dual-brain |
 | Lambda (Docker invoke, console Create/detail) | **Working** |
 | DynamoDB / SQS / SNS / EventBridge / Step Functions / Kinesis | **Working** (CLI smokes; SFN thin list [#175](https://github.com/kgz/awsl/issues/175); create/detail [#533](https://github.com/kgz/awsl/issues/533); others often console Debt) |
-| CloudWatch Logs (basic) | **Working** |
+| CloudWatch Logs (create · streams · filter events) | **Working** · [#352](https://github.com/kgz/stackwrangler/issues/352) |
 | Transfer Family (native SFTP → S3) | **Partial** · **Sidecar** |
 | EC2 / ECS / ECR | **Partial** · ECR registry **sidecar** |
 | RDS Postgres / MySQL (Docker DB) | **Partial** · **Sidecar** |
