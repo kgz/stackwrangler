@@ -334,9 +334,14 @@ negative_import_value() {
 		sed 's/\x1b\[[0-9;]*[A-Za-z]//g' "$log" | tr -d '\r' | tail -80 >&2 || true
 		return 1
 	fi
-	# Explicit missing-export / stack-failure markers only — not bare non-zero,
-	# and not the substring "ImportValue" from a dumped template.
-	if grep -qiE 'No export named|ExportNotFound|cannot find export|Could not find export|Unresolved resource dependencies|CREATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED' "$log"; then
+	# Prefer AWS-shaped missing-export text (#652); stack-failure markers remain as fallback.
+	# Not bare non-zero, and not the substring "ImportValue" from a dumped template.
+	if grep -qiE 'No export named|ExportNotFound|cannot find export|Could not find export' "$log"; then
+		echo "ok   missing ImportValue deploy failed as expected (rc=${rc})"
+		return 0
+	fi
+	if grep -qiE 'CREATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED' "$log" \
+		&& ! grep -qiE 'Unresolved resource dependencies|Missing required parameter' "$log"; then
 		echo "ok   missing ImportValue deploy failed as expected (rc=${rc})"
 		return 0
 	fi
