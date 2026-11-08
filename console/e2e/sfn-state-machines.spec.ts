@@ -23,7 +23,7 @@ function aws(args: string[]): string {
   )
 }
 
-test.describe('Step Functions state machines UI (#175 / #533)', () => {
+test.describe('Step Functions state machines UI (#175 / #533 / #610)', () => {
   test('lists a seeded state machine and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-sfn-ui-${ts}`
@@ -167,4 +167,98 @@ test.describe('Step Functions state machines UI (#175 / #533)', () => {
       }
     }
   })
+
+  test('starts an execution from detail with modal validation', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-sfn-start-${ts}`
+    const role = `e2e-sfn-start-role-${ts}`
+    const execName = `run-${ts}`
+    const trust =
+      '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+    const def =
+      '{"Comment":"e2e","StartAt":"Hi","States":{"Hi":{"Type":"Pass","Result":{"ok":true},"End":true}}}'
+
+    let smArn = ''
+    try {
+      aws([
+        'iam',
+        'create-role',
+        '--role-name',
+        role,
+        '--assume-role-policy-document',
+        trust,
+      ])
+      const roleArn = aws([
+        'iam',
+        'get-role',
+        '--role-name',
+        role,
+        '--query',
+        'Role.Arn',
+        '--output',
+        'text',
+      ]).trim()
+      smArn = aws([
+        'stepfunctions',
+        'create-state-machine',
+        '--name',
+        name,
+        '--definition',
+        def,
+        '--role-arn',
+        roleArn,
+        '--query',
+        'stateMachineArn',
+        '--output',
+        'text',
+      ]).trim()
+
+      await page.goto('/stepfunctions')
+      await page.getByRole('link', { name, exact: true }).click()
+      await expect(page).toHaveURL(
+        new RegExp(`/stepfunctions/state-machines/${name}$`),
+      )
+
+      await page.getByTestId('sfn-start-execution').click()
+      await expect(page.getByTestId('sfn-start-modal')).toBeVisible()
+      await page.getByTestId('sfn-exec-input').fill('{not-json')
+      await page.getByTestId('sfn-start-submit').click()
+      await expect(page.getByTestId('sfn-start-modal')).toBeVisible()
+      await expect(
+        page.getByTestId('sfn-start-modal').getByText('Input must be valid JSON'),
+      ).toBeVisible()
+
+      await page.getByTestId('sfn-exec-name').fill(execName)
+      await page.getByTestId('sfn-exec-input').fill('{"ping":true}')
+      await page.getByTestId('sfn-start-submit').click()
+
+      await expect(page.getByTestId('sfn-executions-table')).toBeVisible({
+        timeout: 15000,
+      })
+      await expect(
+        page.getByTestId('sfn-executions-table').getByText(execName),
+      ).toBeVisible({ timeout: 15000 })
+    } finally {
+      if (smArn) {
+        try {
+          aws([
+            'stepfunctions',
+            'delete-state-machine',
+            '--state-machine-arn',
+            smArn,
+          ])
+        } catch {
+          /* ignore */
+        }
+      }
+      try {
+        aws(['iam', 'delete-role', '--role-name', role])
+      } catch {
+        /* ignore */
+      }
+    }
+  })
+
 })

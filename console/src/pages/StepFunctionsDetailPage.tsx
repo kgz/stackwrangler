@@ -15,6 +15,7 @@ import {
   describeStateMachine,
   listExecutions,
   prettyDefinition,
+  startExecution,
   typeLabel,
   type ExecutionListItem,
   type StateMachineDetail,
@@ -27,6 +28,8 @@ const TABS: ReadonlyArray<readonly [DetailTab, string]> = [
   ['definition', 'Definition'],
   ['executions', 'Executions'],
 ]
+
+const DEFAULT_INPUT = '{\n  \n}'
 
 function executionStatusLabel(status: string | undefined): string {
   if (!status) return '—'
@@ -45,7 +48,14 @@ export function StepFunctionsDetailPage() {
   const [executions, setExecutions] = useState<ExecutionListItem[]>([])
   const [tab, setTab] = useState<DetailTab>('details')
   const [error, setError] = useState<string | null>(null)
+  const [startError, setStartError] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [starting, setStarting] = useState(false)
+  const [showStart, setShowStart] = useState(false)
+  const [execName, setExecName] = useState('')
+  const [execInput, setExecInput] = useState(DEFAULT_INPUT)
+  const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!name) return
@@ -72,6 +82,38 @@ export function StepFunctionsDetailPage() {
     void refresh()
   }, [refresh])
 
+  function openStart() {
+    setExecName('')
+    setExecInput(DEFAULT_INPUT)
+    setStartError(null)
+    setShowStart(true)
+  }
+
+  async function onStart() {
+    if (!detail) return
+    setBusy(true)
+    setStartError(null)
+    setToast(null)
+    setStarting(true)
+    try {
+      const result = await startExecution({
+        stateMachineArn: detail.stateMachineArn,
+        name: execName,
+        input: execInput,
+      })
+      setShowStart(false)
+      setStartError(null)
+      setTab('executions')
+      setToast(`Started ${result.executionArn.split(':').pop() ?? 'execution'}`)
+      await refresh()
+    } catch (err) {
+      setStartError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+      setStarting(false)
+    }
+  }
+
   const title = detail?.name ?? name
 
   return (
@@ -89,14 +131,22 @@ export function StepFunctionsDetailPage() {
           <>
             <RefreshButton onClick={() => void refresh()} />
             <DeadButton>Actions ▾</DeadButton>
-            <DeadButton variant="primary">Start execution</DeadButton>
+            <button
+              type="button"
+              className="btn btn-primary"
+              data-testid="sfn-start-execution"
+              disabled={!detail || busy}
+              onClick={openStart}
+            >
+              Start execution
+            </button>
           </>
         }
       />
       <p className="aws-desc">
         <Link to="/stepfunctions">← State machines</Link>
       </p>
-      <Notices error={error} />
+      <Notices error={error} toast={toast} />
 
       <section className="aws-card">
         <div className="aws-tabs" role="tablist">
@@ -180,7 +230,15 @@ export function StepFunctionsDetailPage() {
                 <h2 className="aws-section-title" style={{ margin: 0, flex: 1 }}>
                   Executions
                 </h2>
-                <DeadButton>Start execution</DeadButton>
+                <button
+                  type="button"
+                  className="btn btn-normal"
+                  data-testid="sfn-start-execution-tab"
+                  disabled={!detail || busy}
+                  onClick={openStart}
+                >
+                  Start execution
+                </button>
               </div>
               <div className="aws-table-wrap">
                 <table
@@ -202,7 +260,7 @@ export function StepFunctionsDetailPage() {
                         loading={loading}
                         loadingText="Loading executions…"
                         title="No executions"
-                        text="Start an execution from the CLI or smoke to see rows here."
+                        text="Start an execution to see rows here."
                       />
                     ) : (
                       executions.map((ex) => {
@@ -234,6 +292,58 @@ export function StepFunctionsDetailPage() {
           ) : null}
         </div>
       </section>
+
+      {showStart ? (
+        <div className="modal-backdrop">
+          <div className="modal" data-testid="sfn-start-modal">
+            <h3>Start execution</h3>
+            <Notices error={startError} />
+            <label htmlFor="sfn-exec-name">Name — optional</label>
+            <input
+              id="sfn-exec-name"
+              data-testid="sfn-exec-name"
+              value={execName}
+              onChange={(e) => setExecName(e.target.value)}
+              placeholder="Leave blank to auto-generate"
+              autoFocus
+            />
+            <label htmlFor="sfn-exec-input">Input — JSON</label>
+            <textarea
+              id="sfn-exec-input"
+              data-testid="sfn-exec-input"
+              value={execInput}
+              onChange={(e) => setExecInput(e.target.value)}
+              rows={8}
+              spellCheck={false}
+              style={{
+                width: '100%',
+                fontFamily: 'var(--aws-mono, ui-monospace, monospace)',
+                fontSize: 12,
+                lineHeight: 1.45,
+              }}
+            />
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-normal"
+                disabled={busy}
+                onClick={() => setShowStart(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                data-testid="sfn-start-submit"
+                disabled={busy || starting}
+                onClick={() => void onStart()}
+              >
+                Start execution
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

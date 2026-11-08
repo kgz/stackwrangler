@@ -357,3 +357,20 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - OD daemon reachable but agents failed (`cursor-agent` missing; `opencode` spawn ENOENT). Hand mocks landed instead of a successful `./bin/od-design-run.sh` web-clone.
 - Screens: `apigateway-rest-api-create.html`, `apigateway-rest-api-deploy.html`; list/detail Create + Deploy API enabled and linked. Delete / Actions / Create resource|method|authorizer|stage stay `title="To implement"` in mocks (resource/method wired in React).
 
+
+## Issue #610 — Step Functions Start execution (from #533)
+
+### Mode
+- Enable **Start execution** on the #533 state-machine detail mock (grey-rose)
+- List name cells → detail so Start is reachable without Create (#533)
+- React wires StartExecution modal (optional name + JSON input) against LocalEmu
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `sfn-state-machine-detail.html` | Start execution enabled (header + Executions tab) |
+| `sfn-state-machines.html` | Name → detail |
+
+### Dead controls
+- `title="To implement"`: Actions ▾, Refresh (static mock), Create state machine (list; #533)
+- Working: name → detail, Start execution buttons

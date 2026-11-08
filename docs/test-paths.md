@@ -312,6 +312,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Step Functions deny StartExecution | sad/authz | covered | `./smokes/messaging/sfn-authz-smoke.sh` |
 | Step Functions console state machines list | happy | covered | console e2e `sfn-state-machines.spec.ts` |
 | Step Functions console create + detail | happy | covered | console e2e `sfn-state-machines.spec.ts` (Pass/Standard create · definition/executions tabs) · [#533](https://github.com/kgz/awsl/issues/533) |
+| Step Functions console Start execution | happy | covered | console e2e `sfn-state-machines.spec.ts` (modal + invalid JSON) · [#610](https://github.com/kgz/awsl/issues/610) |
 | Secrets create/get | happy | covered | `./smokes/security/secrets-smoke.sh` |
 | Secrets deny GetSecretValue | sad/authz | covered | `./smokes/security/secrets-authz-smoke.sh` |
 | Secret resource policy explicit deny beats Lambda-role IAM Allow (`GetSecretValue`, `DescribeSecret`) | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |

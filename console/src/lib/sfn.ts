@@ -11,6 +11,7 @@ import {
   ListExecutionsCommand,
   ListStateMachinesCommand,
   SFNClient,
+  StartExecutionCommand,
   StateMachineType,
   type ExecutionListItem,
   type StateMachineListItem,
@@ -209,6 +210,46 @@ export async function createStateMachineFromForm(
   return {
     stateMachineArn: out.stateMachineArn ?? stateMachineArnForName(input.name),
     name: input.name,
+  }
+}
+
+
+export type StartExecutionInput = {
+  stateMachineArn: string
+  name?: string
+  input?: string
+}
+
+export type StartExecutionResult = {
+  executionArn: string
+  startDate: Date | undefined
+}
+
+export async function startExecution(
+  input: StartExecutionInput,
+): Promise<StartExecutionResult> {
+  let payload = (input.input ?? '{}').trim() || '{}'
+  try {
+    payload = JSON.stringify(JSON.parse(payload))
+  } catch {
+    throw new Error('Input must be valid JSON')
+  }
+
+  const name = input.name?.trim()
+  const out = await sfnClient().send(
+    new StartExecutionCommand({
+      stateMachineArn: input.stateMachineArn,
+      input: payload,
+      ...(name ? { name } : {}),
+    }),
+  )
+  const executionArn = out.executionArn
+  if (!executionArn) {
+    throw new Error('StartExecution returned no executionArn')
+  }
+  return {
+    executionArn,
+    startDate: out.startDate,
   }
 }
 
