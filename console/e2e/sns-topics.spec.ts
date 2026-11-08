@@ -42,7 +42,7 @@ function topicArnByName(name: string): string {
   ]).trim()
 }
 
-test.describe('SNS topics UI (#172 / #546)', () => {
+test.describe('SNS topics UI (#172 / #546 / #622)', () => {
   test('lists a seeded topic and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-sns-ui-${ts}`
@@ -70,8 +70,8 @@ test.describe('SNS topics UI (#172 / #546)', () => {
       await expect(
         page.getByRole('link', { name: 'Create topic' }),
       ).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Delete' })).toBeDisabled()
-      await expect(page.getByRole('button', { name: 'Delete' })).toHaveAttribute(
+      await expect(page.getByTestId('sns-delete')).toBeDisabled()
+      await expect(page.getByTestId('sns-delete')).toHaveAttribute(
         'title',
         'Select a row',
       )
@@ -87,6 +87,8 @@ test.describe('SNS topics UI (#172 / #546)', () => {
       await expect(page.getByText('Standard').first()).toBeVisible()
       await page.getByTestId('sns-tab-subscriptions').click()
       await expect(page.getByTestId('sns-subscriptions-table')).toBeVisible()
+      await expect(page.getByTestId('sns-create-subscription')).toBeEnabled()
+      await expect(page.getByTestId('sns-detail-delete')).toBeEnabled()
     } finally {
       if (arn) deleteQuiet(arn)
     }
@@ -164,6 +166,117 @@ test.describe('SNS topics UI (#172 / #546)', () => {
           arn = ''
         }
       }
+      if (arn && arn !== 'None') deleteQuiet(arn)
+    }
+  })
+
+  test('creates an SQS subscription and deletes the topic', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const topicName = `e2e-sns-sub-${ts}`
+    const queueName = `e2e-sns-sub-q-${ts}`
+    let topicArn = ''
+    let queueUrl = ''
+    let queueArn = ''
+    try {
+      topicArn = aws([
+        'sns',
+        'create-topic',
+        '--name',
+        topicName,
+        '--query',
+        'TopicArn',
+        '--output',
+        'text',
+      ]).trim()
+      queueUrl = aws([
+        'sqs',
+        'create-queue',
+        '--queue-name',
+        queueName,
+        '--query',
+        'QueueUrl',
+        '--output',
+        'text',
+      ]).trim()
+      queueArn = aws([
+        'sqs',
+        'get-queue-attributes',
+        '--queue-url',
+        queueUrl,
+        '--attribute-names',
+        'QueueArn',
+        '--query',
+        'Attributes.QueueArn',
+        '--output',
+        'text',
+      ]).trim()
+
+      await page.goto(`/sns/topics/${topicName}`)
+      await expect(
+        page.getByRole('heading', { level: 1, name: topicName }),
+      ).toBeVisible({ timeout: 15000 })
+
+      await page.getByTestId('sns-create-subscription').click()
+      await expect(page.getByTestId('sns-subscribe-modal')).toBeVisible()
+      await page.getByTestId('sns-sub-protocol').selectOption('sqs')
+      await page.getByTestId('sns-sub-endpoint').fill(queueArn)
+      await page.getByTestId('sns-sub-submit').click()
+
+      await expect(page.getByTestId('sns-subscriptions-table')).toBeVisible({
+        timeout: 15000,
+      })
+      await expect(page.getByText(queueArn)).toBeVisible({ timeout: 15000 })
+      await expect(page.getByText('sqs').first()).toBeVisible()
+
+      await page.getByTestId('sns-detail-delete').click()
+      await page.getByTestId('sns-confirm-delete').click()
+      await expect(page).toHaveURL(/\/sns$/, { timeout: 20000 })
+      await expect(
+        page.getByRole('link', { name: topicName, exact: true }),
+      ).toHaveCount(0, { timeout: 20000 })
+      topicArn = ''
+    } finally {
+      if (topicArn && topicArn !== 'None') deleteQuiet(topicArn)
+      if (queueUrl) {
+        try {
+          aws(['sqs', 'delete-queue', '--queue-url', queueUrl])
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  })
+
+  test('deletes a selected topic from the list', async ({ page }) => {
+    const ts = Date.now()
+    const name = `e2e-sns-del-list-${ts}`
+    let arn = ''
+    try {
+      arn = aws([
+        'sns',
+        'create-topic',
+        '--name',
+        name,
+        '--query',
+        'TopicArn',
+        '--output',
+        'text',
+      ]).trim()
+
+      await page.goto('/sns')
+      const rowLink = page.getByRole('link', { name, exact: true })
+      await expect(rowLink).toBeVisible({ timeout: 15000 })
+      await rowLink
+        .locator('xpath=ancestor::tr[1]')
+        .getByRole('radio')
+        .check()
+      await page.getByTestId('sns-delete').click()
+      await page.getByTestId('sns-confirm-delete').click()
+      await expect(rowLink).toHaveCount(0, { timeout: 20000 })
+      arn = ''
+    } finally {
       if (arn && arn !== 'None') deleteQuiet(arn)
     }
   })

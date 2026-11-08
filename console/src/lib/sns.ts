@@ -1,10 +1,12 @@
 import {
   CreateTopicCommand,
+  DeleteTopicCommand,
   GetTopicAttributesCommand,
   ListSubscriptionsByTopicCommand,
   ListTopicsCommand,
   PublishCommand,
   SNSClient,
+  SubscribeCommand,
 } from '@aws-sdk/client-sns'
 import { emuCreds } from './emu'
 
@@ -212,4 +214,40 @@ export async function publishToTopic(
     }),
   )
   return out.MessageId ?? ''
+}
+
+export async function deleteTopic(topicArn: string): Promise<void> {
+  const arn = topicArn.trim()
+  if (!arn) throw new Error('Topic ARN is required')
+  await snsClient().send(new DeleteTopicCommand({ TopicArn: arn }))
+}
+
+export type SubscribeProtocol =
+  | 'sqs'
+  | 'lambda'
+  | 'http'
+  | 'https'
+  | 'email'
+  | 'email-json'
+  | 'sms'
+
+export type CreateSubscriptionInput = {
+  topicArn: string
+  protocol: SubscribeProtocol
+  endpoint: string
+}
+
+export async function createSubscription(
+  input: CreateSubscriptionInput,
+): Promise<string> {
+  const endpoint = input.endpoint.trim()
+  if (!endpoint) throw new Error('Endpoint is required')
+  const out = await snsClient().send(
+    new SubscribeCommand({
+      TopicArn: input.topicArn,
+      Protocol: input.protocol,
+      Endpoint: endpoint,
+    }),
+  )
+  return out.SubscriptionArn ?? 'PendingConfirmation'
 }

@@ -312,9 +312,7 @@
 498	done	Debt: smoke MaximumConcurrency without reserved (from #453)
 499	in-review	Debt: SQS FIFO ESM + MaximumConcurrency message-group ordering (from #453)
 517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
-518	in-review	sns:Protocol/Endpoint on Subscribe
 522	in-review	stackwrangler sls --role-arn deploy as live principal
-525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
 535	in-review	Debt: Secrets Manager store + secret detail (from #176)
 539	in-review	Debt: Kinesis create/detail (from #178)
 540	backlog	Debt: KMS create/detail (from #177)
@@ -341,3 +339,6 @@
 613	backlog	Doc: API Gateway REST create/deploy console screenshot (from #543)
 615	backlog	Debt: Kinesis put/retention/encryption/tags (from #539)
 616	backlog	Debt: APIGW REST method integration picker (from #543)
+525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
+518	in-review	sns:Protocol/Endpoint on Subscribe
+622	in-review	Debt: SNS delete topic + Create subscription (from #546)
