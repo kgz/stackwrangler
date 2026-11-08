@@ -230,10 +230,21 @@ EOF
 			aws --region "$AWS_DEFAULT_REGION" "$@"
 	}
 
-	local sub
-	sub="$(as_role sns subscribe --topic-arn "$topic_arn" --protocol sqs --notification-endpoint "$intake_arn" \
-		--query SubscriptionArn --output text)"
-	[[ -n "$sub" && "$sub" != "None" ]] || fail "#518 intake subscribe"
+	# IAM inline-policy prop can lag after assume-role; retry allowed Subscribe.
+	local sub="" ok=0
+	for _ in $(seq 1 40); do
+		set +e
+		sub="$(as_role sns subscribe --topic-arn "$topic_arn" --protocol sqs --notification-endpoint "$intake_arn" \
+			--query SubscriptionArn --output text 2>/tmp/${PREFIX}-intake.err)"
+		local rc=$?
+		set -e
+		if [[ "$rc" -eq 0 && -n "$sub" && "$sub" != "None" ]]; then
+			ok=1
+			break
+		fi
+		sleep 2
+	done
+	[[ "$ok" -eq 1 ]] || { fail "#518 intake subscribe: $(cat /tmp/${PREFIX}-intake.err)"; return; }
 	on_cleanup "aws_r sns unsubscribe --subscription-arn '$sub' 2>/dev/null"
 	pass "#518 Subscribe intake sqs allowed"
 
