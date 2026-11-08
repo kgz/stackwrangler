@@ -208,6 +208,7 @@ const CRUMBS: Record<string, string> = {
   '/secretsmanager': 'Secrets',
   '/secretsmanager/store': 'Store a new secret',
   '/kinesis': 'Data streams',
+  '/kinesis/create': 'Create data stream',
   '/sqs': 'Queues',
   '/events': 'Rules',
   '/events/buses': 'Event buses',

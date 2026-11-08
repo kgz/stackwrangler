@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/kinesis-create-data-stream.html",
+  "entry": "screens/kinesis-create-data-stream.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-08T11:45:30.000Z",
+  "updatedAt": "2026-11-08T11:45:30.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true,
+    "handMock": true,
+    "issue": 539,
+    "note": "OD daemon run 404 on conversation messages; hand mock vs sfn-create / lambda-create chrome"
+  }
+}

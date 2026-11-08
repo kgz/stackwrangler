@@ -20,6 +20,8 @@ import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { SecretsDetailPage } from './pages/SecretsDetailPage'
 import { SecretsPage } from './pages/SecretsPage'
 import { SecretsStorePage } from './pages/SecretsStorePage'
+import { KinesisCreatePage } from './pages/KinesisCreatePage'
+import { KinesisStreamDetailPage } from './pages/KinesisStreamDetailPage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
@@ -95,6 +97,11 @@ export default function App() {
             element={<SecretsDetailPage />}
           />
           <Route path="kinesis" element={<KinesisStreamsPage />} />
+          <Route path="kinesis/create" element={<KinesisCreatePage />} />
+          <Route
+            path="kinesis/streams/:name"
+            element={<KinesisStreamDetailPage />}
+          />
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="events" element={<EventBridgeRulesPage />} />
           <Route path="events/buses" element={<EventBridgeBusesPage />} />

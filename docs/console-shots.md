@@ -20,5 +20,6 @@ PNG paths are under `docs/assets/console/` (docs-site serves them via `public/as
 | `apigateway-rest-apis.png` | `/apigateway/rest-apis` | Optional: seed via `apigw-rest-smoke.sh`; empty OK |
 | `sns-topics.png` | `/sns` | Optional: seed via `sns-sqs-fanout-smoke.sh`; empty OK |
 | `sqs-queues.png` | `/sqs` | Optional: seed via `sns-sqs-fanout-smoke.sh`; empty OK |
+| `kinesis-streams.png` | `/kinesis` | Optional: seed via `kinesis-smoke.sh` / e2e create; empty OK · create/detail [#539](https://github.com/kgz/awsl/issues/539) |
 
 No seed for a new shot → file **Doc:**; do not invent images or use `design/**/refs/` AWS recon PNGs.
