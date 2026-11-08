@@ -83,11 +83,11 @@ First tagged account. Leftovers finish or roll forward unlabelled / into a match
 
 Install path, docs-site minimum, public hygiene. Gate: `public-ready` or blocks first public OSS cut.
 
-### v0.0.3 — Trust *(active)*
+### v0.0.3 — Trust *(shipped 2026-11-08)*
 
-Core-stack bugs + security/authz that create false confidence. Gate: Impact ≥ 4 (Impact 5 always). Prefer shipping Trust beside Public — do not declare public “done” while open Impact ≥ 5 core trust bugs are unwaived.
+Core-stack bugs + security/authz that create false confidence. Gate: Impact ≥ 4 (Impact 5 always). 
 
-### v0.0.4 — Accuracy
+### v0.0.4 — Accuracy *(active)*
 
 Core Debt/docs/smoke-matrix/console depth on already-shipped services. Gate: Impact ≥ 3.
 

@@ -2,6 +2,53 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.0.3 — Trust (2026-11-08)
+
+Authz that used to look green locally and lie: caller/RoleARN IAM on CFN, DynamoDB resource policies + SourceVpce, Simulate*, PermissionsBoundary / SNS subscribe condition keys, Lambda ECR pull, cross-account resource policies, service-origin ViaService, and deploy-as-role for Serverless.
+
+### Identity & authz
+
+- IAM `SimulateCustomPolicy` / `SimulatePrincipalPolicy` ([#517](https://github.com/kgz/stackwrangler/issues/517))
+- `iam:PermissionsBoundary` on CreateRole / AttachRolePolicy ([#525](https://github.com/kgz/stackwrangler/issues/525))
+- `sns:Protocol` / `sns:Endpoint` on Subscribe ([#518](https://github.com/kgz/stackwrangler/issues/518))
+- DynamoDB table resource policies + `aws:SourceVpce` ([#516](https://github.com/kgz/stackwrangler/issues/516))
+- Cross-account resource policy smoke (secrets / KMS / S3) ([#233](https://github.com/kgz/stackwrangler/issues/233))
+- Service-origin keys (`kms:ViaService`, `aws:SourceArn` / `SourceAccount`, `iam:PassedToService`) ([#223](https://github.com/kgz/stackwrangler/issues/223))
+
+### Data / compute
+
+- DynamoDB index `aws:ResourceTag` inherits table tags ([#307](https://github.com/kgz/stackwrangler/issues/307))
+- DynamoDB Transact/Batch IAM table-scoped policies ([#306](https://github.com/kgz/stackwrangler/issues/306))
+- Lambda ECR image pull requires function-role `ecr:BatchGetImage` ([#219](https://github.com/kgz/stackwrangler/issues/219))
+
+### IaC / platform
+
+- CloudFormation resource ops run as caller or `RoleARN` through IAM ([#524](https://github.com/kgz/stackwrangler/issues/524); closes [#579](https://github.com/kgz/stackwrangler/issues/579))
+- `stackwrangler sls --role-arn` deploy as the live principal ([#522](https://github.com/kgz/stackwrangler/issues/522))
+- VPC Docker networks cleaned across `down`/`up` ([#479](https://github.com/kgz/stackwrangler/issues/479))
+
+### Parity
+
+- Local smokes for every Trust ticket; real-AWS harness `./smokes/parity/aws-parity-trust-v003.sh` (skips #479 LocalEmu-only; #233 needs a second account)
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS S3, ECR registry, AWS profile `local` (CLI), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.0.3
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.3 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
+
+Optional thin host CLI (wraps the same `docker run`): [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.3/stackwrangler).
+
 ## v0.0.2 — Public (2026-11-07)
 
 First public-ready cut: install without a git clone, stackwrangler rebrand, docs-site, and console/list depth on the hosting path.
