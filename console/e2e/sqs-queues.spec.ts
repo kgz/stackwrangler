@@ -150,9 +150,11 @@ test.describe('SQS queues UI (#167 / #548)', () => {
     }
   })
 
-  test('creates a FIFO queue from the console', async ({ page }) => {
+  test('creates a FIFO queue with content-based dedup and sends', async ({
+    page,
+  }) => {
     const ts = Date.now()
-    const name = `e2e-sqs-fifo-${ts}.fifo`
+    const name = `e2e-sqs-fifo-cbd-${ts}.fifo`
     let created = false
 
     try {
@@ -176,6 +178,66 @@ test.describe('SQS queues UI (#167 / #548)', () => {
       await page.getByTestId('sqs-send-open').click()
       await page.getByTestId('sqs-send-body').fill('fifo-body')
       await page.getByTestId('sqs-send-group-id').fill('g1')
+      await page.getByTestId('sqs-send-submit').click()
+      await expect(page.getByRole('status')).toContainText('Message sent', {
+        timeout: 15000,
+      })
+
+      await page.getByTestId('sqs-detail-delete').click()
+      await page.getByTestId('sqs-confirm-delete').click()
+      await expect(page).toHaveURL(/\/sqs$/, { timeout: 20000 })
+      created = false
+    } finally {
+      if (created) {
+        try {
+          deleteQuiet(queueUrlForName(name))
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  })
+
+  test('FIFO without content-based dedup requires MessageDeduplicationId', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-sqs-fifo-nodup-${ts}.fifo`
+    let created = false
+
+    try {
+      await page.goto('/sqs/create')
+      await page.getByTestId('sqs-type-fifo').check()
+      await page.getByTestId('sqs-create-name').fill(name)
+      await expect(page.getByTestId('sqs-content-based')).not.toBeChecked()
+      await page.getByTestId('sqs-create-submit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/sqs/queues/${name.replace('.', '\\.')}$`),
+        { timeout: 20000 },
+      )
+      created = true
+      await expect(page.getByText('FIFO').first()).toBeVisible({
+        timeout: 15000,
+      })
+
+      await page.getByTestId('sqs-send-open').click()
+      await page.getByTestId('sqs-send-submit').click()
+      await expect(
+        page.getByTestId('sqs-send-modal').getByText('Message body is required'),
+      ).toBeVisible()
+
+      await page.getByTestId('sqs-send-body').fill('fifo-no-cbd')
+      await page.getByTestId('sqs-send-group-id').fill('g1')
+      await page.getByTestId('sqs-send-submit').click()
+      await expect(
+        page
+          .getByTestId('sqs-send-modal')
+          .getByText(
+            'Message deduplication ID is required when content-based deduplication is off',
+          ),
+      ).toBeVisible()
+
+      await page.getByTestId('sqs-send-dedup-id').fill(`dedup-${ts}`)
       await page.getByTestId('sqs-send-submit').click()
       await expect(page.getByRole('status')).toContainText('Message sent', {
         timeout: 15000,
