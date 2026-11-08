@@ -31,7 +31,7 @@ git checkout -b feature/<issue>-<short-slug>   # or feature/<short-slug>
 ## Versioning (pillars + release label + scores)
 
 - **Milestone** = pillar (`Platform`, `Identity & authz`, …) — see [docs/version-plan.md](docs/version-plan.md).
-- **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.1.0` Org path). Only if theme + Impact gate match — otherwise **no version label**.
+- **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.0.5` Security/deps, `v0.1.0` Org path). Only if theme + Impact gate match — otherwise **no version label**.
 - New tickets: pillar + `./bin/issue-score.sh <n> --impact=N --effort=N`. Do **not** auto-label `CURRENT_RELEASE`. Freeze: every new issue needs pillar + scores; version label only if cut gate matches.
 - Debt: absorb small gaps in-parent ([docs/gap-check.md](docs/gap-check.md)); else evaluate-and-place.
 - Cut a release: `./bin/release-tag.sh vX.Y.Z` — only when asked. See [docs/versioning.md](docs/versioning.md).
@@ -55,10 +55,10 @@ Root `README.md` is product-facing. Keep Board/workflow, Project #8, `/opsx-*`, 
 
 Any ticket that adds or changes **console / web UI** (`console/`, new service pages, chrome) must go through Open Design **before** React implementation:
 
-1. Theme: `design/stackwrangler/` (grey rose). Do not invent a new palette or copy AWS orange / sky blue / smile.
+1. Theme: grey rose under `design/` (historic directory names — [#421](https://github.com/kgz/stackwrangler/issues/421)). Do not invent a new palette or copy AWS orange / sky blue / smile.
 2. Mocks: `./bin/od-design-run.sh --issue <n> "…"`. Prefer skill **web-clone** when the screen exists in real AWS. Read-only AWS console screenshots are allowed; never create/update/delete real resources without explicit approval.
 3. **Dead controls:** not wired yet → `disabled` + `title="To implement"` (+ Debt if v1 needs it). Never ship it → omit from the mock. No enabled no-op / toast-only controls.
-4. Land mocks in `design/stackwrangler-console/` (or the ticket’s design folder)
+4. Land mocks under the console design folder in `design/` (or the ticket’s ticket design folder; [#421](https://github.com/kgz/stackwrangler/issues/421)).
 5. Then implement against the mocks.
 
 Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
@@ -89,6 +89,8 @@ Maintainers with GitHub **project** access may use `bin/board-status.sh` / `bin/
 # Real AWS cost — ask first
 
 **Never** create, update, or leave running resources in a **real** AWS account without the user **explicitly approving that action in the current turn**.
+
+Full residual checklist + **KMS fixture reuse** (don’t stack `create-key`+7d-delete): `.cursor/rules/aws-cost-approval.mdc`. Parity defaults: `alias/sw-parity-fixture-trust-via`, `alias/sw-parity-fixture-batch10`.
 
 ## Allowed without asking
 
