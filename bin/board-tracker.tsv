@@ -325,3 +325,4 @@
 517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
 522	in-review	stackwrangler sls --role-arn deploy as live principal
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
+525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops

@@ -180,6 +180,7 @@ LocalEmu CFN resource providers still inject internal credentials (`FIXME: use p
 Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)). Loosen only the affected statement, and say so.
 
 `iam:SimulateCustomPolicy` / `SimulatePrincipalPolicy` evaluate with the same enforcer matchers as live calls (`./smokes/security/iam-simulate-policy-smoke.sh`). That can differ from real AWS’s IAM policy simulator for some resource-scoped actions (e.g. SNS attribute APIs on a topic ARN) — prefer the enforcer answer when checking deploy-role policies locally.
+Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)) and `iam:SimulateCustomPolicy` ([#517](https://github.com/kgz/awsl/issues/517)). `iam:PermissionsBoundary` on CreateRole / role-policy ops is set ([#525](https://github.com/kgz/awsl/issues/525); [oidc.md](oidc.md)). Loosen only the affected statement, and say so.
 
 ### Lambda → SQS from inside the function
 

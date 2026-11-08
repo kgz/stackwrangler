@@ -23,6 +23,7 @@ echo "==> IAM SimulateCustomPolicy / SimulatePrincipalPolicy"
 
 echo "==> IAM OIDC + PassRole"
 ./smokes/security/oidc-smoke.sh
+./smokes/security/iam-permissions-boundary-key-smoke.sh
 
 echo "==> Lambda smoke"
 ./smokes/lambda/lambda-smoke.sh
