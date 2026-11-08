@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Delete topic — SNS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+  <style>
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: grid;
+      place-items: center;
+      z-index: 20;
+    }
+    .modal {
+      width: min(440px, 92vw);
+      background: var(--aws-bg-elevated, #1c1c1c);
+      border: 1px solid var(--aws-border, #333);
+      border-radius: 2px;
+      padding: 16px;
+    }
+    .modal h3 { margin: 0 0 12px; }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body data-page="sns-delete-topic" data-nav="sns-topics" data-service="sns" data-title="orders-events" data-crumb="orders-events">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">orders-events</h1>
+          <div class="aws-subtitle-row">
+            <span>Standard</span>
+            <span><code class="aws-mono">arn:aws:sns:ap-southeast-2:000000000000:orders-events</code></span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="Refresh" data-od-id="btn-refresh">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-topic">Delete</button>
+        <a class="btn btn-normal" href="sns-create-subscription.html" data-od-id="btn-create-subscription">Create subscription</a>
+        <button type="button" class="btn btn-primary" data-od-id="btn-publish">Publish message</button>
+      </div>
+
+      <p class="aws-desc"><a href="sns-topics.html" data-od-id="back-list">← Topics</a></p>
+
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Topic details</h2>
+          <p class="aws-desc">Confirm overlay shown when Delete is pressed.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" data-od-id="delete-topic-modal" role="presentation">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-topic-title">
+      <h3 id="delete-topic-title">Delete topic?</h3>
+      <p style="color: var(--aws-text-muted, #9a9a9a); margin-top: 0">
+        Permanently delete <strong>orders-events</strong>. Subscriptions on this
+        topic are removed.
+      </p>
+      <div class="modal-actions">
+        <a class="btn btn-normal" href="sns-topic-detail.html" data-od-id="btn-delete-cancel">Cancel</a>
+        <button type="button" class="btn btn-primary" data-od-id="btn-delete-confirm">Delete topic</button>
+      </div>
+    </div>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

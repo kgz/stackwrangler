@@ -259,7 +259,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` vs reserved concurrency (lower wins) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` alone (reserved unset) → in-flight ≤ MaximumConcurrency | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
-| SNS console Topics list/create/detail | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 / #546 |
+| SNS console Topics list/create/detail/delete/subscribe | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 / #546 / #622 |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
 | SNS Subscribe `sns:Protocol` / `sns:Endpoint` allow intake sqs; deny other-queue / https | happy + sad/authz | covered | `./smokes/messaging/sns-subscribe-conditions-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |

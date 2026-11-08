@@ -216,6 +216,24 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `sns-topics.html`
 
+## Issue #622 — SNS delete topic + Create subscription (handMock)
+
+### Mode
+- handMock: OD CLI 404; MCP `opencode` spawn ENOENT; project `baseDir` still parent `design/awsbox-console` — landed in this worktree under grey-rose chrome
+- Extends #172 / #546 SNS mocks: wire Delete topic + Create subscription controls (remove `To implement` only for those)
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `sns-topics.html` | Selected row · Delete enabled → delete confirm |
+| `sns-topic-detail.html` | Delete + Create subscription enabled |
+| `sns-delete-topic.html` | Confirm overlay · Cancel / Delete topic |
+| `sns-create-subscription.html` | Protocol + Endpoint form · LocalEmu SQS happy path |
+
+### Dead controls (`title="To implement"`)
+- Encryption / Access policy / Delivery status tabs; subscription filter policy
+- Working: Delete (list when selected + detail), Create subscription, Refresh on detail/list samples
+
 ## Issue #146 — ECS/EC2 console depth
 
 ### Mode

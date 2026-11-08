@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { DeadButton, RefreshButton } from '../components/S3Ui'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { RefreshButton, TO_IMPLEMENT } from '../components/S3Ui'
 import {
   DetailHeader,
   EmptyRow,
@@ -10,12 +10,16 @@ import {
   PlainHeader,
 } from '../components/ServiceUi'
 import {
+  createSubscription,
+  deleteTopic,
   describeTopic,
   findTopicArnByName,
   listTopicSubscriptions,
   publishToTopic,
+  type CreateSubscriptionInput,
   type SnsSubscriptionRow,
   type SnsTopicDetail,
+  type SubscribeProtocol,
 } from '../lib/sns'
 
 type DetailTab = 'details' | 'subscriptions' | 'publish'
@@ -26,15 +30,35 @@ const TABS: ReadonlyArray<readonly [DetailTab, string]> = [
   ['publish', 'Publish'],
 ]
 
+const PROTOCOLS: ReadonlyArray<{ value: SubscribeProtocol; label: string }> = [
+  { value: 'sqs', label: 'Amazon SQS' },
+  { value: 'lambda', label: 'AWS Lambda' },
+  { value: 'http', label: 'HTTP' },
+  { value: 'https', label: 'HTTPS' },
+  { value: 'email', label: 'Email' },
+  { value: 'email-json', label: 'Email (JSON)' },
+  { value: 'sms', label: 'SMS' },
+]
+
+function parseProtocol(raw: string): SubscribeProtocol | undefined {
+  return PROTOCOLS.find((p) => p.value === raw)?.value
+}
+
 export function SnsTopicDetailPage() {
+  const navigate = useNavigate()
   const { name: rawName } = useParams()
   const name = rawName ? decodeURIComponent(rawName) : ''
   const [detail, setDetail] = useState<SnsTopicDetail | null>(null)
   const [subs, setSubs] = useState<SnsSubscriptionRow[]>([])
   const [tab, setTab] = useState<DetailTab>('details')
   const [error, setError] = useState<string | null>(null)
+  const [subscribeError, setSubscribeError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [subscribeOpen, setSubscribeOpen] = useState(false)
+  const [protocol, setProtocol] = useState<SubscribeProtocol>('sqs')
+  const [endpoint, setEndpoint] = useState('')
   const [message, setMessage] = useState('')
   const [subject, setSubject] = useState('')
   const [messageGroupId, setMessageGroupId] = useState('')
@@ -72,6 +96,50 @@ export function SnsTopicDetailPage() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  async function onDelete() {
+    if (!detail) return
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteTopic(detail.arn)
+      navigate('/sns')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setConfirmDelete(false)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onSubscribe() {
+    if (!detail) return
+    const trimmed = endpoint.trim()
+    if (!trimmed) {
+      setSubscribeError('Endpoint is required')
+      return
+    }
+    setBusy(true)
+    setSubscribeError(null)
+    setError(null)
+    try {
+      const input: CreateSubscriptionInput = {
+        topicArn: detail.arn,
+        protocol,
+        endpoint: trimmed,
+      }
+      await createSubscription(input)
+      setSubscribeOpen(false)
+      setEndpoint('')
+      setProtocol('sqs')
+      setTab('subscriptions')
+      await refresh()
+    } catch (err) {
+      setSubscribeError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function onPublish() {
     if (!detail) return
@@ -113,8 +181,27 @@ export function SnsTopicDetailPage() {
         actions={
           <>
             <RefreshButton onClick={() => void refresh()} />
-            <DeadButton>Delete</DeadButton>
-            <DeadButton>Create subscription</DeadButton>
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={!detail || busy}
+              onClick={() => setConfirmDelete(true)}
+              data-testid="sns-detail-delete"
+            >
+              Delete
+            </button>
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={!detail || busy}
+              onClick={() => {
+                setSubscribeError(null)
+                setSubscribeOpen(true)
+              }}
+              data-testid="sns-create-subscription"
+            >
+              Create subscription
+            </button>
             <button
               type="button"
               className="btn btn-primary"
@@ -151,7 +238,7 @@ export function SnsTopicDetailPage() {
             className="aws-tab"
             disabled
             aria-disabled="true"
-            title="To implement"
+            title={TO_IMPLEMENT}
           >
             Encryption
           </button>
@@ -160,7 +247,7 @@ export function SnsTopicDetailPage() {
             className="aws-tab"
             disabled
             aria-disabled="true"
-            title="To implement"
+            title={TO_IMPLEMENT}
           >
             Access policy
           </button>
@@ -169,7 +256,7 @@ export function SnsTopicDetailPage() {
             className="aws-tab"
             disabled
             aria-disabled="true"
-            title="To implement"
+            title={TO_IMPLEMENT}
           >
             Delivery status
           </button>
@@ -222,7 +309,9 @@ export function SnsTopicDetailPage() {
                       />
                     ) : (
                       subs.map((s) => (
-                        <tr key={`${s.protocol}:${s.endpoint}:${s.subscriptionArn}`}>
+                        <tr
+                          key={`${s.protocol}:${s.endpoint}:${s.subscriptionArn}`}
+                        >
                           <td>{s.protocol}</td>
                           <td>
                             <Mono>{s.endpoint}</Mono>
@@ -332,6 +421,115 @@ export function SnsTopicDetailPage() {
           ) : null}
         </div>
       </section>
+
+      {confirmDelete && detail ? (
+        <div className="modal-backdrop">
+          <div className="modal" role="dialog" aria-modal="true">
+            <h3>Delete topic?</h3>
+            <p style={{ color: 'var(--awsbox-quiet)', marginTop: 0 }}>
+              Permanently delete <strong>{detail.name}</strong>. Subscriptions
+              on this topic are removed.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-normal"
+                disabled={busy}
+                onClick={() => setConfirmDelete(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy}
+                onClick={() => void onDelete()}
+                data-testid="sns-confirm-delete"
+              >
+                {busy ? 'Deleting…' : 'Delete topic'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {subscribeOpen && detail ? (
+        <div className="modal-backdrop">
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            style={{ maxWidth: 560, width: '100%' }}
+            data-testid="sns-subscribe-modal"
+          >
+            <h3>Create subscription</h3>
+            <p style={{ color: 'var(--awsbox-quiet)', marginTop: 0 }}>
+              Subscribe an endpoint to <strong>{detail.name}</strong> via{' '}
+              <code>Subscribe</code>.
+            </p>
+            <Notices error={subscribeError} />
+            <div className="aws-form-stack">
+              <div className="aws-field">
+                <label className="aws-label" htmlFor="sns-sub-protocol">
+                  Protocol <span className="req">*</span>
+                </label>
+                <select
+                  className="aws-input"
+                  id="sns-sub-protocol"
+                  value={protocol}
+                  onChange={(e) => {
+                    const next = parseProtocol(e.target.value)
+                    if (next) setProtocol(next)
+                  }}
+                  data-testid="sns-sub-protocol"
+                >
+                  {PROTOCOLS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="aws-field">
+                <label className="aws-label" htmlFor="sns-sub-endpoint">
+                  Endpoint <span className="req">*</span>
+                </label>
+                <input
+                  className="aws-input"
+                  id="sns-sub-endpoint"
+                  type="text"
+                  value={endpoint}
+                  onChange={(e) => setEndpoint(e.target.value)}
+                  placeholder="Queue ARN, Lambda ARN, URL, email, or phone"
+                  data-testid="sns-sub-endpoint"
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-normal"
+                disabled={busy}
+                onClick={() => {
+                  setSubscribeOpen(false)
+                  setSubscribeError(null)
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy}
+                onClick={() => void onSubscribe()}
+                data-testid="sns-sub-submit"
+              >
+                {busy ? 'Creating…' : 'Create subscription'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }
