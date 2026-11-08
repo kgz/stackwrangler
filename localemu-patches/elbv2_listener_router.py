@@ -18,6 +18,7 @@ Scope:
 
 from __future__ import annotations
 
+import errno
 import http.client
 import http.server
 import logging
@@ -1116,6 +1117,10 @@ class ListenerRouter:
                 l4.server_sock.close()
             except Exception:
                 LOG.debug("Error closing L4 listener %s", listener_arn, exc_info=True)
+        # Wait for accept loop to exit so the port can rebind (#628 smoke
+        # delete+create on the same TLS port).
+        if l4 is not None and l4.thread is not None and l4.thread.is_alive():
+            l4.thread.join(timeout=2.0)
         if l4 is not None:
             self._refresh_dnat()
         if listener and listener.server:
@@ -1148,12 +1153,27 @@ class ListenerRouter:
         bind_host = _bind_host(scheme, vpc_networks)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            sock.bind((bind_host, port))
-            sock.listen(128)
-            sock.settimeout(1.0)
-        except OSError as exc:
-            LOG.warning("Could not bind L4 listener %s on %s:%s: %s", listener_arn, bind_host, port, exc)
+        bound = False
+        last_exc: Optional[OSError] = None
+        for attempt in range(8):
+            try:
+                sock.bind((bind_host, port))
+                sock.listen(128)
+                sock.settimeout(1.0)
+                bound = True
+                break
+            except OSError as exc:
+                last_exc = exc
+                # EADDRINUSE right after DeleteListener — accept thread may
+                # still be releasing the prior socket (#628 / #594 recreate).
+                if getattr(exc, "errno", None) != errno.EADDRINUSE or attempt == 7:
+                    break
+                time.sleep(0.05 * (attempt + 1))
+        if not bound:
+            LOG.warning(
+                "Could not bind L4 listener %s on %s:%s: %s",
+                listener_arn, bind_host, port, last_exc,
+            )
             sock.close()
             return 0
         l4.server_sock = sock

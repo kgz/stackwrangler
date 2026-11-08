@@ -627,6 +627,22 @@ PEER_SEC="$(peer_fp)"
 [[ "$PEER_SEC" != "$ACM3_FP" ]] || fail "secondary Add presented added cert ${ACM3_FP}"
 echo "OK: secondary Add is SNI-only; default handshake unchanged"
 
+echo "==> RemoveListenerCertificates secondary does not flip default (#628)"
+aws elbv2 remove-listener-certificates --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT3}" >/dev/null
+PEER_RM_SEC="$(peer_fp)"
+[[ "$PEER_RM_SEC" == "$ACM2_FP" ]] || fail "secondary Remove flipped handshake to ${PEER_RM_SEC}, expected default ${ACM2_FP}"
+[[ "$PEER_RM_SEC" != "$ACM3_FP" ]] || fail "secondary Remove presented removed cert ${ACM3_FP}"
+echo "OK: secondary Remove is SNI-only; default handshake unchanged"
+
+echo "==> RemoveListenerCertificates clear-default reloads LocalEmu default (#628)"
+aws elbv2 remove-listener-certificates --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_RM_DEF="$(peer_fp)"
+[[ "$PEER_RM_DEF" == "$DEFAULT_FP" ]] || fail "clear-default presented ${PEER_RM_DEF}, expected LocalEmu default ${DEFAULT_FP}"
+[[ "$PEER_RM_DEF" != "$ACM2_FP" ]] || fail "clear-default still presented removed ACM cert"
+echo "OK: clearing default cert reloads LocalEmu default PEM"
+
 echo "==> unhealthy target drops out"
 docker exec "$CA" sh -c 'kill "$(cat /tmp/tcp-443.pid)"' || fail "could not stop A443"
 UNHEALTHY=""
