@@ -562,6 +562,40 @@ def load_kms_key_policy(key_ref: str | None, account_id: str, region: str) -> di
     return _parse_policy(getattr(found[0], "policy", None))
 
 
+def load_dynamodb_resource_policy(
+    resource_arn: str, account_id: str, region: str,
+) -> dict | None:
+    """Load a DynamoDB table resource policy from moto (#516).
+
+    Policies are stored under the table ARN by ``PutResourcePolicy``. Index
+    ARNs (``…/index/…``) inherit the table document.
+    """
+    if not resource_arn or not isinstance(resource_arn, str):
+        return None
+    table_arn = resource_arn.split("/index/", 1)[0]
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("dynamodb")[account_id][region]
+        policies = getattr(backend, "resource_policies", None) or {}
+        policy = policies.get(table_arn) or policies.get(resource_arn)
+        if policy is None and policies:
+            # ARN account/region drift: match by table name suffix.
+            table_name = table_arn.rsplit("/", 1)[-1]
+            for key, candidate in policies.items():
+                if isinstance(key, str) and key.endswith(f"/{table_name}"):
+                    policy = candidate
+                    break
+        if policy is None:
+            return None
+        return _parse_policy(getattr(policy, "policy_doc", None))
+    except Exception as exc:
+        LOG.debug(
+            "dynamodb resource policy load failed for %s: %s", resource_arn, exc,
+        )
+        return None
+
+
 def key_id_from_ciphertext(blob: Any) -> str | None:
     """Pull the moto key id out of a Decrypt ciphertext blob."""
     if blob is None:
@@ -984,58 +1018,94 @@ def _truthy(value: Any) -> bool:
     return bool(value)
 
 
-def _s3_bucket(bucket_name: str, account_id: str, region: str):
-    """Resolve a LocalEmu S3 bucket (cross-region map lives on us-east-1)."""
-    if not bucket_name:
-        return None
+def implicit_kms_checks(service: str, operation: str, params: dict | None, account_id: str, region: str) -> list[tuple[str, str]]:
+    """Customer-managed keys touched implicitly by Secrets Manager or SSM.
+
+    Each pair is ``(kms_action, key_id)``. AWS-managed ``alias/aws/*`` keys
+    are omitted; the service uses those on the caller's behalf.
+    """
+    params = params or {}
+    checks: list[tuple[str, str]] = []
+
+    def add(action: str, key_id: str | None) -> None:
+        customer = _customer_managed_key(key_id)
+        if customer:
+            checks.append((action, customer))
+
+    if service == "secretsmanager":
+        secret_id = params.get("SecretId") or params.get("Name") or ""
+        if operation == "GetSecretValue":
+            add("kms:Decrypt", secret_customer_kms_key(str(secret_id), account_id, region))
+        elif operation in ("PutSecretValue", "UpdateSecret"):
+            add("kms:GenerateDataKey", secret_customer_kms_key(str(secret_id), account_id, region))
+            if operation == "UpdateSecret":
+                add("kms:GenerateDataKey", params.get("KmsKeyId"))
+        elif operation == "CreateSecret":
+            add("kms:GenerateDataKey", params.get("KmsKeyId"))
+        return checks
+
+    if service != "ssm":
+        return checks
+
+    if operation == "PutParameter" and params.get("Type") == "SecureString":
+        add("kms:Encrypt", params.get("KeyId"))
+        return checks
+
+    if operation not in ("GetParameter", "GetParameters", "GetParametersByPath"):
+        return checks
+    if not _truthy(params.get("WithDecryption")):
+        return checks
+
+    names: list[str] = []
+    if operation == "GetParameter" and params.get("Name"):
+        names = [str(params["Name"])]
+    elif operation == "GetParameters":
+        raw_names = params.get("Names") or []
+        if isinstance(raw_names, list):
+            names = [str(name) for name in raw_names]
+    elif operation == "GetParametersByPath" and params.get("Path"):
+        names = _ssm_names_by_path(
+            str(params["Path"]),
+            _truthy(params.get("Recursive")),
+            account_id,
+            region,
+        )
+    for name in names:
+        add("kms:Decrypt", _ssm_parameter_key(name, account_id, region))
+    return checks
+
+
+def _ssm_parameter_key(name: str, account_id: str, region: str) -> str | None:
     try:
-        from localemu.constants import AWS_REGION_US_EAST_1
-        from localemu.services.s3.models import s3_stores
+        from moto.ssm.models import ssm_backends
 
-        del region
-        store = s3_stores[account_id][AWS_REGION_US_EAST_1]
-        bucket = store.buckets.get(bucket_name)
-        if bucket is not None:
-            return bucket
-        owner = store.global_bucket_map.get(bucket_name) if hasattr(store, "global_bucket_map") else None
-        if owner:
-            return s3_stores[owner][AWS_REGION_US_EAST_1].buckets.get(bucket_name)
+        param = ssm_backends[account_id][region].get_parameter(name)
     except Exception as exc:
-        LOG.debug("s3 bucket lookup failed for %s: %s", bucket_name, exc)
-    return None
-
-
-def _s3_write_customer_kms_key(params: dict, account_id: str, region: str) -> str | None:
-    """CMK used when S3 writes with SSE-KMS (request or bucket default)."""
-    encryption = params.get("ServerSideEncryption")
-    key_id = params.get("SSEKMSKeyId")
-    bucket = _s3_bucket(str(params.get("Bucket") or ""), account_id, region)
-    rule = getattr(bucket, "encryption_rule", None) if bucket is not None else None
-    if isinstance(rule, dict):
-        default = rule.get("ApplyServerSideEncryptionByDefault") or {}
-        if isinstance(default, dict):
-            encryption = encryption or default.get("SSEAlgorithm")
-            if not key_id and encryption in ("aws:kms", "aws:kms:dsse"):
-                key_id = default.get("KMSMasterKeyID")
-    if encryption not in ("aws:kms", "aws:kms:dsse") and not key_id:
+        LOG.debug("ssm parameter lookup failed for %s: %s", name, exc)
         return None
-    return _customer_managed_key(key_id if isinstance(key_id, str) else None)
-
-
-def _s3_object_customer_kms_key(
-    bucket_name: str, object_key: str, version_id: str | None, account_id: str, region: str
-) -> str | None:
-    """CMK on an existing object (GetObject / HeadObject SSE-KMS path)."""
-    bucket = _s3_bucket(bucket_name, account_id, region)
-    if bucket is None:
+    if param is None or getattr(param, "parameter_type", None) != "SecureString":
         return None
+    return getattr(param, "keyid", None)
+
+
+def _ssm_names_by_path(path: str, recursive: bool, account_id: str, region: str) -> list[str]:
     try:
-        s3_object = bucket.get_object(key=object_key, version_id=version_id, http_method="GET")
-    except Exception as exc:
-        LOG.debug("s3 object lookup failed for %s/%s: %s", bucket_name, object_key, exc)
-        return None
-    return _customer_managed_key(getattr(s3_object, "kms_key_id", None))
+        from moto.ssm.models import ssm_backends
 
+        backend = ssm_backends[account_id][region]
+        names: list[str] = []
+        token: str | None = None
+        for _ in range(10):
+            page, token = backend.get_parameters_by_path(
+                path, recursive, next_token=token, max_results=10,
+            )
+            names.extend(param.name for param in page)
+            if not token:
+                break
+        return names
+    except Exception as exc:
+        LOG.debug("ssm path lookup failed for %s: %s", path, exc)
+        return []
 
 def s3_via_service(region: str) -> str:
     """``kms:ViaService`` value AWS sets for S3-mediated KMS calls."""
@@ -1202,37 +1272,3 @@ def _ssm_names_by_path(path: str, recursive: bool, account_id: str, region: str)
     except Exception as exc:
         LOG.debug("ssm path lookup failed for %s: %s", path, exc)
         return []
-
-def load_dynamodb_resource_policy(
-    resource_arn: str, account_id: str, region: str,
-) -> dict | None:
-    """Load a DynamoDB table resource policy from moto (#516).
-
-    Policies are stored under the table ARN by ``PutResourcePolicy``. Index
-    ARNs (``…/index/…``) inherit the table document.
-    """
-    if not resource_arn or not isinstance(resource_arn, str):
-        return None
-    table_arn = resource_arn.split("/index/", 1)[0]
-    try:
-        import moto.backends as moto_backends
-
-        backend = moto_backends.get_backend("dynamodb")[account_id][region]
-        policies = getattr(backend, "resource_policies", None) or {}
-        policy = policies.get(table_arn) or policies.get(resource_arn)
-        if policy is None and policies:
-            # ARN account/region drift: match by table name suffix.
-            table_name = table_arn.rsplit("/", 1)[-1]
-            for key, candidate in policies.items():
-                if isinstance(key, str) and key.endswith(f"/{table_name}"):
-                    policy = candidate
-                    break
-        if policy is None:
-            return None
-        return _parse_policy(getattr(policy, "policy_doc", None))
-    except Exception as exc:
-        LOG.debug(
-            "dynamodb resource policy load failed for %s: %s", resource_arn, exc,
-        )
-        return None
-

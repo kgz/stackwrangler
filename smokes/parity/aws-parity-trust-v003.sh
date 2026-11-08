@@ -495,15 +495,16 @@ section_516() {
 	local table_arn="arn:aws:dynamodb:${AWS_DEFAULT_REGION}:${ACCOUNT}:table/${table}"
 
 	# Deny all from account except via a fake VPCE id — host calls should deny
+	# Deny dataplane without VPCE, but keep Put/DeleteResourcePolicy for the account (AWS lockout guard).
 	cat >"$WORK/rp.json" <<EOF
-{"Version":"2012-10-17","Statement":[{
-  "Sid":"DenyNoVpce",
-  "Effect":"Deny",
-  "Principal":"*",
-  "Action":"dynamodb:*",
-  "Resource":"${table_arn}",
-  "Condition":{"StringNotEquals":{"aws:SourceVpce":"vpce-00000000000000000"}}
-}]}
+{"Version":"2012-10-17","Statement":[
+  {"Sid":"AllowPolicyAdmin","Effect":"Allow","Principal":{"AWS":"arn:aws:iam::${ACCOUNT}:root"},
+   "Action":["dynamodb:PutResourcePolicy","dynamodb:DeleteResourcePolicy","dynamodb:GetResourcePolicy"],
+   "Resource":"${table_arn}"},
+  {"Sid":"DenyNoVpce","Effect":"Deny","Principal":"*","Action":"dynamodb:*","Resource":"${table_arn}",
+   "Condition":{"StringNotEquals":{"aws:SourceVpce":"vpce-00000000000000000"},
+                "ArnNotEquals":{"aws:PrincipalArn":"arn:aws:iam::${ACCOUNT}:root"}}}
+]}
 EOF
 	aws_r dynamodb put-resource-policy --resource-arn "$table_arn" --policy "file://${WORK}/rp.json" >/dev/null
 	on_cleanup "aws_r dynamodb delete-resource-policy --resource-arn '$table_arn' 2>/dev/null"
