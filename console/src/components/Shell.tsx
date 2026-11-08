@@ -180,6 +180,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  cloudtrail: {
+    title: 'CloudTrail',
+    sections: [
+      {
+        id: 'cloudtrail-main',
+        label: 'CloudTrail',
+        items: [
+          {
+            label: 'API call log',
+            to: '/cloudtrail',
+            active: under('/cloudtrail'),
+          },
+        ],
+      },
+    ],
+  },
   sfn: {
     title: 'Step Functions',
     sections: [

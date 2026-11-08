@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/api-call-log.html",
+  "entry": "screens/api-call-log.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-08T11:05:00.000Z",
+  "updatedAt": "2026-11-08T11:05:00.000Z",
+  "metadata": {
+    "issue": 194,
+    "note": "OD agents failed (host libc bind-mount); mock authored to existing grey-rose console screen pattern + CloudTrail Event history filters."
+  }
+}

@@ -110,6 +110,7 @@ services:
       # DynamoDB Transact*/Batch* per-item/table IAM (#306)
       - ./localemu-patches/service_action_map.py:/opt/code/localemu/src/localemu/services/iam_enforcement/service_action_map.py:ro
       - ./localemu-patches/iam_enforcer.py:/opt/code/localemu/src/localemu/services/iam_enforcement/enforcer.py:ro
+      - ./localemu-patches/api_call_log.py:/opt/code/localemu/src/localemu/services/iam_enforcement/api_call_log.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro
       # CFN lifecycle (#212): failed-create rollback, delete-stack cleanup, honest status
