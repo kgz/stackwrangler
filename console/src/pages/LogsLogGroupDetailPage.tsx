@@ -130,7 +130,7 @@ export function LogsLogGroupDetailPage() {
 
       <Notices error={error} />
 
-      <TabBar
+      <TabBar<DetailTab>
         tabs={[
           ['streams', 'Log streams'],
           ['events', 'Search log group'],
