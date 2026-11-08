@@ -19,6 +19,7 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 | NLB TCP | Binds the listener port. Instance targets use the container address on the VPC bridge, not `127.0.0.1`. ECS bridge host ports set `Target.host_override` to `host.docker.internal` so health and forward dial the published host port (#247). IP targets use the registered address (join the LB VPC so LocalEmu can reach them). |
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
 | NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. Create-time presentation is [#242](https://github.com/kgz/awsl/issues/242). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. |
+| NLB TLS | Forwards bytes after TLS terminate. Create-time ACM keypair presentation is [#242](https://github.com/kgz/awsl/issues/242) (PR #592). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. `RemoveListenerCertificates` reloads when the default changes or is cleared ([#628](https://github.com/kgz/awsl/issues/628)); secondary Remove does not flip the handshake. |
 | ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
 | Health | TCP connect, or HTTP/HTTPS GET of `HealthCheckPath` honouring `Matcher.HttpCode`. `describe-target-health` and new connections skip `unhealthy` targets. |
 | `host_override` | Internal dial address for ECS bridge host ports (`host.docker.internal`). Survives API `RegisterTargets` rebuilds ([#603](https://github.com/kgz/awsl/issues/603); set by [#247](https://github.com/kgz/awsl/issues/247)). |
@@ -31,6 +32,8 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 ## Gaps
 
 - No console ([#241](https://github.com/kgz/awsl/issues/241)).
+- TLS does not load the ACM certificate attached at create time ([#242](https://github.com/kgz/awsl/issues/242)).
+- Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
 - ECS bridge-mode tasks behind an instance target group: the listener dials the EC2 container address, but bridge host ports are published on the Docker host. [#247](https://github.com/kgz/awsl/issues/247) sets `Target.host_override`; [#603](https://github.com/kgz/awsl/issues/603) keeps that override across `RegisterTargets`.
 - Classic ELB is not this path.

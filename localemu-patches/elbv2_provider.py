@@ -1,8 +1,7 @@
 """Custom ELBv2 provider for LocalEmu.
 
 Goes beyond Moto's state-only stub by running real HTTP listeners that
-reverse-proxy to registered targets, plus active health checking
-(TCP connect, or HTTP/HTTPS GET with path + matcher codes).
+reverse-proxy to registered targets, plus active TCP health checking.
 
 Operations intercepted:
   - CreateLoadBalancer        : normalize DNS name, track LB in router
@@ -10,10 +9,14 @@ Operations intercepted:
   - RegisterTargets           : add targets to router
   - DeregisterTargets         : remove targets from router
   - CreateListener            : start an actual HTTP listener (for HTTP ALBs)
+  - ModifyListener            : reload ACM TLS material when default Certificates change
+  - AddListenerCertificates   : reload only if the default cert actually changes
+                                (first attach on a cert-less listener; never SNI flip)
+  - RemoveListenerCertificates: reload when the default changes or is cleared
+                                (secondary Remove must not flip the handshake)
   - DeleteListener            : stop the HTTP listener
   - DescribeLoadBalancers     : ensure DNS names match what we emit
-  - DescribeTargetHealth      : return real probe-derived health
-  - ModifyTargetGroup        : refresh health-check settings on the router
+  - DescribeTargetHealth      : return real TCP-probe-derived health
 
 All other operations (rules, tags, SSL policies, attributes, NLB details,
 etc.) fall through to Moto via `_proxy_moto`.
@@ -26,11 +29,7 @@ import logging
 
 from localemu.aws.api import RequestContext, ServiceRequest, ServiceResponse
 from localemu.aws.skeleton import DispatchTable, Skeleton
-from localemu.services.elbv2.listener_router import (
-    TargetGroup,
-    _parse_http_codes,
-    get_router,
-)
+from localemu.services.elbv2.listener_router import TargetGroup, get_router
 from localemu.services.moto import _proxy_moto, call_moto
 from localemu.services.plugins import Service
 
@@ -90,26 +89,6 @@ def _vpc_networks_from_lb(lb: dict, account_id: str, region: str) -> list[str]:
     return nets
 
 
-
-def _hc_fields_from_tg(tg: dict) -> dict:
-    """Pull health-check settings from a Moto TargetGroup describe dict."""
-    hc_port = tg.get("HealthCheckPort")
-    try:
-        hc_port_int = int(hc_port) if hc_port and str(hc_port).isdigit() else None
-    except (ValueError, TypeError):
-        hc_port_int = None
-    matcher = tg.get("Matcher") or {}
-    http_code = matcher.get("HttpCode") if isinstance(matcher, dict) else None
-    proto = (tg.get("HealthCheckProtocol") or tg.get("Protocol") or "TCP")
-    path = tg.get("HealthCheckPath") or "/"
-    return {
-        "health_check_port": hc_port_int,
-        "health_check_protocol": str(proto).upper(),
-        "health_check_path": str(path) if path else "/",
-        "health_check_codes": _parse_http_codes(str(http_code or "200")),
-    }
-
-
 def _handle_create_load_balancer(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -154,32 +133,18 @@ def _handle_create_target_group(
         arn = tg.get("TargetGroupArn", "")
         if not arn:
             continue
-        hc = _hc_fields_from_tg(tg)
+        hc_port = tg.get("HealthCheckPort")
+        try:
+            hc_port_int = int(hc_port) if hc_port and str(hc_port).isdigit() else None
+        except (ValueError, TypeError):
+            hc_port_int = None
         router.register_target_group(TargetGroup(
             arn=arn,
             name=tg.get("TargetGroupName", ""),
             protocol=tg.get("Protocol", "HTTP"),
             port=int(tg.get("Port") or 80),
-            **hc,
+            health_check_port=hc_port_int,
         ))
-    return result
-
-
-def _handle_modify_target_group(
-    context: RequestContext, request: ServiceRequest
-) -> ServiceResponse:
-    result = call_moto(context)
-    router = get_router()
-    for tg in result.get("TargetGroups", []) or []:
-        arn = tg.get("TargetGroupArn", "")
-        existing = router.target_groups.get(arn) if arn else None
-        if not existing:
-            continue
-        hc = _hc_fields_from_tg(tg)
-        existing.health_check_port = hc["health_check_port"]
-        existing.health_check_protocol = hc["health_check_protocol"]
-        existing.health_check_path = hc["health_check_path"]
-        existing.health_check_codes = hc["health_check_codes"]
     return result
 
 
@@ -285,10 +250,13 @@ def _moto_default_certificate_arn(
         if not listeners:
             return ""
         listener = listeners[0]
-        if listener.certificate:
-            return str(listener.certificate)
+        # Prefer certificates[0] (DescribeListenerCertificates default). Moto
+        # RemoveListenerCertificates drops list entries but leaves
+        # listener.certificate stale (#628).
         if listener.certificates:
             return str(listener.certificates[0])
+        if listener.certificate:
+            return str(listener.certificate)
     except Exception:
         LOG.debug(
             "elbv2: could not read default certificate for %s",
@@ -297,20 +265,39 @@ def _moto_default_certificate_arn(
     return ""
 
 
-def _forward_tg_arn(actions: list | None) -> str:
-    for action in actions or []:
-        if not isinstance(action, dict):
-            continue
-        if action.get("Type") != "forward":
-            continue
-        tg = action.get("TargetGroupArn") or ""
-        if tg:
-            return str(tg)
-        fw = action.get("ForwardConfig") or {}
-        tgs = fw.get("TargetGroups") or []
-        if tgs and isinstance(tgs[0], dict):
-            return str(tgs[0].get("TargetGroupArn") or "")
-    return ""
+def _reconcile_listener_default_certificate(
+    context: RequestContext, listener_arn: str,
+) -> str:
+    """Align listener.certificate with certificates[0] (or clear). Return default ARN."""
+    if not listener_arn:
+        return ""
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return ""
+        listener = listeners[0]
+        if (listener.protocol or "").upper() not in {"HTTPS", "TLS"}:
+            return _moto_default_certificate_arn(context, listener_arn)
+        certs = [str(c) for c in (listener.certificates or []) if c]
+        listener.certificates = certs
+        if certs:
+            listener.certificate = certs[0]
+            return certs[0]
+        listener.certificate = None
+        return ""
+    except Exception:
+        LOG.debug(
+            "elbv2: could not reconcile default certificate for %s",
+            listener_arn, exc_info=True,
+        )
+        return ""
 
 
 def _handle_create_listener(
@@ -327,7 +314,19 @@ def _handle_create_listener(
             continue
         requested_port = int(listener.get("Port") or 80)
 
-        target_group_arn = _forward_tg_arn(listener.get("DefaultActions"))
+        # Pick the default target group from DefaultActions.
+        target_group_arn = ""
+        for action in listener.get("DefaultActions", []) or []:
+            if action.get("Type") == "forward":
+                target_group_arn = action.get("TargetGroupArn", "")
+                if not target_group_arn:
+                    fw = action.get("ForwardConfig") or {}
+                    tgs = fw.get("TargetGroups") or []
+                    if tgs:
+                        target_group_arn = tgs[0].get("TargetGroupArn", "")
+                if target_group_arn:
+                    break
+
         if not target_group_arn:
             LOG.debug("Listener %s has no forward action; skipping HTTP proxy", listener_arn)
             continue
@@ -347,6 +346,69 @@ def _handle_create_listener(
         # (tests, dashboard) can discover it; advertised Port stays as requested.
         if actual_port:
             listener["LocalEmuBoundPort"] = actual_port
+    return result
+
+
+def _handle_modify_listener(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    listener_arn = str(request.get("ListenerArn") or "")
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
+    certificates = request.get("Certificates") or []
+    if listener_arn and certificates:
+        _sync_listener_certificates(context, listener_arn, certificates)
+        for listener in result.get("Listeners", []) or []:
+            if listener.get("ListenerArn") == listener_arn:
+                listener["Certificates"] = [
+                    {"CertificateArn": _certificate_arn_from_entry(entry)}
+                    for entry in certificates
+                    if _certificate_arn_from_entry(entry)
+                ]
+    if listener_arn:
+        after = _moto_default_certificate_arn(context, listener_arn)
+        if after != before:
+            # Empty after → LocalEmu default PEM (clear-default, #628).
+            get_router().reload_listener_certificate(listener_arn, after or None)
+    return result
+
+
+def _handle_add_listener_certificates(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    listener_arn = str(request.get("ListenerArn") or "")
+    certificates = request.get("Certificates") or []
+    # AWS Add only attaches (SNI); it must not flip the default. Reload only
+    # when the default actually changes — e.g. first attach on a cert-less
+    # listener. Never reload to the *added* request ARN (#594).
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
+    if listener_arn and certificates:
+        after = _moto_default_certificate_arn(context, listener_arn)
+        if after and after != before:
+            get_router().reload_listener_certificate(listener_arn, after)
+    return result
+
+
+def _handle_remove_listener_certificates(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    listener_arn = str(request.get("ListenerArn") or "")
+    # Reload only when the default ARN changes. Secondary (SNI) Remove must
+    # not flip the handshake; clearing the last/default cert reloads the
+    # LocalEmu default PEM (#628).
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
+    if listener_arn:
+        after = _reconcile_listener_default_certificate(context, listener_arn)
+        if after != before:
+            get_router().reload_listener_certificate(listener_arn, after or None)
     return result
 
 
@@ -371,60 +433,6 @@ def _handle_delete_listener(
     result = call_moto(context)
     if listener_arn:
         get_router().stop_listener(listener_arn)
-    return result
-
-
-def _handle_modify_listener(
-    context: RequestContext, request: ServiceRequest
-) -> ServiceResponse:
-    """Keep dataplane TG + ACM material in sync on ModifyListener.
-
-    CodeDeploy blue/green (and any ModifyListener swap) used to rely on the
-    ECS loopback forwarder re-reading moto each accept. With #247 that
-    stand-in is gone, so the L4/HTTP listener must retarget here. Default
-    certificate changes also reload live handshake material (#594).
-    """
-    result = call_moto(context)
-    listener_arn = str(request.get("ListenerArn") or "")
-    tg_arn = _forward_tg_arn(request.get("DefaultActions"))
-    if not tg_arn:
-        for listener in result.get("Listeners", []) or []:
-            if str(listener.get("ListenerArn") or "") == listener_arn:
-                tg_arn = _forward_tg_arn(listener.get("DefaultActions"))
-                break
-    if listener_arn and tg_arn:
-        get_router().set_listener_target_group(listener_arn, tg_arn)
-    certificates = request.get("Certificates") or []
-    if listener_arn and certificates:
-        cert_arn = _sync_listener_certificates(context, listener_arn, certificates)
-        for listener in result.get("Listeners", []) or []:
-            if listener.get("ListenerArn") == listener_arn:
-                listener["Certificates"] = [
-                    {"CertificateArn": _certificate_arn_from_entry(entry)}
-                    for entry in certificates
-                    if _certificate_arn_from_entry(entry)
-                ]
-        if cert_arn:
-            get_router().reload_listener_certificate(listener_arn, cert_arn)
-    return result
-
-
-def _handle_add_listener_certificates(
-    context: RequestContext, request: ServiceRequest
-) -> ServiceResponse:
-    listener_arn = str(request.get("ListenerArn") or "")
-    certificates = request.get("Certificates") or []
-    # AWS Add only attaches (SNI); it must not flip the default. Reload only
-    # when the default actually changes — e.g. first attach on a cert-less
-    # listener. Never reload to the *added* request ARN (#594).
-    before = (
-        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
-    )
-    result = call_moto(context)
-    if listener_arn and certificates:
-        after = _moto_default_certificate_arn(context, listener_arn)
-        if after and after != before:
-            get_router().reload_listener_certificate(listener_arn, after)
     return result
 
 
@@ -539,13 +547,13 @@ _INTERCEPTED_OPS = {
     "DeleteLoadBalancer": _handle_delete_load_balancer,
     "DescribeLoadBalancers": _handle_describe_load_balancers,
     "CreateTargetGroup": _handle_create_target_group,
-    "ModifyTargetGroup": _handle_modify_target_group,
     "RegisterTargets": _handle_register_targets,
     "DeregisterTargets": _handle_deregister_targets,
     "CreateListener": _handle_create_listener,
-    "DeleteListener": _handle_delete_listener,
     "ModifyListener": _handle_modify_listener,
     "AddListenerCertificates": _handle_add_listener_certificates,
+    "RemoveListenerCertificates": _handle_remove_listener_certificates,
+    "DeleteListener": _handle_delete_listener,
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,
     "ModifyRule": _handle_modify_rule,

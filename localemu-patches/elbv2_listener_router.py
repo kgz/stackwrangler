@@ -18,9 +18,9 @@ Scope:
 
 from __future__ import annotations
 
+import errno
 import http.client
 import http.server
-import json
 import logging
 import os
 import socket
@@ -30,7 +30,6 @@ import threading
 import time
 from dataclasses import dataclass, field
 from itertools import count
-from pathlib import Path
 from typing import Optional
 
 from localemu.services.elbv2.stickiness import (
@@ -55,29 +54,6 @@ _HOP_BY_HOP = {
     "upgrade",
     "content-length",
 }
-
-
-# Smoke / in-process seed for bridge dial hosts (#603). Key = "{tg_arn}|{id}:{port}".
-_HOST_OVERRIDE_SEED = Path(
-    os.environ.get(
-        "STACKWRANGLER_ELBV2_HOST_OVERRIDE_FILE",
-        "/tmp/stackwrangler-elbv2-host-overrides.json",
-    )
-)
-
-
-def _seeded_host_overrides() -> dict[str, str]:
-    try:
-        raw = json.loads(_HOST_OVERRIDE_SEED.read_text())
-    except Exception:
-        return {}
-    if not isinstance(raw, dict):
-        return {}
-    out: dict[str, str] = {}
-    for key, value in raw.items():
-        if isinstance(key, str) and isinstance(value, str) and key and value:
-            out[key] = value
-    return out
 
 
 def _is_websocket_upgrade(headers) -> bool:
@@ -128,11 +104,6 @@ class Target:
     host: str  # resolved host/IP to connect to (empty for Lambda targets)
     health: str = "initial"  # initial | healthy | unhealthy
     lambda_arn: Optional[str] = None  # set when this target is a Lambda function
-    # ECS bridge host ports are published on the Docker host, not the EC2
-    # container VPC address. Callers set this so health + forward dial there
-    # instead of rewriting to the instance IP (#247). RegisterTargets must
-    # preserve it across API re-registration (#603).
-    host_override: Optional[str] = None
 
 
 @dataclass
@@ -142,9 +113,6 @@ class TargetGroup:
     protocol: str = "HTTP"
     port: int = 80
     health_check_port: Optional[int] = None
-    health_check_protocol: str = "TCP"
-    health_check_path: str = "/"
-    health_check_codes: frozenset[int] = field(default_factory=lambda: frozenset({200}))
     targets: dict[str, Target] = field(default_factory=dict)
     sticky_store: StickyStore = field(default_factory=StickyStore)
     _rr_counter: "count" = field(default_factory=lambda: count(0))
@@ -185,6 +153,7 @@ class Listener:
     target_group_arn: str
     server: Optional[http.server.ThreadingHTTPServer] = None
     thread: Optional[threading.Thread] = None
+    ssl_ctx: Optional[ssl.SSLContext] = None
 
 
 @dataclass
@@ -822,8 +791,6 @@ def _tls_cert_path(certificate_arn: Optional[str] = None) -> str:
     return _localemu_cert_path()
 
 
-
-
 def _build_server_ssl_context(certificate_arn: Optional[str] = None) -> ssl.SSLContext:
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(certfile=_tls_cert_path(certificate_arn))
@@ -843,71 +810,6 @@ def _tcp_ping(host: str, port: int, timeout: float = 2.0) -> bool:
             return True
     except OSError:
         return False
-
-
-def _parse_http_codes(spec: str) -> frozenset[int]:
-    """Parse ELBv2 Matcher.HttpCode (``200``, ``200-299``, ``200,201``)."""
-    codes: set[int] = set()
-    for part in (spec or "200").split(","):
-        token = part.strip()
-        if not token:
-            continue
-        if "-" in token:
-            start_s, end_s = token.split("-", 1)
-            codes.update(range(int(start_s), int(end_s) + 1))
-        else:
-            codes.add(int(token))
-    return frozenset(codes) if codes else frozenset({200})
-
-
-def _http_ping(
-    host: str,
-    port: int,
-    path: str,
-    codes: frozenset[int],
-    timeout: float = 2.0,
-    use_tls: bool = False,
-) -> bool:
-    """GET ``path`` and accept only matcher success codes (ALB-style)."""
-    conn: Optional[http.client.HTTPConnection] = None
-    try:
-        if use_tls:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            conn = http.client.HTTPSConnection(
-                host, port, timeout=timeout, context=ctx,
-            )
-        else:
-            conn = http.client.HTTPConnection(host, port, timeout=timeout)
-        conn.request("GET", path or "/")
-        resp = conn.getresponse()
-        resp.read()
-        return resp.status in codes
-    except Exception:
-        return False
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
-
-
-def _probe_target(tg: "TargetGroup", target: Target, timeout: float = 2.0) -> bool:
-    """Run the target group's configured health check against one target."""
-    port = tg.health_check_port or target.port
-    proto = (tg.health_check_protocol or "TCP").upper()
-    if proto in ("HTTP", "HTTPS"):
-        return _http_ping(
-            target.host,
-            port,
-            tg.health_check_path or "/",
-            tg.health_check_codes or frozenset({200}),
-            timeout=timeout,
-            use_tls=(proto == "HTTPS"),
-        )
-    return _tcp_ping(target.host, port, timeout=timeout)
 
 
 class ListenerRouter:
@@ -966,7 +868,6 @@ class ListenerRouter:
         tg = self.target_groups.get(tg_arn)
         if not tg:
             return
-        seeded = _seeded_host_overrides()
         with tg._lock:
             for t in targets:
                 tid = t.get("Id") or ""
@@ -989,24 +890,7 @@ class ListenerRouter:
                     if net:
                         _join_network(net)
                 key = f"{tid}:{port}"
-                # Keep bridge dial address across RegisterTargets rebuilds (#603).
-                # Prefer an existing Target.host_override; allow HostOverride in the
-                # target dict (in-process callers) or a smoke seed file.
-                prev = tg.targets.get(key)
-                override = None
-                if prev is not None and prev.host_override:
-                    override = prev.host_override
-                raw = t.get("HostOverride") or t.get("host_override")
-                if raw:
-                    override = str(raw)
-                seeded_key = f"{tg_arn}|{key}"
-                if not override and seeded_key in seeded:
-                    override = seeded[seeded_key]
-                if override:
-                    host = override
-                tg.targets[key] = Target(
-                    target_id=tid, port=port, host=host, host_override=override,
-                )
+                tg.targets[key] = Target(target_id=tid, port=port, host=host)
         self._refresh_dnat()
 
     def remove_targets(self, tg_arn: str, targets: list[dict]) -> None:
@@ -1031,7 +915,7 @@ class ListenerRouter:
             _resolve_target(t)
             port = tg.health_check_port or t.port
             if t.host:
-                ok = _probe_target(tg, t, timeout=2.0)
+                ok = _tcp_ping(t.host, port)
                 t.health = "healthy" if ok else "unhealthy"
             elif t.target_id.startswith("i-") and not t.lambda_arn:
                 t.health = "initial"
@@ -1140,7 +1024,6 @@ class ListenerRouter:
         self._publish_dns()
         return port
 
-
     def reload_listener_certificate(
         self, listener_arn: str, certificate_arn: Optional[str] = None,
     ) -> bool:
@@ -1218,19 +1101,6 @@ class ListenerRouter:
                 if rule:
                     rule.priority = str(priority)
 
-    def set_listener_target_group(self, listener_arn: str, target_group_arn: str) -> None:
-        """Point an existing listener at a new default target group (ModifyListener)."""
-        if not listener_arn or not target_group_arn:
-            return
-        with self._lock:
-            l4 = self.l4_listeners.get(listener_arn)
-            listener = self.listeners.get(listener_arn)
-            if l4 is not None:
-                l4.target_group_arn = target_group_arn
-            if listener is not None:
-                listener.target_group_arn = target_group_arn
-        self._refresh_dnat()
-
     def stop_listener(self, listener_arn: str) -> None:
         with self._lock:
             l4 = self.l4_listeners.pop(listener_arn, None)
@@ -1247,6 +1117,10 @@ class ListenerRouter:
                 l4.server_sock.close()
             except Exception:
                 LOG.debug("Error closing L4 listener %s", listener_arn, exc_info=True)
+        # Wait for accept loop to exit so the port can rebind (#628 smoke
+        # delete+create on the same TLS port).
+        if l4 is not None and l4.thread is not None and l4.thread.is_alive():
+            l4.thread.join(timeout=2.0)
         if l4 is not None:
             self._refresh_dnat()
         if listener and listener.server:
@@ -1279,12 +1153,27 @@ class ListenerRouter:
         bind_host = _bind_host(scheme, vpc_networks)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            sock.bind((bind_host, port))
-            sock.listen(128)
-            sock.settimeout(1.0)
-        except OSError as exc:
-            LOG.warning("Could not bind L4 listener %s on %s:%s: %s", listener_arn, bind_host, port, exc)
+        bound = False
+        last_exc: Optional[OSError] = None
+        for attempt in range(8):
+            try:
+                sock.bind((bind_host, port))
+                sock.listen(128)
+                sock.settimeout(1.0)
+                bound = True
+                break
+            except OSError as exc:
+                last_exc = exc
+                # EADDRINUSE right after DeleteListener — accept thread may
+                # still be releasing the prior socket (#628 / #594 recreate).
+                if getattr(exc, "errno", None) != errno.EADDRINUSE or attempt == 7:
+                    break
+                time.sleep(0.05 * (attempt + 1))
+        if not bound:
+            LOG.warning(
+                "Could not bind L4 listener %s on %s:%s: %s",
+                listener_arn, bind_host, port, last_exc,
+            )
             sock.close()
             return 0
         l4.server_sock = sock
@@ -1519,7 +1408,7 @@ class ListenerRouter:
                             if t.target_id.startswith("i-") and not t.lambda_arn:
                                 t.health = "initial"
                             continue
-                        ok = _probe_target(tg, t, timeout=1.5)
+                        ok = _tcp_ping(t.host, tg.health_check_port or t.port, timeout=1.5)
                         t.health = "healthy" if ok else "unhealthy"
                 self._refresh_dnat()
                 self._publish_dns()
@@ -1601,13 +1490,6 @@ def _instance_endpoint(instance_id: str) -> tuple[str, str]:
 def _resolve_target(target: Target) -> None:
     if target.lambda_arn:
         return
-    if target.host_override:
-        target.host = target.host_override
-        if target.target_id.startswith("i-"):
-            _host, net = _instance_endpoint(target.target_id)
-            if net:
-                _join_network(net)
-        return
     if target.target_id.startswith("i-"):
         host, net = _instance_endpoint(target.target_id)
         if host:
@@ -1627,7 +1509,7 @@ def _probe_group(tg: TargetGroup) -> None:
             if target.target_id.startswith("i-") and not target.lambda_arn:
                 target.health = "initial"
             continue
-        ok = _probe_target(tg, target, timeout=1.0)
+        ok = _tcp_ping(target.host, tg.health_check_port or target.port, timeout=1.0)
         target.health = "healthy" if ok else "unhealthy"
 
 

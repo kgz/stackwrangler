@@ -329,7 +329,6 @@
 563	done	Doc: SQS queues console screenshot (from #167)
 564	backlog	Debt: CFN drift + stack notifications (from #147)
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
-594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
 596	backlog	Doc: API call log docs/screenshot (from #194)
 602	backlog	Debt: ECS/CLI call-log workload smoke (from #194)
 606	backlog	Debt: Secrets Manager delete + rotate (from #535)
@@ -342,3 +341,5 @@
 613	backlog	Doc: API Gateway REST create/deploy console screenshot (from #543)
 616	in-review	Debt: APIGW REST method integration picker (from #543)
 615	in-review	Debt: Kinesis put/retention/encryption/tags (from #539)
+594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
+628	in-review	Debt: ELBv2 RemoveListenerCertificates / clear-default ACM reload (from #594)
