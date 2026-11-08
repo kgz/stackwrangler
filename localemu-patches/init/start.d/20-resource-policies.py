@@ -22,6 +22,11 @@ the same way and record a failed delivery.
 A customer-managed key is refused the same way unless its key policy
 Allows ``sns.amazonaws.com`` both ``kms:GenerateDataKey`` and
 ``kms:Decrypt``. A grant on the key still delivers.
+
+S3 SSE-KMS (#223): PutObject/GetObject (and kin) evaluate the caller's
+``kms:GenerateDataKey`` / ``kms:Decrypt`` with service-origin
+``kms:ViaService``, ``aws:SourceArn`` (bucket), and ``aws:SourceAccount``.
+Client ``x-amz-source-account`` headers are ignored.
 """
 
 from __future__ import annotations
@@ -347,13 +352,39 @@ def _install() -> None:
             return enriched
         return None
 
+    orig_build_conditions = enforcer._build_conditions
+
+    def _build_conditions(context, caller):
+        """Drop client-forged SourceAccount; services set it when mediating (#223)."""
+        conditions = orig_build_conditions(context, caller)
+        conditions.pop("aws:SourceAccount", None)
+        conditions.pop("aws:SourceArn", None)
+        return conditions
+
+    enforcer._build_conditions = _build_conditions
+
+    def _deny_kms(self, enforce, audit, caller, kms_action, resource) -> None:
+        wire = (
+            f"User: {caller.arn} is not authorized to perform: "
+            f"{kms_action} on resource: {resource}"
+        )
+        if audit and not enforce:
+            LOG.warning("IAM AUDIT DENY: %s", wire)
+            return
+        LOG.info("IAM DENY: %s", wire)
+        raise CommonServiceException(
+            code="AccessDeniedException",
+            message=wire,
+            status_code=403,
+        )
+
     def _implicit_kms(self, context) -> None:
         enforce, audit, enabled = self._read_mode()
         if not enabled:
             return
         service_name = _service_name(context)
         operation = getattr(getattr(context, "operation", None), "name", None)
-        if service_name not in ("secretsmanager", "ssm") or not operation:
+        if service_name not in ("secretsmanager", "ssm", "s3") or not operation:
             return
         access_key = enforcer._extract_access_key(context)
         if self._is_internal_call(context, access_key):
@@ -363,12 +394,40 @@ def _install() -> None:
         caller = resolve_caller(access_key, account_id, region) if access_key else None
         if not caller or caller.principal_type in ("Root", "Anonymous"):
             return
+        base = enforcer._build_conditions(context, caller)
+
+        if service_name == "s3":
+            s3_checks = rp.implicit_s3_kms_checks(
+                operation, context.service_request, account_id, region,
+            )
+            for kms_action, key_id, source_arn in s3_checks:
+                key_arn = rp.canonical_kms_arn(key_id, account_id, region)
+                policy = None
+                if key_arn:
+                    policy = enforcer._get_resource_policy("kms", key_arn, account_id, region)
+                conditions = dict(base)
+                conditions.update(
+                    rp.service_origin_kms_context(source_arn, account_id, region)
+                )
+                if not key_arn or not policy:
+                    decision = Decision.IMPLICIT_DENY
+                    resource = key_arn or key_id
+                else:
+                    decision = self.evaluator.evaluate(
+                        caller, kms_action, key_arn, conditions, policy,
+                    )
+                    resource = key_arn
+                if decision == Decision.ALLOW:
+                    continue
+                _deny_kms(self, enforce, audit, caller, kms_action, resource)
+                return
+            return
+
         checks = rp.implicit_kms_checks(
             service_name, operation, context.service_request, account_id, region,
         )
         if not checks:
             return
-        conditions = enforcer._build_conditions(context, caller)
         for kms_action, key_id in checks:
             key_arn = rp.canonical_kms_arn(key_id, account_id, region)
             policy = None
@@ -379,24 +438,13 @@ def _install() -> None:
                 resource = key_arn or key_id
             else:
                 decision = self.evaluator.evaluate(
-                    caller, kms_action, key_arn, conditions, policy,
+                    caller, kms_action, key_arn, base, policy,
                 )
                 resource = key_arn
             if decision == Decision.ALLOW:
                 continue
-            wire = (
-                f"User: {caller.arn} is not authorized to perform: "
-                f"{kms_action} on resource: {resource}"
-            )
-            if audit and not enforce:
-                LOG.warning("IAM AUDIT DENY: %s", wire)
-                return
-            LOG.info("IAM DENY: %s", wire)
-            raise CommonServiceException(
-                code="AccessDeniedException",
-                message=wire,
-                status_code=403,
-            )
+            _deny_kms(self, enforce, audit, caller, kms_action, resource)
+            return
 
     def _queue_allows_sns(queue_arn: str, topic_arn: str) -> bool:
         """True when the queue policy Allows sns.amazonaws.com from topic_arn."""
@@ -514,7 +562,8 @@ def _install() -> None:
     enforcer.IAMEnforcementHandler.__call__ = _call
     LOG.info(
         "awsbox resource policy hooks applied "
-        "(SNS→SQS queue policy + alias/aws/sqs and CMK key policy gated)"
+        "(SNS→SQS queue policy + alias/aws/sqs and CMK key policy gated; "
+        "S3 SSE-KMS ViaService/SourceArn)"
     )
 
 
