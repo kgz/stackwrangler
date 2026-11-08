@@ -502,8 +502,7 @@ section_516() {
    "Action":"dynamodb:*","Resource":"${table_arn}"},
   {"Sid":"DenyNoVpce","Effect":"Deny","Principal":"*",
    "Action":["dynamodb:GetItem","dynamodb:PutItem","dynamodb:UpdateItem","dynamodb:DeleteItem",
-             "dynamodb:Query","dynamodb:Scan","dynamodb:BatchGetItem","dynamodb:BatchWriteItem",
-             "dynamodb:TransactWriteItems","dynamodb:TransactGetItems"],
+             "dynamodb:Query","dynamodb:Scan","dynamodb:BatchGetItem","dynamodb:BatchWriteItem"],
    "Resource":"${table_arn}",
    "Condition":{"StringNotEquals":{"aws:SourceVpce":"vpce-00000000000000000"}}}
 ]}
