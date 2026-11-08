@@ -166,5 +166,70 @@ test.describe('docs-capture', () => {
       ).toBeVisible({ timeout: 30_000 })
     })
   })
+
+  test('cloudwatch logs log groups', async ({ page }) => {
+    await shot(page, 'logs-log-groups.png', '/logs', async () => {
+      await expect(
+        page.getByRole('heading', { name: 'Log groups', exact: true }),
+      ).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByTestId('log-groups-table')).toBeVisible({
+        timeout: 30_000,
+      })
+    })
+  })
+
+  test('cloudwatch logs create log group', async ({ page }) => {
+    await shot(page, 'logs-create-log-group.png', '/logs/create', async () => {
+      await expect(
+        page.getByRole('heading', { name: 'Create log group', exact: true }),
+      ).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByTestId('logs-create-name')).toBeVisible({
+        timeout: 30_000,
+      })
+    })
+  })
+
+  test('cloudwatch logs log group detail', async ({ page }) => {
+    const group = encodeURIComponent('/stackwrangler/docs-608')
+    await shot(
+      page,
+      'logs-log-group-detail.png',
+      `/logs/log-groups/${group}`,
+      async () => {
+        await expect(
+          page.getByRole('heading', { level: 1, name: /docs-608/ }),
+        ).toBeVisible({ timeout: 30_000 })
+        await expect(page.getByTestId('log-streams-table')).toBeVisible({
+          timeout: 30_000,
+        })
+        await expect(page.getByText('Loading log streams…')).toHaveCount(0, {
+          timeout: 30_000,
+        })
+        await expect(page.getByText('docs-stream').first()).toBeVisible({
+          timeout: 30_000,
+        })
+      },
+    )
+  })
+
+  test('cloudwatch logs log stream events', async ({ page }) => {
+    const group = encodeURIComponent('/stackwrangler/docs-608')
+    await shot(
+      page,
+      'logs-log-stream-events.png',
+      `/logs/log-groups/${group}/log-streams/${encodeURIComponent('docs-stream')}`,
+      async () => {
+        await expect(
+          page.getByRole('heading', { level: 1, name: 'docs-stream' }),
+        ).toBeVisible({ timeout: 30_000 })
+        await expect(page.getByText('Loading events…')).toHaveCount(0, {
+          timeout: 30_000,
+        })
+        await expect(page.getByText(/REPORT RequestId: docs-608/).first()).toBeVisible({
+          timeout: 30_000,
+        })
+      },
+    )
+  })
 })
 
