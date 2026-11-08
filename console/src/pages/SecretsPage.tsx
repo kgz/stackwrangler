@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { SecretListEntry } from '@aws-sdk/client-secrets-manager'
 import { ResourceLabel } from '../components/ResourceLabel'
 import { DeadButton, RefreshButton } from '../components/S3Ui'
 import {
-  DeadLink,
   EmptyRow,
   FilterHeader,
   ListCard,
@@ -68,7 +68,9 @@ export function SecretsPage() {
           <DeadButton>Delete</DeadButton>
           <DeadButton>Rotate</DeadButton>
           <div className="spacer" />
-          <DeadButton variant="primary">Store a new secret</DeadButton>
+          <Link className="btn btn-primary" to="/secretsmanager/store">
+            Store a new secret
+          </Link>
         </>
       }
       placeholder="Filter secrets"
@@ -114,7 +116,12 @@ export function SecretsPage() {
                   />
                   <td>
                     <ResourceLabel ids={[name, arn]} detail={isSelected}>
-                      <DeadLink>{name}</DeadLink>
+                      <Link
+                        to={`/secretsmanager/secrets/${name}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {name}
+                      </Link>
                     </ResourceLabel>
                   </td>
                   <td>{s.Description?.trim() ? s.Description : '—'}</td>

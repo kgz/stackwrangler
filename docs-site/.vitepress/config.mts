@@ -1,52 +1,151 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
-// Hosted: https://kgz.github.io/stackwrangler/
+// Pages (CI / GITHUB_PAGES=1): https://kgz.github.io/stackwrangler/
 // Local `pnpm dev` / `pnpm preview` without the env → base `/` so you open http://127.0.0.1:5173/
-// CI / Pages builds always use `/stackwrangler/` (GITHUB_PAGES=1 or CI=true).
 const pages = process.env.GITHUB_PAGES === '1' || process.env.CI === 'true'
 const require = createRequire(import.meta.url)
 const dayjsRoot = path.dirname(require.resolve('dayjs/package.json'))
 const dayjsEsm = path.join(dayjsRoot, 'esm/index.js')
-const vitepressDir = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(vitepressDir, '../..')
 
+/** Production origin for canonical / OG / sitemap (always Pages URL). */
+const siteHostname = 'https://kgz.github.io'
+const siteBasePath = '/stackwrangler/'
+const siteUrl = `${siteHostname}${siteBasePath}`
+const siteDescription =
+  'Local AWS-shaped account for real APIs, console, and IaC — then deploy to real AWS'
+
+function pagePathFromRelative(relativePath: string): string {
+  if (relativePath === 'index.md') return siteBasePath
+  const bare = relativePath.replace(/\.md$/, '').replace(/\/index$/, '/')
+  const withSlash = bare.endsWith('/') ? bare : `${bare}`
+  return `${siteBasePath}${withSlash}`.replace(/\/{2,}/g, '/')
+}
 
 export default withMermaid(
   defineConfig({
     title: 'stackwrangler',
-    description:
-      'Local AWS-shaped account for real APIs, console, and IaC — then deploy to real AWS',
+    description: siteDescription,
+    lang: 'en-US',
     base: pages ? '/stackwrangler/' : '/',
-    appearance: 'dark',
     ignoreDeadLinks: true,
     lastUpdated: true,
-    srcExclude: ['README.md'],
+    cleanUrls: true,
+    // VitePress sitemap hostname is origin-only; rewrite locs to include Pages base
+    // and drop maintainer README from the public map.
+    sitemap: {
+      hostname: siteHostname,
+      transformItems(items) {
+        return items
+          .filter((item) => !/README(?:\.html)?\/?$/i.test(item.url))
+          .map((item) => {
+            const path = item.url.replace(siteHostname, '')
+            const withBase = path.startsWith(siteBasePath)
+              ? path
+              : `${siteBasePath}${path.replace(/^\//, '')}`
+            return {
+              ...item,
+              url: `${siteHostname}${withBase}`.replace(
+                /([^:]\/)\/+/g,
+                '$1',
+              ),
+            }
+          })
+      },
+    },
     head: [
       [
-        'link',
+        'meta',
         {
-          rel: 'icon',
-          type: 'image/svg+xml',
-          href: pages ? '/stackwrangler/mark.svg' : '/mark.svg',
+          name: 'google-site-verification',
+          content: '97g4GEkc7U6apxN5WY3aj2s4u8_7Ji9KrxFscrKxnaQ',
         },
       ],
+      ['meta', { name: 'robots', content: 'index, follow, max-image-preview:large' }],
+      ['meta', { name: 'googlebot', content: 'index, follow' }],
+      ['meta', { name: 'author', content: 'stackwrangler contributors' }],
+      [
+        'meta',
+        {
+          name: 'keywords',
+          content:
+            'stackwrangler, local AWS, LocalEmu, AWS emulator, IAM, serverless, IaC, CloudFormation, localstack alternative',
+        },
+      ],
+      ['meta', { property: 'og:type', content: 'website' }],
+      ['meta', { property: 'og:site_name', content: 'stackwrangler' }],
+      ['meta', { property: 'og:locale', content: 'en_US' }],
+      ['meta', { property: 'og:title', content: 'stackwrangler' }],
+      ['meta', { property: 'og:description', content: siteDescription }],
+      ['meta', { name: 'twitter:card', content: 'summary' }],
+      ['meta', { name: 'twitter:title', content: 'stackwrangler' }],
+      ['meta', { name: 'twitter:description', content: siteDescription }],
+      // per-page canonical / og:url / titles via transformHead
+      [
+        'script',
+        { type: 'application/ld+json' },
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'stackwrangler',
+          url: siteUrl,
+          description: siteDescription,
+          publisher: {
+            '@type': 'Organization',
+            name: 'stackwrangler',
+            url: 'https://github.com/kgz/stackwrangler',
+          },
+        }),
+      ],
+      [
+        'script',
+        { type: 'application/ld+json' },
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'stackwrangler',
+          applicationCategory: 'DeveloperApplication',
+          operatingSystem: 'Linux',
+          license: 'https://opensource.org/licenses/MIT',
+          url: siteUrl,
+          codeRepository: 'https://github.com/kgz/stackwrangler',
+          description: siteDescription,
+        }),
+      ],
     ],
+    transformHead({ pageData }) {
+      const path = pagePathFromRelative(pageData.relativePath)
+      const url = `${siteHostname}${path}`
+      const title = pageData.title
+        ? `${pageData.title} | stackwrangler`
+        : 'stackwrangler'
+      const description =
+        pageData.description && pageData.description.length > 0
+          ? pageData.description
+          : siteDescription
+      return [
+        ['link', { rel: 'canonical', href: url }],
+        ['meta', { property: 'og:url', content: url }],
+        ['meta', { property: 'og:title', content: title }],
+        ['meta', { property: 'og:description', content: description }],
+        ['meta', { name: 'twitter:title', content: title }],
+        ['meta', { name: 'twitter:description', content: description }],
+      ]
+    },
     themeConfig: {
       siteTitle: 'stackwrangler',
-      logo: { src: '/mark.svg', alt: 'stackwrangler' },
       nav: [
+        { text: 'Home', link: '/' },
         { text: 'Why', link: '/guide/why' },
-        { text: 'Guide', link: '/guide/getting-started' },
-        { text: 'Compare', link: '/guide/compare/' },
-        { text: 'Use cases', link: '/guide/use-cases/' },
-        { text: 'Architecture', link: '/guide/architecture' },
-        { text: 'Changelog', link: '/guide/changelog' },
+        { text: 'Getting Started', link: '/guide/getting-started' },
+        { text: 'Vision', link: '/guide/vision' },
         { text: 'Completeness', link: '/guide/completeness' },
+        { text: 'Console tour', link: '/guide/console-tour' },
+        { text: 'Concepts', link: '/guide/concepts' },
         { text: 'Interactions', link: '/guide/interactions/' },
+        { text: 'Changelog', link: '/guide/changelog' },
         {
           text: 'GitHub',
           link: 'https://github.com/kgz/stackwrangler',
@@ -55,52 +154,12 @@ export default withMermaid(
       sidebar: {
         '/guide/': [
           {
-            text: 'Start here',
+            text: 'Guide',
             items: [
               { text: 'Why', link: '/guide/why' },
               { text: 'Getting Started', link: '/guide/getting-started' },
-              { text: 'Compare', link: '/guide/compare/' },
-              { text: 'Use cases', link: '/guide/use-cases/' },
-              { text: 'Architecture', link: '/guide/architecture' },
-              { text: 'Fidelity', link: '/guide/fidelity' },
               { text: 'Vision', link: '/guide/vision' },
-              { text: 'Changelog', link: '/guide/changelog' },
               { text: 'Completeness / status', link: '/guide/completeness' },
-            ],
-          },
-          {
-            text: 'Compare',
-            items: [
-              { text: 'Overview', link: '/guide/compare/' },
-              { text: 'vs LocalEmu', link: '/guide/compare/vs-localemu' },
-              { text: 'vs Moto', link: '/guide/compare/vs-moto' },
-              { text: 'vs LocalStack', link: '/guide/compare/vs-localstack' },
-              { text: 'vs real AWS', link: '/guide/compare/vs-real-aws' },
-              {
-                text: 'vs SAM Local',
-                link: '/guide/compare/vs-sam-local',
-              },
-              {
-                text: 'vs other emulators',
-                link: '/guide/compare/vs-other-emulators',
-              },
-            ],
-          },
-          {
-            text: 'Use cases',
-            items: [
-              { text: 'Overview', link: '/guide/use-cases/' },
-              {
-                text: 'OpenTofu → Expo + IAM',
-                link: '/guide/use-cases/opentofu-expo-iam',
-              },
-            ],
-          },
-          {
-            text: 'Product',
-            items: [
-              { text: 'Architecture', link: '/guide/architecture' },
-              { text: 'Fidelity', link: '/guide/fidelity' },
               { text: 'Console tour', link: '/guide/console-tour' },
               { text: 'Concepts', link: '/guide/concepts' },
               { text: 'Interactions', link: '/guide/interactions/' },
@@ -150,10 +209,6 @@ export default withMermaid(
                 text: 'Transfer connector',
                 link: '/guide/interactions/transfer-connector',
               },
-              {
-                text: 'RDS Create → SQL',
-                link: '/guide/interactions/rds-create-sql',
-              },
             ],
           },
         ],
@@ -163,9 +218,8 @@ export default withMermaid(
       ],
       footer: {
         message:
-          'MIT · Not affiliated with Amazon Web Services · Independent OSS · <a href="https://kgz.github.io/stackwrangler/">Docs</a> · <a href="https://github.com/kgz/stackwrangler">GitHub</a>',
-        copyright:
-          'Copyright © stackwrangler contributors · Run docs locally: cd docs-site && pnpm install && pnpm dev',
+          'Not affiliated with Amazon Web Services. Independent MIT-licensed OSS.',
+        copyright: 'Copyright © stackwrangler contributors',
       },
       search: { provider: 'local' },
       editLink: {
@@ -173,7 +227,6 @@ export default withMermaid(
           'https://github.com/kgz/stackwrangler/edit/main/docs-site/:path',
         text: 'Edit this page on GitHub',
       },
-      outline: { level: [2, 3] },
     },
     markdown: {
       theme: { light: 'github-light', dark: 'github-dark' },
@@ -188,22 +241,9 @@ export default withMermaid(
       optimizeDeps: {
         include: ['dayjs', 'mermaid'],
       },
-      // theme imports design/stackwrangler/tokens.css outside docs-site/
-      server: {
-        fs: { allow: [repoRoot] },
-      },
     },
-
     mermaid: {
-      theme: 'dark',
-      themeVariables: {
-        primaryColor: '#2a2428',
-        primaryTextColor: '#ececec',
-        primaryBorderColor: '#b48aa0',
-        lineColor: '#8d8d8d',
-        secondaryColor: '#242424',
-        tertiaryColor: '#1c1c1c',
-      },
+      theme: 'neutral',
     },
   }),
 )

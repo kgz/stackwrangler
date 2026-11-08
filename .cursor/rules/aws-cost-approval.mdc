@@ -39,3 +39,15 @@ If unsure whether an account is real vs local — treat as real and ask.
 State the **worst-case residual**: resource type, how long it can keep costing, and approx $. If the only clean exit still leaves a multi-day charge (KMS 7d, etc.), say that **before** asking for yes — don’t discover it after a green run.
 
 Prefer designs that avoid sticky costs when a free/ephemeral alternative exists (e.g. skip a dedicated CMK if an AWS-managed key suffices for the assertion).
+
+## KMS / sticky fixtures — reuse, don’t stack
+
+**Do not** `create-key` + `schedule-key-deletion` on every parity/smoke run. Each new CMK is ~$1/mo until the 7-day pending window ends; repeats stack.
+
+1. **Reuse** existing fixture CMKs when the assertion only needs a customer key ARN:
+   - Trust / ViaService: `alias/sw-parity-fixture-trust-via` (`AWSBOX_PARITY_KMS_KEY_ID`)
+   - batch10 encrypt/decrypt: `alias/sw-parity-fixture-batch10` (`AWSBOX_PARITY_KMS_BATCH_KEY_ID`)
+2. Parity scripts under `smokes/parity/` must prefer those aliases (create+7d-delete only if the fixture is missing).
+3. If a useful key is already `PendingDeletion`, prefer `cancel-key-deletion` + tag/alias as fixture over creating another — only with approval in the current turn (enabling a CMK resumes the ~$1/mo meter).
+4. Leave at most **1–2** long-lived parity CMKs; do not cancel-deletion on every leftover just to “clean up aliases.”
+5. When estimating cost, say whether the run **reuses fixtures** (ongoing ~$1–2/mo for kept keys, no new residual) or **creates** a CMK (new 7d residual).

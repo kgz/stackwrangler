@@ -119,7 +119,6 @@
 145	done	Debt: RDS create UI + Aurora fidelity
 146	done	Debt: ECS/EC2 console depth
 147	done	Debt: CFN write-path audit vs #93–95
-564	backlog	Debt: CFN drift + stack notifications (from #147)
 150	done	Debt: smoke matrix sad paths — ECS task-role authz
 154	done	Debt: ECS in-container task-role creds DNAT (from #150)
 156	done	Real-AWS IAM AccessDenied parity (~$0)
@@ -135,9 +134,9 @@
 172	done	Debt: SNS console (from #65) — thin list; create/detail #546
 173	done	Debt: EventBridge console (from #66)
 174	done	Debt: DynamoDB console (from #59)
-549	backlog	Debt: DynamoDB create/detail (from #174)
 175	in-review	Debt: StepFunctions console (from #67) — OD approved; React list shipped
 533	backlog	Debt: Step Functions create + state-machine detail (from #175)
+610	in-review	Debt: Step Functions Start execution (from #533)
 176	in-review	Debt: Secrets console (from #72) — OD approved; React list shipped
 177	done	Debt: KMS console (from #71)
 178	in-review	Debt: Kinesis console (from #68)
@@ -152,6 +151,7 @@
 190	done	Debt: REST authorizer Deny 401 vs 403 (from #184)
 191	done	Debt: REST custom domain routing (from #184)
 193	done	v1: resource-based policy evaluation
+194	in-review	API call log (CloudTrail-lite)
 196	done	Prowler compatibility — S3 Control, missing read APIs, prowler smoke
 197	backlog	Debt: Prowler full-catalog scan still noisy (from #196)
 198	backlog	Debt: observability empty-reads scanner-only (from #196)
@@ -181,10 +181,11 @@
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
 241	backlog	Debt: ELBv2 console (from #203)
-242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
-243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
+242	in-review	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
+243	in-review	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
-247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+247	in-review	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+603	in-review	Debt: preserve ELBv2 host_override across RegisterTargets (from #247)
 254	done	Debt: ECS bridge/awsvpc task-role creds when image has no iptables (from #252)
 256	done	v1: mirror/fixture tags for TF data sources
 257	done	v1: Document Terraform against awsbox (backend/lock)
@@ -237,7 +238,7 @@
 349	done	Implement built console services from #319 OD mocks
 350	backlog	Epic: console full UI create/detail
 351	done	Debt: Lambda Create + detail + Monaco code
-352	backlog	Debt: Logs create + stream/detail
+352	in-review	Debt: Logs create + stream/detail
 353	backlog	Debt: IAM Create user + user detail
 354	backlog	Debt: HTTP API detail routes/stages
 355	backlog	Debt: S3 console disabled controls (from #347)
@@ -245,7 +246,7 @@
 360	done	ECS awsvpc detach bridge staticmethod
 363	done	SQS/ESM validation: VT vs timeout, MaximumConcurrency>=2, retention 60-14d
 364	done	API Gateway HTTP_PROXY form-urlencoded body passthrough
-367	backlog	Debt: UpdateEventSourceMapping VT/MC (from #363)
+367	in-review	Debt: UpdateEventSourceMapping VT/MC (from #363)
 369	done	batch/2026-10-27
 370	done	batch/2026-10-27
 371	done	batch/2026-10-27
@@ -298,7 +299,7 @@
 469	done	stackwrangler sls non-root container user
 470	done	CFN delete part-created stack skips never-created resources
 475	done	ESM poller ExpiredToken / credential refresh
-477	backlog	Debt: stream ESM cred-refresh smoke (from #475)
+477	in-review	Debt: stream ESM cred-refresh smoke (from #475)
 483	backlog	Doc: architecture map console screenshot (from docs-catalog)
 484	backlog	Doc: Kinesis/SFN/DynamoDB interaction pages (from docs-catalog)
 485	backlog	Doc: Serverless local deploy interaction page (from docs-catalog)
@@ -306,24 +307,40 @@
 491	done	Public OSS: drop WSL-centric copy; Linux primary
 495	done	Debt: Linux-first OD start hints (from #491)
 498	done	Debt: smoke MaximumConcurrency without reserved (from #453)
+499	in-review	Debt: SQS FIFO ESM + MaximumConcurrency message-group ordering (from #453)
+517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
+522	in-review	stackwrangler sls --role-arn deploy as live principal
+535	backlog	Debt: Secrets Manager store + secret detail (from #176)
 420	done	(batch/2026-11-04-v002-b)
 428	in-review	Public OSS: polish docs-site (Runa-grade + GitHub Pages prep)
 487	done	Public OSS: single Docker image install path
-535	backlog	Debt: Secrets Manager store + secret detail (from #176)
-539	backlog	Debt: Kinesis create/detail (from #178)
+539	in-review	Debt: Kinesis create/detail (from #178)
 540	backlog	Debt: KMS create/detail (from #177)
-543	backlog	Debt: API Gateway REST create/deploy controls (from #189)
+543	in-review	Debt: API Gateway REST create/deploy controls (from #189)
 544	backlog	Debt: EC2 Launch instance wizard (from #146)
 545	backlog	Debt: ECS Run task / Create service / logs console (from #146)
 546	backlog	Debt: SNS create topic + topic detail (from #172)
 548	backlog	Debt: SQS create/detail/send (from #167)
-552	backlog	Debt: EventBridge create + rule/bus detail (from #173)
+549	backlog	Debt: DynamoDB create/detail (from #174)
+552	in-review	Debt: EventBridge create + rule/bus detail (from #173)
 556	done	Doc: RDS Create screenshot + interactions (from #145)
 561	done	Doc: REST APIs console screenshot (from #189)
 562	done	Doc: SNS Topics console screenshot (from #172)
 563	done	Doc: SQS queues console screenshot (from #167)
-517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
-522	in-review	stackwrangler sls --role-arn deploy as live principal
+564	backlog	Debt: CFN drift + stack notifications (from #147)
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
+629	in-review	Debt: elbv2-smoke HTTPS ALB ACM reload (from #594)
+596	backlog	Doc: API call log docs/screenshot (from #194)
+602	backlog	Debt: ECS/CLI call-log workload smoke (from #194)
+606	backlog	Debt: Secrets Manager delete + rotate (from #535)
+608	backlog	Doc: CloudWatch Logs create/detail console screenshot (from #352)
+609	backlog	Debt: CloudWatch Logs Tail poll distinct from Search (from #352)
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
 518	in-review	sns:Protocol/Endpoint on Subscribe
+622	in-review	Debt: SNS delete topic + Create subscription (from #546)
+612	backlog	Debt: API Gateway REST authorizer + Actions controls (from #543)
+613	backlog	Doc: API Gateway REST create/deploy console screenshot (from #543)
+616	in-review	Debt: APIGW REST method integration picker (from #543)
+615	in-review	Debt: Kinesis put/retention/encryption/tags (from #539)
+594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
+628	in-review	Debt: ELBv2 RemoveListenerCertificates / clear-default ACM reload (from #594)

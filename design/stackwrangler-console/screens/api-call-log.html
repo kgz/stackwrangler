@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>API call log — Observability</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="api-call-log" data-nav="api-call-log" data-service="cloudtrail" data-title="API call log" data-crumb="API call log">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">API call log</h1>
+      <p class="aws-desc">
+        Local CloudTrail-lite: every AWS API call a workload made (Lambda, ECS task, CLI profile),
+        with allow/deny result. Bodies are not recorded.
+      </p>
+
+      <section class="aws-card" data-od-id="filters-card" style="margin-bottom: 16px;">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="filter-toolbar" style="flex-wrap: wrap; gap: 8px;">
+            <label class="aws-find" style="max-width: 160px;">
+              <span class="visually-hidden">Workload</span>
+              <input type="search" placeholder="Workload" aria-label="Filter by workload" data-od-id="filter-workload" value="orders-reader" />
+            </label>
+            <label class="aws-find" style="max-width: 140px;">
+              <span class="visually-hidden">Service</span>
+              <input type="search" placeholder="Service" aria-label="Filter by service" data-od-id="filter-service" value="secretsmanager" />
+            </label>
+            <label class="aws-find" style="max-width: 180px;">
+              <span class="visually-hidden">Action</span>
+              <input type="search" placeholder="Action" aria-label="Filter by action" data-od-id="filter-action" />
+            </label>
+            <label>
+              <span class="visually-hidden">Result</span>
+              <select aria-label="Filter by result" data-od-id="filter-result" style="height: 32px;">
+                <option value="">Result: any</option>
+                <option value="allowed" selected>allowed</option>
+                <option value="denied">denied</option>
+              </select>
+            </label>
+            <label class="aws-find" style="max-width: 200px;">
+              <span class="visually-hidden">Since</span>
+              <input type="search" placeholder="Since (ISO time)" aria-label="Filter since time" data-od-id="filter-since" />
+            </label>
+            <button type="button" class="btn btn-normal" data-od-id="btn-apply-filters">Apply filters</button>
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Find in table" data-find-table="#data-table" aria-label="Find in table" data-od-id="find-calls" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="api-call-log-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Time</span></th>
+                  <th scope="col"><span class="th-inner">Workload</span></th>
+                  <th scope="col"><span class="th-inner">Principal</span></th>
+                  <th scope="col"><span class="th-inner">Service</span></th>
+                  <th scope="col"><span class="th-inner">Action</span></th>
+                  <th scope="col"><span class="th-inner">Resource(s)</span></th>
+                  <th scope="col"><span class="th-inner">Result</span></th>
+                  <th scope="col"><span class="th-inner">Request ID</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-workload="orders-reader" data-result="allowed">
+                  <td><code class="aws-mono">2026-11-08T10:14:22.101Z</code></td>
+                  <td><code class="aws-mono">orders-reader</code></td>
+                  <td><code class="aws-mono">arn:aws:sts::000000000000:assumed-role/orders-reader-role/orders-reader</code></td>
+                  <td>secretsmanager</td>
+                  <td><code class="aws-mono">secretsmanager:GetSecretValue</code></td>
+                  <td><code class="aws-mono">arn:aws:secretsmanager:us-east-1:000000000000:secret:orders/db-Ab12Cd</code></td>
+                  <td>allowed</td>
+                  <td><code class="aws-mono">a1b2c3d4-1111-2222-3333-444455556666</code></td>
+                </tr>
+                <tr data-workload="orders-reader" data-result="denied">
+                  <td><code class="aws-mono">2026-11-08T10:14:22.440Z</code></td>
+                  <td><code class="aws-mono">orders-reader</code></td>
+                  <td><code class="aws-mono">arn:aws:sts::000000000000:assumed-role/orders-reader-role/orders-reader</code></td>
+                  <td>s3</td>
+                  <td><code class="aws-mono">s3:GetObject</code></td>
+                  <td><code class="aws-mono">arn:aws:s3:::orders-private/config.json</code></td>
+                  <td>denied — no allowing policy</td>
+                  <td><code class="aws-mono">a1b2c3d4-aaaa-bbbb-cccc-ddddeeeeffff</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

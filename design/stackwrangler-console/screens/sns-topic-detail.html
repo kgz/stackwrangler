@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>orders-events — SNS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sns-topic-detail" data-nav="sns-topics" data-service="sns" data-title="orders-events" data-crumb="orders-events">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">orders-events</h1>
+          <div class="aws-subtitle-row">
+            <span>Standard</span>
+            <span><code class="aws-mono">arn:aws:sns:ap-southeast-2:000000000000:orders-events</code></span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="Refresh" data-od-id="btn-refresh">↻</button>
+        <a class="btn btn-normal" href="sns-delete-topic.html" data-od-id="btn-delete-topic">Delete</a>
+        <a class="btn btn-normal" href="sns-create-subscription.html" data-od-id="btn-create-subscription">Create subscription</a>
+        <button type="button" class="btn btn-primary" data-od-id="btn-publish" data-tab-jump="publish">Publish message</button>
+      </div>
+
+      <p class="aws-desc"><a href="sns-topics.html" data-od-id="back-list">← Topics</a></p>
+
+      <section class="aws-card" data-od-id="content-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="topic-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="details" aria-current="page" data-od-id="tab-details">Details</button>
+          <button type="button" class="aws-tab" data-tab="subscriptions" data-od-id="tab-subscriptions">Subscriptions</button>
+          <button type="button" class="aws-tab" data-tab="publish" data-od-id="tab-publish">Publish</button>
+          <button type="button" class="aws-tab" data-tab="encryption" disabled aria-disabled="true" title="To implement" data-od-id="tab-encryption">Encryption</button>
+          <button type="button" class="aws-tab" data-tab="access-policy" disabled aria-disabled="true" title="To implement" data-od-id="tab-access-policy">Access policy</button>
+          <button type="button" class="aws-tab" data-tab="delivery-status" disabled aria-disabled="true" title="To implement" data-od-id="tab-delivery-status">Delivery status</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="details" data-od-id="panel-details">
+            <h2 class="aws-section-title">Topic details</h2>
+            <dl class="aws-kv" data-od-id="topic-overview">
+              <div>
+                <dt>Name</dt>
+                <dd>orders-events</dd>
+              </div>
+              <div>
+                <dt>ARN</dt>
+                <dd><code class="aws-mono">arn:aws:sns:ap-southeast-2:000000000000:orders-events</code></dd>
+              </div>
+              <div>
+                <dt>Type</dt>
+                <dd>Standard</dd>
+              </div>
+              <div>
+                <dt>Display name</dt>
+                <dd>—</dd>
+              </div>
+              <div>
+                <dt>Owner</dt>
+                <dd>000000000000</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div data-tab-panel="subscriptions" hidden data-od-id="panel-subscriptions">
+            <h2 class="aws-section-title">Subscriptions</h2>
+            <p class="aws-desc">From LocalEmu <code>ListSubscriptionsByTopic</code>.</p>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="subscriptions-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Protocol</span></th>
+                    <th scope="col"><span class="th-inner">Endpoint</span></th>
+                    <th scope="col"><span class="th-inner">Status</span></th>
+                    <th scope="col"><span class="th-inner">Subscription ARN</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>sqs</td>
+                    <td><code class="aws-mono">arn:aws:sqs:ap-southeast-2:000000000000:orders-events-q</code></td>
+                    <td>Confirmed</td>
+                    <td><code class="aws-mono">arn:aws:sns:ap-southeast-2:000000000000:orders-events:11111111-2222-3333-4444-555555555555</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div data-tab-panel="publish" hidden data-od-id="panel-publish">
+            <h2 class="aws-section-title">Publish message</h2>
+            <p class="aws-desc">Calls LocalEmu <code>Publish</code> against this topic ARN.</p>
+            <div class="aws-field">
+              <label class="aws-label" for="message-body">Message <span class="req" aria-hidden="true">*</span></label>
+              <textarea class="aws-input" id="message-body" name="message" rows="6" data-od-id="field-message" placeholder="Message body">hello from sns console</textarea>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="subject">Subject</label>
+              <input class="aws-input" id="subject" name="subject" type="text" data-od-id="field-subject" placeholder="Optional subject" />
+            </div>
+            <div class="aws-toolbar" style="margin-top:12px">
+              <button type="button" class="btn btn-primary" data-od-id="btn-publish-submit">Publish message</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

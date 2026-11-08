@@ -9,14 +9,9 @@ Bridge-mode ``loadBalancers`` register the task's dynamic host port on the
 container instance. Moto stores one target per instance id, so the ports
 live on the ELBv2 router that ``DescribeTargetHealth`` reads. Those ports
 are published on the Docker host, not inside the EC2 container network
-namespace — target health and the loopback NLB forwarder dial
-``host.docker.internal``. ``ECS_NLB_FORWARD=0`` skips the loopback socket.
-
-That forwarder binds ``127.0.0.1:<listener port>`` inside LocalEmu only,
-next to the VPC-scoped NLB listener from #203. The #203 listener resolves an
-``i-*`` target to the EC2 container address, where a bridge host port does not
-exist, so it cannot carry this traffic (#247). Do not point the forwarder at
-``0.0.0.0``: that would shadow the real listener bind.
+namespace — registration sets ``Target.host_override`` to
+``host.docker.internal`` so #203's health probes and L4 forward dial there
+instead of the instance VPC address (#247).
 
 ``deploymentController: CODE_DEPLOY`` services start their initial (blue)
 tasks like any other service. ``CreateDeployment`` with an ECS AppSpec then
@@ -41,8 +36,6 @@ LOG = logging.getLogger(__name__)
 
 _services: dict[str, "_Svc"] = {}
 _services_lock = threading.Lock()
-_proxies: dict[int, "_TcpProxy"] = {}
-_proxy_lock = threading.Lock()
 _stop = threading.Event()
 _started = False
 _host_cache = ""
@@ -104,10 +97,6 @@ def install() -> None:
 def reset_state() -> None:
     with _services_lock:
         _services.clear()
-    with _proxy_lock:
-        for proxy in list(_proxies.values()):
-            proxy.close()
-        _proxies.clear()
 
 
 def on_create_service(context: object, request: dict, service_data: dict) -> None:
@@ -579,15 +568,17 @@ def _register_target(svc: _Svc, tg_arn: str, instance_id: str, port: int, direct
         target = tg.targets.get(f"{instance_id}:{port}")
     if target is not None and not direct:
         # Bridge host ports are published on the Docker host. The EC2
-        # container's VPC address is not listening on this port.
-        target.host = _docker_host()
+        # container's VPC address is not listening on this port — lock the
+        # dial host so #203 health/forward do not rewrite to the instance IP.
+        dial = _docker_host()
+        target.host = dial
+        target.host_override = dial
     try:
         _elbv2(svc.account_id, svc.region).register_targets(
             tg_arn, [{"Id": instance_id, "Port": port}]
         )
     except Exception:
         LOG.debug("moto register_targets %s:%s failed", instance_id, port, exc_info=True)
-    _ensure_proxies_for_tg(svc.account_id, svc.region, tg_arn)
 
 
 def _deregister(svc: _Svc, reg: _Reg) -> None:
@@ -638,37 +629,6 @@ def _ensure_router_tg(account_id: str, region: str, tg_arn: str) -> None:
     )
 
 
-def _ensure_proxies_for_tg(account_id: str, region: str, tg_arn: str) -> None:
-    for lis in _each_listener(account_id, region):
-        if _listener_tg(lis) == tg_arn:
-            _ensure_proxy(account_id, region, str(getattr(lis, "arn", "") or ""))
-
-
-def _ensure_proxy(account_id: str, region: str, listener_arn: str) -> None:
-    if os.environ.get("ECS_NLB_FORWARD", "1").strip() == "0":
-        return
-    lis = _find_listener(account_id, region, listener_arn)
-    if lis is None:
-        return
-    protocol = str(getattr(lis, "protocol", "") or "").upper()
-    if protocol != "TCP":
-        return
-    raw_port = getattr(lis, "port", None)
-    port = int(raw_port) if isinstance(raw_port, int) or (isinstance(raw_port, str) and raw_port.isdigit()) else 0
-    if port <= 0:
-        return
-    with _proxy_lock:
-        existing = _proxies.get(port)
-        if existing is not None:
-            existing.listener_arn = listener_arn
-            existing.account_id = account_id
-            existing.region = region
-            return
-        proxy = _TcpProxy(port, listener_arn, account_id, region)
-        if proxy.ok:
-            _proxies[port] = proxy
-
-
 def _each_listener(account_id: str, region: str) -> list:
     try:
         elbv2 = _elbv2(account_id, region)
@@ -700,102 +660,6 @@ def _listener_tg(lis: object) -> str:
         if arn:
             return str(arn)
     return str(getattr(action, "TargetGroupArn", "") or "")
-
-
-class _TcpProxy:
-    def __init__(self, port: int, listener_arn: str, account_id: str, region: str) -> None:
-        self.port = port
-        self.listener_arn = listener_arn
-        self.account_id = account_id
-        self.region = region
-        self.ok = False
-        self._sock: socket.socket | None = None
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.bind(("127.0.0.1", port))
-            sock.listen(32)
-            sock.settimeout(1.0)
-        except Exception as exc:
-            LOG.warning("ECS NLB forwarder could not bind 127.0.0.1:%s: %s", port, exc)
-            sock.close()
-            return
-        self._sock = sock
-        self.ok = True
-        threading.Thread(
-            target=self._accept, name=f"ecs-nlb-{port}", daemon=True
-        ).start()
-        LOG.info(
-            "ECS NLB forwarder on 127.0.0.1:%s for listener %s",
-            port,
-            listener_arn,
-        )
-
-    def close(self) -> None:
-        sock = self._sock
-        self._sock = None
-        self.ok = False
-        if sock is not None:
-            try:
-                sock.close()
-            except Exception:
-                pass
-
-    def _accept(self) -> None:
-        while self._sock is not None:
-            try:
-                conn, _addr = self._sock.accept()
-            except TimeoutError:
-                continue
-            except OSError:
-                return
-            threading.Thread(
-                target=self._handle, args=(conn,), daemon=True
-            ).start()
-
-    def _handle(self, conn: socket.socket) -> None:
-        upstream: socket.socket | None = None
-        try:
-            target = _pick_target(self.account_id, self.region, self.listener_arn)
-            if target is None:
-                return
-            host = str(getattr(target, "host", "") or _docker_host())
-            port = int(getattr(target, "port", 0) or 0)
-            upstream = socket.create_connection((host, port), 3)
-            from localemu.services.elbv2.listener_router import _pipe_sockets
-
-            _pipe_sockets(conn, upstream)
-        except Exception:
-            LOG.debug("NLB forward failed", exc_info=True)
-        finally:
-            conn.close()
-            if upstream is not None:
-                upstream.close()
-
-
-def _pick_target(account_id: str, region: str, listener_arn: str) -> object | None:
-    lis = _find_listener(account_id, region, listener_arn)
-    if lis is None:
-        return None
-    tg_arn = _listener_tg(lis)
-    if not tg_arn:
-        return None
-    try:
-        from localemu.services.elbv2.listener_router import _tcp_ping, get_router
-    except Exception:
-        return None
-    tg = get_router().target_groups.get(tg_arn)
-    if tg is None:
-        return None
-    host = _docker_host()
-    with tg._lock:
-        targets = list(tg.targets.values())
-    for target in targets:
-        if not getattr(target, "host", ""):
-            target.host = host
-        port = int(getattr(target, "port", 0) or 0)
-        target.health = "healthy" if port and _tcp_ping(target.host, port, 0.4) else "unhealthy"
-    return tg.pick_target()
 
 
 def _docker_host() -> str:
@@ -1197,7 +1061,13 @@ def _swap_listener(account_id: str, region: str, listener_arn: str, tg_arn: str)
         certificates=None,
         actions=[{"Type": "forward", "TargetGroupArn": tg_arn}],
     )
-    _ensure_proxy(account_id, region, listener_arn)
+    # Moto backend call skips the elbv2 provider ModifyListener hook, so
+    # retarget the L4 listener here (replaces the old loopback re-read).
+    # Fail loudly: a Succeeded CodeDeploy with a stale L4 TG is worse than a
+    # failed swap.
+    from localemu.services.elbv2.listener_router import get_router
+
+    get_router().set_listener_target_group(listener_arn, tg_arn)
 
 
 def _appspec(revision: object) -> dict:

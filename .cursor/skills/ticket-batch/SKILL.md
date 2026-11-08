@@ -16,7 +16,7 @@ Invoking this skill approves, for the tickets named in this turn: branch, commit
 
 ## Stop line
 
-Each ticket ends as an open PR. Passing tickets merge into `batch/<date-or-name>` so they can be tested together. Conflicts are reported and left unresolved. Nothing merges to the default branch until the user says so in a later turn.
+Each ticket ends as an open PR. Passing tickets merge into `batch/<date-or-name>` so they can be tested together. Orchestrator resolves ordinary conflicts (union / child-supersedes-parent); “not my problem” / leave-off-batch is not allowed. Ask only when a conflict is genuinely unsafe to union. Nothing merges to the default branch until the user says so in a later turn.
 
 ## 1. Scope
 
@@ -125,7 +125,7 @@ DATE=$(date +%F)
 git branch "batch/$DATE" "origin/$BASE"   # or batch/<name> if the user gave one
 ```
 
-Merge each surviving ticket branch in with `git merge --no-ff`. On conflict, `git merge --abort`, leave that ticket off the branch, and comment the conflicting files on its PR. Do not resolve conflicts in this skill. Push `batch/…` and do not open a PR from it. When a ticket lands on the batch branch, comment that branch name on its PR.
+Merge each surviving ticket branch in with `git merge --no-ff`. **Conflicts are the orchestrator's job** — resolve them (prefer **union**: keep both tickets' behaviour, docs/smoke rows, and tracker lines; for stacked child Debts on a parent already on the batch, prefer the child's fuller file when it supersedes the parent surface). Do **not** `merge --abort` and leave the ticket off the batch as a default — “not my problem” is not allowed. Only pause for the user when a conflict is genuinely unsafe to union (say so on the PR with paths + why). Push `batch/…` and do not open a PR from it. When a ticket lands on the batch branch, comment that branch name on its PR.
 
 ## 7. Report
 
@@ -134,9 +134,22 @@ Merge each surviving ticket branch in with `git merge --no-ff`. On conflict, `gi
 | #n | implement | url | clean / failed 3 times (logged on PR) | yes / conflict logged on PR |
 ```
 
-Then the batch branch name, tickets skipped, and potential follow-ups you filed or skipped. The default branch was not merged.
+Then the batch branch name, tickets skipped, and potential follow-ups you filed or skipped. The default branch was not merged. Real-AWS parity was not run (needs a later explicit approval — §8).
 
-## 8. Merge + branch cleanup (only when the user asks to merge)
+## 8. Real-AWS parity (later turn only)
+
+After the user says they are happy with the batch (or named tickets) **and** explicitly approves real-AWS spend in that turn:
+
+1. Obey `.cursor/rules/aws-cost-approval.mdc` / `AGENTS.md`: resource types + region, cost **including residuals**, teardown plan, wait for yes if not already given for this plan.
+2. Prefer `smokes/parity/aws-parity-*.sh`. Do not invent long-lived resources.
+3. **KMS:** reuse fixtures — `alias/sw-parity-fixture-trust-via` (`AWSBOX_PARITY_KMS_KEY_ID`), `alias/sw-parity-fixture-batch10` (`AWSBOX_PARITY_KMS_BATCH_KEY_ID`). No create+7d-delete per run. Prefer `cancel-key-deletion` + alias (with approval) over a new CMK. Cap ~1–2 live fixtures.
+4. Local-emulator first when skip flags exist; then real.
+5. After: verify teardown; fixture CMKs reused should stay `Enabled`. Report leftovers still billing.
+6. Merge / board-done only when the user asks — parity success alone does not merge default.
+
+Invoking this skill for implement/review does **not** approve §8.
+
+## 9. Merge + branch cleanup (only when the user asks to merge)
 
 When the user asks to merge ticket PRs and/or the batch into the default branch:
 

@@ -70,15 +70,15 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 |------|--------|
 | S3 general purpose (SeaweedFS UI + LocalEmu for IaC/events) | **Working** UI · **Partial** dual-brain |
 | Lambda (Docker invoke, console Create/detail) | **Working** |
-| DynamoDB / SQS / SNS / EventBridge / Step Functions / Kinesis | **Working** (CLI smokes; SFN thin list [#175](https://github.com/kgz/awsl/issues/175); create/detail [#533](https://github.com/kgz/awsl/issues/533); others often console Debt) |
-| CloudWatch Logs (basic) | **Working** |
+| DynamoDB / SQS / SNS / EventBridge / Step Functions / Kinesis | **Working** (CLI smokes; SFN list+create+detail [#175](https://github.com/kgz/awsl/issues/175)/[#533](https://github.com/kgz/awsl/issues/533); Start [#610](https://github.com/kgz/awsl/issues/610); others often console Debt) |
+| CloudWatch Logs (basic) | **Working** · create/detail [#352](https://github.com/kgz/stackwrangler/issues/352) |
 | Transfer Family (native SFTP → S3) | **Partial** · **Sidecar** |
 | EC2 / ECS / ECR | **Partial** · ECR registry **sidecar** |
 | RDS Postgres / MySQL (Docker DB) | **Partial** · **Sidecar** |
 | VPC / SG / ELBv2 / Route 53 (public + private) | **Partial** with smokes |
 | WAFv2 (API GW associate; not real edge WAF) | **Partial** thin |
 | API Gateway HTTP + REST | **Partial** |
-| KMS / Secrets Manager / ACM | **Partial** · Secrets thin list [#176](https://github.com/kgz/awsl/issues/176); store/detail [#535](https://github.com/kgz/awsl/issues/535) |
+| KMS / Secrets Manager / ACM | **Partial** · Secrets list [#176](https://github.com/kgz/awsl/issues/176); store/detail [#535](https://github.com/kgz/awsl/issues/535); Delete/Rotate [#606](https://github.com/kgz/awsl/issues/606) |
 | Multi-account + OIDC assume | **CLI + smoke** |
 
 ### IaC against the same account

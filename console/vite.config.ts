@@ -20,6 +20,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/aws-iam/, ''),
         },
+        // CloudTrail-lite call log (#194) lives on LocalEmu
+        '/_awsl/calls': {
+          target: iamTarget,
+          changeOrigin: true,
+        },
       },
     },
   }

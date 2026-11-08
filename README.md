@@ -26,6 +26,7 @@ Live local console (grey rose chrome) — same account as CLI and IaC.
 - **One local account** — CLI (`aws --profile local`), console, and Terraform / CDK / SAM / Serverless hit the same endpoints
 - **Fully working bar** — create → configure → traffic or data moves → you can see it. Control-plane stubs stay labelled stubs (no catalogue theatre)
 - **Honest depth** — Working / Partial / Sidecar / Backlog are first-class; see [docs/status.md](docs/status.md)
+- **API call log** — per-workload CloudTrail-lite (`GET /_awsl/calls`, console `/cloudtrail`, test asserts) · [#194](https://github.com/kgz/stackwrangler/issues/194)
 - **Local → real AWS** — stage here, then point the same tooling at a real account
 
 Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plus sidecars: **SeaweedFS** (console buckets), **distribution/registry** (ECR-shaped push/pull), **atmoz/sftp** (Transfer dataplane). Console buckets UI uses SeaweedFS; IaC / Lambda / S3 events use **LocalEmu S3** ([docs/s3-backends.md](docs/s3-backends.md)).

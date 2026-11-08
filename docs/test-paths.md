@@ -172,6 +172,12 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./smokes/account/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./smokes/account/labels-smoke.sh` |
 | Labels file missing → empty `GET /_awsl/labels` and no console label | sad/other | covered | `./smokes/account/labels-smoke.sh` |
+| Lambda reads one secret → call log exactly one `secretsmanager:GetSecretValue` | happy | covered | `./smokes/security/api-call-log-smoke.sh` · [#194](https://github.com/kgz/stackwrangler/issues/194) |
+| AccessDenied call recorded with denying policy/reason | sad/authz | covered | `./smokes/security/api-call-log-smoke.sh` |
+| `GET /_awsl/calls?workload=…` + `./bin/stackwrangler calls` | happy | covered | `./smokes/security/api-call-log-smoke.sh` |
+| Assertion helper: function made no `secretsmanager:*` / `s3:*` | happy | covered | `smokes/lib/api_call_log_assert.py` · `smokes/lib/api-call-log.sh` |
+| ECS task role session → call log `ecs-task-<id>` GetSecretValue | happy | covered | `./smokes/security/api-call-log-ecs-cli-smoke.sh` · [#602](https://github.com/kgz/stackwrangler/issues/602) (needs [#194](https://github.com/kgz/stackwrangler/issues/194)) |
+| CLI profile IAM user → call log `user/<name>` GetSecretValue | happy | covered | `./smokes/security/api-call-log-ecs-cli-smoke.sh` · [#602](https://github.com/kgz/stackwrangler/issues/602) |
 | Two awsvpc ECS tasks on one host: direct ENI works | happy | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
 | Same-host peer→NLB VIP fails under host DNAT (AWS-like hairpin) | sad/other | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
 | NLB TCP :443 → two instance targets | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [elbv2.md](elbv2.md) |
@@ -181,16 +187,21 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ALB host + path → TG-A, other requests → default TG | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | LB DNS from a VPC instance and from the host | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | Unhealthy NLB target receives no new connections | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
+| ELBv2 `RegisterTargets` preserves `host_override` / bridge dial | happy | covered | `./smokes/networking/elbv2-host-override-register-smoke.sh` · [#603](https://github.com/kgz/awsl/issues/603) |
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
+| ELBv2 TLS listener presents its ACM certificate | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#242](https://github.com/kgz/awsl/issues/242) |
+| ELBv2 ModifyListener reloads default ACM keypair; Add first-default only | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#594](https://github.com/kgz/awsl/issues/594) |
 | ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |
+| ELBv2 RemoveListenerCertificates secondary no-flip; clear-default → LocalEmu PEM | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#628](https://github.com/kgz/awsl/issues/628) |
+| ELBv2 HTTPS ALB ModifyListener / Add first-default ACM reload | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#629](https://github.com/kgz/awsl/issues/629) |
 | ACM request DNS-validated cert + describe/list | happy | covered | `./smokes/security/acm-smoke.sh` · [acm.md](acm.md) |
 | ACM import-certificate | happy | covered | `./smokes/security/acm-smoke.sh` |
 | ACM ARN on API GW custom domain | happy | covered | `./smokes/security/acm-smoke.sh` |
 | ACM ARN stored on ALB HTTPS listener | happy | covered | `./smokes/security/acm-smoke.sh` |
 | **ACM deny-user RequestCertificate → AccessDenied** | sad/authz | covered | `./smokes/security/acm-smoke.sh` |
 | ACM console | ui | missing | [#333](https://github.com/kgz/awsl/issues/333) |
-| ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
+| ELBv2 HTTP health check treats 500 as unhealthy | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
 | WAFv2 create WebACL + associate API GW stage; get/list association | happy | covered | `./smokes/networking/waf-smoke.sh` · [waf.md](waf.md) |
 | Network Firewall create rule group + firewall policy; describe/list | happy | covered | `./smokes/networking/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |
 | Firewall Manager put/get/list policy stub | happy | covered | `./smokes/networking/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |
@@ -235,7 +246,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Prowler failing-API count ≤ baseline (ratchet) | sad/other | covered | `./smokes/security/prowler-smoke.sh` |
 | S3 Control GetPublicAccessBlock / ListAccessPoints (account) | happy | covered | `./smokes/security/prowler-smoke.sh` spot-check |
 | SQS send/receive/delete | happy | covered | `./smokes/messaging/sqs-smoke.sh` |
-| SQS console queues list | happy | covered | `console/e2e/sqs-queues.spec.ts` |
+| SQS console queues create/detail/send/delete | happy | covered | `console/e2e/sqs-queues.spec.ts` · #548 |
+| SQS console send/receive/delete message + purge | happy | covered | `console/e2e/sqs-queues.spec.ts` · #627 |
 | SQS MessageRetentionPeriod > 14d → InvalidAttributeValue | sad/other | covered | `./smokes/messaging/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./smokes/messaging/sqs-authz-smoke.sh` |
 | Lambda SendMessage using CreateQueue / !Ref QueueUrl (`sqs.<region>.localhost`) | happy | covered | `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459) |
@@ -244,7 +256,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS redrive (maxReceiveCount 2) to DLQ on Lambda failure | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | SQS VisibilityTimeout < function timeout → CreateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
+| SQS VisibilityTimeout < function timeout → UpdateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | ESM MaximumConcurrency < 2 → CreateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
+| ESM MaximumConcurrency < 2 → UpdateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role loses SQS poll perms after ESM create → polling stops / LastProcessingResult or State | sad/authz | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role re-granted SQS poll perms → ESM resumes, message consumed, LastProcessingResult cleared | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | SQS → Lambda ReportBatchItemFailures: 1 of 3 fails → 2 deleted, 1 redelivered → DLQ | happy | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |
@@ -254,12 +268,16 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./smokes/lambda/sqs-lambda-esm-enable-smoke.sh` |
 | SQS → Lambda ESM keeps delivering past STS session expiry (short `AWSBOX_STS_ASSUME_ROLE_DURATION`) | happy | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | SQS → Lambda ESM role deleted after create → `LastProcessingResult` PROBLEM (not stuck `None`) | sad/other | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
+| Kinesis / DynamoDB stream → Lambda ESM keeps delivering past STS session expiry | happy | covered | `./smokes/lambda/stream-lambda-esm-cred-refresh-smoke.sh` · [#477](https://github.com/kgz/awsl/issues/477) |
 | Lambda `PutFunctionConcurrency` reserved=1 → second concurrent sync invoke `TooManyRequestsException` (429) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | Lambda reserved concurrency 0 → every sync invoke throttled (429) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` vs reserved concurrency (lower wins) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` alone (reserved unset) → in-flight ≤ MaximumConcurrency | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
+| SQS FIFO ESM + MaximumConcurrency: in-group order + cross-group concurrency ≤ MC | happy | covered | `./smokes/lambda/sqs-lambda-fifo-esm-mc-smoke.sh` |
 | SNS console Topics list | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 |
+| SNS console Topics list/create/detail | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 / #546 |
+| SNS console Topics list/create/detail/delete/subscribe | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 / #546 / #622 |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
 | SNS Subscribe `sns:Protocol` / `sns:Endpoint` allow intake sqs; deny other-queue / https | happy + sad/authz | covered | `./smokes/messaging/sns-subscribe-conditions-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |
@@ -278,8 +296,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | EventBridge `disable-rule` stops scheduled invocations | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `cron(* * * * ? *)` rule invokes Lambda target (other cron/rate forms: [#317](https://github.com/kgz/awsl/issues/317)) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
-| EventBridge console Rules list | happy | covered | console e2e `eventbridge-rules.spec.ts` · thin list (Create/detail → [#552](https://github.com/kgz/awsl/issues/552)) |
-| EventBridge console Event buses list | happy | covered | console e2e `eventbridge-rules.spec.ts` (buses path) · thin list (Create/detail → [#552](https://github.com/kgz/awsl/issues/552)) |
+| EventBridge console Rules list | happy | covered | console e2e `eventbridge-rules.spec.ts` · create/detail [#552](https://github.com/kgz/awsl/issues/552) · delete/edit/targets [#630](https://github.com/kgz/awsl/issues/630) |
+| EventBridge console Event buses list | happy | covered | console e2e `eventbridge-rules.spec.ts` (buses path) · create bus [#552](https://github.com/kgz/awsl/issues/552) |
+| EventBridge console delete / edit / put-targets | happy | covered | console e2e `eventbridge-rules.spec.ts` ([#630](https://github.com/kgz/awsl/issues/630)) |
 | DynamoDB put/get | happy | covered | `./smokes/data/dynamodb-smoke.sh` |
 | DynamoDB console tables list | ui | covered | `console/e2e/dynamodb-tables.spec.ts` |
 | DynamoDB deny PutItem | sad/authz | covered | `./smokes/data/dynamodb-authz-smoke.sh` |
@@ -302,7 +321,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | DynamoDB `aws:ResourceTag` on index ARN | sad/authz | missing | [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions Pass execution | happy | covered | `./smokes/messaging/sfn-smoke.sh` |
 | Step Functions deny StartExecution | sad/authz | covered | `./smokes/messaging/sfn-authz-smoke.sh` |
-| Step Functions console state machines list | happy | covered | console e2e `sfn-state-machines.spec.ts` · thin list (Create/detail → [#533](https://github.com/kgz/awsl/issues/533)) |
+| Step Functions console state machines list | happy | covered | console e2e `sfn-state-machines.spec.ts` |
+| Step Functions console create + detail | happy | covered | console e2e `sfn-state-machines.spec.ts` (Pass/Standard create · definition/executions tabs) · [#533](https://github.com/kgz/awsl/issues/533) |
+| Step Functions console Start execution | happy | covered | console e2e `sfn-state-machines.spec.ts` (modal + invalid JSON) · [#610](https://github.com/kgz/awsl/issues/610) |
 | Secrets create/get | happy | covered | `./smokes/security/secrets-smoke.sh` |
 | Secrets deny GetSecretValue | sad/authz | covered | `./smokes/security/secrets-authz-smoke.sh` |
 | Secret resource policy explicit deny beats Lambda-role IAM Allow (`GetSecretValue`, `DescribeSecret`) | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
@@ -310,6 +331,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | KMS deny Decrypt | sad/authz | covered | `./smokes/security/kms-authz-smoke.sh` |
 | KMS console Customer managed keys list | ui | covered | `console/e2e/kms-keys.spec.ts` |
 | API Gateway REST APIs list + detail | ui | covered | `console/e2e/apigateway-rest-apis.spec.ts` |
+| API Gateway REST create + deploy + resource/method | ui | covered | `console/e2e/apigateway-rest-apis.spec.ts` (#543 create path) |
+| API Gateway REST method integration picker (MOCK / Lambda / HTTP_PROXY + edit) | ui | covered | `console/e2e/apigateway-rest-apis.spec.ts` (#616) |
 | KMS key policy delegates to IAM and role Encrypt/Decrypt/GenerateDataKey succeeds | happy | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy without IAM delegation denies a role IAM allows | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | KMS key policy explicit deny Encrypt | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
@@ -318,7 +341,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Secrets Manager CreateSecret/PutSecretValue with a CMK follows key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | SSM SecureString GetParameter/PutParameter follows CMK key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | Cross-account resource policy (identity and resource must both allow) | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
-| Kinesis console Data streams list | happy | covered | console e2e `kinesis-streams.spec.ts` · thin list (Create/detail → [#539](https://github.com/kgz/awsl/issues/539)) |
+| Kinesis console Data streams list / create / detail / delete | happy | covered | console e2e `kinesis-streams.spec.ts` (#178 list · #539 create/detail/delete) |
+| Kinesis console put / retention / encryption / tags | happy | covered | console e2e `kinesis-streams.spec.ts` (#615) |
 | Kinesis put/get | happy | covered | `./smokes/messaging/kinesis-smoke.sh` |
 | Kinesis deny PutRecord | sad/authz | covered | `./smokes/messaging/kinesis-authz-smoke.sh` |
 | Logs deny PutLogEvents | sad/authz | covered | `./smokes/logs/logs-authz-smoke.sh` |

@@ -9,6 +9,11 @@ Operations intercepted:
   - RegisterTargets           : add targets to router
   - DeregisterTargets         : remove targets from router
   - CreateListener            : start an actual HTTP listener (for HTTP ALBs)
+  - ModifyListener            : reload ACM TLS material when default Certificates change
+  - AddListenerCertificates   : reload only if the default cert actually changes
+                                (first attach on a cert-less listener; never SNI flip)
+  - RemoveListenerCertificates: reload when the default changes or is cleared
+                                (secondary Remove must not flip the handshake)
   - DeleteListener            : stop the HTTP listener
   - DescribeLoadBalancers     : ensure DNS names match what we emit
   - DescribeTargetHealth      : return real TCP-probe-derived health
@@ -165,6 +170,136 @@ def _handle_deregister_targets(
     return result
 
 
+def _certificate_arn_from_entry(entry) -> str:
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return str(entry.get("CertificateArn") or "")
+    return ""
+
+
+def _first_certificate_arn(*sources) -> str:
+    for source in sources:
+        for entry in source or []:
+            arn = _certificate_arn_from_entry(entry)
+            if arn:
+                return arn
+    return ""
+
+
+def _listener_certificate_arn(listener: dict, request: ServiceRequest) -> str:
+    """First CertificateArn from the moto listener or the create request."""
+    return _first_certificate_arn(
+        listener.get("Certificates"),
+        request.get("Certificates"),
+    )
+
+
+def _sync_listener_certificates(
+    context: RequestContext, listener_arn: str, certificates: list,
+) -> str:
+    """Write certificate ARNs onto the moto listener and return the default.
+
+    Moto's ModifyListener only rewrites certificates for HTTPS. TLS NLB
+    listeners need the same update so DescribeListenerCertificates and the
+    live reload agree (#594).
+    """
+    arns = [
+        arn for arn in (_certificate_arn_from_entry(entry) for entry in certificates)
+        if arn
+    ]
+    if not listener_arn or not arns:
+        return ""
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return arns[0]
+        listener = listeners[0]
+        if (listener.protocol or "").upper() in {"HTTPS", "TLS"}:
+            listener.certificate = arns[0]
+            listener.certificates = list(arns)
+    except Exception:
+        LOG.debug(
+            "elbv2: could not sync certificates for %s", listener_arn, exc_info=True,
+        )
+    return arns[0]
+
+
+def _moto_default_certificate_arn(
+    context: RequestContext, listener_arn: str,
+) -> str:
+    """Default (first) certificate ARN on the moto listener, or empty."""
+    if not listener_arn:
+        return ""
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return ""
+        listener = listeners[0]
+        # Prefer certificates[0] (DescribeListenerCertificates default). Moto
+        # RemoveListenerCertificates drops list entries but leaves
+        # listener.certificate stale (#628).
+        if listener.certificates:
+            return str(listener.certificates[0])
+        if listener.certificate:
+            return str(listener.certificate)
+    except Exception:
+        LOG.debug(
+            "elbv2: could not read default certificate for %s",
+            listener_arn, exc_info=True,
+        )
+    return ""
+
+
+def _reconcile_listener_default_certificate(
+    context: RequestContext, listener_arn: str,
+) -> str:
+    """Align listener.certificate with certificates[0] (or clear). Return default ARN."""
+    if not listener_arn:
+        return ""
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return ""
+        listener = listeners[0]
+        if (listener.protocol or "").upper() not in {"HTTPS", "TLS"}:
+            return _moto_default_certificate_arn(context, listener_arn)
+        certs = [str(c) for c in (listener.certificates or []) if c]
+        listener.certificates = certs
+        if certs:
+            listener.certificate = certs[0]
+            return certs[0]
+        listener.certificate = None
+        return ""
+    except Exception:
+        LOG.debug(
+            "elbv2: could not reconcile default certificate for %s",
+            listener_arn, exc_info=True,
+        )
+        return ""
+
+
 def _handle_create_listener(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -205,11 +340,75 @@ def _handle_create_listener(
             target_group_arn=target_group_arn,
             scheme=str(meta.get("scheme") or "internet-facing"),
             vpc_networks=list(meta.get("vpc_networks") or []),
+            certificate_arn=_listener_certificate_arn(listener, request) or None,
         )
         # Surface the real bound port via a non-AWS field so clients that care
         # (tests, dashboard) can discover it; advertised Port stays as requested.
         if actual_port:
             listener["LocalEmuBoundPort"] = actual_port
+    return result
+
+
+def _handle_modify_listener(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    listener_arn = str(request.get("ListenerArn") or "")
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
+    certificates = request.get("Certificates") or []
+    if listener_arn and certificates:
+        _sync_listener_certificates(context, listener_arn, certificates)
+        for listener in result.get("Listeners", []) or []:
+            if listener.get("ListenerArn") == listener_arn:
+                listener["Certificates"] = [
+                    {"CertificateArn": _certificate_arn_from_entry(entry)}
+                    for entry in certificates
+                    if _certificate_arn_from_entry(entry)
+                ]
+    if listener_arn:
+        after = _moto_default_certificate_arn(context, listener_arn)
+        if after != before:
+            # Empty after → LocalEmu default PEM (clear-default, #628).
+            get_router().reload_listener_certificate(listener_arn, after or None)
+    return result
+
+
+def _handle_add_listener_certificates(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    listener_arn = str(request.get("ListenerArn") or "")
+    certificates = request.get("Certificates") or []
+    # AWS Add only attaches (SNI); it must not flip the default. Reload only
+    # when the default actually changes — e.g. first attach on a cert-less
+    # listener. Never reload to the *added* request ARN (#594).
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
+    if listener_arn and certificates:
+        after = _moto_default_certificate_arn(context, listener_arn)
+        if after and after != before:
+            get_router().reload_listener_certificate(listener_arn, after)
+    return result
+
+
+def _handle_remove_listener_certificates(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    listener_arn = str(request.get("ListenerArn") or "")
+    # Reload only when the default ARN changes. Secondary (SNI) Remove must
+    # not flip the handshake; clearing the last/default cert reloads the
+    # LocalEmu default PEM (#628).
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
+    if listener_arn:
+        after = _reconcile_listener_default_certificate(context, listener_arn)
+        if after != before:
+            get_router().reload_listener_certificate(listener_arn, after or None)
     return result
 
 
@@ -351,6 +550,9 @@ _INTERCEPTED_OPS = {
     "RegisterTargets": _handle_register_targets,
     "DeregisterTargets": _handle_deregister_targets,
     "CreateListener": _handle_create_listener,
+    "ModifyListener": _handle_modify_listener,
+    "AddListenerCertificates": _handle_add_listener_certificates,
+    "RemoveListenerCertificates": _handle_remove_listener_certificates,
     "DeleteListener": _handle_delete_listener,
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,

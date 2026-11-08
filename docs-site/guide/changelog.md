@@ -2,6 +2,60 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.0.4 — Accuracy (2026-11-09)
+
+Depth on services already in the footprint: console create/detail/actions, ELBv2 ACM + health fidelity, ESM/stream correctness, and call-log / smoke coverage — so local behaviour matches AWS more closely than catalogue theatre.
+
+### Console
+
+- CloudWatch Logs create + stream/detail ([#352](https://github.com/kgz/stackwrangler/issues/352)); docs screenshots ([#608](https://github.com/kgz/stackwrangler/issues/608))
+- Step Functions create/detail ([#533](https://github.com/kgz/stackwrangler/issues/533)) + Start execution ([#610](https://github.com/kgz/stackwrangler/issues/610))
+- Secrets Manager store + detail ([#535](https://github.com/kgz/stackwrangler/issues/535))
+- Kinesis create/detail/delete ([#539](https://github.com/kgz/stackwrangler/issues/539)) + put/retention/encryption/tags ([#615](https://github.com/kgz/stackwrangler/issues/615))
+- API Gateway REST create/deploy ([#543](https://github.com/kgz/stackwrangler/issues/543)) + method integration picker ([#616](https://github.com/kgz/stackwrangler/issues/616))
+- SNS create + topic detail ([#546](https://github.com/kgz/stackwrangler/issues/546)); delete + Create subscription ([#622](https://github.com/kgz/stackwrangler/issues/622))
+- SQS create/detail/send ([#548](https://github.com/kgz/stackwrangler/issues/548)); receive/purge ([#627](https://github.com/kgz/stackwrangler/issues/627))
+- EventBridge create + rule detail ([#552](https://github.com/kgz/stackwrangler/issues/552)); delete / edit / put-targets ([#630](https://github.com/kgz/stackwrangler/issues/630))
+
+### Networking / ELBv2
+
+- Listeners present ACM certificates ([#242](https://github.com/kgz/stackwrangler/issues/242))
+- HTTP health checks honour path + matcher ([#243](https://github.com/kgz/stackwrangler/issues/243))
+- ECS bridge TG health via host ports ([#247](https://github.com/kgz/stackwrangler/issues/247))
+- ModifyListener / AddListenerCertificates ACM reload ([#594](https://github.com/kgz/stackwrangler/issues/594)); RemoveListenerCertificates / clear-default ([#628](https://github.com/kgz/stackwrangler/issues/628)); HTTPS ALB ACM smoke ([#629](https://github.com/kgz/stackwrangler/issues/629))
+- `host_override` preserved across RegisterTargets ([#603](https://github.com/kgz/stackwrangler/issues/603))
+
+### Compute / integration fidelity
+
+- UpdateEventSourceMapping VT / MaximumConcurrency validation ([#367](https://github.com/kgz/stackwrangler/issues/367))
+- Kinesis/DynamoDB stream ESM credential-refresh smoke ([#477](https://github.com/kgz/stackwrangler/issues/477))
+- SQS FIFO ESM MaximumConcurrency message-group ordering ([#499](https://github.com/kgz/stackwrangler/issues/499))
+- Per-workload API call log (CloudTrail-lite) ([#194](https://github.com/kgz/stackwrangler/issues/194)); ECS/CLI workload smoke ([#602](https://github.com/kgz/stackwrangler/issues/602))
+
+### Platform / docs
+
+- Batch LocalEmu resource gate (one stack at a time)
+- Docs-site Search Console meta, `robots.txt`, sitemap, OG/JSON-LD
+- KMS parity fixtures (`alias/sw-parity-fixture-*`) — reuse instead of stacking 7-day CMK residuals
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS S3, ECR registry, AWS profile `local` (CLI), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.0.4
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.4 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
+
+Optional thin host CLI (wraps the same `docker run`): [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.4/stackwrangler).
+
 ## v0.0.3 — Trust (2026-11-08)
 
 Authz that used to look green locally and lie: caller/RoleARN IAM on CFN, DynamoDB resource policies + SourceVpce, Simulate*, PermissionsBoundary / SNS subscribe condition keys, Lambda ECR pull, cross-account resource policies, service-origin ViaService, and deploy-as-role for Serverless.

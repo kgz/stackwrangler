@@ -3,6 +3,7 @@ import { Shell } from './components/Shell'
 import { BucketObjectsPage } from './pages/BucketObjectsPage'
 import { BucketsPage } from './pages/BucketsPage'
 import { ApiGatewayPage } from './pages/ApiGatewayPage'
+import { ApiGatewayRestApiCreatePage } from './pages/ApiGatewayRestApiCreatePage'
 import { ApiGatewayRestApiDetailPage } from './pages/ApiGatewayRestApiDetailPage'
 import { ApiGatewayRestApisPage } from './pages/ApiGatewayRestApisPage'
 import { IamUsersPage } from './pages/IamUsersPage'
@@ -12,11 +13,22 @@ import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { SecretsPage } from './pages/SecretsPage'
+import { KinesisCreatePage } from './pages/KinesisCreatePage'
+import { KinesisStreamDetailPage } from './pages/KinesisStreamDetailPage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
+import { SqsCreateQueuePage } from './pages/SqsCreateQueuePage'
+import { SqsQueueDetailPage } from './pages/SqsQueueDetailPage'
+import { SqsSendReceivePage } from './pages/SqsSendReceivePage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
 import { EventBridgeBusesPage } from './pages/EventBridgeBusesPage'
+import { EventBridgeCreateRulePage } from './pages/EventBridgeCreateRulePage'
+import { EventBridgeCreateBusPage } from './pages/EventBridgeCreateBusPage'
+import { EventBridgeRuleDetailPage } from './pages/EventBridgeRuleDetailPage'
+import { EventBridgeEditRulePage } from './pages/EventBridgeEditRulePage'
 import { KmsKeysPage } from './pages/KmsKeysPage'
+import { SnsCreateTopicPage } from './pages/SnsCreateTopicPage'
+import { SnsTopicDetailPage } from './pages/SnsTopicDetailPage'
 import { SnsTopicsPage } from './pages/SnsTopicsPage'
 import { DynamoDBTablesPage } from './pages/DynamoDBTablesPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
@@ -61,16 +73,52 @@ export default function App() {
           <Route path="stepfunctions" element={<StepFunctionsPage />} />
           <Route path="secretsmanager" element={<SecretsPage />} />
           <Route path="kinesis" element={<KinesisStreamsPage />} />
+          <Route path="kinesis/create" element={<KinesisCreatePage />} />
+          <Route
+            path="kinesis/streams/:name"
+            element={<KinesisStreamDetailPage />}
+          />
           <Route path="sqs" element={<SqsQueuesPage />} />
+          <Route path="sqs/create" element={<SqsCreateQueuePage />} />
+          <Route
+            path="sqs/queues/:name/send-receive"
+            element={<SqsSendReceivePage />}
+          />
+          <Route
+            path="sqs/queues/:name"
+            element={<SqsQueueDetailPage />}
+          />
           <Route path="events" element={<EventBridgeRulesPage />} />
+          <Route path="events/create" element={<EventBridgeCreateRulePage />} />
+          <Route
+            path="events/rules/:name/edit"
+            element={<EventBridgeEditRulePage />}
+          />
+          <Route
+            path="events/rules/:name"
+            element={<EventBridgeRuleDetailPage />}
+          />
           <Route path="events/buses" element={<EventBridgeBusesPage />} />
+          <Route
+            path="events/buses/create"
+            element={<EventBridgeCreateBusPage />}
+          />
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="sns" element={<SnsTopicsPage />} />
+          <Route path="sns/create" element={<SnsCreateTopicPage />} />
+          <Route
+            path="sns/topics/:name"
+            element={<SnsTopicDetailPage />}
+          />
           <Route path="dynamodb" element={<DynamoDBTablesPage />} />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route
             path="apigateway/rest-apis"
             element={<ApiGatewayRestApisPage />}
+          />
+          <Route
+            path="apigateway/rest-apis/create"
+            element={<ApiGatewayRestApiCreatePage />}
           />
           <Route
             path="apigateway/rest-apis/:apiId"

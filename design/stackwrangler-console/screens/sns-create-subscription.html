@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create subscription — SNS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sns-create-subscription" data-nav="sns-topics" data-service="sns" data-title="Create subscription" data-crumb="Create subscription">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create subscription</h1>
+      <p class="aws-desc">
+        Subscribe an endpoint to <strong>orders-events</strong> via LocalEmu
+        <code>Subscribe</code>.
+      </p>
+      <p class="aws-desc"><a href="sns-topic-detail.html" data-od-id="back-detail">← orders-events</a></p>
+
+      <section class="aws-card" data-od-id="create-subscription-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="topic-arn">Topic ARN</label>
+              <input class="aws-input" id="topic-arn" name="TopicArn" type="text" readonly value="arn:aws:sns:ap-southeast-2:000000000000:orders-events" data-od-id="field-topic-arn" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="protocol">Protocol <span class="req" aria-hidden="true">*</span></label>
+              <select class="aws-input" id="protocol" name="Protocol" data-od-id="field-protocol">
+                <option value="sqs" selected>Amazon SQS</option>
+                <option value="lambda">AWS Lambda</option>
+                <option value="http">HTTP</option>
+                <option value="https">HTTPS</option>
+                <option value="email">Email</option>
+                <option value="email-json">Email (JSON)</option>
+                <option value="sms">SMS</option>
+              </select>
+              <p class="aws-hint">LocalEmu happy path is SQS (queue ARN endpoint).</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="endpoint">Endpoint <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="endpoint" name="Endpoint" type="text" value="arn:aws:sqs:ap-southeast-2:000000000000:orders-events-q" placeholder="Queue ARN, Lambda ARN, URL, email, or phone" data-od-id="field-endpoint" />
+            </div>
+          </div>
+
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Subscription filter policy</h2>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-filter-policy">Set filter policy…</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-subscription-actions">
+        <a class="btn btn-normal" href="sns-topic-detail.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-create-subscription">Create subscription</button>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

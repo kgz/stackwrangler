@@ -1,0 +1,6 @@
+# Project Pages site: https://kgz.github.io/stackwrangler/
+# Submit this Sitemap URL in Google Search Console (URL-prefix property).
+User-agent: *
+Allow: /
+
+Sitemap: https://kgz.github.io/stackwrangler/sitemap.xml

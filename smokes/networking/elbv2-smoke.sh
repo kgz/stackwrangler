@@ -18,6 +18,7 @@ NLB_PORT=443
 INTERNAL_PORT=10080
 ALB_PORT=80
 TLS_PORT=8443
+ALB_HTTPS_PORT=8444
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
@@ -45,7 +46,11 @@ TG_INT=""
 TG_A=""
 TG_B=""
 TG_TLS=""
+TG_HC=""
+LB_HC=""
 CERT=""
+CERT2=""
+CERT3=""
 UD_A=""
 UD_B=""
 UD_C=""
@@ -72,15 +77,17 @@ cleanup() {
 	if [[ "$HOSTS_ADDED" == "1" ]]; then
 		sudo sed -i "/# awsbox-elbv2-smoke-${TS}/d" /etc/hosts 2>/dev/null || true
 	fi
-	for arn in "$LB_EDGE" "$LB_INT" "$LB_ALB" "$LB_TLS"; do
+	for arn in "$LB_EDGE" "$LB_INT" "$LB_ALB" "$LB_TLS" "$LB_HC"; do
 		[[ -z "$arn" ]] && continue
 		aws elbv2 delete-load-balancer --load-balancer-arn "$arn" >/dev/null 2>&1 || true
 	done
-	for arn in "$TG_EDGE" "$TG_INT" "$TG_A" "$TG_B" "$TG_TLS"; do
+	for arn in "$TG_EDGE" "$TG_INT" "$TG_A" "$TG_B" "$TG_TLS" "$TG_HC"; do
 		[[ -z "$arn" ]] && continue
 		aws elbv2 delete-target-group --target-group-arn "$arn" >/dev/null 2>&1 || true
 	done
 	[[ -n "$CERT" ]] && aws acm delete-certificate --certificate-arn "$CERT" >/dev/null 2>&1 || true
+	[[ -n "$CERT2" ]] && aws acm delete-certificate --certificate-arn "$CERT2" >/dev/null 2>&1 || true
+	[[ -n "$CERT3" ]] && aws acm delete-certificate --certificate-arn "$CERT3" >/dev/null 2>&1 || true
 	for f in "$UD_A" "$UD_B" "$UD_C" "$PEER"; do
 		[[ -n "$f" ]] && rm -f "$f"
 	done
@@ -162,17 +169,41 @@ while True:
             except socket.timeout:
                 pass
             head = data.split(b"\r\n", 1)[0].decode("latin1", "replace")
+            path = "/"
+            parts = head.split(" ")
+            if len(parts) >= 2:
+                path = parts[1] or "/"
             host = ""
             for line in data.split(b"\r\n"):
                 if line.lower().startswith(b"host:"):
                     host = line.split(b":", 1)[1].strip().decode()
-            body = f"{name} {head} host={host}\n".encode()
-            conn.sendall(
-                b"HTTP/1.1 200 OK\r\nContent-Length: "
-                + str(len(body)).encode()
-                + b"\r\nConnection: close\r\n\r\n"
-                + body
-            )
+            if path.startswith("/health"):
+                status = 200
+                try:
+                    with open(f"/tmp/health-{port}.status", encoding="ascii") as fh:
+                        status = int(fh.read().strip() or "200")
+                except Exception:
+                    pass
+                body = b"ok\n" if status < 400 else b"fail\n"
+                reason = b"OK" if status < 400 else b"ERR"
+                conn.sendall(
+                    b"HTTP/1.1 "
+                    + str(status).encode()
+                    + b" "
+                    + reason
+                    + b"\r\nContent-Length: "
+                    + str(len(body)).encode()
+                    + b"\r\nConnection: close\r\n\r\n"
+                    + body
+                )
+            else:
+                body = f"{name} {head} host={host}\n".encode()
+                conn.sendall(
+                    b"HTTP/1.1 200 OK\r\nContent-Length: "
+                    + str(len(body)).encode()
+                    + b"\r\nConnection: close\r\n\r\n"
+                    + body
+                )
         else:
             conn.sendall(f"{name} peer={addr[0]}\n".encode())
     finally:
@@ -280,11 +311,20 @@ echo "private A=${PIP_A} B=${PIP_B} client=${PIP_C}"
 
 mk_tg() {
 	local name="$1" proto="$2" port="$3"
-	aws elbv2 create-target-group \
-		--name "$name" --protocol "$proto" --port "$port" \
-		--vpc-id "$VPC" --target-type instance \
-		--health-check-protocol TCP --health-check-port traffic-port \
-		--query 'TargetGroups[0].TargetGroupArn' --output text
+	if [[ "$proto" == "HTTP" || "$proto" == "HTTPS" ]]; then
+		aws elbv2 create-target-group \
+			--name "$name" --protocol "$proto" --port "$port" \
+			--vpc-id "$VPC" --target-type instance \
+			--health-check-protocol "$proto" --health-check-path /health \
+			--health-check-port traffic-port --matcher HttpCode=200 \
+			--query 'TargetGroups[0].TargetGroupArn' --output text
+	else
+		aws elbv2 create-target-group \
+			--name "$name" --protocol "$proto" --port "$port" \
+			--vpc-id "$VPC" --target-type instance \
+			--health-check-protocol TCP --health-check-port traffic-port \
+			--query 'TargetGroups[0].TargetGroupArn' --output text
+	fi
 }
 
 TG_EDGE="$(mk_tg "e443-${TS}" TCP 443)"
@@ -520,6 +560,204 @@ PY
 echo "  ${TLS_BODY}"
 echo "$TLS_BODY" | grep -q BTLS || fail "TLS listener did not reach BTLS (${TLS_BODY})"
 echo "OK: TLS forward"
+
+echo "==> TLS presents ACM certificate (#242)"
+ACM_PEM="$(aws acm get-certificate --certificate-arn "$CERT" --query Certificate --output text)"
+[[ -n "$ACM_PEM" && "$ACM_PEM" == -----BEGIN* ]] || fail "acm get-certificate returned no PEM"
+DEFAULT_PEM="$(docker exec -i "$LS" /opt/code/localemu/.venv/bin/python - <<'PY'
+from localemu.utils.ssl import get_cert_pem_file_path, install_predefined_cert_if_available
+install_predefined_cert_if_available()
+path = get_cert_pem_file_path()
+with open(path, "r", encoding="utf-8") as fh:
+    print(fh.read())
+PY
+)"
+[[ -n "$DEFAULT_PEM" && "$DEFAULT_PEM" == -----BEGIN* ]] || fail "LocalEmu default cert unavailable"
+pem_sha256() {
+	# First CERTIFICATE block → DER → sha256 hex (no colons).
+	printf '%s\n' "$1" | awk '
+		/BEGIN CERTIFICATE/{p=1}
+		p{print}
+		/END CERTIFICATE/{exit}
+	' | openssl x509 -outform DER 2>/dev/null | openssl dgst -sha256 -hex | awk '{print $NF}'
+}
+ACM_FP="$(pem_sha256 "$ACM_PEM")"
+DEFAULT_FP="$(pem_sha256 "$DEFAULT_PEM")"
+[[ -n "$ACM_FP" && -n "$DEFAULT_FP" ]] || fail "could not fingerprint ACM/default certs"
+[[ "$ACM_FP" != "$DEFAULT_FP" ]] || fail "ACM cert fingerprint matches LocalEmu default"
+PEER_FP="$(python3 - "$EDGE" "$TLS_PORT" <<'PY'
+import hashlib, socket, ssl, sys
+ctx = ssl._create_unverified_context()
+raw = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)
+ss = ctx.wrap_socket(raw, server_hostname="elbv2.local")
+print(hashlib.sha256(ss.getpeercert(binary_form=True)).hexdigest())
+ss.close()
+PY
+)"
+[[ "$PEER_FP" == "$ACM_FP" ]] || fail "listener presented ${PEER_FP}, expected ACM ${ACM_FP}"
+echo "  peer fingerprint matches ACM (${PEER_FP:0:16}…)"
+DEFAULT_CERT="$(printf '%s\n' "$DEFAULT_PEM" | awk '
+	/BEGIN CERTIFICATE/{p=1}
+	p{print}
+	/END CERTIFICATE/{exit}
+')"
+[[ -n "$DEFAULT_CERT" ]] || fail "LocalEmu default cert block missing"
+PIN_RC=0
+python3 - "$EDGE" "$TLS_PORT" "$DEFAULT_CERT" <<'PY' 2>/dev/null || PIN_RC=$?
+import socket, ssl, sys
+pin = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+pin.verify_mode = ssl.CERT_REQUIRED
+pin.check_hostname = False
+pin.load_verify_locations(cadata=sys.argv[3])
+raw = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)
+pin.wrap_socket(raw, server_hostname="elbv2.local")
+PY
+[[ "$PIN_RC" -ne 0 ]] || fail "client pinning LocalEmu default accepted ACM listener"
+echo "OK: ACM cert presented; LocalEmu-default pin rejected"
+echo "==> HTTP health check path + matcher"
+HC_PORT=18080
+TG_HC="$(aws elbv2 create-target-group \
+	--name "ehc-${TS}" --protocol HTTP --port 8080 \
+	--vpc-id "$VPC" --target-type instance \
+	--health-check-protocol HTTP --health-check-path /health \
+	--health-check-port traffic-port --matcher HttpCode=200 \
+	--query 'TargetGroups[0].TargetGroupArn' --output text)"
+aws elbv2 register-targets --target-group-arn "$TG_HC" \
+	--targets "Id=${IA},Port=8080" "Id=${IB},Port=8081"
+LB_HC="$(aws elbv2 create-load-balancer --name "hc-${TS}" --type application \
+	--scheme internet-facing --subnets "$SUB_A" "$SUB_B" \
+	--query 'LoadBalancers[0].LoadBalancerArn' --output text)"
+aws elbv2 create-listener --load-balancer-arn "$LB_HC" --protocol HTTP --port "$HC_PORT" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_HC}" >/dev/null
+wait_healthy "$TG_HC" 2
+docker exec "$CA" sh -c 'echo 500 > /tmp/health-8080.status'
+HC_STATE=""
+for i in $(seq 1 30); do
+	HC_STATE="$(aws elbv2 describe-target-health --target-group-arn "$TG_HC" \
+		--targets "Id=${IA},Port=8080" --query 'TargetHealthDescriptions[0].TargetHealth.State' --output text)"
+	echo "  A8080=${HC_STATE}"
+	[[ "$HC_STATE" == "unhealthy" ]] && break
+	sleep 1
+done
+[[ "$HC_STATE" == "unhealthy" ]] || fail "HTTP 500 health path stayed ${HC_STATE}"
+HC_AFTER=""
+for _ in $(seq 1 8); do
+	line="$(python3 - "$EDGE" "$HC_PORT" <<'PY'
+import socket, sys
+host, port = sys.argv[1], int(sys.argv[2])
+s = socket.create_connection((host, port), 5)
+s.settimeout(5)
+s.sendall(b"GET /ping HTTP/1.1\r\nHost: hc.example\r\nConnection: close\r\n\r\n")
+data = s.recv(4096)
+s.close()
+sys.stdout.write(data.decode("latin1", "replace"))
+PY
+)"
+	echo "  ${line}"
+	HC_AFTER="${HC_AFTER} ${line}"
+done
+echo "$HC_AFTER" | grep -q TGA && fail "HTTP-unhealthy TGA still received traffic (${HC_AFTER})"
+echo "$HC_AFTER" | grep -q TGB || fail "healthy TGB got no traffic (${HC_AFTER})"
+docker exec "$CA" sh -c 'echo 200 > /tmp/health-8080.status'
+HC_OK=""
+for i in $(seq 1 30); do
+	HC_OK="$(aws elbv2 describe-target-health --target-group-arn "$TG_HC" \
+		--targets "Id=${IA},Port=8080" --query 'TargetHealthDescriptions[0].TargetHealth.State' --output text)"
+	echo "  A8080=${HC_OK}"
+	[[ "$HC_OK" == "healthy" ]] && break
+	sleep 1
+done
+[[ "$HC_OK" == "healthy" ]] || fail "HTTP 200 health path stayed ${HC_OK}"
+echo "OK: HTTP health check matcher"
+
+peer_fp() {
+	local port="$1" i fp=""
+	for i in $(seq 1 20); do
+		fp="$(python3 - "$EDGE" "$port" <<'PY' 2>/dev/null || true
+import hashlib, socket, ssl, sys
+ctx = ssl._create_unverified_context()
+raw = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)
+ss = ctx.wrap_socket(raw, server_hostname="elbv2.local")
+print(hashlib.sha256(ss.getpeercert(binary_form=True)).hexdigest())
+ss.close()
+PY
+)"
+		[[ -n "$fp" ]] && { printf '%s\n' "$fp"; return 0; }
+		sleep 0.25
+	done
+	fail "no TLS peer fingerprint on :${port}"
+}
+
+echo "==> ModifyListener reloads ACM certificate (#594)"
+CERT2="$(aws acm request-certificate --domain-name "elbv2-mod-${TS}.local" --validation-method DNS \
+	--query 'CertificateArn' --output text)"
+ACM2_PEM="$(aws acm get-certificate --certificate-arn "$CERT2" --query Certificate --output text)"
+ACM2_FP="$(pem_sha256 "$ACM2_PEM")"
+[[ -n "$ACM2_FP" && "$ACM2_FP" != "$ACM_FP" ]] || fail "second ACM cert fingerprint unusable"
+aws elbv2 modify-listener --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_MOD="$(peer_fp "$TLS_PORT")"
+[[ "$PEER_MOD" == "$ACM2_FP" ]] || fail "ModifyListener presented ${PEER_MOD}, expected ${ACM2_FP}"
+echo "OK: ModifyListener presents replacement ACM cert"
+
+echo "==> AddListenerCertificates first-default reload (#594)"
+aws elbv2 delete-listener --listener-arn "$LIS_TLS" >/dev/null
+LIS_TLS="$(aws elbv2 create-listener --load-balancer-arn "$LB_TLS" --protocol TLS --port "$TLS_PORT" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_TLS}" --query 'Listeners[0].ListenerArn' --output text)"
+PEER_DEFAULT="$(peer_fp "$TLS_PORT")"
+[[ "$PEER_DEFAULT" == "$DEFAULT_FP" ]] || fail "cert-less TLS presented ${PEER_DEFAULT}, expected default ${DEFAULT_FP}"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_ADD="$(peer_fp "$TLS_PORT")"
+[[ "$PEER_ADD" == "$ACM2_FP" ]] || fail "first AddListenerCertificates presented ${PEER_ADD}, expected ${ACM2_FP}"
+echo "OK: first Add on cert-less listener establishes default ACM cert"
+
+echo "==> secondary AddListenerCertificates does not flip default (#594)"
+CERT3="$(aws acm request-certificate --domain-name "elbv2-add-${TS}.local" --validation-method DNS \
+	--query 'CertificateArn' --output text)"
+ACM3_PEM="$(aws acm get-certificate --certificate-arn "$CERT3" --query Certificate --output text)"
+ACM3_FP="$(pem_sha256 "$ACM3_PEM")"
+[[ -n "$ACM3_FP" && "$ACM3_FP" != "$ACM2_FP" ]] || fail "third ACM cert fingerprint unusable"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT3}" >/dev/null
+PEER_SEC="$(peer_fp "$TLS_PORT")"
+[[ "$PEER_SEC" == "$ACM2_FP" ]] || fail "secondary Add flipped handshake to ${PEER_SEC}, expected default ${ACM2_FP}"
+[[ "$PEER_SEC" != "$ACM3_FP" ]] || fail "secondary Add presented added cert ${ACM3_FP}"
+echo "OK: secondary Add is SNI-only; default handshake unchanged"
+
+echo "==> HTTPS ALB ModifyListener reloads ACM certificate (#629)"
+LIS_ALB_HTTPS="$(aws elbv2 create-listener --load-balancer-arn "$LB_ALB" --protocol HTTPS --port "$ALB_HTTPS_PORT" \
+	--certificates "CertificateArn=${CERT}" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_B}" \
+	--query 'Listeners[0].ListenerArn' --output text)"
+PEER_ALB="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB" == "$ACM_FP" ]] || fail "HTTPS ALB presented ${PEER_ALB}, expected ACM ${ACM_FP}"
+aws elbv2 modify-listener --listener-arn "$LIS_ALB_HTTPS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_ALB_MOD="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_MOD" == "$ACM2_FP" ]] || fail "HTTPS ALB ModifyListener presented ${PEER_ALB_MOD}, expected ${ACM2_FP}"
+echo "OK: HTTPS ALB ModifyListener presents replacement ACM cert"
+
+echo "==> HTTPS ALB AddListenerCertificates first-default reload (#629)"
+aws elbv2 delete-listener --listener-arn "$LIS_ALB_HTTPS" >/dev/null
+LIS_ALB_HTTPS="$(aws elbv2 create-listener --load-balancer-arn "$LB_ALB" --protocol HTTPS --port "$ALB_HTTPS_PORT" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_B}" \
+	--query 'Listeners[0].ListenerArn' --output text)"
+PEER_ALB_DEFAULT="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_DEFAULT" == "$DEFAULT_FP" ]] || fail "cert-less HTTPS ALB presented ${PEER_ALB_DEFAULT}, expected default ${DEFAULT_FP}"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_ALB_HTTPS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_ALB_ADD="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_ADD" == "$ACM2_FP" ]] || fail "HTTPS ALB first Add presented ${PEER_ALB_ADD}, expected ${ACM2_FP}"
+echo "OK: HTTPS ALB first Add establishes default ACM cert"
+
+echo "==> HTTPS ALB secondary AddListenerCertificates does not flip default (#629)"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_ALB_HTTPS" \
+	--certificates "CertificateArn=${CERT3}" >/dev/null
+PEER_ALB_SEC="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_SEC" == "$ACM2_FP" ]] || fail "HTTPS ALB secondary Add flipped to ${PEER_ALB_SEC}, expected ${ACM2_FP}"
+[[ "$PEER_ALB_SEC" != "$ACM3_FP" ]] || fail "HTTPS ALB secondary Add presented ${ACM3_FP}"
+echo "OK: HTTPS ALB secondary Add is SNI-only; default handshake unchanged"
 
 echo "==> unhealthy target drops out"
 docker exec "$CA" sh -c 'kill "$(cat /tmp/tcp-443.pid)"' || fail "could not stop A443"

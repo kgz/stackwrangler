@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sqs-queue-detail.html",
+  "entry": "screens/sqs-queue-detail.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-08T11:56:57.000Z",
+  "updatedAt": "2026-11-08T12:36:05.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true,
+    "handMock": true,
+    "issue": 627,
+    "note": "Extended for #627 Purge + link to send-receive; prior #548 hand mock"
+  }
+}

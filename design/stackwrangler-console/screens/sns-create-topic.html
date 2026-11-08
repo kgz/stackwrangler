@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create topic — SNS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sns-create-topic" data-nav="sns-topics" data-service="sns" data-title="Create topic" data-crumb="Create topic">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create topic</h1>
+      <p class="aws-desc">
+        Create an Amazon SNS topic for application-to-application (A2A) or
+        application-to-person (A2P) messaging. LocalEmu supports Standard and
+        FIFO topics via <code>CreateTopic</code>.
+      </p>
+
+      <section class="aws-card" data-od-id="details-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="topic-name">Name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="topic-name" name="name" type="text" autocomplete="off" placeholder="my-topic" value="orders-events" data-od-id="field-name" />
+              <p class="aws-hint">1–256 characters. Letters, numbers, hyphens, and underscores. FIFO names must end with <code>.fifo</code>.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="display-name">Display name</label>
+              <input class="aws-input" id="display-name" name="displayName" type="text" autocomplete="off" placeholder="Optional" value="" data-od-id="field-display-name" />
+              <p class="aws-hint">Shown for SMS and some console views. Optional in LocalEmu.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="type-section">
+            <h2 class="aws-section-title">Type</h2>
+            <ul class="aws-radio-list" data-od-id="type-options">
+              <li>
+                <label>
+                  <input type="radio" name="topicType" value="standard" checked data-od-id="type-standard" />
+                  <span>
+                    <strong>Standard</strong>
+                    <span class="sub">Best-effort ordering and at-least-once delivery. Highest throughput.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="topicType" value="fifo" data-od-id="type-fifo" />
+                  <span>
+                    <strong>FIFO</strong>
+                    <span class="sub">Strictly ordered, exactly-once. Name must end with <code>.fifo</code>.</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+          </div>
+
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Additional settings</h2>
+            <div class="aws-field">
+              <label class="aws-label">Encryption</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-encryption">Configure encryption…</button>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Access policy</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-access-policy">Edit access policy…</button>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Delivery retry policy</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-retry">Configure delivery retry…</button>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Tags</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-tags">Add tags…</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-actions">
+        <a class="btn btn-normal" href="sns-topics.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <a class="btn btn-primary" href="sns-topic-detail.html" data-od-id="btn-create">Create topic</a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

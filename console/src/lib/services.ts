@@ -17,6 +17,7 @@ export type AppId =
   | 'kms'
   | 'sns'
   | 'dynamodb'
+  | 'cloudtrail'
 
 export type ServiceDef = {
   id: AppId
@@ -93,6 +94,13 @@ export const SERVICES: ServiceDef[] = [
     desc: 'NoSQL key-value and document store',
     to: '/dynamodb',
   },
+  {
+    id: 'cloudtrail',
+    abbr: 'CT',
+    name: 'CloudTrail',
+    desc: 'API call log (local CloudTrail-lite)',
+    to: '/cloudtrail',
+  },
 ]
 
 export function currentApp(pathname: string): AppId {
@@ -113,6 +121,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/kms')) return 'kms'
   if (pathname.startsWith('/sns')) return 'sns'
   if (pathname.startsWith('/dynamodb')) return 'dynamodb'
+  if (pathname.startsWith('/cloudtrail')) return 'cloudtrail'
   return 's3'
 }
 
@@ -159,6 +168,8 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Feature', label: 'Topics', to: '/sns' },
   { type: 'Feature', label: 'Tables', to: '/dynamodb' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
+  { type: 'Feature', label: 'API call log', to: '/cloudtrail' },
+  { type: 'Service', label: 'CloudTrail', to: '/cloudtrail' },
   { type: 'Feature', label: 'HTTP APIs', to: '/apigateway' },
   { type: 'Feature', label: 'REST APIs', to: '/apigateway/rest-apis' },
   { type: 'Feature', label: 'Stacks', to: '/cloudformation' },
@@ -191,14 +202,19 @@ const CRUMBS: Record<string, string> = {
   '/lambda': 'Functions',
   '/lambda/create': 'Create function',
   '/logs': 'Log groups',
+  '/cloudtrail': 'API call log',
   '/stepfunctions': 'State machines',
+  '/stepfunctions/create': 'Create state machine',
   '/secretsmanager': 'Secrets',
+  '/secretsmanager/store': 'Store a new secret',
   '/kinesis': 'Data streams',
+  '/kinesis/create': 'Create data stream',
   '/sqs': 'Queues',
   '/events': 'Rules',
   '/events/buses': 'Event buses',
   '/kms': 'Customer managed keys',
   '/sns': 'Topics',
+  '/sns/create': 'Create topic',
   '/dynamodb': 'Tables',
   '/apigateway': 'HTTP APIs',
   '/apigateway/rest-apis': 'REST APIs',

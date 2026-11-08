@@ -17,10 +17,10 @@
       <section class="aws-card" data-od-id="content-card">
         <div class="aws-card-body">
           <div class="aws-toolbar" data-od-id="action-toolbar">
-            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
-            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-topic" title="Select a row">Delete</button>
+            <button type="button" class="btn-icon" aria-label="Refresh" title="Refresh" data-od-id="btn-refresh">↻</button>
+            <a class="btn btn-normal" href="sns-delete-topic.html" data-od-id="btn-delete-topic" title="Delete selected topic">Delete</a>
             <div class="spacer"></div>
-            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-topic" title="To implement">Create topic</button>
+            <a class="btn btn-primary" href="sns-create-topic.html" data-od-id="btn-create-topic">Create topic</a>
           </div>
           <div class="aws-table-tools">
             <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
@@ -44,21 +44,21 @@
                 </tr>
               </thead>
               <tbody>
-                <tr data-name="orders-events">
-                  <td class="check"><input type="checkbox" aria-label="Select orders-events" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="topic-orders-events">orders-events</button></td>
+                <tr data-name="orders-events" class="selected">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-events" checked /></td>
+                  <td><a href="sns-topic-detail.html" data-od-id="topic-orders-events">orders-events</a></td>
                   <td>Standard</td>
                   <td>arn:aws:sns:ap-southeast-2:000000000000:orders-events</td>
                 </tr>
                 <tr data-name="awsbox-sns-demo.fifo">
                   <td class="check"><input type="checkbox" aria-label="Select awsbox-sns-demo.fifo" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="topic-awsbox-sns-demo">awsbox-sns-demo.fifo</button></td>
+                  <td><a href="sns-topic-detail.html" data-od-id="topic-awsbox-sns-demo">awsbox-sns-demo.fifo</a></td>
                   <td>FIFO</td>
                   <td>arn:aws:sns:ap-southeast-2:000000000000:awsbox-sns-demo.fifo</td>
                 </tr>
                 <tr data-name="app-alerts">
                   <td class="check"><input type="checkbox" aria-label="Select app-alerts" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="topic-app-alerts">app-alerts</button></td>
+                  <td><a href="sns-topic-detail.html" data-od-id="topic-app-alerts">app-alerts</a></td>
                   <td>Standard</td>
                   <td>arn:aws:sns:ap-southeast-2:000000000000:app-alerts</td>
                 </tr>

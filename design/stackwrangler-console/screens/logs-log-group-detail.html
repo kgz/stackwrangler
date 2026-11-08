@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>/aws/lambda/awsbox-hello — CloudWatch</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="logs-log-group-detail" data-nav="logs-log-groups" data-service="logs" data-title="/aws/lambda/awsbox-hello" data-crumb="/aws/lambda/awsbox-hello">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0"><code class="aws-mono">/aws/lambda/awsbox-hello</code></h1>
+          <div class="aws-subtitle-row">
+            <span>Retention: Never expire</span>
+            <span>Stored: 128.4 KB</span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" data-od-id="btn-refresh">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-actions">Actions ▾</button>
+      </div>
+
+      <p class="aws-desc"><a href="logs-log-groups.html" data-od-id="back-log-groups">Log groups</a> › <code class="aws-mono">/aws/lambda/awsbox-hello</code></p>
+
+      <div class="aws-tabs" role="tablist" data-od-id="detail-tabs">
+        <button type="button" class="aws-tab active" aria-current="page" data-od-id="tab-streams">Log streams</button>
+        <button type="button" class="aws-tab" data-od-id="tab-events">Search log group</button>
+      </div>
+
+      <section class="aws-card" data-od-id="streams-card" style="margin-top:16px">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Log streams</h2>
+          <div class="aws-table-tools">
+            <label class="aws-find"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter log streams" data-find-table="#streams-table" aria-label="Filter log streams" data-od-id="find-streams" />
+            </label>
+            <div class="aws-pager" data-od-id="streams-pager">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="streams-table" data-od-id="log-streams-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Log stream <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">Last event time</span></th>
+                  <th scope="col"><span class="th-inner">Creation time</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code class="aws-mono"><a href="logs-log-stream-events.html" data-od-id="stream-2026">2026/11/08/[$LATEST]a1b2c3d4e5f6</a></code></td>
+                  <td>2026-11-08 10:14:22</td>
+                  <td>2026-11-08 09:01:04</td>
+                </tr>
+                <tr>
+                  <td><code class="aws-mono"><a href="logs-log-stream-events.html" data-od-id="stream-2026b">2026/11/07/[$LATEST]f6e5d4c3b2a1</a></code></td>
+                  <td>2026-11-07 22:41:09</td>
+                  <td>2026-11-07 18:12:55</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="events-card" style="margin-top:16px">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Search log group</h2>
+          <p class="aws-desc">FilterLogEvents across streams (interleaved). Pattern syntax is what LocalEmu supports.</p>
+          <div class="aws-toolbar" data-od-id="events-toolbar" style="flex-wrap:wrap;gap:8px">
+            <label class="aws-find" style="flex:1;min-width:220px;max-width:480px">
+              <span class="visually-hidden">Filter pattern</span>
+              <input type="search" placeholder="Filter pattern" aria-label="Filter pattern" value="REPORT" data-od-id="field-filter-pattern" />
+            </label>
+            <button type="button" class="btn btn-normal" data-od-id="btn-search-events">Search</button>
+            <button type="button" class="btn btn-normal" data-od-id="btn-tail-events">Tail</button>
+          </div>
+          <div class="aws-table-wrap" style="margin-top:12px">
+            <table class="aws-table" data-od-id="log-events-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="th-inner">Timestamp</span></th>
+                  <th scope="col"><span class="th-inner">Message</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code class="aws-mono">2026-11-08T10:14:22.440Z</code></td>
+                  <td><code class="aws-mono">REPORT RequestId: a1b2c3d4 Duration: 12.40 ms</code></td>
+                </tr>
+                <tr>
+                  <td><code class="aws-mono">2026-11-08T10:14:22.101Z</code></td>
+                  <td><code class="aws-mono">START RequestId: a1b2c3d4 Version: $LATEST</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <p class="aws-desc" style="margin-top:16px"><a href="logs-log-groups.html">Back to log groups</a></p>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

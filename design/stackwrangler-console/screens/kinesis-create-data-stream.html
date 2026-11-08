@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create data stream — Kinesis</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="kinesis-create-data-stream" data-nav="kinesis-streams" data-service="kinesis" data-title="Create data stream" data-crumb="Create data stream">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create data stream</h1>
+      <p class="aws-desc">
+        Create a Kinesis data stream with provisioned shards or on-demand capacity.
+        LocalEmu accepts both modes via <code>CreateStream</code>.
+        Retention, encryption, and tags apply after the stream is ACTIVE.
+      </p>
+
+      <section class="aws-card" data-od-id="details-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Stream details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="stream-name">Data stream name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="stream-name" name="name" type="text" autocomplete="off" placeholder="my-data-stream" value="awsbox-kinesis-demo" data-od-id="field-name" />
+              <p class="aws-hint">1–128 characters. Letters, numbers, underscores, hyphens, and periods.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="capacity-section">
+            <h2 class="aws-section-title">Capacity mode</h2>
+            <ul class="aws-radio-list" data-od-id="capacity-options">
+              <li>
+                <label>
+                  <input type="radio" name="capacityMode" value="PROVISIONED" checked data-od-id="mode-provisioned" />
+                  <span>
+                    <strong>Provisioned</strong>
+                    <span class="sub">You choose the number of shards. Best for predictable throughput.</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="capacityMode" value="ON_DEMAND" data-od-id="mode-on-demand" />
+                  <span>
+                    <strong>On-demand</strong>
+                    <span class="sub">Capacity scales automatically. Shard count is managed for you.</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <div class="aws-field" style="margin-top:12px" data-od-id="shard-count-field">
+              <label class="aws-label" for="shard-count">Number of open shards <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="shard-count" name="shardCount" type="number" min="1" max="10000" value="1" data-od-id="field-shard-count" style="max-width:160px" />
+              <p class="aws-hint">Required for provisioned mode. Each shard provides 1 MiB/s or 1000 records/s ingress.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="additional-section">
+            <h2 class="aws-section-title">Additional settings</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="retention-hours">Data retention (hours)</label>
+              <input class="aws-input" id="retention-hours" type="number" min="24" max="8760" value="24" data-od-id="field-retention" style="max-width:160px" />
+              <p class="aws-hint">LocalEmu default is 24 hours.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Server-side encryption</label>
+              <ul class="aws-radio-list" data-od-id="encryption-options">
+                <li>
+                  <label>
+                    <input type="radio" name="encryption" value="NONE" checked data-od-id="enc-none" />
+                    <span><strong>None</strong><span class="sub">No server-side encryption.</span></span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="encryption" value="KMS" data-od-id="enc-kms" />
+                    <span><strong>KMS</strong><span class="sub">StartStreamEncryption after ACTIVE.</span></span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Tags</label>
+              <div class="aws-table-wrap">
+                <table class="aws-table" data-od-id="create-tags-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Key</th>
+                      <th scope="col">Value</th>
+                      <th scope="col"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><input class="aws-input" value="env" aria-label="Tag key" /></td>
+                      <td><input class="aws-input" value="demo" aria-label="Tag value" /></td>
+                      <td><button type="button" class="btn btn-normal">Remove</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" class="btn btn-normal" style="margin-top:8px" data-od-id="btn-add-tag">Add tag</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-actions">
+        <a class="btn btn-normal" href="kinesis-streams.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <a class="btn btn-primary" href="kinesis-stream-detail.html" data-od-id="btn-create">Create data stream</a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

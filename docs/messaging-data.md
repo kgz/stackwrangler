@@ -23,9 +23,11 @@ docker compose up -d --force-recreate localstack
 | Secrets Manager | `secrets-smoke.sh` | `secrets-authz-smoke.sh` |
 | KMS | `kms-smoke.sh` | `kms-authz-smoke.sh` |
 | Kinesis | `kinesis-smoke.sh` | `kinesis-authz-smoke.sh` |
+| Kinesis / DynamoDB stream → Lambda ESM credential refresh | `stream-lambda-esm-cred-refresh-smoke.sh` (short `AWSBOX_STS_ASSUME_ROLE_DURATION`; deliver past expiry) · [#477](https://github.com/kgz/awsl/issues/477) | SQS smoke covers role-delete `LastProcessingResult` on shared path · [#475](https://github.com/kgz/awsl/issues/475) |
 | Logs / API GW / EC2 | existing happy | `logs-authz-smoke.sh`, `apigw-authz-smoke.sh`, `ec2-authz-smoke.sh` |
 
-Console: SNS Topics thin list (#172); create/detail [#546](https://github.com/kgz/awsl/issues/546); remaining messaging consoles Debt (#167, #173–#178).
+Console: SNS Topics thin list (#172); create/detail [#546](https://github.com/kgz/awsl/issues/546); Kinesis list/create/detail (#178 / #539); remaining messaging consoles Debt (#167, #173–#177).
+Console: SNS Topics thin list (#172); create/detail [#546](https://github.com/kgz/awsl/issues/546); Kinesis list/create/detail/put/tags (#178 / #539 / #615); remaining messaging consoles Debt (#167, #173–#177).
 
 Real-AWS parity: `./smokes/parity/aws-parity-batch10.sh` · [aws-parity-batch10.md](aws-parity-batch10.md).  
 HF cheap (DDB depth + schedule + REST/keys + S3 GW VPCE): `./smokes/parity/aws-parity-hf-cheap.sh` · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md).

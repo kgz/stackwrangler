@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awsbox-sqs-demo — SQS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sqs-queue-detail" data-nav="sqs-queues" data-service="sqs" data-title="awsbox-sqs-demo" data-crumb="awsbox-sqs-demo">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">awsbox-sqs-demo</h1>
+          <div class="aws-subtitle-row">
+            <span>Standard</span>
+            <span>Created 2026-11-02 14:18:03</span>
+            <span>12 available · 0 in flight</span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="Refresh" data-od-id="btn-refresh">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-purge-queue">Purge</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-queue">Delete</button>
+        <a class="btn btn-primary" href="sqs-send-receive.html" data-od-id="btn-send-message">Send and receive messages</a>
+      </div>
+
+      <p class="aws-desc"><a href="sqs-queues.html" data-od-id="back-list">← Queues</a></p>
+
+      <section class="aws-card" data-od-id="content-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="queue-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="details" aria-current="page" data-od-id="tab-details">Details</button>
+          <button type="button" class="aws-tab" data-tab="monitoring" disabled aria-disabled="true" title="To implement" data-od-id="tab-monitoring">Monitoring</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="details" data-od-id="panel-details">
+            <h2 class="aws-section-title">Queue details</h2>
+            <p class="aws-desc">Attributes from LocalEmu <code>GetQueueAttributes</code>.</p>
+            <dl class="aws-kv" data-od-id="queue-overview">
+              <div>
+                <dt>Name</dt>
+                <dd>awsbox-sqs-demo</dd>
+              </div>
+              <div>
+                <dt>Type</dt>
+                <dd>Standard</dd>
+              </div>
+              <div>
+                <dt>URL</dt>
+                <dd><code class="aws-mono">http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/awsbox-sqs-demo</code></dd>
+              </div>
+              <div>
+                <dt>ARN</dt>
+                <dd><code class="aws-mono">arn:aws:sqs:us-east-1:000000000000:awsbox-sqs-demo</code></dd>
+              </div>
+              <div>
+                <dt>Created</dt>
+                <dd>2026-11-02 14:18:03</dd>
+              </div>
+              <div>
+                <dt>Messages available</dt>
+                <dd>12</dd>
+              </div>
+              <div>
+                <dt>Messages in flight</dt>
+                <dd>0</dd>
+              </div>
+              <div>
+                <dt>Messages delayed</dt>
+                <dd>0</dd>
+              </div>
+              <div>
+                <dt>Visibility timeout</dt>
+                <dd>30 seconds</dd>
+              </div>
+              <div>
+                <dt>Message retention period</dt>
+                <dd>345600 seconds</dd>
+              </div>
+              <div>
+                <dt>Delivery delay</dt>
+                <dd>0 seconds</dd>
+              </div>
+              <div>
+                <dt>Receive message wait time</dt>
+                <dd>0 seconds</dd>
+              </div>
+              <div>
+                <dt>Maximum message size</dt>
+                <dd>262144 bytes</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

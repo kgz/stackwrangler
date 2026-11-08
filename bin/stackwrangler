@@ -251,6 +251,8 @@ cmd_up() {
 		exit 1
 	fi
 	ensure_env
+	# Host-owned so LocalEmu (uid 1000) can write elbv2.hosts; Docker root-creates if missing.
+	mkdir -p "$ROOT/.awsbox"
 	free_sftp_host_port
 	# Orphans with no endpoints (and this project's leftover lambda containers).
 	cleanup_localemu_vpc_networks
@@ -336,6 +338,49 @@ cmd_console() {
 	cd "$ROOT/console"
 	# foreground so logs visible; Ctrl+C stops
 	exec yarn dev --host 127.0.0.1 --port 3000
+}
+
+# CloudTrail-lite call log (#194): GET /_awsl/calls wrapper.
+cmd_calls() {
+	ensure_env
+	load_root_env
+	local iam qs="" key val
+	iam="$(iam_endpoint_url)"
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			--workload|--service|--action|--result|--since|--limit)
+				key="${1#--}"
+				val="${2:-}"
+				[[ -n "$val" ]] || {
+					echo "calls: $1 needs a value" >&2
+					exit 2
+				}
+				if [[ -n "$qs" ]]; then
+					qs="${qs}&${key}=$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))' "$val")"
+				else
+					qs="${key}=$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))' "$val")"
+				fi
+				shift 2
+				;;
+			--clear)
+				curl -sf -X DELETE "${iam}/_awsl/calls" >/dev/null
+				echo '{"cleared":true}'
+				return 0
+				;;
+			-h|--help)
+				echo "Usage: $0 calls [--workload ID] [--service NAME] [--action PATTERN] [--result allowed|denied] [--since ISO|epoch] [--limit N] | --clear" >&2
+				return 0
+				;;
+			*)
+				echo "calls: unknown arg $1" >&2
+				exit 2
+				;;
+		esac
+	done
+	local url="${iam}/_awsl/calls"
+	[[ -n "$qs" ]] && url="${url}?${qs}"
+	curl -sf "$url"
+	echo
 }
 
 # True when container DNS answers AWS → self and TLS :443 accepts a handshake.
@@ -730,6 +775,10 @@ case "${1:-}" in
 	console)
 		cmd_console
 		;;
+	calls)
+		shift
+		cmd_calls "$@"
+		;;
 	sls)
 		shift
 		cmd_sls "$@"
@@ -742,7 +791,7 @@ case "${1:-}" in
 		exec "$ROOT/bin/awsl-mirror.sh" "$@"
 		;;
 	*)
-		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] -- … | hosts … | mirror … | apply <fixture>" >&2
+		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | calls […] | sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] -- … | hosts … | mirror … | apply <fixture>" >&2
 		exit 1
 		;;
 esac
