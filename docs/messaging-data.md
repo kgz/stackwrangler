@@ -25,7 +25,7 @@ docker compose up -d --force-recreate localstack
 | Kinesis | `kinesis-smoke.sh` | `kinesis-authz-smoke.sh` |
 | Logs / API GW / EC2 | existing happy | `logs-authz-smoke.sh`, `apigw-authz-smoke.sh`, `ec2-authz-smoke.sh` |
 
-Console: SNS Topics thin list (#172); create/detail [#546](https://github.com/kgz/awsl/issues/546); remaining messaging consoles Debt (#167, #173–#178).
+Console: SNS Topics thin list (#172); create/detail [#546](https://github.com/kgz/awsl/issues/546); Kinesis list/create/detail (#178 / #539); remaining messaging consoles Debt (#167, #173–#177).
 
 Real-AWS parity: `./smokes/parity/aws-parity-batch10.sh` · [aws-parity-batch10.md](aws-parity-batch10.md).  
 HF cheap (DDB depth + schedule + REST/keys + S3 GW VPCE): `./smokes/parity/aws-parity-hf-cheap.sh` · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md).

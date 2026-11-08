@@ -45,8 +45,16 @@ function waitActive(name: string) {
   throw new Error(`stream not ACTIVE: ${name}`)
 }
 
-test.describe('Kinesis data streams UI (#178)', () => {
-  test('lists a seeded data stream', async ({ page }) => {
+function deleteQuiet(name: string) {
+  try {
+    aws(['kinesis', 'delete-stream', '--stream-name', name])
+  } catch {
+    /* ignore */
+  }
+}
+
+test.describe('Kinesis data streams UI (#178 / #539)', () => {
+  test('lists a seeded data stream and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-kinesis-ui-${ts}`
     try {
@@ -66,25 +74,105 @@ test.describe('Kinesis data streams UI (#178)', () => {
       ).toBeVisible()
       await expect(page.getByTestId('kinesis-streams-table')).toBeVisible()
       await expect(
-        page.getByRole('button', { name, exact: true }),
+        page.getByRole('link', { name, exact: true }),
       ).toBeVisible({ timeout: 15000 })
       await expect(
-        page.getByRole('button', { name: 'Create data stream' }),
-      ).toBeDisabled()
-      await expect(
-        page.getByRole('button', { name: 'Create data stream' }),
-      ).toHaveAttribute('title', 'To implement')
-      await expect(page.getByRole('button', { name: 'Delete' })).toBeDisabled()
-      await expect(page.getByRole('button', { name: 'Delete' })).toHaveAttribute(
+        page.getByRole('link', { name: 'Create data stream' }),
+      ).toBeVisible()
+      await expect(page.getByTestId('kinesis-delete')).toBeDisabled()
+      await expect(page.getByTestId('kinesis-delete')).toHaveAttribute(
         'title',
         'Select a row',
       )
+
+      await page.getByRole('link', { name, exact: true }).click()
+      await expect(page).toHaveURL(
+        new RegExp(`/kinesis/streams/${name}$`),
+      )
+      await expect(
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible()
+      await expect(page.getByTestId('kinesis-tab-details')).toBeVisible()
+      await expect(page.getByText('Provisioned').first()).toBeVisible()
+      await page.getByTestId('kinesis-tab-shards').click()
+      await expect(page.getByTestId('kinesis-shards-table')).toBeVisible()
+      await expect(page.getByText('shardId-').first()).toBeVisible()
     } finally {
-      try {
-        aws(['kinesis', 'delete-stream', '--stream-name', name])
-      } catch {
-        /* ignore */
-      }
+      deleteQuiet(name)
+    }
+  })
+
+  test('creates a provisioned stream and deletes it from the list', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-kinesis-create-${ts}`
+    let created = false
+
+    try {
+      await page.goto('/kinesis')
+      await page.getByRole('link', { name: 'Create data stream' }).click()
+      await expect(page).toHaveURL(/\/kinesis\/create$/)
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Create data stream' }),
+      ).toBeVisible()
+      await page.getByTestId('kinesis-create-name').fill(name)
+      await page.getByTestId('kinesis-mode-provisioned').check()
+      await page.getByTestId('kinesis-create-shard-count').fill('1')
+      await page.getByTestId('kinesis-create-submit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/kinesis/streams/${name}$`),
+        { timeout: 20000 },
+      )
+      created = true
+      await expect(
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible()
+      await expect(page.getByText('Provisioned').first()).toBeVisible({
+        timeout: 15000,
+      })
+
+      await page.getByRole('link', { name: '← Data streams' }).click()
+      await expect(page).toHaveURL(/\/kinesis$/)
+      const rowLink = page.getByRole('link', { name, exact: true })
+      await expect(rowLink).toBeVisible({ timeout: 15000 })
+      await rowLink
+        .locator('xpath=ancestor::tr[1]')
+        .getByRole('radio')
+        .check()
+      await page.getByTestId('kinesis-delete').click()
+      await page.getByTestId('kinesis-confirm-delete').click()
+      await expect(rowLink).toHaveCount(0, { timeout: 20000 })
+      created = false
+    } finally {
+      if (created) deleteQuiet(name)
+    }
+  })
+
+  test('creates an on-demand stream from the console', async ({ page }) => {
+    const ts = Date.now()
+    const name = `e2e-kinesis-od-${ts}`
+    let created = false
+
+    try {
+      await page.goto('/kinesis/create')
+      await page.getByTestId('kinesis-create-name').fill(name)
+      await page.getByTestId('kinesis-mode-on-demand').check()
+      await page.getByTestId('kinesis-create-submit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/kinesis/streams/${name}$`),
+        { timeout: 20000 },
+      )
+      created = true
+      await expect(page.getByText('On-demand').first()).toBeVisible({
+        timeout: 15000,
+      })
+      await page.getByTestId('kinesis-detail-delete').click()
+      await page.getByTestId('kinesis-confirm-delete').click()
+      await expect(page).toHaveURL(/\/kinesis$/, { timeout: 20000 })
+      created = false
+    } finally {
+      if (created) deleteQuiet(name)
     }
   })
 })

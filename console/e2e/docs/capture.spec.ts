@@ -166,5 +166,17 @@ test.describe('docs-capture', () => {
       ).toBeVisible({ timeout: 30_000 })
     })
   })
+
+  test('kinesis data streams list', async ({ page }) => {
+    await shot(page, 'kinesis-streams.png', '/kinesis', async () => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Data streams' }),
+      ).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByText('Loading data streams…')).toHaveCount(0, {
+        timeout: 30_000,
+      })
+    })
+  })
 })
+
 
