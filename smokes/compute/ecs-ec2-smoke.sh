@@ -474,6 +474,39 @@ done
 [[ "$(svc_field taskDefinition)" == "$TD3" ]] || fail "service reports $(svc_field taskDefinition), want ${TD3}"
 echo "OK: recovered on ${TD3}"
 
+echo "==> ModifyListener AWS API retargets L4"
+# Hits elbv2_provider._handle_modify_listener (not CodeDeploy's moto-only swap).
+# TG_BLUE is still empty here — dataplane must stop serving the web tasks.
+aws elbv2 modify-listener --listener-arn "$LIS" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_BLUE}" >/dev/null
+API_EMPTY=0
+EMPTY_NAMES=""
+for _ in $(seq 1 15); do
+	EMPTY_NAMES="$(nlb_names "$NLB_PORT" 2>/dev/null || true)"
+	UNIQUE_EMPTY="$(echo "$EMPTY_NAMES" | sort -u | grep -c . || true)"
+	if [[ "$UNIQUE_EMPTY" -eq 0 ]]; then
+		API_EMPTY=1
+		break
+	fi
+	sleep 1
+done
+[[ "$API_EMPTY" == "1" ]] || fail "ModifyListener to empty TG still served (${EMPTY_NAMES})"
+aws elbv2 modify-listener --listener-arn "$LIS" \
+	--default-actions "Type=forward,TargetGroupArn=${TG}" >/dev/null
+API_BACK=0
+NAMES_API=""
+for _ in $(seq 1 20); do
+	NAMES_API="$(nlb_names "$NLB_PORT" || true)"
+	if [[ "$(echo "$NAMES_API" | grep -c '^v3-')" -eq 12 \
+		&& "$(echo "$NAMES_API" | sort -u | grep -c .)" -eq 2 ]]; then
+		API_BACK=1
+		break
+	fi
+	sleep 1
+done
+[[ "$API_BACK" == "1" ]] || fail "ModifyListener back to TG did not restore v3 (${NAMES_API:-})"
+echo "OK: ModifyListener API retarget"
+
 echo "==> CodeDeploy missing task definition"
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"codedeploy.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
 aws iam create-role --role-name "$ROLE" --assume-role-policy-document "$TRUST" >/dev/null

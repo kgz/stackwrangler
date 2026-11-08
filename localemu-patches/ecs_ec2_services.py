@@ -1063,12 +1063,11 @@ def _swap_listener(account_id: str, region: str, listener_arn: str, tg_arn: str)
     )
     # Moto backend call skips the elbv2 provider ModifyListener hook, so
     # retarget the L4 listener here (replaces the old loopback re-read).
-    try:
-        from localemu.services.elbv2.listener_router import get_router
+    # Fail loudly: a Succeeded CodeDeploy with a stale L4 TG is worse than a
+    # failed swap.
+    from localemu.services.elbv2.listener_router import get_router
 
-        get_router().set_listener_target_group(listener_arn, tg_arn)
-    except Exception:
-        LOG.debug("router retarget after ModifyListener failed", exc_info=True)
+    get_router().set_listener_target_group(listener_arn, tg_arn)
 
 
 def _appspec(revision: object) -> dict:
