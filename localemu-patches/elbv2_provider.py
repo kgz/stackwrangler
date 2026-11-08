@@ -9,6 +9,8 @@ Operations intercepted:
   - RegisterTargets           : add targets to router
   - DeregisterTargets         : remove targets from router
   - CreateListener            : start an actual HTTP listener (for HTTP ALBs)
+  - ModifyListener            : reload ACM TLS material when certificates change
+  - AddListenerCertificates   : reload ACM TLS material after certs are added
   - DeleteListener            : stop the HTTP listener
   - DescribeLoadBalancers     : ensure DNS names match what we emit
   - DescribeTargetHealth      : return real TCP-probe-derived health
@@ -165,6 +167,99 @@ def _handle_deregister_targets(
     return result
 
 
+def _certificate_arn_from_entry(entry) -> str:
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return str(entry.get("CertificateArn") or "")
+    return ""
+
+
+def _first_certificate_arn(*sources) -> str:
+    for source in sources:
+        for entry in source or []:
+            arn = _certificate_arn_from_entry(entry)
+            if arn:
+                return arn
+    return ""
+
+
+def _listener_certificate_arn(listener: dict, request: ServiceRequest) -> str:
+    """First CertificateArn from the moto listener or the create request."""
+    return _first_certificate_arn(
+        listener.get("Certificates"),
+        request.get("Certificates"),
+    )
+
+
+def _sync_listener_certificates(
+    context: RequestContext, listener_arn: str, certificates: list,
+) -> str:
+    """Write certificate ARNs onto the moto listener and return the default.
+
+    Moto's ModifyListener only rewrites certificates for HTTPS. TLS NLB
+    listeners need the same update so DescribeListenerCertificates and the
+    live reload agree (#594).
+    """
+    arns = [
+        arn for arn in (_certificate_arn_from_entry(entry) for entry in certificates)
+        if arn
+    ]
+    if not listener_arn or not arns:
+        return ""
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return arns[0]
+        listener = listeners[0]
+        if (listener.protocol or "").upper() in {"HTTPS", "TLS"}:
+            listener.certificate = arns[0]
+            listener.certificates = list(arns)
+    except Exception:
+        LOG.debug(
+            "elbv2: could not sync certificates for %s", listener_arn, exc_info=True,
+        )
+    return arns[0]
+
+
+def _default_certificate_arn(
+    context: RequestContext, listener_arn: str, *sources,
+) -> str:
+    """Prefer request/result ARNs; else the moto listener's default cert."""
+    arn = _first_certificate_arn(*sources)
+    if arn or not listener_arn:
+        return arn
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return ""
+        listener = listeners[0]
+        if listener.certificate:
+            return str(listener.certificate)
+        if listener.certificates:
+            return str(listener.certificates[0])
+    except Exception:
+        LOG.debug(
+            "elbv2: could not read default certificate for %s",
+            listener_arn, exc_info=True,
+        )
+    return ""
+
+
 def _handle_create_listener(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -205,11 +300,51 @@ def _handle_create_listener(
             target_group_arn=target_group_arn,
             scheme=str(meta.get("scheme") or "internet-facing"),
             vpc_networks=list(meta.get("vpc_networks") or []),
+            certificate_arn=_listener_certificate_arn(listener, request) or None,
         )
         # Surface the real bound port via a non-AWS field so clients that care
         # (tests, dashboard) can discover it; advertised Port stays as requested.
         if actual_port:
             listener["LocalEmuBoundPort"] = actual_port
+    return result
+
+
+def _handle_modify_listener(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    result = call_moto(context)
+    listener_arn = str(request.get("ListenerArn") or "")
+    certificates = request.get("Certificates") or []
+    if listener_arn and certificates:
+        cert_arn = _sync_listener_certificates(context, listener_arn, certificates)
+        for listener in result.get("Listeners", []) or []:
+            if listener.get("ListenerArn") == listener_arn:
+                listener["Certificates"] = [
+                    {"CertificateArn": _certificate_arn_from_entry(entry)}
+                    for entry in certificates
+                    if _certificate_arn_from_entry(entry)
+                ]
+        if cert_arn:
+            get_router().reload_listener_certificate(listener_arn, cert_arn)
+    return result
+
+
+def _handle_add_listener_certificates(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    result = call_moto(context)
+    listener_arn = str(request.get("ListenerArn") or "")
+    certificates = request.get("Certificates") or []
+    if listener_arn and certificates:
+        # Default cert is certificates[0] after the add (AWS / moto).
+        cert_arn = _default_certificate_arn(
+            context,
+            listener_arn,
+            result.get("Certificates"),
+            certificates,
+        )
+        if cert_arn:
+            get_router().reload_listener_certificate(listener_arn, cert_arn)
     return result
 
 
@@ -351,6 +486,8 @@ _INTERCEPTED_OPS = {
     "RegisterTargets": _handle_register_targets,
     "DeregisterTargets": _handle_deregister_targets,
     "CreateListener": _handle_create_listener,
+    "ModifyListener": _handle_modify_listener,
+    "AddListenerCertificates": _handle_add_listener_certificates,
     "DeleteListener": _handle_delete_listener,
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,

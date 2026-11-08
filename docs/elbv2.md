@@ -17,7 +17,7 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 |---------|-----------|
 | NLB TCP | Binds the listener port. Instance targets use the container address on the VPC bridge, not `127.0.0.1`. IP targets use the registered address (join the LB VPC so LocalEmu can reach them). |
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
-| NLB TLS | Terminates with the LocalEmu certificate and forwards bytes. The listener ACM ARN is not the keypair ([#242](https://github.com/kgz/awsl/issues/242)). |
+| NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. `ModifyListener` / `AddListenerCertificates` reload the live handshake material. |
 | ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
 | Health | TCP probe. `describe-target-health` and new connections skip `unhealthy` targets. HTTP status matching is [#243](https://github.com/kgz/awsl/issues/243). |
 | DNS | LocalEmu and workloads on the LB VPC get the name in `/etc/hosts` (VPC address). The host list is `.awsbox/elbv2.hosts` (edge address for internet-facing). |
@@ -29,7 +29,6 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 ## Gaps
 
 - No console ([#241](https://github.com/kgz/awsl/issues/241)).
-- TLS does not load the ACM certificate attached to the listener ([#242](https://github.com/kgz/awsl/issues/242)).
 - Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
 - ECS bridge-mode tasks behind an instance target group: the listener dials the EC2 container address, but bridge host ports are published on the Docker host. `./smokes/compute/ecs-ec2-smoke.sh` uses a loopback forwarder instead ([#247](https://github.com/kgz/awsl/issues/247)).
