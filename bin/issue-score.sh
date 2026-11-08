@@ -56,6 +56,9 @@ PROJECT_ID="PVT_kwHOAI9yDM4BnjLa"
 PROJECT_NUMBER=8
 IMPACT_FIELD_ID="PVTF_lAHOAI9yDM4BnjLazhoyybM"
 EFFORT_FIELD_ID="PVTF_lAHOAI9yDM4BnjLazhoyybc"
+# Same Status field / Backlog option as bin/board-status.sh — keep in sync.
+STATUS_FIELD_ID="PVTSSF_lAHOAI9yDM4BnjLazhmHRjg"
+STATUS_BACKLOG_OPT="dfa84092"
 REPO_OWNER="kgz"
 REPO_NAME="awsl"
 TMPDIR="${TMPDIR:-/tmp}/awsl-score-$$"
@@ -122,13 +125,25 @@ for n in nodes:
         break
 " 2>/dev/null) || true
 
+ADDED_TO_PROJECT=0
 if [[ -z "${item_id:-}" ]]; then
 	node_id=$(echo "$issue_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['repository']['issue']['id'])")
 	cat >"$TMPDIR/add.json" <<EOF
 {"query":"mutation(\$p:ID!,\$c:ID!){ addProjectV2ItemById(input:{projectId:\$p contentId:\$c}){ item { id } } }","variables":{"p":"$PROJECT_ID","c":"$node_id"}}
 EOF
 	item_id=$(gh api graphql --input "$TMPDIR/add.json" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['addProjectV2ItemById']['item']['id'])")
+	ADDED_TO_PROJECT=1
 	echo "#$NUM added to project"
+fi
+
+# New cards land in "No Status" unless Status is set. Default to Backlog on first add
+# so Debt/Doc filing via issue-score does not leave orphans in the No Status column.
+if [[ "$ADDED_TO_PROJECT" -eq 1 ]]; then
+	cat >"$TMPDIR/status.json" <<EOF
+{"query":"mutation(\$p:ID!,\$i:ID!,\$f:ID!,\$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:\$p itemId:\$i fieldId:\$f value:{singleSelectOptionId:\$o}}){ projectV2Item { id } } }","variables":{"p":"$PROJECT_ID","i":"$item_id","f":"$STATUS_FIELD_ID","o":"$STATUS_BACKLOG_OPT"}}
+EOF
+	gh api graphql --input "$TMPDIR/status.json" >/dev/null
+	echo "#$NUM -> backlog (Status set on first project add)"
 fi
 
 read_scores() {
