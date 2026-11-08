@@ -507,13 +507,20 @@ EOF
 	aws_r dynamodb put-resource-policy --resource-arn "$table_arn" --policy "file://${WORK}/rp.json" >/dev/null
 	on_cleanup "aws_r dynamodb delete-resource-policy --resource-arn '$table_arn' 2>/dev/null"
 
-	set +e
-	aws_r dynamodb put-item --table-name "$table" --item '{"pk":{"S":"x"}}' >/tmp/${PREFIX}-rp.err 2>&1
-	local rc=$?
-	set -e
-	[[ "$rc" -ne 0 ]] || { fail "#516 PutItem from host succeeded under SourceVpce deny"; return; }
-	grep -qiE 'AccessDenied|not authorized' /tmp/${PREFIX}-rp.err \
-		|| { fail "#516 expected AccessDenied: $(cat /tmp/${PREFIX}-rp.err)"; return; }
+	# Resource policy updates can be briefly pending.
+	local rc=0 ok=0
+	for _ in $(seq 1 40); do
+		set +e
+		aws_r dynamodb put-item --table-name "$table" --item '{"pk":{"S":"x"}}' >/tmp/${PREFIX}-rp.err 2>&1
+		rc=$?
+		set -e
+		if [[ "$rc" -ne 0 ]] && grep -qiE 'AccessDenied|not authorized' /tmp/${PREFIX}-rp.err; then
+			ok=1
+			break
+		fi
+		sleep 2
+	done
+	[[ "$ok" -eq 1 ]] || { fail "#516 host PutItem not denied: $(cat /tmp/${PREFIX}-rp.err)"; return; }
 	pass "#516 host PutItem denied without matching SourceVpce"
 }
 
