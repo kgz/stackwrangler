@@ -18,6 +18,7 @@ Scope:
 
 from __future__ import annotations
 
+import errno
 import http.client
 import http.server
 import json
@@ -1085,6 +1086,7 @@ class ListenerRouter:
 
         class _Server(http.server.ThreadingHTTPServer):
             daemon_threads = True
+            allow_reuse_address = True
             # Mutable so ModifyListener / AddListenerCertificates can reload
             # without rebinding the listening socket (#594).
             _ssl_ctx: Optional[ssl.SSLContext] = None
@@ -1107,10 +1109,22 @@ class ListenerRouter:
             {"_router": self, "_listener_arn": listener_arn},
         )
 
-        try:
-            server = _Server((bind_host, port), handler_cls)  # noqa: S104
-        except OSError as e:
-            LOG.warning("Could not bind listener %s on port %s: %s", listener_arn, port, e)
+        server = None
+        last_bind_err: Optional[OSError] = None
+        for attempt in range(6):
+            try:
+                server = _Server((bind_host, port), handler_cls)  # noqa: S104
+                break
+            except OSError as e:
+                last_bind_err = e
+                if getattr(e, "errno", None) != errno.EADDRINUSE or attempt == 5:
+                    break
+                time.sleep(0.15 * (attempt + 1))
+        if server is None:
+            LOG.warning(
+                "Could not bind listener %s on port %s: %s",
+                listener_arn, port, last_bind_err,
+            )
             return 0
 
         if (protocol or "").upper() in {"HTTPS", "TLS"}:
@@ -1247,6 +1261,8 @@ class ListenerRouter:
                 l4.server_sock.close()
             except Exception:
                 LOG.debug("Error closing L4 listener %s", listener_arn, exc_info=True)
+        if l4 is not None and l4.thread is not None:
+            l4.thread.join(timeout=2.0)
         if l4 is not None:
             self._refresh_dnat()
         if listener and listener.server:
@@ -1279,12 +1295,25 @@ class ListenerRouter:
         bind_host = _bind_host(scheme, vpc_networks)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            sock.bind((bind_host, port))
-            sock.listen(128)
-            sock.settimeout(1.0)
-        except OSError as exc:
-            LOG.warning("Could not bind L4 listener %s on %s:%s: %s", listener_arn, bind_host, port, exc)
+        bound = False
+        last_exc: Optional[OSError] = None
+        for attempt in range(6):
+            try:
+                sock.bind((bind_host, port))
+                sock.listen(128)
+                sock.settimeout(1.0)
+                bound = True
+                break
+            except OSError as exc:
+                last_exc = exc
+                if getattr(exc, "errno", None) != errno.EADDRINUSE or attempt == 5:
+                    break
+                time.sleep(0.15 * (attempt + 1))
+        if not bound:
+            LOG.warning(
+                "Could not bind L4 listener %s on %s:%s: %s",
+                listener_arn, bind_host, port, last_exc,
+            )
             sock.close()
             return 0
         l4.server_sock = sock

@@ -25,6 +25,6 @@ Sad: deny-user `acm:RequestCertificate` → AccessDenied.
 | Request / import / describe / list | Working (moto) |
 | API GW `create-domain-name` regional cert ARN | Working |
 | ELBv2 listener `Certificates[].CertificateArn` | Stored / described; handshake presents the keypair |
-| TLS handshake with ACM keypair | Working (`elbv2-smoke.sh`); create-time [#242](https://github.com/kgz/awsl/issues/242); ModifyListener / first-default Add reload [#594](https://github.com/kgz/awsl/issues/594) |
+| TLS handshake with ACM keypair | Working (`elbv2-smoke.sh`); create-time [#242](https://github.com/kgz/awsl/issues/242); ModifyListener / first-default Add reload for TLS NLB [#594](https://github.com/kgz/awsl/issues/594) and HTTPS ALB [#629](https://github.com/kgz/awsl/issues/629) |
 | Console | None → [#333](https://github.com/kgz/awsl/issues/333) |
 | DNS validation automation | Emulator accepts request; no real DNS challenge |

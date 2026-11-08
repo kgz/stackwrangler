@@ -18,6 +18,7 @@ NLB_PORT=443
 INTERNAL_PORT=10080
 ALB_PORT=80
 TLS_PORT=8443
+ALB_HTTPS_PORT=8444
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
@@ -670,7 +671,9 @@ done
 echo "OK: HTTP health check matcher"
 
 peer_fp() {
-	python3 - "$EDGE" "$TLS_PORT" <<'PY'
+	local port="$1" i fp=""
+	for i in $(seq 1 20); do
+		fp="$(python3 - "$EDGE" "$port" <<'PY' 2>/dev/null || true
 import hashlib, socket, ssl, sys
 ctx = ssl._create_unverified_context()
 raw = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)
@@ -678,6 +681,11 @@ ss = ctx.wrap_socket(raw, server_hostname="elbv2.local")
 print(hashlib.sha256(ss.getpeercert(binary_form=True)).hexdigest())
 ss.close()
 PY
+)"
+		[[ -n "$fp" ]] && { printf '%s\n' "$fp"; return 0; }
+		sleep 0.25
+	done
+	fail "no TLS peer fingerprint on :${port}"
 }
 
 echo "==> ModifyListener reloads ACM certificate (#594)"
@@ -688,7 +696,7 @@ ACM2_FP="$(pem_sha256 "$ACM2_PEM")"
 [[ -n "$ACM2_FP" && "$ACM2_FP" != "$ACM_FP" ]] || fail "second ACM cert fingerprint unusable"
 aws elbv2 modify-listener --listener-arn "$LIS_TLS" \
 	--certificates "CertificateArn=${CERT2}" >/dev/null
-PEER_MOD="$(peer_fp)"
+PEER_MOD="$(peer_fp "$TLS_PORT")"
 [[ "$PEER_MOD" == "$ACM2_FP" ]] || fail "ModifyListener presented ${PEER_MOD}, expected ${ACM2_FP}"
 echo "OK: ModifyListener presents replacement ACM cert"
 
@@ -696,11 +704,11 @@ echo "==> AddListenerCertificates first-default reload (#594)"
 aws elbv2 delete-listener --listener-arn "$LIS_TLS" >/dev/null
 LIS_TLS="$(aws elbv2 create-listener --load-balancer-arn "$LB_TLS" --protocol TLS --port "$TLS_PORT" \
 	--default-actions "Type=forward,TargetGroupArn=${TG_TLS}" --query 'Listeners[0].ListenerArn' --output text)"
-PEER_DEFAULT="$(peer_fp)"
+PEER_DEFAULT="$(peer_fp "$TLS_PORT")"
 [[ "$PEER_DEFAULT" == "$DEFAULT_FP" ]] || fail "cert-less TLS presented ${PEER_DEFAULT}, expected default ${DEFAULT_FP}"
 aws elbv2 add-listener-certificates --listener-arn "$LIS_TLS" \
 	--certificates "CertificateArn=${CERT2}" >/dev/null
-PEER_ADD="$(peer_fp)"
+PEER_ADD="$(peer_fp "$TLS_PORT")"
 [[ "$PEER_ADD" == "$ACM2_FP" ]] || fail "first AddListenerCertificates presented ${PEER_ADD}, expected ${ACM2_FP}"
 echo "OK: first Add on cert-less listener establishes default ACM cert"
 
@@ -712,10 +720,44 @@ ACM3_FP="$(pem_sha256 "$ACM3_PEM")"
 [[ -n "$ACM3_FP" && "$ACM3_FP" != "$ACM2_FP" ]] || fail "third ACM cert fingerprint unusable"
 aws elbv2 add-listener-certificates --listener-arn "$LIS_TLS" \
 	--certificates "CertificateArn=${CERT3}" >/dev/null
-PEER_SEC="$(peer_fp)"
+PEER_SEC="$(peer_fp "$TLS_PORT")"
 [[ "$PEER_SEC" == "$ACM2_FP" ]] || fail "secondary Add flipped handshake to ${PEER_SEC}, expected default ${ACM2_FP}"
 [[ "$PEER_SEC" != "$ACM3_FP" ]] || fail "secondary Add presented added cert ${ACM3_FP}"
 echo "OK: secondary Add is SNI-only; default handshake unchanged"
+
+echo "==> HTTPS ALB ModifyListener reloads ACM certificate (#629)"
+LIS_ALB_HTTPS="$(aws elbv2 create-listener --load-balancer-arn "$LB_ALB" --protocol HTTPS --port "$ALB_HTTPS_PORT" \
+	--certificates "CertificateArn=${CERT}" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_B}" \
+	--query 'Listeners[0].ListenerArn' --output text)"
+PEER_ALB="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB" == "$ACM_FP" ]] || fail "HTTPS ALB presented ${PEER_ALB}, expected ACM ${ACM_FP}"
+aws elbv2 modify-listener --listener-arn "$LIS_ALB_HTTPS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_ALB_MOD="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_MOD" == "$ACM2_FP" ]] || fail "HTTPS ALB ModifyListener presented ${PEER_ALB_MOD}, expected ${ACM2_FP}"
+echo "OK: HTTPS ALB ModifyListener presents replacement ACM cert"
+
+echo "==> HTTPS ALB AddListenerCertificates first-default reload (#629)"
+aws elbv2 delete-listener --listener-arn "$LIS_ALB_HTTPS" >/dev/null
+LIS_ALB_HTTPS="$(aws elbv2 create-listener --load-balancer-arn "$LB_ALB" --protocol HTTPS --port "$ALB_HTTPS_PORT" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_B}" \
+	--query 'Listeners[0].ListenerArn' --output text)"
+PEER_ALB_DEFAULT="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_DEFAULT" == "$DEFAULT_FP" ]] || fail "cert-less HTTPS ALB presented ${PEER_ALB_DEFAULT}, expected default ${DEFAULT_FP}"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_ALB_HTTPS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_ALB_ADD="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_ADD" == "$ACM2_FP" ]] || fail "HTTPS ALB first Add presented ${PEER_ALB_ADD}, expected ${ACM2_FP}"
+echo "OK: HTTPS ALB first Add establishes default ACM cert"
+
+echo "==> HTTPS ALB secondary AddListenerCertificates does not flip default (#629)"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_ALB_HTTPS" \
+	--certificates "CertificateArn=${CERT3}" >/dev/null
+PEER_ALB_SEC="$(peer_fp "$ALB_HTTPS_PORT")"
+[[ "$PEER_ALB_SEC" == "$ACM2_FP" ]] || fail "HTTPS ALB secondary Add flipped to ${PEER_ALB_SEC}, expected ${ACM2_FP}"
+[[ "$PEER_ALB_SEC" != "$ACM3_FP" ]] || fail "HTTPS ALB secondary Add presented ${ACM3_FP}"
+echo "OK: HTTPS ALB secondary Add is SNI-only; default handshake unchanged"
 
 echo "==> unhealthy target drops out"
 docker exec "$CA" sh -c 'kill "$(cat /tmp/tcp-443.pid)"' || fail "could not stop A443"

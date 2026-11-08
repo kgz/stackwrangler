@@ -251,6 +251,8 @@ cmd_up() {
 		exit 1
 	fi
 	ensure_env
+	# Host-owned so LocalEmu (uid 1000) can write elbv2.hosts; Docker root-creates if missing.
+	mkdir -p "$ROOT/.awsbox"
 	free_sftp_host_port
 	# Orphans with no endpoints (and this project's leftover lambda containers).
 	cleanup_localemu_vpc_networks

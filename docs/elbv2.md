@@ -20,6 +20,8 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
 | NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. Create-time presentation is [#242](https://github.com/kgz/awsl/issues/242). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. |
 | ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
+| ALB HTTPS | Terminates with the ACM certificate on the listener (LocalEmu default when none). `ModifyListener` / first-default `AddListenerCertificates` reload live handshake material ([#629](https://github.com/kgz/awsl/issues/629); same reload path as NLB TLS [#594](https://github.com/kgz/awsl/issues/594)). |
+
 | Health | TCP connect, or HTTP/HTTPS GET of `HealthCheckPath` honouring `Matcher.HttpCode`. `describe-target-health` and new connections skip `unhealthy` targets. |
 | `host_override` | Internal dial address for ECS bridge host ports (`host.docker.internal`). Survives API `RegisterTargets` rebuilds ([#603](https://github.com/kgz/awsl/issues/603); set by [#247](https://github.com/kgz/awsl/issues/247)). |
 | DNS | LocalEmu and workloads on the LB VPC get the name in `/etc/hosts` (VPC address). The host list is `.awsbox/elbv2.hosts` (edge address for internet-facing). |
