@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Happy: Lambda reads one secret → call log shows exactly one secretsmanager:GetSecretValue.
-# Sad: AccessDenied GetSecretValue is recorded with a deny reason (policy).
+# Sad: AccessDenied via explicit Deny records denying policy name/Sid in reason.
 # Assertion helper: function made no s3:* calls.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -18,10 +18,12 @@ KEEP="${AWSBOX_CALLLOG_KEEP:-0}"
 FN="awsbox-calllog-${TS}"
 FN_DENY="awsbox-calllog-deny-${TS}"
 ROLE="awsbox-calllog-role-${TS}"
-ROLE_DENY="awsbox-calllog-norole-${TS}"
+ROLE_DENY="awsbox-calllog-denyrole-${TS}"
 SECRET_NAME="awsbox/calllog-${TS}"
 SECRET_ARN=""
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+DENY_POLICY_NAME="sm-deny"
+DENY_SID="DenySecretRead"
 TMP="$(mktemp -d)"
 
 export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
@@ -37,6 +39,7 @@ cleanup() {
 	aws lambda delete-function --function-name "$FN_DENY" >/dev/null 2>&1 || true
 	[[ -n "$SECRET_ARN" ]] && aws secretsmanager delete-secret --secret-id "$SECRET_ARN" --force-delete-without-recovery >/dev/null 2>&1 || true
 	aws iam delete-role-policy --role-name "$ROLE" --policy-name sm-read >/dev/null 2>&1 || true
+	aws iam delete-role-policy --role-name "$ROLE_DENY" --policy-name "$DENY_POLICY_NAME" >/dev/null 2>&1 || true
 	aws iam delete-role --role-name "$ROLE" >/dev/null 2>&1 || true
 	aws iam delete-role --role-name "$ROLE_DENY" >/dev/null 2>&1 || true
 }
@@ -75,7 +78,12 @@ EOF
 )"
 
 ROLE_DENY_ARN="$(aws iam create-role --role-name "$ROLE_DENY" --assume-role-policy-document "$TRUST" --query 'Role.Arn' --output text)"
-# No secrets permission on ROLE_DENY
+# Explicit Deny (Sid) so the call log reason names the denying policy — not
+# just implicit "no allowing policy".
+aws iam put-role-policy --role-name "$ROLE_DENY" --policy-name "$DENY_POLICY_NAME" --policy-document "$(cat <<EOF
+{"Version":"2012-10-17","Statement":[{"Sid":"${DENY_SID}","Effect":"Deny","Action":["secretsmanager:GetSecretValue"],"Resource":"*"}]}
+EOF
+)"
 
 SECRET_ARN="$(aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "calllog-${TS}" --query 'ARN' --output text)"
 
@@ -121,7 +129,7 @@ api_call_log_assert_exactly "$FN" 'secretsmanager:GetSecretValue'
 api_call_log_assert_no_calls "$FN" 's3:*'
 api_call_log_assert_no_calls "$FN" 'dynamodb:*'
 
-# --- AccessDenied path ---
+# --- AccessDenied path (explicit Deny + Sid) ---
 api_call_log_clear
 aws lambda invoke --function-name "$FN_DENY" --cli-binary-format raw-in-base64-out --payload '{}' "$TMP/deny.json" >/dev/null || true
 # Expect function error
@@ -139,7 +147,8 @@ else
 	cat "$TMP/deny.json" >&2 || true
 fi
 
-api_call_log_assert_denied "$FN_DENY" 'secretsmanager:GetSecretValue'
+# Reason must name the inline Deny policy / Sid (not merely "no allowing policy").
+api_call_log_assert_denied "$FN_DENY" 'secretsmanager:GetSecretValue' "inline:${DENY_POLICY_NAME} (Sid=${DENY_SID})"
 
 # CLI wrapper smoke
 "$ROOT/bin/stackwrangler" calls --workload "$FN" >/dev/null || true

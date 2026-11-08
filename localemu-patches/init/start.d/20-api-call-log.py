@@ -5,11 +5,15 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import threading
 from typing import Any
 
 LOG = logging.getLogger("localemu.awsbox.api_call_log")
 
 _EXEMPT_ACTIONS = frozenset({"sts:GetCallerIdentity"})
+
+# Last PolicyEvaluator.evaluate decision for this thread (install wraps once).
+_tls = threading.local()
 
 
 def _ensure_import_path() -> None:
@@ -43,49 +47,6 @@ def _load_call_log():
                     sys.modules["api_call_log"] = mod
                     return mod
         raise
-
-
-def _extract_access_key(context) -> str | None:
-    auth = ""
-    try:
-        auth = context.request.headers.get("Authorization", "") or ""
-    except Exception:
-        auth = ""
-    if auth.startswith("AWS4-HMAC-SHA256"):
-        # Credential=AKID/date/region/service/aws4_request
-        for part in auth.split(", "):
-            part = part.strip()
-            if part.startswith("Credential="):
-                cred = part[len("Credential=") :]
-                return cred.split("/", 1)[0] or None
-    if "Credential=" in auth:
-        try:
-            return auth.split("Credential=", 1)[1].split("/", 1)[0] or None
-        except Exception:
-            pass
-    try:
-        from urllib.parse import parse_qs, urlparse
-
-        qs = parse_qs(urlparse(context.request.url).query)
-        for key in ("X-Amz-Credential", "AWSAccessKeyId"):
-            if key in qs and qs[key]:
-                return str(qs[key][0]).split("/", 1)[0]
-    except Exception:
-        pass
-    return None
-
-
-def _is_internal(context, access_key: str | None) -> bool:
-    if getattr(context, "internal_request_params", None):
-        return True
-    if access_key == "__internal_call__":
-        return True
-    try:
-        if context.request.headers.get("x-localemu-data"):
-            return True
-    except Exception:
-        pass
-    return False
 
 
 def _resource_ids(params: Any) -> list[str]:
@@ -176,50 +137,80 @@ def _deny_reason(caller, action: str, resource: str, decision) -> str:
     return "no allowing policy"
 
 
+def _named_identity_policies(caller) -> list[tuple[str, dict]]:
+    """Inline/managed identity policies with a stable display name."""
+    named: list[tuple[str, dict]] = []
+    try:
+        from moto.iam.models import iam_backends
+
+        backend = iam_backends[caller.account_id]["global"]
+    except Exception:
+        return named
+
+    role = None
+    if caller.principal_type == "AssumedRole" and caller.role_name:
+        for r in backend.roles.values():
+            if r.name == caller.role_name:
+                role = r
+                break
+        if role:
+            for name, doc in (role.policies or {}).items():
+                parsed = _parse_policy_doc(doc)
+                if parsed is not None:
+                    named.append((f"inline:{name}", parsed))
+            for arn, policy in (role.managed_policies or {}).items():
+                parsed = _managed_policy_doc(backend, arn, policy)
+                if parsed is not None:
+                    named.append((f"managed:{str(arn).rsplit('/', 1)[-1]}", parsed))
+    elif caller.principal_type == "User" and caller.username:
+        user = backend.users.get(caller.username)
+        if user:
+            for name, doc in (user.policies or {}).items():
+                parsed = _parse_policy_doc(doc)
+                if parsed is not None:
+                    named.append((f"inline:{name}", parsed))
+            for arn, policy in (user.managed_policies or {}).items():
+                parsed = _managed_policy_doc(backend, arn, policy)
+                if parsed is not None:
+                    named.append((f"managed:{str(arn).rsplit('/', 1)[-1]}", parsed))
+    return named
+
+
+def _parse_policy_doc(doc) -> dict | None:
+    if isinstance(doc, dict):
+        return doc
+    if isinstance(doc, str):
+        try:
+            parsed = json.loads(doc)
+        except Exception:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None
+
+
+def _managed_policy_doc(backend, arn, policy) -> dict | None:
+    try:
+        from localemu.services.iam_enforcement.identity import _get_managed_policy_doc
+
+        doc = _get_managed_policy_doc(backend, arn)
+        if isinstance(doc, dict):
+            return doc
+    except Exception:
+        pass
+    return _parse_policy_doc(getattr(policy, "policy_document", None) or getattr(policy, "document", None))
+
+
 def _find_explicit_deny_policy(caller, action: str, resource: str) -> str | None:
     """Best-effort name/Sid of an identity Deny that matched."""
     try:
         from localemu.services.iam_enforcement.action_matcher import matches_action
         from localemu.services.iam_enforcement.condition_evaluator import matches_conditions
-        from localemu.services.iam_enforcement.identity import get_identity_policies
         from localemu.services.iam_enforcement.resource_matcher import matches_resource
-        from moto.iam.models import iam_backends
     except Exception:
         return None
 
-    try:
-        backend = iam_backends[caller.account_id]["global"]
-    except Exception:
-        backend = None
-
-    named: list[tuple[str, dict]] = []
-    try:
-        if caller.principal_type == "AssumedRole" and caller.role_name and backend:
-            role = None
-            for r in backend.roles.values():
-                if r.name == caller.role_name:
-                    role = r
-                    break
-            if role:
-                for name, doc in (role.policies or {}).items():
-                    if isinstance(doc, str):
-                        try:
-                            doc = json.loads(doc)
-                        except Exception:
-                            continue
-                    if isinstance(doc, dict):
-                        named.append((f"inline:{name}", doc))
-                for arn in (role.managed_policies or {}):
-                    named.append((f"managed:{arn.rsplit('/', 1)[-1]}", {"Statement": []}))
-        for policy in get_identity_policies(caller):
-            if not isinstance(policy, dict):
-                continue
-            named.append(("identity-policy", policy))
-    except Exception:
-        return None
-
-    conditions = {}
-    for name, policy in named:
+    conditions: dict = {}
+    for name, policy in _named_identity_policies(caller):
         stmts = policy.get("Statement") or []
         if isinstance(stmts, dict):
             stmts = [stmts]
@@ -266,11 +257,12 @@ def _record(
     action: str,
     resources: list[str],
     caller,
+    enforcer,
 ):
     if action in _EXEMPT_ACTIONS:
         return
-    access_key = _extract_access_key(context)
-    if _is_internal(context, access_key):
+    access_key = enforcer._extract_access_key(context)
+    if enforcer.IAMEnforcementHandler._is_internal_call(context, access_key):
         return
 
     if caller is None:
@@ -339,6 +331,25 @@ def _install_http(call_log) -> None:
     LOG.info("GET /_awsl/calls registered")
 
 
+def _install_evaluate_tracker() -> None:
+    """Wrap PolicyEvaluator.evaluate once; stash decision in thread-local."""
+    from localemu.services.iam_enforcement.evaluator import PolicyEvaluator
+
+    if getattr(PolicyEvaluator, "_awsbox_call_log_tracked", False):
+        return
+
+    orig_evaluate = PolicyEvaluator.evaluate
+
+    def evaluate(self, *args, **kwargs):
+        decision = orig_evaluate(self, *args, **kwargs)
+        _tls.last_decision = decision
+        return decision
+
+    PolicyEvaluator.evaluate = evaluate
+    PolicyEvaluator._awsbox_call_log_tracked = True
+    LOG.info("PolicyEvaluator.evaluate call-log tracker applied")
+
+
 def _install_enforcer_hook(call_log) -> None:
     from localemu.aws.api import CommonServiceException
     from localemu.services.iam_enforcement import enforcer
@@ -352,8 +363,8 @@ def _install_enforcer_hook(call_log) -> None:
         if not context.service or not context.operation:
             return orig(self, chain, context, response)
 
-        access_key = _extract_access_key(context)
-        if _is_internal(context, access_key):
+        access_key = enforcer._extract_access_key(context)
+        if self._is_internal_call(context, access_key):
             return orig(self, chain, context, response)
 
         try:
@@ -366,78 +377,68 @@ def _install_enforcer_hook(call_log) -> None:
             return orig(self, chain, context, response)
 
         caller = _resolve_caller(context, access_key)
-        last_decision = {"value": None}
-
-        orig_evaluate = self.evaluator.evaluate
-
-        def tracking_evaluate(*args, **kwargs):
-            decision = orig_evaluate(*args, **kwargs)
-            last_decision["value"] = decision
-            return decision
-
-        self.evaluator.evaluate = tracking_evaluate
+        _tls.last_decision = None
         try:
-            try:
-                orig(self, chain, context, response)
-            except CommonServiceException as exc:
-                code = getattr(exc, "code", None) or ""
-                if "AccessDenied" in str(code) or "AccessDenied" in str(exc):
-                    decision = last_decision["value"]
-                    reason = None
-                    if decision is not None and caller is not None:
-                        reason = _deny_reason(
-                            caller,
-                            action,
-                            resources[0] if resources else "*",
-                            decision,
-                        )
-                    else:
-                        reason = getattr(exc, "message", None) or "AccessDenied"
-                    _record(
-                        call_log,
-                        context,
-                        result="denied",
-                        reason=reason,
-                        action=action,
-                        resources=resources,
-                        caller=caller,
-                    )
-                raise
-            else:
-                # Soft-mode deny still returns without raising — honour decision.
-                decision = last_decision["value"]
-                if decision is not None and decision != Decision.ALLOW:
-                    reason = (
-                        _deny_reason(
-                            caller,
-                            action,
-                            resources[0] if resources else "*",
-                            decision,
-                        )
-                        if caller is not None
-                        else "denied"
-                    )
-                    _record(
-                        call_log,
-                        context,
-                        result="denied",
-                        reason=reason,
-                        action=action,
-                        resources=resources,
-                        caller=caller,
+            orig(self, chain, context, response)
+        except CommonServiceException as exc:
+            code = getattr(exc, "code", None) or ""
+            if "AccessDenied" in str(code) or "AccessDenied" in str(exc):
+                decision = getattr(_tls, "last_decision", None)
+                if decision is not None and caller is not None:
+                    reason = _deny_reason(
+                        caller,
+                        action,
+                        resources[0] if resources else "*",
+                        decision,
                     )
                 else:
-                    _record(
-                        call_log,
-                        context,
-                        result="allowed",
-                        reason=None,
-                        action=action,
-                        resources=resources,
-                        caller=caller,
+                    reason = getattr(exc, "message", None) or "AccessDenied"
+                _record(
+                    call_log,
+                    context,
+                    result="denied",
+                    reason=reason,
+                    action=action,
+                    resources=resources,
+                    caller=caller,
+                    enforcer=enforcer,
+                )
+            raise
+        else:
+            # Soft-mode deny still returns without raising — honour decision.
+            decision = getattr(_tls, "last_decision", None)
+            if decision is not None and decision != Decision.ALLOW:
+                reason = (
+                    _deny_reason(
+                        caller,
+                        action,
+                        resources[0] if resources else "*",
+                        decision,
                     )
-        finally:
-            self.evaluator.evaluate = orig_evaluate
+                    if caller is not None
+                    else "denied"
+                )
+                _record(
+                    call_log,
+                    context,
+                    result="denied",
+                    reason=reason,
+                    action=action,
+                    resources=resources,
+                    caller=caller,
+                    enforcer=enforcer,
+                )
+            else:
+                _record(
+                    call_log,
+                    context,
+                    result="allowed",
+                    reason=None,
+                    action=action,
+                    resources=resources,
+                    caller=caller,
+                    enforcer=enforcer,
+                )
 
     enforcer.IAMEnforcementHandler.__call__ = __call__
     enforcer.IAMEnforcementHandler._awsbox_call_log = True
@@ -447,6 +448,7 @@ def _install_enforcer_hook(call_log) -> None:
 def _install() -> None:
     call_log = _load_call_log()
     _install_http(call_log)
+    _install_evaluate_tracker()
     _install_enforcer_hook(call_log)
     LOG.info("api call log ready (#194)")
 

@@ -1,5 +1,6 @@
 # shellcheck shell=bash
 # Assertion helpers for the LocalEmu API call log (#194).
+# Thin wrappers around smokes/lib/api_call_log_assert.py.
 # Source after local-emu-env.sh (needs AWSBOX_IAM_ENDPOINT).
 #
 # Usage:
@@ -9,12 +10,21 @@
 #   api_call_log_assert_exactly "$FN" 'secretsmanager:GetSecretValue'
 #   api_call_log_assert_no_calls "$FN" 's3:*'
 
+_API_CALL_LOG_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+_api_call_log_python() {
+	PYTHONPATH="${_API_CALL_LOG_LIB_DIR}${PYTHONPATH:+:$PYTHONPATH}" python3 "$@"
+}
+
 api_call_log_endpoint() {
 	echo "${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}/_awsl/calls"
 }
 
 api_call_log_clear() {
-	curl -sf -X DELETE "$(api_call_log_endpoint)" >/dev/null
+	_api_call_log_python - <<'PY'
+from api_call_log_assert import clear_calls
+clear_calls()
+PY
 }
 
 api_call_log_query() {
@@ -38,57 +48,43 @@ api_call_log_query() {
 api_call_log_assert_no_calls() {
 	local workload="$1"
 	local action_pat="$2"
-	python3 - "$workload" "$action_pat" "$(api_call_log_endpoint)" <<'PY'
-import json, sys, urllib.parse, urllib.request, fnmatch
-workload, pattern, base = sys.argv[1], sys.argv[2], sys.argv[3]
-url = base + "?" + urllib.parse.urlencode({"workload": workload})
-with urllib.request.urlopen(url, timeout=10) as resp:
-    data = json.load(resp)
-hits = [c for c in data.get("calls", []) if fnmatch.fnmatch(c.get("action", ""), pattern)]
-if hits:
-    sample = ", ".join(c["action"] for c in hits[:5])
-    raise SystemExit(
-        f"FAIL: workload {workload!r} made {len(hits)} call(s) matching {pattern!r}: {sample}"
-    )
+	_api_call_log_python - "$workload" "$action_pat" <<'PY'
+import sys
+from api_call_log_assert import assert_no_calls
+
+workload, pattern = sys.argv[1], sys.argv[2]
+assert_no_calls(workload, pattern)
 print(f"OK: workload {workload!r} made no {pattern!r} calls")
 PY
 }
 
 api_call_log_assert_exactly() {
-	# Exact ordered action list for a workload (newest-first from API → reverse to chrono).
+	# Exact ordered action list for a workload.
 	local workload="$1"
 	shift
-	python3 - "$workload" "$(api_call_log_endpoint)" "$@" <<'PY'
-import json, sys, urllib.parse, urllib.request
-workload, base, expected = sys.argv[1], sys.argv[2], sys.argv[3:]
-url = base + "?" + urllib.parse.urlencode({"workload": workload, "limit": "10000"})
-with urllib.request.urlopen(url, timeout=10) as resp:
-    data = json.load(resp)
-# API returns newest-first
-got = list(reversed([c.get("action", "") for c in data.get("calls", [])]))
-if got != expected:
-    raise SystemExit(f"FAIL: workload {workload!r} actions {got!r} != {expected!r}")
+	_api_call_log_python - "$workload" "$@" <<'PY'
+import sys
+from api_call_log_assert import assert_exactly
+
+workload, expected = sys.argv[1], sys.argv[2:]
+assert_exactly(workload, expected)
 print(f"OK: workload {workload!r} actions exactly {expected!r}")
 PY
 }
 
 api_call_log_assert_denied() {
+	# api_call_log_assert_denied WORKLOAD ACTION [REASON_SUBSTRING]
 	local workload="$1"
 	local action="$2"
-	python3 - "$workload" "$action" "$(api_call_log_endpoint)" <<'PY'
-import json, sys, urllib.parse, urllib.request
-workload, action, base = sys.argv[1], sys.argv[2], sys.argv[3]
-url = base + "?" + urllib.parse.urlencode(
-    {"workload": workload, "action": action, "result": "denied"}
+	local reason_sub="${3:-}"
+	_api_call_log_python - "$workload" "$action" "$reason_sub" <<'PY'
+import sys
+from api_call_log_assert import assert_denied
+
+workload, action, reason_sub = sys.argv[1], sys.argv[2], sys.argv[3]
+hit = assert_denied(workload, action, reason_contains=reason_sub or None)
+print(
+    f"OK: denied {action!r} for {workload!r} reason={hit.get('reason')!r}"
 )
-with urllib.request.urlopen(url, timeout=10) as resp:
-    data = json.load(resp)
-hits = data.get("calls", [])
-if not hits:
-    raise SystemExit(f"FAIL: no denied {action!r} for workload {workload!r}")
-reason = hits[0].get("reason") or ""
-if not reason:
-    raise SystemExit(f"FAIL: denied {action!r} missing reason/policy for {workload!r}")
-print(f"OK: denied {action!r} for {workload!r} reason={reason!r}")
 PY
 }

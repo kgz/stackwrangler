@@ -101,8 +101,13 @@ def assert_denied(
     *,
     endpoint: str | None = None,
     since: str | float | None = None,
+    reason_contains: str | None = None,
 ) -> dict[str, Any]:
-    """Assert at least one denied call for action; return the newest match."""
+    """Assert at least one denied call for action; return the newest match.
+
+    When ``reason_contains`` is set, the recorded reason must include that
+    substring (e.g. ``inline:sm-deny`` or ``Sid=DenySecretRead``).
+    """
     calls = fetch_calls(
         workload=workload,
         action=action,
@@ -115,4 +120,8 @@ def assert_denied(
     reason = calls[0].get("reason")
     if not reason:
         raise AssertionError(f"denied {action!r} missing reason for {workload!r}")
+    if reason_contains and reason_contains not in str(reason):
+        raise AssertionError(
+            f"denied {action!r} reason {reason!r} missing {reason_contains!r}"
+        )
     return calls[0]
