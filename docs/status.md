@@ -68,7 +68,7 @@ Smokes: Lambda via console/CLI · `./smokes/lambda/lambda-vpc-smoke.sh` · `./sm
 | VPC security groups | **Partial** · [sg-enforcement.md](sg-enforcement.md) · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · VPC Lambda [#237](https://github.com/kgz/awsl/issues/237) |
 | VPC Interface endpoint private DNS | **Partial** · [vpce-private-dns.md](vpce-private-dns.md) |
 | VPC / AZ polish | **Backlog** |
-| ALB / NLB / Classic ELB | **Partial** · [elbv2.md](elbv2.md) · console [#241](https://github.com/kgz/awsl/issues/241) · TLS ACM [#242](https://github.com/kgz/awsl/issues/242) · HTTP health [#243](https://github.com/kgz/awsl/issues/243) · ECS bridge smoke loopback forwarder [#247](https://github.com/kgz/awsl/issues/247) |
+| ALB / NLB / Classic ELB | **Partial** · [elbv2.md](elbv2.md) · console [#241](https://github.com/kgz/awsl/issues/241) · TLS ACM [#242](https://github.com/kgz/awsl/issues/242) · ECS bridge smoke loopback forwarder [#247](https://github.com/kgz/awsl/issues/247) |
 | Route 53 private zones | **Partial** — associated VPC only · `./smokes/networking/r53-private-smoke.sh` · [r53-private.md](r53-private.md) · console/Lambda [#245](https://github.com/kgz/awsl/issues/245) · API Gateway alias / public zones [#300](https://github.com/kgz/awsl/issues/300) |
 | WAFv2 | **Partial** — create/associate API GW stage · rule eval **not** real edge WAF · [waf.md](waf.md) · console [#324](https://github.com/kgz/awsl/issues/324) · CFN [#325](https://github.com/kgz/awsl/issues/325) · edge eval [#326](https://github.com/kgz/awsl/issues/326) |
 | CloudFront | **Backlog** (likely control-plane first) |

@@ -19,7 +19,7 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
 | NLB TLS | Terminates with the LocalEmu certificate and forwards bytes. The listener ACM ARN is not the keypair ([#242](https://github.com/kgz/awsl/issues/242)). |
 | ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
-| Health | TCP probe. `describe-target-health` and new connections skip `unhealthy` targets. HTTP status matching is [#243](https://github.com/kgz/awsl/issues/243). |
+| Health | TCP connect, or HTTP/HTTPS GET of `HealthCheckPath` honouring `Matcher.HttpCode`. `describe-target-health` and new connections skip `unhealthy` targets. |
 | DNS | LocalEmu and workloads on the LB VPC get the name in `/etc/hosts` (VPC address). The host list is `.awsbox/elbv2.hosts` (edge address for internet-facing). |
 | VPC_LINK | REST `HTTP_PROXY` integrations with NLB DNS as the URI resolve and forward through the TCP listener ([apigw-rest.md](apigw-rest.md)). |
 | Scheme | Internal listeners bind the VPC address only, so the compose-network address refuses the port. |
@@ -30,7 +30,6 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 
 - No console ([#241](https://github.com/kgz/awsl/issues/241)).
 - TLS does not load the ACM certificate attached to the listener ([#242](https://github.com/kgz/awsl/issues/242)).
-- Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
 - ECS bridge-mode tasks behind an instance target group: the listener dials the EC2 container address, but bridge host ports are published on the Docker host. `./smokes/compute/ecs-ec2-smoke.sh` uses a loopback forwarder instead ([#247](https://github.com/kgz/awsl/issues/247)).
 - Classic ELB is not this path.

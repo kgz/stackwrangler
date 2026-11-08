@@ -1,7 +1,8 @@
 """Custom ELBv2 provider for LocalEmu.
 
 Goes beyond Moto's state-only stub by running real HTTP listeners that
-reverse-proxy to registered targets, plus active TCP health checking.
+reverse-proxy to registered targets, plus active health checking
+(TCP connect, or HTTP/HTTPS GET with path + matcher codes).
 
 Operations intercepted:
   - CreateLoadBalancer        : normalize DNS name, track LB in router
@@ -11,7 +12,8 @@ Operations intercepted:
   - CreateListener            : start an actual HTTP listener (for HTTP ALBs)
   - DeleteListener            : stop the HTTP listener
   - DescribeLoadBalancers     : ensure DNS names match what we emit
-  - DescribeTargetHealth      : return real TCP-probe-derived health
+  - DescribeTargetHealth      : return real probe-derived health
+  - ModifyTargetGroup        : refresh health-check settings on the router
 
 All other operations (rules, tags, SSL policies, attributes, NLB details,
 etc.) fall through to Moto via `_proxy_moto`.
@@ -24,7 +26,11 @@ import logging
 
 from localemu.aws.api import RequestContext, ServiceRequest, ServiceResponse
 from localemu.aws.skeleton import DispatchTable, Skeleton
-from localemu.services.elbv2.listener_router import TargetGroup, get_router
+from localemu.services.elbv2.listener_router import (
+    TargetGroup,
+    _parse_http_codes,
+    get_router,
+)
 from localemu.services.moto import _proxy_moto, call_moto
 from localemu.services.plugins import Service
 
@@ -84,6 +90,26 @@ def _vpc_networks_from_lb(lb: dict, account_id: str, region: str) -> list[str]:
     return nets
 
 
+
+def _hc_fields_from_tg(tg: dict) -> dict:
+    """Pull health-check settings from a Moto TargetGroup describe dict."""
+    hc_port = tg.get("HealthCheckPort")
+    try:
+        hc_port_int = int(hc_port) if hc_port and str(hc_port).isdigit() else None
+    except (ValueError, TypeError):
+        hc_port_int = None
+    matcher = tg.get("Matcher") or {}
+    http_code = matcher.get("HttpCode") if isinstance(matcher, dict) else None
+    proto = (tg.get("HealthCheckProtocol") or tg.get("Protocol") or "TCP")
+    path = tg.get("HealthCheckPath") or "/"
+    return {
+        "health_check_port": hc_port_int,
+        "health_check_protocol": str(proto).upper(),
+        "health_check_path": str(path) if path else "/",
+        "health_check_codes": _parse_http_codes(str(http_code or "200")),
+    }
+
+
 def _handle_create_load_balancer(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -128,18 +154,32 @@ def _handle_create_target_group(
         arn = tg.get("TargetGroupArn", "")
         if not arn:
             continue
-        hc_port = tg.get("HealthCheckPort")
-        try:
-            hc_port_int = int(hc_port) if hc_port and str(hc_port).isdigit() else None
-        except (ValueError, TypeError):
-            hc_port_int = None
+        hc = _hc_fields_from_tg(tg)
         router.register_target_group(TargetGroup(
             arn=arn,
             name=tg.get("TargetGroupName", ""),
             protocol=tg.get("Protocol", "HTTP"),
             port=int(tg.get("Port") or 80),
-            health_check_port=hc_port_int,
+            **hc,
         ))
+    return result
+
+
+def _handle_modify_target_group(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    result = call_moto(context)
+    router = get_router()
+    for tg in result.get("TargetGroups", []) or []:
+        arn = tg.get("TargetGroupArn", "")
+        existing = router.target_groups.get(arn) if arn else None
+        if not existing:
+            continue
+        hc = _hc_fields_from_tg(tg)
+        existing.health_check_port = hc["health_check_port"]
+        existing.health_check_protocol = hc["health_check_protocol"]
+        existing.health_check_path = hc["health_check_path"]
+        existing.health_check_codes = hc["health_check_codes"]
     return result
 
 
@@ -348,6 +388,7 @@ _INTERCEPTED_OPS = {
     "DeleteLoadBalancer": _handle_delete_load_balancer,
     "DescribeLoadBalancers": _handle_describe_load_balancers,
     "CreateTargetGroup": _handle_create_target_group,
+    "ModifyTargetGroup": _handle_modify_target_group,
     "RegisterTargets": _handle_register_targets,
     "DeregisterTargets": _handle_deregister_targets,
     "CreateListener": _handle_create_listener,

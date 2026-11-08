@@ -110,6 +110,9 @@ class TargetGroup:
     protocol: str = "HTTP"
     port: int = 80
     health_check_port: Optional[int] = None
+    health_check_protocol: str = "TCP"
+    health_check_path: str = "/"
+    health_check_codes: frozenset[int] = field(default_factory=lambda: frozenset({200}))
     targets: dict[str, Target] = field(default_factory=dict)
     sticky_store: StickyStore = field(default_factory=StickyStore)
     _rr_counter: "count" = field(default_factory=lambda: count(0))
@@ -733,6 +736,71 @@ def _tcp_ping(host: str, port: int, timeout: float = 2.0) -> bool:
         return False
 
 
+def _parse_http_codes(spec: str) -> frozenset[int]:
+    """Parse ELBv2 Matcher.HttpCode (``200``, ``200-299``, ``200,201``)."""
+    codes: set[int] = set()
+    for part in (spec or "200").split(","):
+        token = part.strip()
+        if not token:
+            continue
+        if "-" in token:
+            start_s, end_s = token.split("-", 1)
+            codes.update(range(int(start_s), int(end_s) + 1))
+        else:
+            codes.add(int(token))
+    return frozenset(codes) if codes else frozenset({200})
+
+
+def _http_ping(
+    host: str,
+    port: int,
+    path: str,
+    codes: frozenset[int],
+    timeout: float = 2.0,
+    use_tls: bool = False,
+) -> bool:
+    """GET ``path`` and accept only matcher success codes (ALB-style)."""
+    conn: Optional[http.client.HTTPConnection] = None
+    try:
+        if use_tls:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            conn = http.client.HTTPSConnection(
+                host, port, timeout=timeout, context=ctx,
+            )
+        else:
+            conn = http.client.HTTPConnection(host, port, timeout=timeout)
+        conn.request("GET", path or "/")
+        resp = conn.getresponse()
+        resp.read()
+        return resp.status in codes
+    except Exception:
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _probe_target(tg: "TargetGroup", target: Target, timeout: float = 2.0) -> bool:
+    """Run the target group's configured health check against one target."""
+    port = tg.health_check_port or target.port
+    proto = (tg.health_check_protocol or "TCP").upper()
+    if proto in ("HTTP", "HTTPS"):
+        return _http_ping(
+            target.host,
+            port,
+            tg.health_check_path or "/",
+            tg.health_check_codes or frozenset({200}),
+            timeout=timeout,
+            use_tls=(proto == "HTTPS"),
+        )
+    return _tcp_ping(target.host, port, timeout=timeout)
+
+
 class ListenerRouter:
     """Singleton registry for ELBv2 load balancers, listeners, and target groups."""
 
@@ -836,7 +904,7 @@ class ListenerRouter:
             _resolve_target(t)
             port = tg.health_check_port or t.port
             if t.host:
-                ok = _tcp_ping(t.host, port)
+                ok = _probe_target(tg, t, timeout=2.0)
                 t.health = "healthy" if ok else "unhealthy"
             elif t.target_id.startswith("i-") and not t.lambda_arn:
                 t.health = "initial"
@@ -1269,7 +1337,7 @@ class ListenerRouter:
                             if t.target_id.startswith("i-") and not t.lambda_arn:
                                 t.health = "initial"
                             continue
-                        ok = _tcp_ping(t.host, tg.health_check_port or t.port, timeout=1.5)
+                        ok = _probe_target(tg, t, timeout=1.5)
                         t.health = "healthy" if ok else "unhealthy"
                 self._refresh_dnat()
                 self._publish_dns()
@@ -1370,7 +1438,7 @@ def _probe_group(tg: TargetGroup) -> None:
             if target.target_id.startswith("i-") and not target.lambda_arn:
                 target.health = "initial"
             continue
-        ok = _tcp_ping(target.host, tg.health_check_port or target.port, timeout=1.0)
+        ok = _probe_target(tg, target, timeout=1.0)
         target.health = "healthy" if ok else "unhealthy"
 
 
