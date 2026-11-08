@@ -329,3 +329,4 @@
 518	in-review	sns:Protocol/Endpoint on Subscribe
 194	in-review	API call log (CloudTrail-lite)
 596	backlog	Doc: API call log docs/screenshot (from #194)
+602	backlog	Debt: ECS/CLI call-log workload smoke (from #194)
