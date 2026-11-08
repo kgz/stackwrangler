@@ -196,14 +196,20 @@ if [[ "${AWSBOX_PARITY_SKIP_REAL:-0}" != "1" ]]; then
 		'{"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":"secretsmanager:GetSecretValue","Resource":"*"}]}'
 	deny_until "real secrets deny" env AWS_ACCESS_KEY_ID="$AK" AWS_SECRET_ACCESS_KEY="$SK" aws --region "$REAL_REGION" secretsmanager get-secret-value --secret-id "$SARN"
 
-	# KMS
+	# KMS — reuse fixture when present (alias/sw-parity-fixture-batch10)
 	echo "---- real kms ----"
 	PT="${TMPDIR:-/tmp}/awsbox-parity-kms-pt-$$"
 	printf 'awsbox' >"$PT"
-	KID="$(aws_r kms create-key --description "awsbox-parity-kms-${TS}" --query KeyMetadata.KeyId --output text)"
-	# AWS minimum pending window is 7 days — only residual cost after run.
-	on_cleanup "aws_r kms schedule-key-deletion --key-id '$KID' --pending-window-in-days 7"
-	echo "NOTE: KMS key ${KID} will be scheduled for deletion on exit (7d min window)"
+	KID="${AWSBOX_PARITY_KMS_BATCH_KEY_ID:-alias/sw-parity-fixture-batch10}"
+	if aws_r kms describe-key --key-id "$KID" --query 'KeyMetadata.KeyId' --output text >/tmp/awsbox-parity-kms.id 2>/tmp/awsbox-parity-kms.err; then
+		KID="$(cat /tmp/awsbox-parity-kms.id)"
+		echo "NOTE: reusing fixture CMK ${KID} (no create / no schedule-deletion)"
+	else
+		KID="$(aws_r kms create-key --description "awsbox-parity-kms-${TS}" --query KeyMetadata.KeyId --output text)"
+		# AWS minimum pending window is 7 days — only residual cost after run.
+		on_cleanup "aws_r kms schedule-key-deletion --key-id '$KID' --pending-window-in-days 7"
+		echo "NOTE: KMS key ${KID} will be scheduled for deletion on exit (7d min window)"
+	fi
 	BLOB="$(aws_r kms encrypt --key-id "$KID" --plaintext "fileb://${PT}" --query CiphertextBlob --output text)"
 	RAW="$(aws_r kms decrypt --ciphertext-blob "$BLOB" --query Plaintext --output text)"
 	DEC="$(echo "$RAW" | base64 -d)"

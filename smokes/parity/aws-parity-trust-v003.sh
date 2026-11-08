@@ -4,9 +4,10 @@
 # Usage: ./smokes/parity/aws-parity-trust-v003.sh
 # Env: AWSBOX_PARITY_KEEP=1 | AWSBOX_PARITY_REGION=ap-southeast-2
 #
-# Cost (approved for this run):
+# Cost:
 #   IAM / SNS / SQS / DDB on-demand / CFN short stacks / S3 / Lambda / ECR → ~$0 if torn down
-#   #223: 1 CMK → schedule-key-deletion 7-day min residual (~$1/mo prorated until gone)
+#   #223: reuses fixture CMK (AWSBOX_PARITY_KMS_KEY_ID / alias/sw-parity-fixture-trust-via);
+#         only creates+7d-deletes if fixture missing (~$1/mo until gone)
 # Skipped: #479 (LocalEmu docker lifecycle), #233 (needs second AWS account),
 #          #223 EC2 RunInstances happy-path (deny-only PassRole via simulate)
 set -euo pipefail
@@ -535,15 +536,23 @@ EOF
 	pass "#516 host PutItem denied without matching SourceVpce"
 }
 
-# ---------- #223 ViaService / SourceArn (CMK residual 7d) — no EC2 launch ----------
+# ---------- #223 ViaService / SourceArn — reuse fixture CMK (no new residual) ----------
+# Env: AWSBOX_PARITY_KMS_KEY_ID (id or alias). Default: alias/sw-parity-fixture-trust-via
 section_223() {
 	echo ""
 	echo "======== #223 service-origin (KMS ViaService; no EC2) ========"
-	local kid
-	kid="$(aws_r kms create-key --description "${PREFIX}-via" --query 'KeyMetadata.KeyId' --output text)"
-	KMS_PENDING="$kid"
-	on_cleanup "aws_r kms schedule-key-deletion --key-id '$kid' --pending-window-in-days 7; echo \"NOTE: KMS ${kid} PendingDeletion 7d\""
-	local key_arn
+	local kid key_arn reuse=0
+	kid="${AWSBOX_PARITY_KMS_KEY_ID:-alias/sw-parity-fixture-trust-via}"
+	if aws_r kms describe-key --key-id "$kid" --query 'KeyMetadata.KeyId' --output text >/tmp/${PREFIX}-kms.id 2>/tmp/${PREFIX}-kms.err; then
+		kid="$(cat /tmp/${PREFIX}-kms.id)"
+		reuse=1
+		echo "NOTE: reusing fixture CMK ${kid} (no create / no schedule-deletion)"
+	else
+		echo "NOTE: fixture missing (${kid}); creating ephemeral CMK (7d residual)"
+		kid="$(aws_r kms create-key --description "${PREFIX}-via" --query 'KeyMetadata.KeyId' --output text)"
+		KMS_PENDING="$kid"
+		on_cleanup "aws_r kms schedule-key-deletion --key-id '$kid' --pending-window-in-days 7; echo \"NOTE: KMS ${kid} PendingDeletion 7d\""
+	fi
 	key_arn="$(aws_r kms describe-key --key-id "$kid" --query 'KeyMetadata.Arn' --output text)"
 
 	local user="${PREFIX}-via"
