@@ -107,6 +107,9 @@ services:
       - ./localemu-patches/iam_arn_builder.py:/opt/code/localemu/src/localemu/services/iam_enforcement/arn_builder.py:ro
       # DynamoDB index aws:ResourceTag (#307): index ARNs inherit table tags
       - ./localemu-patches/resource_tag_loader.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_tag_loader.py:ro
+      # DynamoDB Transact*/Batch* per-item/table IAM (#306)
+      - ./localemu-patches/service_action_map.py:/opt/code/localemu/src/localemu/services/iam_enforcement/service_action_map.py:ro
+      - ./localemu-patches/iam_enforcer.py:/opt/code/localemu/src/localemu/services/iam_enforcement/enforcer.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro
       # CFN lifecycle (#212): failed-create rollback, delete-stack cleanup, honest status
