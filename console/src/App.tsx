@@ -16,6 +16,9 @@ import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
 import { EventBridgeBusesPage } from './pages/EventBridgeBusesPage'
+import { EventBridgeCreateRulePage } from './pages/EventBridgeCreateRulePage'
+import { EventBridgeCreateBusPage } from './pages/EventBridgeCreateBusPage'
+import { EventBridgeRuleDetailPage } from './pages/EventBridgeRuleDetailPage'
 import { KmsKeysPage } from './pages/KmsKeysPage'
 import { SnsTopicsPage } from './pages/SnsTopicsPage'
 import { DynamoDBTablesPage } from './pages/DynamoDBTablesPage'
@@ -63,7 +66,16 @@ export default function App() {
           <Route path="kinesis" element={<KinesisStreamsPage />} />
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="events" element={<EventBridgeRulesPage />} />
+          <Route path="events/create" element={<EventBridgeCreateRulePage />} />
+          <Route
+            path="events/rules/:name"
+            element={<EventBridgeRuleDetailPage />}
+          />
           <Route path="events/buses" element={<EventBridgeBusesPage />} />
+          <Route
+            path="events/buses/create"
+            element={<EventBridgeCreateBusPage />}
+          />
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="sns" element={<SnsTopicsPage />} />
           <Route path="dynamodb" element={<DynamoDBTablesPage />} />
