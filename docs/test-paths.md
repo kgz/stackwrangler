@@ -256,6 +256,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./smokes/lambda/sqs-lambda-esm-enable-smoke.sh` |
 | SQS → Lambda ESM keeps delivering past STS session expiry (short `AWSBOX_STS_ASSUME_ROLE_DURATION`) | happy | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | SQS → Lambda ESM role deleted after create → `LastProcessingResult` PROBLEM (not stuck `None`) | sad/other | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
+| Kinesis / DynamoDB stream → Lambda ESM keeps delivering past STS session expiry | happy | covered | `./smokes/lambda/stream-lambda-esm-cred-refresh-smoke.sh` · [#477](https://github.com/kgz/awsl/issues/477) |
 | Lambda `PutFunctionConcurrency` reserved=1 → second concurrent sync invoke `TooManyRequestsException` (429) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | Lambda reserved concurrency 0 → every sync invoke throttled (429) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |

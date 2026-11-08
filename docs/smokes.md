@@ -29,7 +29,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 
 | Dir | Put here |
 |-----|----------|
-| `smokes/lambda/` | `lambda-*` (incl. `lambda-ecr-smoke.sh`), `sqs-lambda-dlq-smoke.sh`, `sqs-lambda-batch-failures-smoke.sh`, `sqs-lambda-esm-enable-smoke.sh`, `sqs-lambda-esm-cred-refresh-smoke.sh`, `sqs-lambda-queueurl-smoke.sh` |
+| `smokes/lambda/` | `lambda-*` (incl. `lambda-ecr-smoke.sh`), `sqs-lambda-dlq-smoke.sh`, `sqs-lambda-batch-failures-smoke.sh`, `sqs-lambda-esm-enable-smoke.sh`, `sqs-lambda-esm-cred-refresh-smoke.sh`, `stream-lambda-esm-cred-refresh-smoke.sh`, `sqs-lambda-queueurl-smoke.sh` |
 | `smokes/messaging/` | `sqs-*`, `sns-*`, `events-*`, `sfn-*`, `kinesis-*` |
 | `smokes/networking/` | `vpc-*`, `sg-*`, `elbv2-*`, `route53-*`, `r53-*`, `vpce-*`, `egress-*`, `waf-*`, `network-firewall-*` |
 | `smokes/compute/` | `ecs-*` (incl. `ecs-sqs-queueurl-smoke.sh`), `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
@@ -44,7 +44,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/parity/` | `aws-parity-*` |
 | `smokes/logs/` | `logs-*` (CloudWatch Logs catalogue) |
 
-`sqs-lambda-dlq-smoke.sh` / `sqs-lambda-esm-enable-smoke.sh` / `sqs-lambda-esm-cred-refresh-smoke.sh` / `sqs-lambda-queueurl-smoke.sh` are lambda, not messaging (`dlq`/`batch-failures`/`cred-refresh` need `python3` with `boto3`). WAF is networking (same milestone as VPC / ELB / DNS).
+`sqs-lambda-dlq-smoke.sh` / `sqs-lambda-esm-enable-smoke.sh` / `sqs-lambda-esm-cred-refresh-smoke.sh` / `stream-lambda-esm-cred-refresh-smoke.sh` / `sqs-lambda-queueurl-smoke.sh` are lambda, not messaging (`dlq`/`batch-failures`/`cred-refresh` need `python3` with `boto3`). WAF is networking (same milestone as VPC / ELB / DNS).
 
 ## Stay in `bin/`
 

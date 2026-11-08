@@ -298,7 +298,7 @@
 469	done	stackwrangler sls non-root container user
 470	done	CFN delete part-created stack skips never-created resources
 475	done	ESM poller ExpiredToken / credential refresh
-477	backlog	Debt: stream ESM cred-refresh smoke (from #475)
+477	in-review	Debt: stream ESM cred-refresh smoke (from #475)
 483	backlog	Doc: architecture map console screenshot (from docs-catalog)
 484	backlog	Doc: Kinesis/SFN/DynamoDB interaction pages (from docs-catalog)
 485	backlog	Doc: Serverless local deploy interaction page (from docs-catalog)
