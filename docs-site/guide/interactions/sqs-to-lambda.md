@@ -12,4 +12,10 @@ Queue messages trigger a Lambda via event source mapping. Credential refresh and
 
 ## Prove it
 
-Search [test-paths](https://github.com/kgz/stackwrangler/blob/main/docs/test-paths.md) for `SQS` / `event source` / `ESM`, then run the named `./bin/*-smoke.sh`. Do not claim unlisted ESM behaviours.
+Named smokes (need `python3` + `boto3`; cred-refresh needs short `AWSBOX_STS_ASSUME_ROLE_DURATION` + LocalEmu recreate):
+
+- `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` — SQS past STS expiry + role-delete `LastProcessingResult` · [#475](https://github.com/kgz/awsl/issues/475)
+- `./smokes/lambda/stream-lambda-esm-cred-refresh-smoke.sh` — Kinesis + DynamoDB stream past STS expiry · [#477](https://github.com/kgz/awsl/issues/477)
+- Also: `sqs-lambda-dlq-smoke.sh`, `sqs-lambda-batch-failures-smoke.sh`, `sqs-lambda-esm-enable-smoke.sh`
+
+Search [test-paths](https://github.com/kgz/stackwrangler/blob/main/docs/test-paths.md) for `ESM` / `event source` for the full set. Do not claim unlisted ESM behaviours.
