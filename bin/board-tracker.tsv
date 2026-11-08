@@ -181,7 +181,7 @@
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
 241	backlog	Debt: ELBv2 console (from #203)
-242	backlog	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
+242	in-review	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	backlog	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
 247	backlog	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
@@ -327,3 +327,4 @@
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
 518	in-review	sns:Protocol/Endpoint on Subscribe
+594	backlog	Debt: ELBv2 ModifyListener ACM reload (from #242)

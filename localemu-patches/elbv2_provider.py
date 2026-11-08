@@ -165,6 +165,16 @@ def _handle_deregister_targets(
     return result
 
 
+def _listener_certificate_arn(listener: dict, request: ServiceRequest) -> str:
+    """First CertificateArn from the moto listener or the create request."""
+    for source in (listener.get("Certificates"), request.get("Certificates")):
+        for entry in source or []:
+            arn = entry.get("CertificateArn") or ""
+            if arn:
+                return str(arn)
+    return ""
+
+
 def _handle_create_listener(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -205,6 +215,7 @@ def _handle_create_listener(
             target_group_arn=target_group_arn,
             scheme=str(meta.get("scheme") or "internet-facing"),
             vpc_networks=list(meta.get("vpc_networks") or []),
+            certificate_arn=_listener_certificate_arn(listener, request) or None,
         )
         # Surface the real bound port via a non-AWS field so clients that care
         # (tests, dashboard) can discover it; advertised Port stays as requested.
