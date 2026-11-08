@@ -20,6 +20,7 @@ Example / slice: [examples/serverless-v3-rest/slices/apigw-authz](../examples/se
 | `HTTP_PROXY` + `VPC_LINK` to an internal NLB | Working. NLB DNS resolves inside LocalEmu; TCP listeners forward to ip/instance targets ([docs/elbv2.md](elbv2.md)). Smoke: `./smokes/apigw/apigw-nlb-ecs-smoke.sh` phase A. |
 | API keys + usage plans | Working: `x-api-key` (`apiKeySource` HEADER) or authorizer `usageIdentifierKey` (AUTHORIZER); missing / unknown / disabled / revoked key → 403; plan throttle and quota → 429. [Details](#api-keys-and-usage-plans) |
 | Console | REST APIs list + create/deploy + resource/method ([#543](https://github.com/kgz/stackwrangler/issues/543), from [#189](https://github.com/kgz/awsl/issues/189)) · authorizer/Actions [#612](https://github.com/kgz/stackwrangler/issues/612) · API keys / usage plans [#310](https://github.com/kgz/awsl/issues/310) · shot [#613](https://github.com/kgz/stackwrangler/issues/613) |
+| Console | REST APIs list + create/deploy + resource/method ([#543](https://github.com/kgz/stackwrangler/issues/543), from [#189](https://github.com/kgz/awsl/issues/189)) · method integration picker MOCK / Lambda `AWS_PROXY` / `HTTP_PROXY` ([#616](https://github.com/kgz/stackwrangler/issues/616)) · authorizer/Actions [#612](https://github.com/kgz/stackwrangler/issues/612) · API keys / usage plans [#310](https://github.com/kgz/awsl/issues/310) · shot [#613](https://github.com/kgz/stackwrangler/issues/613) |
 
 ## Calling a stage
 

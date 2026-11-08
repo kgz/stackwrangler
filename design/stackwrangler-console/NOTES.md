@@ -216,24 +216,6 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `sns-topics.html`
 
-## Issue #622 — SNS delete topic + Create subscription (handMock)
-
-### Mode
-- handMock: OD CLI 404; MCP `opencode` spawn ENOENT; project `baseDir` still parent `design/awsbox-console` — landed in this worktree under grey-rose chrome
-- Extends #172 / #546 SNS mocks: wire Delete topic + Create subscription controls (remove `To implement` only for those)
-
-### Deliverables
-| File | Covers |
-|---|---|
-| `sns-topics.html` | Selected row · Delete enabled → delete confirm |
-| `sns-topic-detail.html` | Delete + Create subscription enabled |
-| `sns-delete-topic.html` | Confirm overlay · Cancel / Delete topic |
-| `sns-create-subscription.html` | Protocol + Endpoint form · LocalEmu SQS happy path |
-
-### Dead controls (`title="To implement"`)
-- Encryption / Access policy / Delivery status tabs; subscription filter policy
-- Working: Delete (list when selected + detail), Create subscription, Refresh on detail/list samples
-
 ## Issue #146 — ECS/EC2 console depth
 
 ### Mode
@@ -375,32 +357,10 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - OD daemon reachable but agents failed (`cursor-agent` missing; `opencode` spawn ENOENT). Hand mocks landed instead of a successful `./bin/od-design-run.sh` web-clone.
 - Screens: `apigateway-rest-api-create.html`, `apigateway-rest-api-deploy.html`; list/detail Create + Deploy API enabled and linked. Delete / Actions / Create resource|method|authorizer|stage stay `title="To implement"` in mocks (resource/method wired in React).
 
-
-## Issue #610 — Step Functions Start execution (from #533)
-
-### Mode
-- Enable **Start execution** on the #533 state-machine detail mock (grey-rose)
-- List name cells → detail so Start is reachable without Create (#533)
-- React wires StartExecution modal (optional name + JSON input) against LocalEmu
-
-### Deliverables
-| File | Covers |
-|---|---|
-| `sfn-state-machine-detail.html` | Start execution enabled (header + Executions tab) |
-| `sfn-state-machines.html` | Name → detail |
-
-### Dead controls
-- `title="To implement"`: Actions ▾, Refresh (static mock), Create state machine (list; #533)
-- Working: name → detail, Start execution buttons
-
-## Issue #552 — EventBridge create + rule detail
+## Issue #616 — REST method integration picker (hand mocks)
 
 ### Mode
-- Hand mocks (OD agents unavailable: cursor-agent conversation messages 404; opencode ENOENT)
-- Screens: `eventbridge-create-rule.html`, `eventbridge-create-event-bus.html`, `eventbridge-rule-detail.html`
-- List mocks: Create rule / Create event bus enabled; rule names link to detail; Delete stays selection-gated / stub
+- OD daemon reachable; hand grey-rose mock (same path as #543) for Create method with integration type picker.
+- Screen: `apigateway-rest-api-create-method.html`. Wired types: MOCK, Lambda `AWS_PROXY`, `HTTP_PROXY`. Disabled `title="To implement"`: AWS (non-proxy), HTTP (non-proxy), VPC link.
+- Detail resources toolbar: Create method → `apigateway-rest-api-create-method.html`; Edit integration → `apigateway-rest-api-edit-integration.html` (selected `/hello` GET in mock).
 
-### Wired in React
-- Create rule (pattern + schedule) → LocalEmu `PutRule`
-- Create event bus → LocalEmu `CreateEventBus`
-- Rule detail: pattern/schedule + targets via `DescribeRule` / `ListTargetsByRule`

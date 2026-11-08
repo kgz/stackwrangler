@@ -3,6 +3,7 @@ import { Shell } from './components/Shell'
 import { BucketObjectsPage } from './pages/BucketObjectsPage'
 import { BucketsPage } from './pages/BucketsPage'
 import { ApiGatewayPage } from './pages/ApiGatewayPage'
+import { ApiGatewayRestApiCreatePage } from './pages/ApiGatewayRestApiCreatePage'
 import { ApiGatewayRestApiDetailPage } from './pages/ApiGatewayRestApiDetailPage'
 import { ApiGatewayRestApisPage } from './pages/ApiGatewayRestApisPage'
 import { IamUsersPage } from './pages/IamUsersPage'
@@ -90,6 +91,10 @@ export default function App() {
           <Route
             path="apigateway/rest-apis"
             element={<ApiGatewayRestApisPage />}
+          />
+          <Route
+            path="apigateway/rest-apis/create"
+            element={<ApiGatewayRestApiCreatePage />}
           />
           <Route
             path="apigateway/rest-apis/:apiId"

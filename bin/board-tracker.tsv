@@ -335,10 +335,10 @@
 606	backlog	Debt: Secrets Manager delete + rotate (from #535)
 608	backlog	Doc: CloudWatch Logs create/detail console screenshot (from #352)
 609	backlog	Debt: CloudWatch Logs Tail poll distinct from Search (from #352)
-612	backlog	Debt: API Gateway REST authorizer + Actions controls (from #543)
-613	backlog	Doc: API Gateway REST create/deploy console screenshot (from #543)
 615	backlog	Debt: Kinesis put/retention/encryption/tags (from #539)
-616	backlog	Debt: APIGW REST method integration picker (from #543)
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
 518	in-review	sns:Protocol/Endpoint on Subscribe
 622	in-review	Debt: SNS delete topic + Create subscription (from #546)
+612	backlog	Debt: API Gateway REST authorizer + Actions controls (from #543)
+613	backlog	Doc: API Gateway REST create/deploy console screenshot (from #543)
+616	in-review	Debt: APIGW REST method integration picker (from #543)

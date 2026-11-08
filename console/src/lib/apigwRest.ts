@@ -18,8 +18,26 @@ import {
   type RestApi,
   type Stage,
 } from '@aws-sdk/client-api-gateway'
+import {
+  AddPermissionCommand,
+  GetFunctionCommand,
+  LambdaClient,
+} from '@aws-sdk/client-lambda'
 import { config } from './config'
 import { emuCreds } from './emu'
+
+/** Integration types LocalEmu can run from the console picker. */
+export type RestIntegrationType = 'MOCK' | 'AWS_PROXY' | 'HTTP_PROXY'
+
+export type RestMethodIntegrationInput = {
+  apiId: string
+  resourceId: string
+  httpMethod: string
+  integrationType: RestIntegrationType
+  lambdaFunctionName?: string
+  httpUri?: string
+  integrationHttpMethod?: string
+}
 
 function restClient(): APIGatewayClient {
   return new APIGatewayClient(emuCreds())
@@ -28,9 +46,12 @@ function restClient(): APIGatewayClient {
 export type RestApiRow = RestApi
 
 export type RestResourceMethodRow = {
+  resourceId: string
   path: string
   method: string
   integration: string
+  integrationType: string | null
+  integrationUri: string | null
   authorization: string
 }
 
@@ -103,12 +124,123 @@ export async function createRestResource(input: {
   return id
 }
 
-/** NONE auth + MOCK integration with 200 responses (LocalEmu-friendly stub). */
-export async function createRestMethod(input: {
-  apiId: string
-  resourceId: string
-  httpMethod: string
-}): Promise<void> {
+function lambdaClient(): LambdaClient {
+  return new LambdaClient(emuCreds())
+}
+
+function lambdaProxyUri(functionArn: string): string {
+  return `arn:aws:apigateway:${config.region}:lambda:path/2015-03-31/functions/${functionArn}/invocations`
+}
+
+async function resolveLambdaArn(functionName: string): Promise<string> {
+  const got = await lambdaClient().send(
+    new GetFunctionCommand({ FunctionName: functionName }),
+  )
+  const arn = got.Configuration?.FunctionArn
+  if (!arn) throw new Error(`Function ${functionName} has no ARN`)
+  return arn
+}
+
+async function grantApiGatewayInvoke(
+  apiId: string,
+  functionName: string,
+): Promise<void> {
+  try {
+    await lambdaClient().send(
+      new AddPermissionCommand({
+        FunctionName: functionName,
+        StatementId: `apigw-rest-${apiId}-${functionName}`.replace(
+          /[^A-Za-z0-9-_]/g,
+          '-',
+        ),
+        Action: 'lambda:InvokeFunction',
+        Principal: 'apigateway.amazonaws.com',
+        SourceArn: `arn:aws:execute-api:${config.region}:${config.accountId}:${apiId}/*/*`,
+      }),
+    )
+  } catch {
+    /* already permitted */
+  }
+}
+
+async function putRestIntegration(
+  input: RestMethodIntegrationInput,
+): Promise<void> {
+  const client = restClient()
+  const method = input.httpMethod.toUpperCase()
+  const type = input.integrationType
+
+  if (type === 'MOCK') {
+    await client.send(
+      new PutIntegrationCommand({
+        restApiId: input.apiId,
+        resourceId: input.resourceId,
+        httpMethod: method,
+        type: 'MOCK',
+        requestTemplates: {
+          'application/json': '{"statusCode":200}',
+        },
+      }),
+    )
+    await client.send(
+      new PutMethodResponseCommand({
+        restApiId: input.apiId,
+        resourceId: input.resourceId,
+        httpMethod: method,
+        statusCode: '200',
+      }),
+    )
+    await client.send(
+      new PutIntegrationResponseCommand({
+        restApiId: input.apiId,
+        resourceId: input.resourceId,
+        httpMethod: method,
+        statusCode: '200',
+        selectionPattern: '',
+      }),
+    )
+    return
+  }
+
+  if (type === 'AWS_PROXY') {
+    const name = input.lambdaFunctionName?.trim()
+    if (!name) throw new Error('Lambda function is required')
+    const fnArn = await resolveLambdaArn(name)
+    await client.send(
+      new PutIntegrationCommand({
+        restApiId: input.apiId,
+        resourceId: input.resourceId,
+        httpMethod: method,
+        type: 'AWS_PROXY',
+        integrationHttpMethod: 'POST',
+        uri: lambdaProxyUri(fnArn),
+      }),
+    )
+    await grantApiGatewayInvoke(input.apiId, name)
+    return
+  }
+
+  const uri = input.httpUri?.trim()
+  if (!uri) throw new Error('HTTP endpoint URI is required')
+  const integMethod = (
+    input.integrationHttpMethod?.trim() || method
+  ).toUpperCase()
+  await client.send(
+    new PutIntegrationCommand({
+      restApiId: input.apiId,
+      resourceId: input.resourceId,
+      httpMethod: method,
+      type: 'HTTP_PROXY',
+      integrationHttpMethod: integMethod,
+      uri,
+    }),
+  )
+}
+
+/** NONE auth + chosen LocalEmu integration (MOCK / Lambda proxy / HTTP proxy). */
+export async function createRestMethod(
+  input: RestMethodIntegrationInput,
+): Promise<void> {
   const client = restClient()
   const method = input.httpMethod.toUpperCase()
   await client.send(
@@ -119,34 +251,14 @@ export async function createRestMethod(input: {
       authorizationType: 'NONE',
     }),
   )
-  await client.send(
-    new PutIntegrationCommand({
-      restApiId: input.apiId,
-      resourceId: input.resourceId,
-      httpMethod: method,
-      type: 'MOCK',
-      requestTemplates: {
-        'application/json': '{"statusCode":200}',
-      },
-    }),
-  )
-  await client.send(
-    new PutMethodResponseCommand({
-      restApiId: input.apiId,
-      resourceId: input.resourceId,
-      httpMethod: method,
-      statusCode: '200',
-    }),
-  )
-  await client.send(
-    new PutIntegrationResponseCommand({
-      restApiId: input.apiId,
-      resourceId: input.resourceId,
-      httpMethod: method,
-      statusCode: '200',
-      selectionPattern: '',
-    }),
-  )
+  await putRestIntegration({ ...input, httpMethod: method })
+}
+
+/** Replace integration on an existing method (edit path). */
+export async function updateRestMethodIntegration(
+  input: RestMethodIntegrationInput,
+): Promise<void> {
+  await putRestIntegration(input)
 }
 
 function integrationLabel(
@@ -198,12 +310,16 @@ function flattenResources(
   )
   for (const r of sorted) {
     const path = r.path ?? '/'
+    const resourceId = r.id ?? ''
     const methods = r.resourceMethods
     if (!methods || Object.keys(methods).length === 0) {
       rows.push({
+        resourceId,
         path,
         method: '—',
         integration: '—',
+        integrationType: null,
+        integrationUri: null,
         authorization: '—',
       })
       continue
@@ -211,9 +327,12 @@ function flattenResources(
     for (const [method, detail] of Object.entries(methods)) {
       const integ = detail.methodIntegration
       rows.push({
+        resourceId,
         path,
         method,
         integration: integrationLabel(integ?.type, integ?.uri),
+        integrationType: integ?.type ?? null,
+        integrationUri: integ?.uri ?? null,
         authorization: authorizationLabel(
           detail.authorizationType,
           detail.authorizerId,
