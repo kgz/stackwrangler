@@ -244,7 +244,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS redrive (maxReceiveCount 2) to DLQ on Lambda failure | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role without SQS read perms → CreateEventSourceMapping refused | sad/authz | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | SQS VisibilityTimeout < function timeout → CreateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
+| SQS VisibilityTimeout < function timeout → UpdateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | ESM MaximumConcurrency < 2 → CreateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
+| ESM MaximumConcurrency < 2 → UpdateEventSourceMapping refused | sad/other | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role loses SQS poll perms after ESM create → polling stops / LastProcessingResult or State | sad/authz | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | Lambda role re-granted SQS poll perms → ESM resumes, message consumed, LastProcessingResult cleared | happy | covered | `./smokes/lambda/sqs-lambda-dlq-smoke.sh` |
 | SQS → Lambda ReportBatchItemFailures: 1 of 3 fails → 2 deleted, 1 redelivered → DLQ | happy | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |

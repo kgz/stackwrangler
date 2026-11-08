@@ -1,7 +1,7 @@
-"""Refuse CreateEventSourceMapping when the Lambda role lacks SQS poll perms (#266),
-queue VisibilityTimeout < function timeout, or MaximumConcurrency < 2 (#363).
-After create, re-check those SQS actions on each poll so a later revoke stops
-consumption (#285).
+"""Refuse Create/UpdateEventSourceMapping when the Lambda role lacks SQS poll
+perms (#266), queue VisibilityTimeout < function timeout, or MaximumConcurrency
+< 2 (#363 / #367). After create, re-check those SQS actions on each poll so a
+later revoke stops consumption (#285).
 
 LocalEmu calls GetQueueAttributes as the function role via an internal client, but
 IAM_ENFORCEMENT skips internal hops — so a role with no SQS policy still creates a
@@ -10,10 +10,12 @@ InvalidParameterValueException when the execution role cannot ReceiveMessage /
 DeleteMessage / GetQueueAttributes, when visibility is shorter than the function
 timeout, or when MaximumConcurrency is below 2. After create, AWS stops polling
 (or surfaces the authz failure on the mapping) if those perms are removed.
+UpdateEventSourceMapping gets the same VT/MC (and role) checks so a later update
+cannot weaken them (#367).
 
-Patches Skeleton.dispatch_request (create-time) and EsmWorker.poller_loop
+Patches Skeleton.dispatch_request (create/update-time) and EsmWorker.poller_loop
 (runtime). Role checks run under IAM_ENFORCEMENT; visibility/concurrency always
-apply on create.
+apply on create and update.
 """
 
 from __future__ import annotations
@@ -202,28 +204,49 @@ def _enforce_role(role_arn: str, source_arn: str, account_id: str, region: str) 
     raise InvalidParameterValueException(message, Type="User")
 
 
+def _existing_mapping(uuid: str, account_id: str, region: str):
+    from localemu.services.lambda_.invocation.models import lambda_stores
+
+    state = lambda_stores[account_id][region]
+    return (getattr(state, "event_source_mappings", None) or {}).get(uuid)
+
+
 def _enforce_from_request(context, request) -> None:
     service = getattr(context, "service", None)
     operation = getattr(context, "operation", None)
     if getattr(service, "service_name", None) != "lambda":
         return
-    if getattr(operation, "name", None) != "CreateEventSourceMapping":
+    op_name = getattr(operation, "name", None)
+    if op_name not in ("CreateEventSourceMapping", "UpdateEventSourceMapping"):
         return
 
     _enforce_maximum_concurrency(request)
 
-    source_arn = esm.request_get(request, "EventSourceArn")
-    if not isinstance(source_arn, str) or ":sqs:" not in source_arn:
-        return
+    account_id = getattr(context, "account_id", None) or "000000000000"
+    region = getattr(context, "region", None) or "us-east-1"
 
+    source_arn = esm.request_get(request, "EventSourceArn")
     function_ref = esm.request_get(request, "FunctionName") or esm.request_get(
         request, "FunctionArn"
     )
+
+    if op_name == "UpdateEventSourceMapping":
+        uuid = esm.request_get(request, "UUID")
+        if not isinstance(uuid, str) or not uuid:
+            return
+        mapping = _existing_mapping(uuid, account_id, region)
+        if not mapping:
+            return
+        if not isinstance(source_arn, str) or not source_arn:
+            source_arn = mapping.get("EventSourceArn")
+        if not isinstance(function_ref, str) or not function_ref:
+            function_ref = mapping.get("FunctionArn") or mapping.get("FunctionName")
+
+    if not isinstance(source_arn, str) or ":sqs:" not in source_arn:
+        return
     if not isinstance(function_ref, str) or not function_ref:
         return
 
-    account_id = getattr(context, "account_id", None) or "000000000000"
-    region = getattr(context, "region", None) or "us-east-1"
     try:
         version = esm.get_function_version(function_ref, account_id, region)
     except Exception as e:
@@ -382,7 +405,9 @@ def _patch() -> None:
     Skeleton.dispatch_request = dispatch_request
     Skeleton._awsbox_esm_sqs_role = True
     _patch_runtime_poll()
-    LOG.info("awsbox ESM SQS role/visibility/concurrency + poll revoke checks applied")
+    LOG.info(
+        "awsbox ESM SQS role/visibility/concurrency (create+update) + poll revoke checks applied"
+    )
 
 
 _patch()

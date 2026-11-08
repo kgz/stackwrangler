@@ -3,6 +3,7 @@
 # redrive to DLQ (maxReceiveCount 2, Lambda always throws), sad/authz path
 # (execution role without SQS read perms -> CreateEventSourceMapping refused),
 # AWS-parity rejects: visibility < function timeout, MaximumConcurrency < 2 (#363),
+# same VT/MC rejects on UpdateEventSourceMapping (#367),
 # post-create role revoke stops polling + LastProcessingResult/State authz (#285),
 # and re-grant resumes consumption and clears the stuck LastProcessingResult (#449).
 set -euo pipefail
@@ -251,6 +252,67 @@ echo "$OUT" | grep -q 'InvalidParameterValueException' || fail "expected Invalid
 echo "$OUT" | grep -qi 'MaximumConcurrency\|maximumConcurrency\|concurrency' || fail "error does not mention MaximumConcurrency: $OUT"
 ok "MaximumConcurrency=1: CreateEventSourceMapping refused"
 
+# ---- 5b. UpdateEventSourceMapping: FunctionName with timeout > VT -> refused (#367) ----
+Q5b="$(mkqueue "${P}-upd-vt" '{"VisibilityTimeout":"30"}')"
+U5b="$(aws lambda create-event-source-mapping --function-name "${P}-ok" \
+	--event-source-arn "$(qarn "$Q5b")" --batch-size 1 --query UUID --output text)"
+UUIDS+=("$U5b")
+wait_esm_enabled "$U5b"
+mkfn "${P}-long" "$TMP/ok.zip" "$RARN" 60
+set +e
+OUT="$(aws lambda update-event-source-mapping --uuid "$U5b" \
+	--function-name "${P}-long" 2>&1)"
+RC=$?
+set -e
+if [[ "$RC" -eq 0 ]]; then
+	fail "UpdateEventSourceMapping succeeded with function timeout=60 > VisibilityTimeout=30"
+fi
+echo "$OUT" | grep -q 'InvalidParameterValueException' || fail "expected InvalidParameterValueException for Update VT, got: $OUT"
+echo "$OUT" | grep -qi 'visibility' || fail "Update VT error does not mention visibility: $OUT"
+ok "VisibilityTimeout < function timeout: UpdateEventSourceMapping refused"
+
+# ---- 5c. UpdateEventSourceMapping: MaximumConcurrency=1 -> refused (#367) ----
+Q5c="$(mkqueue "${P}-upd-mc" '{"VisibilityTimeout":"30"}')"
+U5c="$(aws lambda create-event-source-mapping --function-name "${P}-ok" \
+	--event-source-arn "$(qarn "$Q5c")" --batch-size 1 --query UUID --output text)"
+UUIDS+=("$U5c")
+wait_esm_enabled "$U5c"
+set +e
+OUT="$(
+	EP="$EP" REGION="$REGION" UUID="$U5c" python3 - <<'PY' 2>&1
+import os, sys
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
+
+c = boto3.client(
+    "lambda",
+    endpoint_url=os.environ["EP"],
+    region_name=os.environ["REGION"],
+    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+    config=Config(parameter_validation=False),
+)
+try:
+    c.update_event_source_mapping(
+        UUID=os.environ["UUID"],
+        ScalingConfig={"MaximumConcurrency": 1},
+    )
+except ClientError as e:
+    print(e.response.get("Error", {}).get("Code", ""), e.response.get("Error", {}).get("Message", ""))
+    sys.exit(1)
+sys.exit(0)
+PY
+)"
+RC=$?
+set -e
+if [[ "$RC" -eq 0 ]]; then
+	fail "UpdateEventSourceMapping succeeded with MaximumConcurrency=1; real AWS minimum is 2"
+fi
+echo "$OUT" | grep -q 'InvalidParameterValueException' || fail "expected InvalidParameterValueException for Update MC, got: $OUT"
+echo "$OUT" | grep -qi 'MaximumConcurrency\|maximumConcurrency\|concurrency' || fail "Update MC error does not mention MaximumConcurrency: $OUT"
+ok "MaximumConcurrency=1: UpdateEventSourceMapping refused"
+
 # ---- 6. post-create revoke: drop SQS poll perms -> stop consume / LastProcessingResult (#285) ----
 mkrole "${P}-revoke" '["sqs:ReceiveMessage","sqs:DeleteMessage","sqs:GetQueueAttributes","s3:PutObject","logs:*"]'
 RVARN="$(aws iam get-role --role-name "${P}-revoke" --query Role.Arn --output text)"
@@ -327,4 +389,4 @@ done
 [[ -n "$lpr_cleared" ]] || fail "re-grant: LastProcessingResult still stuck on authz failure (lpr='${lpr}')"
 ok "re-grant: mapping resumed, queued message consumed, LastProcessingResult cleared"
 
-echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC refusal, post-create revoke + re-grant (${P})"
+echo "OK: SQS->Lambda mapping, DLQ redrive, authz + VT/MC create/update refusal, post-create revoke + re-grant (${P})"
