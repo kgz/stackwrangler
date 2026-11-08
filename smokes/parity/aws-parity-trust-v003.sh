@@ -48,7 +48,7 @@ WORK="$(mktemp -d "/tmp/${PREFIX}.XXXX")"
 on_cleanup "rm -rf '$WORK'"
 
 pass() { echo "OK: $*"; }
-fail() { echo "FAIL: $*" >&2; FAIL=1; }
+fail() { echo "FAIL: $*" >&2; FAIL=1; return 1; }
 
 # ---------- #517 SimulateCustomPolicy / SimulatePrincipalPolicy ----------
 section_517() {
@@ -500,11 +500,8 @@ section_516() {
 {"Version":"2012-10-17","Statement":[
   {"Sid":"AllowAccount","Effect":"Allow","Principal":{"AWS":"arn:aws:iam::${ACCOUNT}:root"},
    "Action":"dynamodb:*","Resource":"${table_arn}"},
-  {"Sid":"DenyNoVpce","Effect":"Deny","Principal":"*",
-   "Action":["dynamodb:GetItem","dynamodb:PutItem","dynamodb:UpdateItem","dynamodb:DeleteItem",
-             "dynamodb:Query","dynamodb:Scan","dynamodb:BatchGetItem","dynamodb:BatchWriteItem"],
-   "Resource":"${table_arn}",
-   "Condition":{"StringNotEquals":{"aws:SourceVpce":"vpce-00000000000000000"}}}
+  {"Sid":"DenyMissingVpce","Effect":"Deny","Principal":"*","Action":["dynamodb:GetItem","dynamodb:PutItem","dynamodb:UpdateItem","dynamodb:DeleteItem","dynamodb:Query","dynamodb:Scan","dynamodb:BatchGetItem","dynamodb:BatchWriteItem"],"Resource":"${table_arn}","Condition":{"Null":{"aws:SourceVpce":"true"}}},
+  {"Sid":"DenyOtherVpce","Effect":"Deny","Principal":"*","Action":["dynamodb:GetItem","dynamodb:PutItem","dynamodb:UpdateItem","dynamodb:DeleteItem","dynamodb:Query","dynamodb:Scan","dynamodb:BatchGetItem","dynamodb:BatchWriteItem"],"Resource":"${table_arn}","Condition":{"StringNotEquals":{"aws:SourceVpce":"vpce-00000000000000000"}}}
 ]}
 EOF
 	aws_r dynamodb put-resource-policy --resource-arn "$table_arn" --policy "file://${WORK}/rp.json" >/dev/null
@@ -514,9 +511,9 @@ EOF
 	aws_r dynamodb put-item --table-name "$table" --item '{"pk":{"S":"x"}}' >/tmp/${PREFIX}-rp.err 2>&1
 	local rc=$?
 	set -e
-	[[ "$rc" -ne 0 ]] || fail "#516 PutItem from host succeeded under SourceVpce deny"
+	[[ "$rc" -ne 0 ]] || { fail "#516 PutItem from host succeeded under SourceVpce deny"; return; }
 	grep -qiE 'AccessDenied|not authorized' /tmp/${PREFIX}-rp.err \
-		|| fail "#516 expected AccessDenied: $(cat /tmp/${PREFIX}-rp.err)"
+		|| { fail "#516 expected AccessDenied: $(cat /tmp/${PREFIX}-rp.err)"; return; }
 	pass "#516 host PutItem denied without matching SourceVpce"
 }
 
@@ -572,14 +569,20 @@ EOF
 	[[ "$rc" -ne 0 ]] || fail "#223 direct kms:Decrypt succeeded without ViaService"
 	pass "#223 direct kms:Decrypt denied without ViaService"
 
-	# S3 SSE-KMS put should set ViaService and succeed
-	set +e
-	AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" \
-		aws --region "$AWS_DEFAULT_REGION" s3api put-object --bucket "$bucket" --key o \
-		--body "$WORK/pt" --server-side-encryption aws:kms --ssekms-key-id "$kid" >/tmp/${PREFIX}-s3kms.err 2>&1
-	rc=$?
-	set -e
-	[[ "$rc" -eq 0 ]] || { fail "#223 S3 SSE-KMS PutObject: $(cat /tmp/${PREFIX}-s3kms.err)"; return; }
+	# S3 SSE-KMS put should set ViaService and succeed (retry IAM key prop)
+	ok=0
+	for _ in $(seq 1 40); do
+		set +e
+		AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" \
+			aws --region "$AWS_DEFAULT_REGION" s3api put-object --bucket "$bucket" --key o \
+			--body "$WORK/pt" --server-side-encryption aws:kms --ssekms-key-id "$kid" >/tmp/${PREFIX}-s3kms.err 2>&1
+		rc=$?
+		set -e
+		if [[ "$rc" -eq 0 ]]; then ok=1; break; fi
+		grep -qiE 'InvalidAccessKeyId|does not exist in our records' /tmp/${PREFIX}-s3kms.err || break
+		sleep 2
+	done
+	[[ "$ok" -eq 1 ]] || { fail "#223 S3 SSE-KMS PutObject: $(cat /tmp/${PREFIX}-s3kms.err)"; return; }
 	pass "#223 S3 SSE-KMS PutObject allowed with kms:ViaService"
 
 	# PassRole PassedToService — simulate only (no RunInstances)
