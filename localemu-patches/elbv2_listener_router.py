@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import http.client
 import http.server
+import json
 import logging
 import os
 import socket
@@ -27,6 +28,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from itertools import count
+from pathlib import Path
 from typing import Optional
 
 from localemu.services.elbv2.stickiness import (
@@ -51,6 +53,29 @@ _HOP_BY_HOP = {
     "upgrade",
     "content-length",
 }
+
+
+# Smoke / in-process seed for bridge dial hosts (#603). Key = "{tg_arn}|{id}:{port}".
+_HOST_OVERRIDE_SEED = Path(
+    os.environ.get(
+        "STACKWRANGLER_ELBV2_HOST_OVERRIDE_FILE",
+        "/tmp/stackwrangler-elbv2-host-overrides.json",
+    )
+)
+
+
+def _seeded_host_overrides() -> dict[str, str]:
+    try:
+        raw = json.loads(_HOST_OVERRIDE_SEED.read_text())
+    except Exception:
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, str] = {}
+    for key, value in raw.items():
+        if isinstance(key, str) and isinstance(value, str) and key and value:
+            out[key] = value
+    return out
 
 
 def _is_websocket_upgrade(headers) -> bool:
@@ -101,6 +126,11 @@ class Target:
     host: str  # resolved host/IP to connect to (empty for Lambda targets)
     health: str = "initial"  # initial | healthy | unhealthy
     lambda_arn: Optional[str] = None  # set when this target is a Lambda function
+    # ECS bridge host ports are published on the Docker host, not the EC2
+    # container VPC address. Callers set this so health + forward dial there
+    # instead of rewriting to the instance IP (#247). RegisterTargets must
+    # preserve it across API re-registration (#603).
+    host_override: Optional[str] = None
 
 
 @dataclass
@@ -789,6 +819,7 @@ class ListenerRouter:
         tg = self.target_groups.get(tg_arn)
         if not tg:
             return
+        seeded = _seeded_host_overrides()
         with tg._lock:
             for t in targets:
                 tid = t.get("Id") or ""
@@ -811,7 +842,24 @@ class ListenerRouter:
                     if net:
                         _join_network(net)
                 key = f"{tid}:{port}"
-                tg.targets[key] = Target(target_id=tid, port=port, host=host)
+                # Keep bridge dial address across RegisterTargets rebuilds (#603).
+                # Prefer an existing Target.host_override; allow HostOverride in the
+                # target dict (in-process callers) or a smoke seed file.
+                prev = tg.targets.get(key)
+                override = None
+                if prev is not None and prev.host_override:
+                    override = prev.host_override
+                raw = t.get("HostOverride") or t.get("host_override")
+                if raw:
+                    override = str(raw)
+                seeded_key = f"{tg_arn}|{key}"
+                if not override and seeded_key in seeded:
+                    override = seeded[seeded_key]
+                if override:
+                    host = override
+                tg.targets[key] = Target(
+                    target_id=tid, port=port, host=host, host_override=override,
+                )
         self._refresh_dnat()
 
     def remove_targets(self, tg_arn: str, targets: list[dict]) -> None:
@@ -1350,6 +1398,13 @@ def _instance_endpoint(instance_id: str) -> tuple[str, str]:
 
 def _resolve_target(target: Target) -> None:
     if target.lambda_arn:
+        return
+    if target.host_override:
+        target.host = target.host_override
+        if target.target_id.startswith("i-"):
+            _host, net = _instance_endpoint(target.target_id)
+            if net:
+                _join_network(net)
         return
     if target.target_id.startswith("i-"):
         host, net = _instance_endpoint(target.target_id)
