@@ -17,6 +17,7 @@ export function SqsQueueDetailPage() {
   const [detail, setDetail] = useState<SqsQueueDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [sendError, setSendError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
@@ -59,24 +60,36 @@ export function SqsQueueDetailPage() {
     }
   }
 
+  function contentBasedDedupEnabled(queue: SqsQueueDetail): boolean {
+    return queue.contentBasedDeduplication === 'true'
+  }
+
   async function onSend() {
     if (!detail) return
     const body = messageBody
     if (!body.trim()) {
-      setError('Message body is required')
+      setSendError('Message body is required')
       return
     }
     const delay = Number(delaySeconds)
     if (!Number.isFinite(delay) || delay < 0 || delay > 900) {
-      setError('Delay seconds must be between 0 and 900')
+      setSendError('Delay seconds must be between 0 and 900')
       return
     }
     if (detail.fifoQueue && !messageGroupId.trim()) {
-      setError('Message group ID is required for FIFO queues')
+      setSendError('Message group ID is required for FIFO queues')
+      return
+    }
+    const needsDedupId =
+      detail.fifoQueue && !contentBasedDedupEnabled(detail)
+    if (needsDedupId && !messageDeduplicationId.trim()) {
+      setSendError(
+        'Message deduplication ID is required when content-based deduplication is off',
+      )
       return
     }
     setBusy(true)
-    setError(null)
+    setSendError(null)
     setNotice(null)
     try {
       const messageId = await sendQueueMessage({
@@ -92,6 +105,7 @@ export function SqsQueueDetailPage() {
             : undefined,
       })
       setSendOpen(false)
+      setSendError(null)
       setMessageBody('')
       setNotice(
         messageId
@@ -100,7 +114,7 @@ export function SqsQueueDetailPage() {
       )
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setSendError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
@@ -172,6 +186,7 @@ export function SqsQueueDetailPage() {
               disabled={busy || !detail}
               onClick={() => {
                 setNotice(null)
+                setSendError(null)
                 setSendOpen(true)
               }}
               data-testid="sqs-send-open"
@@ -258,12 +273,14 @@ export function SqsQueueDetailPage() {
             role="dialog"
             aria-modal="true"
             style={{ maxWidth: 640, width: '100%' }}
+            data-testid="sqs-send-modal"
           >
             <h3>Send message</h3>
             <p style={{ color: 'var(--awsbox-quiet)', marginTop: 0 }}>
               Send a message to <strong>{detail.name}</strong> via{' '}
               <code>SendMessage</code>.
             </p>
+            <Notices error={sendError} />
             <div className="aws-form-stack">
               <div className="aws-field">
                 <label className="aws-label" htmlFor="sqs-message-body">
@@ -318,6 +335,9 @@ export function SqsQueueDetailPage() {
                       htmlFor="sqs-message-dedup-id"
                     >
                       Message deduplication ID
+                      {!contentBasedDedupEnabled(detail) ? (
+                        <span className="req">*</span>
+                      ) : null}
                     </label>
                     <input
                       className="aws-input"
@@ -328,6 +348,11 @@ export function SqsQueueDetailPage() {
                         setMessageDeduplicationId(e.target.value)
                       }
                       data-testid="sqs-send-dedup-id"
+                      placeholder={
+                        contentBasedDedupEnabled(detail)
+                          ? 'optional when content-based dedup is on'
+                          : undefined
+                      }
                     />
                   </div>
                 </>
@@ -338,7 +363,10 @@ export function SqsQueueDetailPage() {
                 type="button"
                 className="btn btn-normal"
                 disabled={busy}
-                onClick={() => setSendOpen(false)}
+                onClick={() => {
+                  setSendError(null)
+                  setSendOpen(false)
+                }}
               >
                 Cancel
               </button>
