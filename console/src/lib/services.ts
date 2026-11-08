@@ -206,6 +206,7 @@ const CRUMBS: Record<string, string> = {
   '/stepfunctions': 'State machines',
   '/stepfunctions/create': 'Create state machine',
   '/secretsmanager': 'Secrets',
+  '/secretsmanager/store': 'Store a new secret',
   '/kinesis': 'Data streams',
   '/sqs': 'Queues',
   '/events': 'Rules',

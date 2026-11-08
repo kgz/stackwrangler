@@ -17,7 +17,9 @@ import { LogsLogStreamEventsPage } from './pages/LogsLogStreamEventsPage'
 import { StepFunctionsCreatePage } from './pages/StepFunctionsCreatePage'
 import { StepFunctionsDetailPage } from './pages/StepFunctionsDetailPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
+import { SecretsDetailPage } from './pages/SecretsDetailPage'
 import { SecretsPage } from './pages/SecretsPage'
+import { SecretsStorePage } from './pages/SecretsStorePage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
@@ -84,6 +86,14 @@ export default function App() {
             element={<StepFunctionsDetailPage />}
           />
           <Route path="secretsmanager" element={<SecretsPage />} />
+          <Route
+            path="secretsmanager/store"
+            element={<SecretsStorePage />}
+          />
+          <Route
+            path="secretsmanager/secrets/*"
+            element={<SecretsDetailPage />}
+          />
           <Route path="kinesis" element={<KinesisStreamsPage />} />
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="events" element={<EventBridgeRulesPage />} />
