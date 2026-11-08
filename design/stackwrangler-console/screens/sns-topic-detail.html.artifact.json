@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sns-topic-detail.html",
+  "entry": "screens/sns-topic-detail.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-08T11:57:00.000Z",
+  "updatedAt": "2026-11-08T11:57:00.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true,
+    "handMock": true,
+    "issue": 546,
+    "note": "OD daemon: default conversation 404; cursor-agent not on PATH (AGENT_UNAVAILABLE). Hand mock vs kinesis-stream-detail / secrets-detail chrome."
+  }
+}
