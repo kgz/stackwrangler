@@ -13,6 +13,8 @@ import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { SecretsPage } from './pages/SecretsPage'
+import { KinesisCreatePage } from './pages/KinesisCreatePage'
+import { KinesisStreamDetailPage } from './pages/KinesisStreamDetailPage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { SqsCreateQueuePage } from './pages/SqsCreateQueuePage'
 import { SqsQueueDetailPage } from './pages/SqsQueueDetailPage'
@@ -67,6 +69,11 @@ export default function App() {
           <Route path="stepfunctions" element={<StepFunctionsPage />} />
           <Route path="secretsmanager" element={<SecretsPage />} />
           <Route path="kinesis" element={<KinesisStreamsPage />} />
+          <Route path="kinesis/create" element={<KinesisCreatePage />} />
+          <Route
+            path="kinesis/streams/:name"
+            element={<KinesisStreamDetailPage />}
+          />
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="sqs/create" element={<SqsCreateQueuePage />} />
           <Route

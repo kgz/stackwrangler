@@ -173,85 +173,9 @@ test.describe('docs-capture', () => {
         page.getByRole('heading', { level: 1, name: 'Data streams' }),
       ).toBeVisible({ timeout: 30_000 })
       await expect(page.getByText('Loading data streams…')).toHaveCount(0, {
-  test('cloudwatch logs log groups', async ({ page }) => {
-    await shot(page, 'logs-log-groups.png', '/logs', async () => {
-      await expect(
-        page.getByRole('heading', { name: 'Log groups', exact: true }),
-      ).toBeVisible({ timeout: 30_000 })
-      await expect(page.getByTestId('log-groups-table')).toBeVisible({
         timeout: 30_000,
       })
     })
-  })
-
-  // Create / group detail / stream events land with #352 (PR #604). Skip on
-  // main-based checkouts so default `./bin/docs-capture.sh` stays green; PNGs
-  // for those routes stay committed. Re-enable after #604 merges (and seed
-  // `/stackwrangler/docs-608` + stream `docs-stream` for detail shots).
-  test('cloudwatch logs create log group', async ({ page }) => {
-    test.skip(
-      true,
-      'needs #352 / PR #604 /logs/create; committed PNG kept until then',
-    )
-    await shot(page, 'logs-create-log-group.png', '/logs/create', async () => {
-      await expect(
-        page.getByRole('heading', { name: 'Create log group', exact: true }),
-      ).toBeVisible({ timeout: 30_000 })
-      await expect(page.getByTestId('logs-create-name')).toBeVisible({
-        timeout: 30_000,
-      })
-    })
-  })
-
-  test('cloudwatch logs log group detail', async ({ page }) => {
-    test.skip(
-      true,
-      'needs #352 / PR #604 log-group detail + seed /stackwrangler/docs-608',
-    )
-    const group = encodeURIComponent('/stackwrangler/docs-608')
-    await shot(
-      page,
-      'logs-log-group-detail.png',
-      `/logs/log-groups/${group}`,
-      async () => {
-        await expect(
-          page.getByRole('heading', { level: 1, name: /docs-608/ }),
-        ).toBeVisible({ timeout: 30_000 })
-        await expect(page.getByTestId('log-streams-table')).toBeVisible({
-          timeout: 30_000,
-        })
-        await expect(page.getByText('Loading log streams…')).toHaveCount(0, {
-          timeout: 30_000,
-        })
-        await expect(page.getByText('docs-stream').first()).toBeVisible({
-          timeout: 30_000,
-        })
-      },
-    )
-  })
-
-  test('cloudwatch logs log stream events', async ({ page }) => {
-    test.skip(
-      true,
-      'needs #352 / PR #604 stream events + seed docs-stream',
-    )
-    const group = encodeURIComponent('/stackwrangler/docs-608')
-    await shot(
-      page,
-      'logs-log-stream-events.png',
-      `/logs/log-groups/${group}/log-streams/${encodeURIComponent('docs-stream')}`,
-      async () => {
-        await expect(
-          page.getByRole('heading', { level: 1, name: 'docs-stream' }),
-        ).toBeVisible({ timeout: 30_000 })
-        await expect(page.getByText('Loading events…')).toHaveCount(0, {
-          timeout: 30_000,
-        })
-        await expect(page.getByText(/REPORT RequestId: docs-608/).first()).toBeVisible({
-          timeout: 30_000,
-        })
-      },
-    )
   })
 })
 

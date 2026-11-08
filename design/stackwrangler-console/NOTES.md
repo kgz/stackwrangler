@@ -142,10 +142,43 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 | `kinesis-streams.html` | Name / Status / Capacity mode / Monitoring / Created · 3 rows (`app-events`, `awsbox-kinesis-demo`, `orders-ingest`) |
 | `kinesis-streams-empty.html` | Empty twin · Refresh + Create data stream + empty panel · link to sample rows |
 
-### Dead controls
-- `title="To implement"`: Create data stream, Refresh, table settings, column filters, stream name dead links
-- `title="Select a row"`: Delete
-- Working: find field (`data-find-table`), pager chrome, Services/search → `kinesis-streams.html`
+### Dead controls (post-#539)
+- `title="To implement"`: Refresh, table settings, column filters
+- `title="Select a row"`: Delete (static mock; React wires confirm)
+- Working: Create → `kinesis-create-data-stream.html`; Name → `kinesis-stream-detail.html`; find field; pager; nav
+
+## Issue #539 — Kinesis create + detail (from #178)
+
+### Mode
+- Extend #178 list mocks with Create + stream detail (grey-rose chrome)
+- `./bin/od-design-run.sh --issue 539` failed (daemon HTTP 404 on conversation messages; agents: opencode only). Hand mocks match `sfn-create-state-machine.html` / `sfn-state-machine-detail.html`
+- LocalEmu-shaped provisioned / on-demand sample — no real AWS writes
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `kinesis-create-data-stream.html` | Name · Provisioned (shard count) / On-demand · retention/encryption/tags stubs |
+| `kinesis-stream-detail.html` | Details / Shards tabs · Delete + Put records stubs |
+| `kinesis-streams.html` (+ empty) | Create → create screen; Name → detail |
+
+### Dead controls (`title="To implement"`)
+- Configure retention / encryption / tags, Put records, Delete (static detail), Refresh (static mock)
+- Column filters on list remain stubbed
+
+## Issue #615 — Kinesis put / retention / encryption / tags (from #539)
+
+### Mode
+- Hand-update #539 create + detail mocks (grey-rose); OD optional
+- Wire React against LocalEmu PutRecord, retention increase/decrease, Start/StopStreamEncryption, Add/List/RemoveTags
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `kinesis-create-data-stream.html` | Retention hours · encryption NONE/KMS · tags table |
+| `kinesis-stream-detail.html` | Put records · Edit retention/encryption · Tags tab |
+
+### Dead controls remaining
+- List column filters (`FilterHeader`) stay `title="To implement"` (shared console stub; not LocalEmu APIs)
 
 ## Issue #167 — SQS Queues list
 

@@ -53,7 +53,7 @@ function deleteQuiet(name: string) {
   }
 }
 
-test.describe('Kinesis data streams UI (#178 / #539)', () => {
+test.describe('Kinesis data streams UI (#178 / #539 / #615)', () => {
   test('lists a seeded data stream and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-kinesis-ui-${ts}`
@@ -171,6 +171,82 @@ test.describe('Kinesis data streams UI (#178 / #539)', () => {
       await page.getByTestId('kinesis-confirm-delete').click()
       await expect(page).toHaveURL(/\/kinesis$/, { timeout: 20000 })
       created = false
+    } finally {
+      if (created) deleteQuiet(name)
+    }
+  })
+
+  test('puts a record and edits retention, encryption, and tags', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-kinesis-put-${ts}`
+    let created = false
+
+    try {
+      await page.goto('/kinesis/create')
+      await page.getByTestId('kinesis-create-name').fill(name)
+      await page.getByTestId('kinesis-mode-provisioned').check()
+      await page.getByTestId('kinesis-create-shard-count').fill('1')
+      await page.getByTestId('kinesis-create-retention').fill('48')
+      await page.getByTestId('kinesis-create-enc-kms').check()
+      await page.getByTestId('kinesis-create-add-tag').click()
+      await page.getByTestId('kinesis-create-tag-key-0').fill('env')
+      await page.getByTestId('kinesis-create-tag-value-0').fill('e2e')
+      await page.getByTestId('kinesis-create-submit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/kinesis/streams/${name}$`),
+        { timeout: 30000 },
+      )
+      created = true
+
+      await expect(page.getByText('48').first()).toBeVisible({
+        timeout: 20000,
+      })
+      await expect(page.getByText(/KMS/).first()).toBeVisible()
+
+      await page.getByTestId('kinesis-put-records').click()
+      await expect(page.getByTestId('kinesis-put-modal')).toBeVisible()
+      await page.getByTestId('kinesis-put-partition-key').fill('pk-e2e')
+      await page.getByTestId('kinesis-put-data').fill(`hello-${ts}`)
+      await page.getByTestId('kinesis-put-submit').click()
+      await expect(page.getByTestId('kinesis-put-modal')).toHaveCount(0, {
+        timeout: 15000,
+      })
+      await expect(page.getByRole('status')).toContainText(/Put record .+on /)
+
+      await page.getByTestId('kinesis-edit-retention').click()
+      await page.getByTestId('kinesis-retention-hours').fill('24')
+      await page.getByTestId('kinesis-retention-submit').click()
+      await expect(page.getByText('Retention set to 24 hours')).toBeVisible({
+        timeout: 20000,
+      })
+
+      await page.getByTestId('kinesis-edit-encryption').click()
+      await page.getByTestId('kinesis-enc-none').check()
+      await page.getByTestId('kinesis-encryption-submit').click()
+      await expect(page.getByText('Encryption disabled')).toBeVisible({
+        timeout: 20000,
+      })
+
+      await page.getByTestId('kinesis-tab-tags').click()
+      await expect(page.getByTestId('kinesis-tags-table')).toBeVisible()
+      await expect(
+        page.getByTestId('kinesis-tags-table').getByText('env'),
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('kinesis-tags-table').getByText('e2e'),
+      ).toBeVisible()
+      await page.getByTestId('kinesis-tag-key').fill('owner')
+      await page.getByTestId('kinesis-tag-value').fill('615')
+      await page.getByTestId('kinesis-tag-add').click()
+      await expect(
+        page.getByTestId('kinesis-tags-table').getByText('owner'),
+      ).toBeVisible({ timeout: 15000 })
+      await page.getByTestId('kinesis-remove-tag-env').click()
+      await expect(
+        page.getByTestId('kinesis-tags-table').getByText('env'),
+      ).toHaveCount(0, { timeout: 15000 })
     } finally {
       if (created) deleteQuiet(name)
     }
