@@ -146,6 +146,99 @@ def replay_workload(container: str) -> None:
     sync_workload(container, subnet_id, account_id, region)
 
 
+def resolve_workload_for_ip(ip: str) -> tuple[str, str, str] | None:
+    """Map a source IP to ``(subnet_id, account_id, region)`` for a VPC workload."""
+    if not ip:
+        return None
+    with _workloads_lock:
+        items = list(_workloads.items())
+    if not items:
+        return None
+    try:
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+    except Exception:
+        return None
+    for name, info in items:
+        try:
+            inspected = DOCKER_CLIENT.inspect_container(name)
+        except Exception:
+            continue
+        networks = (inspected.get("NetworkSettings") or {}).get("Networks") or {}
+        for net in networks.values():
+            if isinstance(net, dict) and net.get("IPAddress") == ip:
+                return info
+    return None
+
+
+def gateway_vpce_for_service(
+    subnet_id: str, account_id: str, region: str, service: str = "dynamodb",
+) -> str | None:
+    """Gateway VPC endpoint id on the subnet's route table for ``service`` (#516)."""
+    if not subnet_id or not account_id or not region or not service:
+        return None
+    try:
+        from localemu.services.ec2.docker.instance_routes import (
+            _ec2_backend,
+            _resolve_route_table_for_subnet,
+        )
+    except Exception:
+        return None
+    backend = _ec2_backend(account_id, region)
+    if backend is None:
+        return None
+    rt_id = _resolve_route_table_for_subnet(subnet_id, account_id, region)
+    if not rt_id:
+        return None
+    rt = (getattr(backend, "route_tables", None) or {}).get(rt_id)
+    if rt is None:
+        return None
+    suffix = f".{service}"
+    for route in (getattr(rt, "routes", None) or {}).values():
+        vpce_id = _vpce_id(route, _gateway_id(route))
+        if not vpce_id:
+            continue
+        gateway = getattr(route, "gateway", None)
+        service_name = str(getattr(gateway, "service_name", "") or "")
+        if service_name.endswith(suffix) or service_name.rsplit(".", 1)[-1] == service:
+            return vpce_id
+        # Fall back: look up the endpoint object when gateway is only an id string.
+        try:
+            endpoints = getattr(backend, "vpc_end_points", None) or {}
+            ep = endpoints.get(vpce_id)
+            ep_service = str(getattr(ep, "service_name", "") or "") if ep else ""
+            if ep_service.endswith(suffix) or ep_service.rsplit(".", 1)[-1] == service:
+                return vpce_id
+        except Exception:
+            continue
+    return None
+
+
+def resolve_source_vpce(
+    remote_addr: str | None,
+    account_id: str,
+    region: str,
+    service: str = "dynamodb",
+) -> str | None:
+    """``aws:SourceVpce`` for a request: proxy IP hit, else subnet route table (#516)."""
+    ip = _safe_ip(remote_addr) if remote_addr else None
+    if ip:
+        try:
+            from localemu.services.ec2.docker.vpc_endpoint import get_vpc_endpoint_manager
+
+            via_proxy = get_vpc_endpoint_manager().resolve_endpoint_id_by_ip(ip)
+            if via_proxy:
+                return via_proxy
+        except Exception:
+            LOG.debug("vpce proxy SourceVpce lookup failed", exc_info=True)
+        workload = resolve_workload_for_ip(ip)
+        if workload:
+            subnet_id, acct, reg = workload
+            return gateway_vpce_for_service(
+                subnet_id, acct or account_id, reg or region, service,
+            )
+    return None
+
+
 _restart_watcher_started = False
 _restart_watcher_lock = threading.Lock()
 
@@ -236,10 +329,15 @@ def lambda_subnet_networks(executor: object) -> list[str]:
     if not vpc_id:
         return []
     try:
-        manager.ensure_network_for_vpc(vpc_id)
+        ensured = manager.ensure_network_for_vpc(vpc_id)
     except Exception:
         LOG.debug("ensure VPC network %s failed", vpc_id, exc_info=True)
-    return [f"localemu-vpc-{vpc_id}"]
+        return []
+    # Do not invent a bridge name when ensure failed (#479); docker run
+    # against a missing localemu-vpc-* is an opaque Internal error later.
+    if not ensured:
+        return []
+    return [ensured]
 
 
 def peered_vpc_ids(vpc_id: str) -> list[str]:

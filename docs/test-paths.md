@@ -34,19 +34,24 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./smokes/s3/s3-parity.sh` |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./smokes/security/iam-access-denied.sh` + IAM console lab |
+| IAM SimulateCustomPolicy / SimulatePrincipalPolicy (allow, implicitDeny, explicitDeny, ContextEntries) | happy/authz | covered | `./smokes/security/iam-simulate-policy-smoke.sh` · matches enforcer, not real AWS simulator quirks |
 | OIDC `sub=repo:org/app:environment:prod` assumes tight role | happy | covered | `./smokes/security/oidc-smoke.sh` · [oidc.md](oidc.md) |
 | OIDC `sub=repo:org/*` assumes any repo in the org | happy | covered | `./smokes/security/oidc-smoke.sh` |
 | OIDC feature ref / other org / wrong aud / bad signature denied | sad/authz | covered | `./smokes/security/oidc-smoke.sh` |
 | `iam:PassRole` when `iam:PassedToService=events.amazonaws.com` | happy | covered | `./smokes/security/oidc-smoke.sh` |
 | `iam:PassRole` to Step Functions denied by `PassedToService` | sad/authz | covered | `./smokes/security/oidc-smoke.sh` |
 | `iam:GetRole` only when `aws:ResourceTag/env=prod` | sad/authz | covered | `./smokes/security/oidc-smoke.sh` |
+| `iam:CreateRole` with matching `iam:PermissionsBoundary` | happy | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` · [oidc.md](oidc.md) |
+| `iam:CreateRole` without PermissionsBoundary denied by conditioned Allow | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
+| `iam:AttachRolePolicy` on role without matching boundary denied | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
 | `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
+| `kms:ViaService` / service-origin `aws:SourceArn` / `aws:SourceAccount` (S3 SSE-KMS); EC2 instance-profile PassRole | happy + sad/authz | covered | `./smokes/security/service-origin-condition-keys-smoke.sh` |
 | Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./smokes/security/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |
 | S3 bucket and IAM role in A hidden from B | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
 | `sts:AssumeRole` role in B trusts `arn:aws:iam::<A>:root` + `sts:ExternalId`; user in A assumes | happy | covered | `./smokes/security/multi-account-smoke.sh` |
 | AssumeRole without ExternalId / from account C / user missing `sts:AssumeRole` | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
 | Trust `StringEquals` `aws:PrincipalOrgID` does not allow | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
-| Cross-account resource policy Allow | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) |
+| Cross-account resource policy Allow | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./smokes/parity/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./smokes/lambda/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./smokes/lambda/lambda-deploy-smoke.sh` |
@@ -80,6 +85,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | VPC Lambda → host service by mapped hostname | happy | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) |
 | VPC Lambda → unmapped hostname → ENOTFOUND | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` |
 | Non-VPC Lambda blocked from mapped private hosts | sad/other | covered | `./smokes/lambda/lambda-vpc-smoke.sh` · [#187](https://github.com/kgz/awsl/issues/187) |
+| `down`/`up` drops stale `localemu-vpc-*`; same CIDR VPC Lambda invoke works | happy | covered | `./smokes/networking/vpc-network-lifecycle-smoke.sh` · [#479](https://github.com/kgz/stackwrangler/issues/479) · [lambda-vpc.md](lambda-vpc.md) |
+| CreateVpc fails + rolls back when Docker bridge is not ready | sad/other | covered | `./smokes/networking/vpc-network-lifecycle-smoke.sh` (stubbed bridge create) · [#479](https://github.com/kgz/stackwrangler/issues/479) |
 | Lambda reads per-stage secret → OAuth client-credentials token → POST to external HTTP API | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda stage isolation (stage=b uses b's secret) and env-var base URL drives the call | happy | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda role missing `secretsmanager:GetSecretValue` → fails, external API sees no request | sad/authz | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
@@ -98,7 +105,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
-| Lambda `PackageType=Image` ECR pull authz | sad/authz | missing | [#219](https://github.com/kgz/awsl/issues/219) |
+| Lambda `PackageType=Image` ECR pull with `ecr:BatchGetImage` | happy | covered | `./smokes/lambda/lambda-ecr-smoke.sh` |
+| **Lambda image role without `ecr:BatchGetImage` → cold start fails** | sad/authz | covered | `./smokes/lambda/lambda-ecr-smoke.sh` |
 | ECS in-container SDK via 169.254 creds URI (`AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` → DNAT → LocalEmu; empty task role PutObject AccessDenied; no host-side cred fetch) | sad/authz | covered | `./smokes/compute/ecs-authz-smoke.sh` |
 | ECS `bridge` task role on image **without** iptables (sidecar DNAT; no host iptables) | sad/authz | covered | `./smokes/compute/ecs-bridge-no-iptables-authz-smoke.sh` · [#254](https://github.com/kgz/stackwrangler/issues/254) |
 | Public hosted zone + UPSERT A / A-alias / CNAME; `list-resource-record-sets` | happy | covered | `./smokes/networking/route53-smoke.sh` · [r53.md](r53.md) |
@@ -193,12 +201,21 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |
 | CFN `AWS::WAFv2::WebACL` / Association deploy | happy | missing | [#325](https://github.com/kgz/awsl/issues/325) |
 | CFN/CDK/SAM deploy S3+Lambda write | happy | covered | `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh` |
+| CFN create as deploy role with only `cloudformation:*` → resource `AccessDenied` in stack events | sad/authz | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
+| CFN create as deploy role with iam/sqs/logs create perms → `CREATE_COMPLETE` | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
+| CFN delete as role without `iam:DeleteRole` → `DELETE_FAILED` | sad/authz | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
+| CFN admin-key create unchanged | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh`, `./smokes/iac/cfn-smoke.sh` |
+| CFN CreateStack `RoleARN` — resource ops as service role (`iam:PassRole`) | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
+| CFN admin CreateStack with limited `RoleARN` → resource IAM deny (no internal elevate) | sad/authz | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` |
 | Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |
 | Serverless v4 `${ssm:…}` + cross-stack `Fn::ImportValue` SNS→SQS | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` |
 | Serverless v4 sad: missing auth; host aws without `AWS_ENDPOINT_URL` refuses real AWS; TLS-down; missing `Fn::ImportValue` deploy fails; SNS filter-drop absent from S3 | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [#460](https://github.com/kgz/awsl/issues/460) |
 | Serverless v4 yarn workspace: `--cwd packages/service` mounts workspace root, sibling import bundles | happy | covered | `./smokes/iac/serverless-v4-workspace-smoke.sh` · [#468](https://github.com/kgz/awsl/issues/468) |
+| Serverless v4 `--role-arn` / `--use-session-env` deploy as live principal (not admin keys) | happy | covered | `./smokes/iac/serverless-v4-role-arn-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#522](https://github.com/kgz/awsl/issues/522) |
+| Serverless v4 sad: deploy role missing `logs:DescribeLogGroups` on `*` → AccessDenied as that principal | sad/authz | covered | `./smokes/iac/serverless-v4-role-arn-smoke.sh` · [#522](https://github.com/kgz/awsl/issues/522) |
+| CFN resource providers evaluate caller IAM (LogGroup DescribeLogGroups in stack events) | sad/authz | missing | [#524](https://github.com/kgz/awsl/issues/524) (from #522) |
 | aws-redirect DNS: AWS suffixes (A + dualstack AAAA) resolve only to the proxy — no public A/AAAA | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
 | aws-redirect TLS edge down → connection error (not real AWS auth) | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
@@ -212,6 +229,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./smokes/parity/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./smokes/parity/aws-parity-cfn-authz.sh` |
 | Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./smokes/parity/aws-parity-hf-cheap.sh` (~$0–cents; ask before real) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
+| Real AWS Trust (v0.0.3) | happy+sad | covered | `./smokes/parity/aws-parity-trust-v003.sh` (KMS 7d residual) |
 | Real AWS HF skipped: WAF, R53 zone, ACM without DNS, Transfer, CodeDeploy target stack, Batch/ASG compute | — | skipped (cost) | [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) skipped gaps |
 | Prowler aws scan (isolated, scoped unused-services) | happy | covered | `./smokes/security/prowler-smoke.sh` · [prowler.md](prowler.md) |
 | Prowler failing-API count ≤ baseline (ratchet) | sad/other | covered | `./smokes/security/prowler-smoke.sh` |
@@ -244,6 +262,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SNS console Topics list | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
+| SNS Subscribe `sns:Protocol` / `sns:Endpoint` allow intake sqs; deny other-queue / https | happy + sad/authz | covered | `./smokes/messaging/sns-subscribe-conditions-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |
 | SNS MaximumMessageSize CreateTopic/Set; default >256 KiB reject; 300 KiB–1 MiB publish + SQS raw | happy/sad | covered | `./smokes/messaging/sns-max-message-size-smoke.sh` |
 | SNS large-topic (>256 KiB) subscribe: http/email/sms/application → InvalidParameter; sqs/lambda/firehose ok; Set refused with http sub | sad/happy | covered | `./smokes/messaging/sns-max-message-size-smoke.sh` |
 | SNS → SQS fan-out (envelope, raw delivery, filter policy) | happy | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
@@ -264,6 +283,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | DynamoDB put/get | happy | covered | `./smokes/data/dynamodb-smoke.sh` |
 | DynamoDB console tables list | ui | covered | `console/e2e/dynamodb-tables.spec.ts` |
 | DynamoDB deny PutItem | sad/authz | covered | `./smokes/data/dynamodb-authz-smoke.sh` |
+| DynamoDB table resource policy Deny (no `aws:SourceVpce`) → AccessDeniedException with resource-based deny | sad/authz | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB resource policy `NotAction` admin ops still allowed | happy | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB resource policy `aws:PrincipalArn` exception in same `StringNotEquals` block | sad/authz | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB gateway VPCE A allows / B denies via `aws:SourceVpce` (two RTs) | sad/authz | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
+| DynamoDB `aws:SourceVpce` list `[A,B]` allows both Lambdas | happy | covered | `./smokes/data/dynamodb-resource-policy-smoke.sh` |
 | DynamoDB table with GSI + TTL deployed via CloudFormation (serverless slice) | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB GSI query, table query, scan with filter | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB UpdateItem expression (`SET`, `if_not_exists`, `REMOVE`) | happy | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
@@ -273,6 +297,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | DynamoDB cancelled transaction → `TransactionCanceledException`, no partial write | sad/other | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB Allow on index ARN only / table ARN only / Deny on index ARN | sad/authz | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB Batch*/Transact* under table-scoped policy | sad/authz | missing | [#306](https://github.com/kgz/awsl/issues/306) |
+| DynamoDB `aws:ResourceTag` on index ARN | sad/authz | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
+| DynamoDB Batch*/Transact* under table-scoped policy | sad/authz | covered | `./smokes/data/dynamodb-depth-smoke.sh` |
 | DynamoDB `aws:ResourceTag` on index ARN | sad/authz | missing | [#307](https://github.com/kgz/awsl/issues/307) |
 | Step Functions Pass execution | happy | covered | `./smokes/messaging/sfn-smoke.sh` |
 | Step Functions deny StartExecution | sad/authz | covered | `./smokes/messaging/sfn-authz-smoke.sh` |
@@ -291,7 +317,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Secrets Manager CMK GetSecretValue follows key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | Secrets Manager CreateSecret/PutSecretValue with a CMK follows key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
 | SSM SecureString GetParameter/PutParameter follows CMK key policy | sad/authz | covered | `./smokes/security/resource-policy-smoke.sh` |
-| Cross-account resource policy (identity and resource must both allow) | sad/authz | missing | [#233](https://github.com/kgz/awsl/issues/233) · needs [#213](https://github.com/kgz/awsl/issues/213) |
+| Cross-account resource policy (identity and resource must both allow) | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
 | Kinesis console Data streams list | happy | covered | console e2e `kinesis-streams.spec.ts` · thin list (Create/detail → [#539](https://github.com/kgz/awsl/issues/539)) |
 | Kinesis put/get | happy | covered | `./smokes/messaging/kinesis-smoke.sh` |
 | Kinesis deny PutRecord | sad/authz | covered | `./smokes/messaging/kinesis-authz-smoke.sh` |
@@ -356,6 +382,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./smokes/lambda/lambda-smoke.sh           # happy
 ./smokes/lambda/lambda-authz-smoke.sh     # sad/authz
 ./smokes/security/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
+./smokes/security/resource-policy-cross-account-smoke.sh # A role vs B secret/key/bucket policies
 ./smokes/transfer/transfer-key-smoke.sh
 ./smokes/transfer/transfer-dataplane-smoke.sh
 ./smokes/transfer/transfer-connector-smoke.sh

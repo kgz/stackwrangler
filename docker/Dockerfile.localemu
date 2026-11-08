@@ -15,9 +15,13 @@ COPY localemu-patches/ecs_task_manager.py /opt/code/localemu/src/localemu/servic
 COPY localemu-patches/ecs_provider.py /opt/code/localemu/src/localemu/services/ecs/provider.py
 COPY localemu-patches/ecs_ec2_services.py /opt/code/localemu/src/localemu/services/ecs/ec2_services.py
 COPY localemu-patches/iam_arn_builder.py /opt/code/localemu/src/localemu/services/iam_enforcement/arn_builder.py
+COPY localemu-patches/resource_tag_loader.py /opt/code/localemu/src/localemu/services/iam_enforcement/resource_tag_loader.py
+COPY localemu-patches/service_action_map.py /opt/code/localemu/src/localemu/services/iam_enforcement/service_action_map.py
+COPY localemu-patches/iam_enforcer.py /opt/code/localemu/src/localemu/services/iam_enforcement/enforcer.py
 COPY localemu-patches/resource_policies.py /opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py
 COPY localemu-patches/cfn_v2_provider.py /opt/code/localemu/src/localemu/services/cloudformation/v2/provider.py
 COPY localemu-patches/cfn_change_set_model_executor.py /opt/code/localemu/src/localemu/services/cloudformation/engine/v2/change_set_model_executor.py
+COPY localemu-patches/cfn_deploy_credentials.py /opt/code/localemu/src/localemu/services/cloudformation/cfn_deploy_credentials.py
 COPY localemu-patches/vpc_routing.py /opt/code/localemu/src/localemu/services/ec2/docker/vpc_routing.py
 COPY localemu-patches/sg_enforcement.py /opt/code/localemu/src/localemu/services/ec2/docker/sg_enforcement.py
 COPY localemu-patches/vpce_private_dns.py /opt/code/localemu/src/localemu/services/ec2/docker/vpce_private_dns.py
@@ -26,4 +30,5 @@ COPY localemu-patches/elbv2_listener_router.py /opt/code/localemu/src/localemu/s
 COPY localemu-patches/elbv2_provider.py /opt/code/localemu/src/localemu/services/elbv2/provider.py
 COPY localemu-patches/dns_common.py /opt/awsbox/dns/awsbox_dns_common.py
 COPY localemu-patches/esm_common.py /opt/awsbox/esm/awsbox_esm_common.py
+COPY localemu-patches/ecr_pull.py /opt/awsbox/ecr/awsbox_ecr_pull.py
 COPY localemu-patches/r53_private_resolver.py /opt/code/localemu/src/localemu/services/route53/private_resolver.py

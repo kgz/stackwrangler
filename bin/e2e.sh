@@ -18,8 +18,15 @@ echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
 echo "==> IAM AccessDenied"
 ./smokes/security/iam-access-denied.sh
 
+echo "==> IAM SimulateCustomPolicy / SimulatePrincipalPolicy"
+./smokes/security/iam-simulate-policy-smoke.sh
+
 echo "==> IAM OIDC + PassRole"
 ./smokes/security/oidc-smoke.sh
+./smokes/security/iam-permissions-boundary-key-smoke.sh
+
+echo "==> Service-origin condition keys (ViaService / SourceArn / EC2 PassRole)"
+./smokes/security/service-origin-condition-keys-smoke.sh
 
 echo "==> Lambda smoke"
 ./smokes/lambda/lambda-smoke.sh
@@ -72,6 +79,9 @@ echo "==> CodeDeploy (Lambda canary DG + ECS blue/green)"
 echo "==> ECR push/pull + ECS image (sad: no BatchGetImage)"
 ./smokes/compute/ecr-smoke.sh
 
+echo "==> Lambda ImageUri ECR pull (sad: no BatchGetImage)"
+./smokes/lambda/lambda-ecr-smoke.sh
+
 echo "==> Transfer authz (sad: empty role PutObject)"
 ./smokes/transfer/transfer-authz-smoke.sh
 
@@ -85,9 +95,9 @@ echo "==> SQS authz (sad: deny SendMessage)"
 ./smokes/messaging/sqs-authz-smoke.sh
 
 echo "==> SNS / EventBridge / DynamoDB / SFN / Secrets / KMS / Kinesis"
-./smokes/messaging/sns-smoke.sh && ./smokes/messaging/sns-authz-smoke.sh && ./smokes/messaging/sns-max-message-size-smoke.sh
+./smokes/messaging/sns-smoke.sh && ./smokes/messaging/sns-authz-smoke.sh && ./smokes/messaging/sns-subscribe-conditions-smoke.sh && ./smokes/messaging/sns-max-message-size-smoke.sh
 ./smokes/messaging/events-smoke.sh && ./smokes/messaging/events-authz-smoke.sh
-./smokes/data/dynamodb-smoke.sh && ./smokes/data/dynamodb-authz-smoke.sh
+./smokes/data/dynamodb-smoke.sh && ./smokes/data/dynamodb-authz-smoke.sh && ./smokes/data/dynamodb-resource-policy-smoke.sh
 ./smokes/messaging/sfn-smoke.sh && ./smokes/messaging/sfn-authz-smoke.sh
 ./smokes/security/secrets-smoke.sh && ./smokes/security/secrets-authz-smoke.sh
 ./smokes/security/kms-smoke.sh && ./smokes/security/kms-authz-smoke.sh

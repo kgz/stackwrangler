@@ -105,11 +105,18 @@ services:
       - ./localemu-patches/ecs_ec2_services.py:/opt/code/localemu/src/localemu/services/ecs/ec2_services.py:ro
       # DynamoDB index ARNs (#296): Query/Scan IndexName -> table/<t>/index/<i>
       - ./localemu-patches/iam_arn_builder.py:/opt/code/localemu/src/localemu/services/iam_enforcement/arn_builder.py:ro
+      # DynamoDB index aws:ResourceTag (#307): index ARNs inherit table tags
+      - ./localemu-patches/resource_tag_loader.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_tag_loader.py:ro
+      # DynamoDB Transact*/Batch* per-item/table IAM (#306)
+      - ./localemu-patches/service_action_map.py:/opt/code/localemu/src/localemu/services/iam_enforcement/service_action_map.py:ro
+      - ./localemu-patches/iam_enforcer.py:/opt/code/localemu/src/localemu/services/iam_enforcement/enforcer.py:ro
       # Resource policies (#193): Secrets Manager loader + KMS key-policy rules
       - ./localemu-patches/resource_policies.py:/opt/code/localemu/src/localemu/services/iam_enforcement/resource_policies.py:ro
       # CFN lifecycle (#212): failed-create rollback, delete-stack cleanup, honest status
       - ./localemu-patches/cfn_v2_provider.py:/opt/code/localemu/src/localemu/services/cloudformation/v2/provider.py:ro
       - ./localemu-patches/cfn_change_set_model_executor.py:/opt/code/localemu/src/localemu/services/cloudformation/engine/v2/change_set_model_executor.py:ro
+      # CFN caller / RoleARN IAM for resource ops (#524)
+      - ./localemu-patches/cfn_deploy_credentials.py:/opt/code/localemu/src/localemu/services/cloudformation/cfn_deploy_credentials.py:ro
       # VPC route tables (#204): private subnets, peering, NAT
       - ./localemu-patches/vpc_routing.py:/opt/code/localemu/src/localemu/services/ec2/docker/vpc_routing.py:ro
       # Security groups (#205): ECS awsvpc + RDS + prefix lists on top of EC2 sg_iptables
@@ -125,6 +132,8 @@ services:
       - ./localemu-patches/dns_common.py:/opt/awsbox/dns/awsbox_dns_common.py:ro
       # Shared ESM/SQS request + function lookup helpers (#266 / #363)
       - ./localemu-patches/esm_common.py:/opt/awsbox/esm/awsbox_esm_common.py:ro
+      # Shared ECR BatchGetImage + local-registry rewrite (#211 / #219)
+      - ./localemu-patches/ecr_pull.py:/opt/awsbox/ecr/awsbox_ecr_pull.py:ro
 
       # Private hosted zones (#206): answered by the same process as VPCE DNS (vpce_private_dns serve)
       - ./localemu-patches/r53_private_resolver.py:/opt/code/localemu/src/localemu/services/route53/private_resolver.py:ro

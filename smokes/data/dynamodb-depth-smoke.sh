@@ -37,6 +37,7 @@ cleanup() {
 	done
 	aws cloudformation delete-stack --stack-name "$STACK" >/dev/null 2>&1
 	aws dynamodb delete-table --table-name "$TABLE" >/dev/null 2>&1
+	aws dynamodb delete-table --table-name "awsbox-tokens-other-${TS}" >/dev/null 2>&1
 }
 trap cleanup EXIT
 
@@ -230,5 +231,92 @@ as dynamodb query --table-name "$TABLE" "${TQARGS[@]}" --select COUNT >/dev/null
 expect_err 'AccessDenied|not authorized|ExplicitDeny' \
 	as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}"
 echo "OK: explicit Deny on index ARN -> GSI Query denied, table Query ok"
+
+echo "== IAM Transact/Batch table-scoped (#306)"
+TABLE2="awsbox-tokens-other-${TS}"
+aws dynamodb create-table --table-name "$TABLE2" \
+	--attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S \
+	--key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE \
+	--billing-mode PAY_PER_REQUEST >/dev/null
+for _ in $(seq 1 30); do
+	st2="$(aws dynamodb describe-table --table-name "$TABLE2" --query 'Table.TableStatus' --output text 2>/dev/null || true)"
+	[[ "$st2" == "ACTIVE" ]] && break
+	sleep 1
+done
+[[ "$st2" == "ACTIVE" ]] || fail "table2 not ACTIVE (${st2})"
+
+# PutItem-only on t1: TransactWrite Put into t1 ok, into t2 denied (per-item action + ARN).
+mkuser "awsbox-ddb-put1-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:PutItem\",\"Resource\":\"${TABLE_ARN}\"}]}"
+sleep 2
+cat >"$TMP/tx-t1.json" <<EOF
+[{"Put":{"TableName":"$TABLE","Item":$(item iam#1 token#tx hash-tx-1 0 "$FUTURE")}}]
+EOF
+as dynamodb transact-write-items --transact-items "file://$TMP/tx-t1.json" >/dev/null \
+	|| fail "PutItem@t1 user cannot TransactWrite Put into t1"
+cat >"$TMP/tx-t2.json" <<EOF
+[{"Put":{"TableName":"$TABLE2","Item":$(item iam#2 token#tx hash-tx-2 0 "$FUTURE")}}]
+EOF
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb transact-write-items --transact-items "file://$TMP/tx-t2.json"
+echo "OK: PutItem on t1 -> TransactWrite Put t1 ok, t2 denied"
+
+# BatchWriteItem on t1 only: batch-put t1 ok, t2 denied (per-table ARN).
+mkuser "awsbox-ddb-bw1-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:BatchWriteItem\",\"Resource\":\"${TABLE_ARN}\"}]}"
+sleep 2
+cat >"$TMP/bw-t1.json" <<EOF
+{"$TABLE":[{"PutRequest":{"Item":$(item iam#3 token#bw hash-bw-1 0 "$FUTURE")}}]}
+EOF
+as dynamodb batch-write-item --request-items "file://$TMP/bw-t1.json" >/dev/null \
+	|| fail "BatchWriteItem@t1 user cannot batch-write t1"
+cat >"$TMP/bw-t2.json" <<EOF
+{"$TABLE2":[{"PutRequest":{"Item":$(item iam#4 token#bw hash-bw-2 0 "$FUTURE")}}]}
+EOF
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb batch-write-item --request-items "file://$TMP/bw-t2.json"
+echo "OK: BatchWriteItem on t1 -> batch-write t1 ok, t2 denied"
+
+# GetItem on t1: TransactGet t1 ok, t2 denied.
+mkuser "awsbox-ddb-get1-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:GetItem\",\"Resource\":\"${TABLE_ARN}\"}]}"
+sleep 2
+cat >"$TMP/tg-t1.json" <<EOF
+[{"Get":{"TableName":"$TABLE","Key":{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}}}]
+EOF
+as dynamodb transact-get-items --transact-items "file://$TMP/tg-t1.json" >/dev/null \
+	|| fail "GetItem@t1 user cannot TransactGet from t1"
+cat >"$TMP/tg-t2.json" <<EOF
+[{"Get":{"TableName":"$TABLE2","Key":{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}}}]
+EOF
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb transact-get-items --transact-items "file://$TMP/tg-t2.json"
+echo "OK: GetItem on t1 -> TransactGet t1 ok, t2 denied"
+
+# BatchGetItem on t1 only: batch-get t1 ok, t2 denied.
+mkuser "awsbox-ddb-bg1-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:BatchGetItem\",\"Resource\":\"${TABLE_ARN}\"}]}"
+sleep 2
+cat >"$TMP/bg-t1.json" <<EOF
+{"$TABLE":{"Keys":[{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}]}}
+EOF
+as dynamodb batch-get-item --request-items "file://$TMP/bg-t1.json" >/dev/null \
+	|| fail "BatchGetItem@t1 user cannot batch-get t1"
+cat >"$TMP/bg-t2.json" <<EOF
+{"$TABLE2":{"Keys":[{"pk":{"S":"user#1"},"sk":{"S":"token#a"}}]}}
+EOF
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb batch-get-item --request-items "file://$TMP/bg-t2.json"
+echo "OK: BatchGetItem on t1 -> batch-get t1 ok, t2 denied"
+
+echo "OK: dynamodb depth (${TABLE})"
+
+# Index aws:ResourceTag inherits table tags (#307).
+aws dynamodb tag-resource --resource-arn "$TABLE_ARN" --tags Key=env,Value=prod >/dev/null
+mkuser "awsbox-ddb-rtag-${TS}" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:Query\",\"Resource\":\"${INDEX_ARN}\",\"Condition\":{\"StringEquals\":{\"aws:ResourceTag/env\":\"prod\"}}}]}"
+sleep 2
+as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}" --select COUNT >/dev/null \
+	|| fail "ResourceTag user cannot Query GSI on tagged table"
+aws dynamodb untag-resource --resource-arn "$TABLE_ARN" --tag-keys env >/dev/null
+sleep 1
+expect_err 'AccessDenied|not authorized|ExplicitDeny|implicit' \
+	as dynamodb query --table-name "$TABLE" --index-name "$INDEX" "${QARGS[@]}"
+echo "OK: aws:ResourceTag/env=prod on index ARN -> tagged allow, untagged deny"
 
 echo "OK: dynamodb depth (${TABLE})"

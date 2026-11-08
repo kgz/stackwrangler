@@ -453,12 +453,22 @@ def _customer_managed_key(key_id: str | None) -> str | None:
 
 
 def find_secret(account_id: str, region: str, ident: str):
-    """Resolve a secret by name, full ARN, or the unsuffixed ARN the enforcer builds."""
+    """Resolve a secret by name, full ARN, or the unsuffixed ARN the enforcer builds.
+
+    Cross-account callers pass a full ARN; the account/region in the ARN win
+    over the caller's context (same as SecretsmanagerProvider).
+    """
     if not ident:
         return None
     try:
         from moto.secretsmanager.models import secretsmanager_backends
 
+        if ident.startswith("arn:"):
+            parts = ident.split(":")
+            if len(parts) >= 5 and parts[4]:
+                account_id = parts[4]
+            if len(parts) >= 4 and parts[3]:
+                region = parts[3]
         backend = secretsmanager_backends[account_id][region]
         secret = backend.secrets.get(ident)
         if secret is not None:
@@ -498,10 +508,25 @@ def canonical_secret_arn(ident: str | None, account_id: str, region: str) -> str
 
 
 def secret_customer_kms_key(ident: str, account_id: str, region: str) -> str | None:
+    """CMK used by the secret, as a key ARN when possible (cross-account safe)."""
     secret = find_secret(account_id, region, ident)
     if secret is None:
         return None
-    return _customer_managed_key(getattr(secret, "kms_key_id", None))
+    key_ref = _customer_managed_key(getattr(secret, "kms_key_id", None))
+    if not key_ref:
+        return None
+    if key_ref.startswith("arn:"):
+        return key_ref
+    secret_arn = getattr(secret, "arn", None) or ""
+    key_account = account_id
+    key_region = region
+    if isinstance(secret_arn, str) and secret_arn.startswith("arn:"):
+        parts = secret_arn.split(":")
+        if len(parts) >= 5 and parts[4]:
+            key_account = parts[4]
+        if len(parts) >= 4 and parts[3]:
+            key_region = parts[3]
+    return f"arn:aws:kms:{key_region}:{key_account}:key/{key_ref}"
 
 
 def _native_kms_key(key_ref: str, account_id: str, region: str):
@@ -560,6 +585,40 @@ def load_kms_key_policy(key_ref: str | None, account_id: str, region: str) -> di
     if not found:
         return None
     return _parse_policy(getattr(found[0], "policy", None))
+
+
+def load_dynamodb_resource_policy(
+    resource_arn: str, account_id: str, region: str,
+) -> dict | None:
+    """Load a DynamoDB table resource policy from moto (#516).
+
+    Policies are stored under the table ARN by ``PutResourcePolicy``. Index
+    ARNs (``…/index/…``) inherit the table document.
+    """
+    if not resource_arn or not isinstance(resource_arn, str):
+        return None
+    table_arn = resource_arn.split("/index/", 1)[0]
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("dynamodb")[account_id][region]
+        policies = getattr(backend, "resource_policies", None) or {}
+        policy = policies.get(table_arn) or policies.get(resource_arn)
+        if policy is None and policies:
+            # ARN account/region drift: match by table name suffix.
+            table_name = table_arn.rsplit("/", 1)[-1]
+            for key, candidate in policies.items():
+                if isinstance(key, str) and key.endswith(f"/{table_name}"):
+                    policy = candidate
+                    break
+        if policy is None:
+            return None
+        return _parse_policy(getattr(policy, "policy_doc", None))
+    except Exception as exc:
+        LOG.debug(
+            "dynamodb resource policy load failed for %s: %s", resource_arn, exc,
+        )
+        return None
 
 
 def key_id_from_ciphertext(blob: Any) -> str | None:
@@ -984,6 +1043,75 @@ def _truthy(value: Any) -> bool:
     return bool(value)
 
 
+def _s3_bucket(bucket_name: str, account_id: str, region: str):
+    """Resolve a LocalEmu S3 bucket (cross-region map lives on us-east-1)."""
+    if not bucket_name:
+        return None
+    try:
+        from localemu.constants import AWS_REGION_US_EAST_1
+        from localemu.services.s3.models import s3_stores
+
+        del region
+        store = s3_stores[account_id][AWS_REGION_US_EAST_1]
+        bucket = store.buckets.get(bucket_name)
+        if bucket is not None:
+            return bucket
+        owner = store.global_bucket_map.get(bucket_name) if hasattr(store, "global_bucket_map") else None
+        if owner:
+            return s3_stores[owner][AWS_REGION_US_EAST_1].buckets.get(bucket_name)
+    except Exception as exc:
+        LOG.debug("s3 bucket lookup failed for %s: %s", bucket_name, exc)
+    return None
+
+
+def _s3_write_customer_kms_key(params: dict, account_id: str, region: str) -> str | None:
+    """CMK used when S3 writes with SSE-KMS (request or bucket default)."""
+    encryption = params.get("ServerSideEncryption")
+    key_id = params.get("SSEKMSKeyId")
+    bucket = _s3_bucket(str(params.get("Bucket") or ""), account_id, region)
+    rule = getattr(bucket, "encryption_rule", None) if bucket is not None else None
+    if isinstance(rule, dict):
+        default = rule.get("ApplyServerSideEncryptionByDefault") or {}
+        if isinstance(default, dict):
+            encryption = encryption or default.get("SSEAlgorithm")
+            if not key_id and encryption in ("aws:kms", "aws:kms:dsse"):
+                key_id = default.get("KMSMasterKeyID")
+    if encryption not in ("aws:kms", "aws:kms:dsse") and not key_id:
+        return None
+    return _customer_managed_key(key_id if isinstance(key_id, str) else None)
+
+
+def _s3_object_customer_kms_key(
+    bucket_name: str, object_key: str, version_id: str | None, account_id: str, region: str
+) -> str | None:
+    """CMK on an existing object (GetObject / HeadObject SSE-KMS path)."""
+    bucket = _s3_bucket(bucket_name, account_id, region)
+    if bucket is None:
+        return None
+    try:
+        s3_object = bucket.get_object(key=object_key, version_id=version_id, http_method="GET")
+    except Exception as exc:
+        LOG.debug("s3 object lookup failed for %s/%s: %s", bucket_name, object_key, exc)
+        return None
+    return _customer_managed_key(getattr(s3_object, "kms_key_id", None))
+
+
+def s3_via_service(region: str) -> str:
+    """``kms:ViaService`` value AWS sets for S3-mediated KMS calls."""
+    return f"s3.{region or 'us-east-1'}.amazonaws.com"
+
+
+def service_origin_kms_context(source_arn: str | None, account_id: str, region: str) -> dict[str, str]:
+    """Condition keys S3 (and friends) present on mediated KMS calls (#223)."""
+    ctx: dict[str, str] = {
+        "kms:ViaService": s3_via_service(region),
+        "aws:SourceAccount": account_id,
+    }
+    if source_arn:
+        ctx["aws:SourceArn"] = source_arn
+    return ctx
+
+
 def implicit_kms_checks(service: str, operation: str, params: dict | None, account_id: str, region: str) -> list[tuple[str, str]]:
     """Customer-managed keys touched implicitly by Secrets Manager or SSM.
 
@@ -1039,6 +1167,67 @@ def implicit_kms_checks(service: str, operation: str, params: dict | None, accou
     for name in names:
         add("kms:Decrypt", _ssm_parameter_key(name, account_id, region))
     return checks
+
+
+def implicit_s3_kms_checks(
+    operation: str, params: dict | None, account_id: str, region: str
+) -> list[tuple[str, str, str]]:
+    """S3 SSE-KMS → KMS checks with bucket ARN for service-origin keys (#223).
+
+    Each triple is ``(kms_action, key_id, bucket_arn)``. AWS-managed
+    ``alias/aws/s3`` keys are omitted.
+    """
+    params = params or {}
+    bucket_name = params.get("Bucket")
+    if not isinstance(bucket_name, str) or not bucket_name:
+        return []
+    bucket_arn = f"arn:aws:s3:::{bucket_name}"
+    out: list[tuple[str, str, str]] = []
+
+    write_ops = {"PutObject", "CreateMultipartUpload", "UploadPart", "CopyObject"}
+    read_ops = {"GetObject", "HeadObject", "CopyObject"}
+
+    if operation in write_ops:
+        # CopyObject dest uses DestinationBucket when present.
+        dest_bucket = params.get("Bucket")
+        if operation == "CopyObject" and params.get("DestinationBucket"):
+            dest_bucket = params.get("DestinationBucket")
+        if isinstance(dest_bucket, str) and dest_bucket:
+            dest_params = dict(params)
+            dest_params["Bucket"] = dest_bucket
+            key_id = _s3_write_customer_kms_key(dest_params, account_id, region)
+            if key_id:
+                out.append(("kms:GenerateDataKey", key_id, f"arn:aws:s3:::{dest_bucket}"))
+
+    if operation in read_ops:
+        object_key = params.get("Key")
+        if operation == "CopyObject":
+            # Source is CopySource = "bucket/key" or {Bucket, Key}.
+            copy_source = params.get("CopySource")
+            src_bucket = None
+            src_key = None
+            if isinstance(copy_source, str) and "/" in copy_source:
+                src_bucket, src_key = copy_source.split("/", 1)
+                src_key = src_key.split("?", 1)[0]
+            elif isinstance(copy_source, dict):
+                src_bucket = copy_source.get("Bucket")
+                src_key = copy_source.get("Key")
+            if isinstance(src_bucket, str) and isinstance(src_key, str):
+                key_id = _s3_object_customer_kms_key(
+                    src_bucket, src_key, None, account_id, region
+                )
+                if key_id:
+                    out.append(("kms:Decrypt", key_id, f"arn:aws:s3:::{src_bucket}"))
+        elif isinstance(object_key, str) and object_key:
+            version_id = params.get("VersionId")
+            version = version_id if isinstance(version_id, str) else None
+            key_id = _s3_object_customer_kms_key(
+                bucket_name, object_key, version, account_id, region
+            )
+            if key_id:
+                out.append(("kms:Decrypt", key_id, bucket_arn))
+
+    return out
 
 
 def _ssm_parameter_key(name: str, account_id: str, region: str) -> str | None:

@@ -14,8 +14,8 @@ trade-off for local emulation; production ECS does not have this issue.
 
 import logging
 import os
-import re
 import shlex
+import sys
 import threading
 import time
 import uuid
@@ -30,15 +30,14 @@ from localemu.utils.container_utils.container_client import (
 from localemu.utils.docker_utils import DOCKER_CLIENT
 from localemu.utils.net import get_free_tcp_port
 
+if "/opt/awsbox/ecr" not in sys.path:
+    sys.path.insert(0, "/opt/awsbox/ecr")
+import awsbox_ecr_pull as ecr_pull  # noqa: E402
+
 LOG = logging.getLogger(__name__)
 
 # Label for identifying ECS containers
 ECS_CONTAINER_LABEL = "localemu.service=ecs"
-
-# <account>.dkr.ecr.<region>.amazonaws.com/<repo>[:tag|@digest]
-_ECR_IMAGE_RE = re.compile(
-    r"^(?P<account>\d+)\.dkr\.ecr\.(?P<region>[a-z0-9-]+)\.amazonaws\.com/(?P<ref>.+)$"
-)
 
 # Image pull locks (same pattern as Lambda, EC2, and RDS)
 # PERF-R2-01: bounded with LRU eviction to prevent unbounded growth
@@ -221,39 +220,13 @@ class DockerTaskManager:
         account_id: str,
         task_id: str,
     ) -> dict:
-        """Boto3 kwargs signed as the execution role via the gateway.
-
-        ``connect_to`` marks calls as internal and skips IAM. Real ECS
-        agents hit the public APIs with the execution role, so we mint
-        STS creds (moto) and call ``127.0.0.1:<gateway>`` — same path
-        IAM_ENFORCEMENT evaluates for AccessDenied.
-        """
-        from botocore.config import Config as BotoConfig
-        from localemu import config as _le_config
-        from moto.sts.models import sts_backends
-
-        sts_backend = sts_backends[account_id or "000000000000"]["global"]
-        assumed = sts_backend.assume_role(
-            region_name=region,
-            role_session_name=f"ecs-execute-{task_id[:32]}",
+        """Boto3 kwargs signed as the execution role via the gateway."""
+        return ecr_pull.role_boto_kwargs(
             role_arn=execution_role_arn,
-            policy=None,
-            duration=3600,
-            external_id=None,
+            region=region,
+            account_id=account_id,
+            session_name=f"ecs-execute-{task_id[:32]}",
         )
-        gw_port = _le_config.GATEWAY_LISTEN[0].port
-        return {
-            "region_name": region,
-            "endpoint_url": f"http://127.0.0.1:{gw_port}",
-            "aws_access_key_id": assumed.access_key_id,
-            "aws_secret_access_key": assumed.secret_access_key,
-            "aws_session_token": assumed.session_token,
-            "config": BotoConfig(
-                retries={"max_attempts": 2, "mode": "standard"},
-                connect_timeout=5,
-                read_timeout=10,
-            ),
-        }
 
     def _execution_role_clients(
         self,
@@ -276,39 +249,6 @@ class DockerTaskManager:
             boto3.client("ssm", **common),
         )
 
-    @staticmethod
-    def _ecr_local_ref(ref: str) -> str:
-        registry = os.environ.get("AWSBOX_ECR_REGISTRY", "127.0.0.1:5000").strip().rstrip("/")
-        return f"{registry}/{ref}"
-
-    @staticmethod
-    def _ecr_image_id(ref: str) -> tuple[str, dict]:
-        if "@" in ref:
-            name, digest = ref.split("@", 1)
-            return name, {"imageDigest": digest}
-        if ":" in ref:
-            name, tag = ref.rsplit(":", 1)
-            return name, {"imageTag": tag}
-        return ref, {"imageTag": "latest"}
-
-    @staticmethod
-    def _is_access_denied(exc: BaseException) -> bool:
-        code = ""
-        message = str(exc)
-        response = getattr(exc, "response", None)
-        if isinstance(response, dict):
-            err = response.get("Error") or {}
-            if isinstance(err, dict):
-                code = str(err.get("Code") or "")
-                message = str(err.get("Message") or message)
-        blob = f"{code} {message}".lower()
-        return (
-            "accessdenied" in blob.replace("_", "")
-            or "not authorized" in blob
-            or "explicit deny" in blob
-            or "implicit deny" in blob
-        )
-
     def _resolve_ecr_image(
         self,
         image: str,
@@ -318,59 +258,22 @@ class DockerTaskManager:
         account_id: str,
         task_id: str,
     ) -> str:
-        """Map an ECR image URI to the local registry after BatchGetImage.
-
-        Non-ECR images (Docker Hub, ``public.ecr.aws``) are unchanged.
-        Bytes are pushed to ``AWSBOX_ECR_REGISTRY`` (default ``127.0.0.1:5000``);
-        the task definition keeps the amazonaws.com URI.
-        """
-        match = _ECR_IMAGE_RE.match(image)
-        if not match:
-            return image
-        if not execution_role_arn:
-            raise RuntimeError(
-                "CannotPullContainerError: execution role is not specified "
-                "for ECR image pull (ecr:BatchGetImage)"
-            )
-        import boto3
-
-        ref = match.group("ref")
-        repository, image_id = self._ecr_image_id(ref)
-        ecr = boto3.client(
-            "ecr",
-            **self._execution_role_boto_kwargs(
-                execution_role_arn=execution_role_arn,
-                region=region,
-                account_id=account_id,
-                task_id=task_id,
-            ),
-        )
-        try:
-            resp = ecr.batch_get_image(
-                repositoryName=repository,
-                imageIds=[image_id],
-            )
-        except Exception as e:
-            if self._is_access_denied(e):
-                raise RuntimeError(
-                    "CannotPullContainerError: execution role is not "
-                    "authorized to perform ecr:BatchGetImage"
-                ) from e
-            raise RuntimeError(f"CannotPullContainerError: {e}") from e
-        for failure in resp.get("failures") or []:
-            code = str(failure.get("failureCode") or "")
-            if "accessdenied" in code.lower().replace("_", ""):
-                raise RuntimeError(
-                    "CannotPullContainerError: execution role is not "
-                    "authorized to perform ecr:BatchGetImage"
-                )
-        local = self._ecr_local_ref(ref)
-        LOG.info(
-            "ECS task %s pulling ECR image %s as %s",
-            task_id[:12],
+        """Map an ECR image URI to the local registry after BatchGetImage."""
+        local = ecr_pull.resolve_ecr_image(
             image,
-            local,
+            role_arn=execution_role_arn,
+            region=region,
+            account_id=account_id,
+            session_name=f"ecs-execute-{task_id[:32]}",
+            role_label="execution role",
         )
+        if local != image:
+            LOG.info(
+                "ECS task %s pulling ECR image %s as %s",
+                task_id[:12],
+                image,
+                local,
+            )
         return local
 
     def _resolve_container_secrets(
@@ -1503,7 +1406,10 @@ class DockerTaskManager:
                 ensured = vpcm.ensure_network_for_vpc(vpc_id)
             except Exception:
                 ensured = None
-            vpc_network = ensured or f"localemu-vpc-{vpc_id}"
+            # Do not invent localemu-vpc-* when ensure failed (#479).
+            if not ensured:
+                return None
+            vpc_network = ensured
             try:
                 DOCKER_CLIENT.inspect_network(vpc_network)
             except Exception:
@@ -1592,7 +1498,15 @@ class DockerTaskManager:
                 LOG.debug(
                     "ensure_network_for_vpc(%s) failed", vpc_id, exc_info=True,
                 )
-            vpc_network = ensured or f"localemu-vpc-{vpc_id}"
+            # Do not invent localemu-vpc-* when ensure failed (#479).
+            if not ensured:
+                LOG.warning(
+                    "ECS awsvpc task %s: no Docker network for VPC %s — "
+                    "cannot pin subnet IP (CreateVpc bridge failed?)",
+                    docker_name, vpc_id,
+                )
+                return None
+            vpc_network = ensured
             try:
                 DOCKER_CLIENT.inspect_network(vpc_network)
             except Exception:

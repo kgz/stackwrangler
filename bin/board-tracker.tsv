@@ -172,12 +172,12 @@
 216	done	v1: mirror real account fixture (scaffold)
 217	backlog	Debt: ECR console (from #211)
 218	backlog	Debt: docker push via repositoryUri hostname (from #211)
-219	backlog	Debt: Lambda image pull ECR authz (from #211)
+219	in-review	Debt: Lambda image pull ECR authz (from #211)
 220	backlog	Debt: real-account mirror read path (from #216)
-223	backlog	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
+223	in-review	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
-233	backlog	Debt: cross-account resource policy coverage (from #193)
+233	in-review	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
 241	backlog	Debt: ELBv2 console (from #203)
@@ -208,7 +208,7 @@
 304	done	Design: S3 console missing UI via Open Design web-clone
 305	in-review	Rebrand awsbox to stackwrangler
 306	backlog	Debt: DynamoDB IAM for TransactWriteItems / Batch* with table-scoped policies (from #296)
-307	backlog	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
+307	in-review	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)
 310	backlog	Debt: Console for API Gateway API keys and usage plans (from #294)
 311	backlog	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
@@ -322,3 +322,8 @@
 561	done	Doc: REST APIs console screenshot (from #189)
 562	done	Doc: SNS Topics console screenshot (from #172)
 563	done	Doc: SQS queues console screenshot (from #167)
+517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
+522	in-review	stackwrangler sls --role-arn deploy as live principal
+579	done	Debt: CFN resource providers skip caller IAM (from #522)
+525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
+518	in-review	sns:Protocol/Endpoint on Subscribe

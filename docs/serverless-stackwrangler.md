@@ -62,6 +62,7 @@ aws ssm put-parameter --name /demo/rest/dev/app-name --type String --value my-ap
 
 - Example: [examples/serverless-v4-sns-sqs](../examples/serverless-v4-sns-sqs/) (topic stack + SQS consumer)
 - Smoke: `./smokes/iac/serverless-v4-smoke.sh` (happy: deploy topic → consumer → SNS keep → Lambda S3 → redeploy → remove; sad [#460](https://github.com/kgz/awsl/issues/460): missing auth, host aws without `AWS_ENDPOINT_URL` refuses real AWS, TLS-down, missing `Fn::ImportValue`, filter-drop)
+- Deploy-role smoke: `./smokes/iac/serverless-v4-role-arn-smoke.sh` (`--role-arn` / `--use-session-env`; sad scoped `logs:DescribeLogGroups` → AccessDenied) ([#522](https://github.com/kgz/awsl/issues/522))
 - Yarn workspace: [examples/serverless-v4-workspace](../examples/serverless-v4-workspace/) — `stackwrangler sls --cwd packages/service` mounts the workspace root when `.bin/serverless` is hoisted ([#468](https://github.com/kgz/awsl/issues/468)); smoke `./smokes/iac/serverless-v4-workspace-smoke.sh`
 - Shape: `frameworkVersion: "4"`, `deploymentMethod: direct`, named `deploymentBucket`, built-in `build.esbuild` (`exclude: ["@aws-sdk/*"]`), native per-function `iamRoleStatements`, `${ssm:…}`, cross-stack `Fn::ImportValue` — **no** `serverless-localstack` / esbuild / iam-roles plugins
 
@@ -140,7 +141,7 @@ aws cloudformation deploy \
 
 ### Deploy as the deploy role (admin keys skip IAM)
 
-`stackwrangler sls` deploys with the admin keys. Admin keys skip IAM, so the deploy **can't fail on permissions**. A stack that deploys cleanly here can still get `AccessDenied` in CI, where it runs as a deploy role.
+By default `stackwrangler sls` injects the admin keys (`STACKWRANGLER_ACCESS_KEY` / `SECRET_KEY`) and **no** session token. Admin keys skip IAM, so the deploy **can't fail on permissions**. A stack that deploys cleanly here can still get `AccessDenied` in CI, where it runs as a deploy role.
 
 Example: a deploy role's policy scoped `logs:DescribeLogGroups` to log group ARNs. That action has no resource-level permissions (AWS service reference), so a scoped grant never matches, and CloudFormation's `AWS::Logs::LogGroup` handler calls it on every operation. Acting as a role with that exact statement, LocalEmu **denies** `describe-log-groups`, as AWS does. The stack had been deployed with admin keys, so it never showed.
 
@@ -149,9 +150,38 @@ When the question is "will this deploy in CI", deploy as the role CI uses:
 1. Create the role from the real policy, with ARNs rewritten for the emulator (account `000000000000`, your region and stage), and a trust policy for the local root.
 2. `aws sts assume-role` against the emulator, then export `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`.
 3. Today: `package` via the redirect, then `aws cloudformation deploy` (fallback above) with those credentials. Built in: `stackwrangler sls --role-arn` ([#522](https://github.com/kgz/awsl/issues/522)).
-4. Read the stack events for `AccessDenied`; also `remove` the stack, since rollback and delete need their own permissions.
+4. Read the stack events for `AccessDenied`; also `remove` the stack, since rollback and delete need their own permissions. CFN resource creates/deletes now run as the caller (or stack `RoleARN`) through IAM ([#524](https://github.com/kgz/awsl/issues/524)); smoke: `./smokes/iac/cfn-caller-iam-smoke.sh`.
+2. Run the wrapper with the role (it assumes against LocalEmu STS and prints the principal):
 
-Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)) and `iam:SimulateCustomPolicy` ([#517](https://github.com/kgz/awsl/issues/517)). Loosen only the affected statement, and say so.
+```bash
+./bin/stackwrangler sls --cwd examples/serverless-v4-sns-sqs/topic \
+  --role-arn arn:aws:iam::000000000000:role/MyDeployRole \
+  --session-name ci-deploy -- \
+  deploy --stage local
+```
+
+3. Or opt in to already-exported session credentials (so the admin default stays explicit):
+
+```bash
+aws --endpoint-url "$AWS_ENDPOINT_URL" sts assume-role \
+  --role-arn arn:aws:iam::000000000000:role/MyDeployRole \
+  --role-session-name ci-deploy --output json
+# export AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN from Credentials
+./bin/stackwrangler sls --use-session-env --cwd … -- deploy --stage local
+```
+
+4. Manual fallback without the flag: `package` via the redirect, then `aws cloudformation deploy` with those credentials (see above).
+5. Read the stack events for `AccessDenied`; also `remove` the stack as the same role, since rollback and delete need their own permissions.
+
+Smoke: `./smokes/iac/serverless-v4-role-arn-smoke.sh` (happy `--role-arn` on the v4 fixture; sad scoped `logs:DescribeLogGroups` → AccessDenied as that role).
+
+LocalEmu CFN resource providers still inject internal credentials (`FIXME: use proper credentials` in the change-set executor), so a wrong deploy role may still create `AWS::Logs::LogGroup` via CFN even when `logs:DescribeLogGroups` as that role is denied. Probe the API as the role (or [#524](https://github.com/kgz/awsl/issues/524)) before trusting stack events alone.
+
+Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)). Loosen only the affected statement, and say so.
+
+`iam:SimulateCustomPolicy` / `SimulatePrincipalPolicy` evaluate with the same enforcer matchers as live calls (`./smokes/security/iam-simulate-policy-smoke.sh`). That can differ from real AWS’s IAM policy simulator for some resource-scoped actions (e.g. SNS attribute APIs on a topic ARN) — prefer the enforcer answer when checking deploy-role policies locally.
+Known blind spots: SNS `sns:Protocol` / `sns:Endpoint` conditions ([#518](https://github.com/kgz/awsl/issues/518)) and `iam:SimulateCustomPolicy` ([#517](https://github.com/kgz/awsl/issues/517)). `iam:PermissionsBoundary` on CreateRole / role-policy ops is set ([#525](https://github.com/kgz/awsl/issues/525); [oidc.md](oidc.md)). Loosen only the affected statement, and say so.
+Known blind spots: `iam:SimulateCustomPolicy` ([#517](https://github.com/kgz/awsl/issues/517)) and other request-parameter condition keys listed in [iam-request-condition-keys.md](iam-request-condition-keys.md) (SNS Subscribe `sns:Protocol` / `sns:Endpoint` fixed in [#518](https://github.com/kgz/awsl/issues/518)). Loosen only the affected statement, and say so.
 
 ### Lambda → SQS from inside the function
 
@@ -165,4 +195,4 @@ This fixture validates **host SNS publish → SQS → Lambda ESM → S3**. Produ
 | `serverless-domain-manager` | [#329](https://github.com/kgz/awsl/issues/329) |
 | Smoke sad path (v3) | [#330](https://github.com/kgz/awsl/issues/330) |
 | Smoke sad path (v4) | covered in `serverless-v4-smoke.sh` ([#460](https://github.com/kgz/awsl/issues/460)) |
-| Deploy as a given role (`--role-arn`) | [#522](https://github.com/kgz/awsl/issues/522) |
+| Deploy as a given role (`--role-arn` / `--use-session-env`) | covered in `serverless-v4-role-arn-smoke.sh` ([#522](https://github.com/kgz/awsl/issues/522)) |

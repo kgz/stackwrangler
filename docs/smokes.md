@@ -29,14 +29,15 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 
 | Dir | Put here |
 |-----|----------|
-| `smokes/lambda/` | `lambda-*`, `sqs-lambda-dlq-smoke.sh`, `sqs-lambda-batch-failures-smoke.sh`, `sqs-lambda-esm-enable-smoke.sh`, `sqs-lambda-esm-cred-refresh-smoke.sh`, `sqs-lambda-queueurl-smoke.sh` |
+| `smokes/lambda/` | `lambda-*` (incl. `lambda-ecr-smoke.sh`), `sqs-lambda-dlq-smoke.sh`, `sqs-lambda-batch-failures-smoke.sh`, `sqs-lambda-esm-enable-smoke.sh`, `sqs-lambda-esm-cred-refresh-smoke.sh`, `sqs-lambda-queueurl-smoke.sh` |
 | `smokes/messaging/` | `sqs-*`, `sns-*`, `events-*`, `sfn-*`, `kinesis-*` |
 | `smokes/networking/` | `vpc-*`, `sg-*`, `elbv2-*`, `route53-*`, `r53-*`, `vpce-*`, `egress-*`, `waf-*`, `network-firewall-*` |
 | `smokes/compute/` | `ecs-*` (incl. `ecs-sqs-queueurl-smoke.sh`), `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
 | `smokes/apigw/` | `apigw-*` |
 | `smokes/data/` | `dynamodb-*`, `rds-*` |
 | `smokes/transfer/` | `transfer-*` |
-| `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh` |
+| `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh` |
+| `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `iam-permissions-boundary-key-smoke.sh`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh` |
 | `smokes/s3/` | `s3-*` (including `s3-parity.sh`) |
 | `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `iac-smoke.sh` |
 | `smokes/account/` | `mirror-*`, `custom-id-*`, `labels-*` |

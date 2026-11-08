@@ -300,6 +300,18 @@ def _is_role_field(key: str) -> bool:
     return leaf in ("role", "accessrole", "loggingrole") or leaf.endswith("rolearn")
 
 
+def _is_instance_profile_field(key: str) -> bool:
+    leaf = str(key).replace("_", "").split(".")[-1].lower()
+    return leaf in (
+        "iaminstanceprofile",
+        "iaminstanceprofilename",
+        "iaminstanceprofilearn",
+        "instanceprofile",
+        "instanceprofilename",
+        "instanceprofilearn",
+    )
+
+
 def _collect_passed_roles(node, found: list[str]) -> None:
     if isinstance(node, dict):
         for key, value in node.items():
@@ -310,6 +322,55 @@ def _collect_passed_roles(node, found: list[str]) -> None:
     elif isinstance(node, list):
         for item in node:
             _collect_passed_roles(item, found)
+
+
+def _collect_instance_profile_refs(node, found: list[str]) -> None:
+    """Gather IamInstanceProfile Name/Arn values (EC2 PassRole path, #223)."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if _is_instance_profile_field(key):
+                if isinstance(value, dict):
+                    arn = value.get("Arn") or value.get("arn")
+                    name = value.get("Name") or value.get("name")
+                    if isinstance(arn, str) and arn:
+                        found.append(arn)
+                    elif isinstance(name, str) and name:
+                        found.append(name)
+                elif isinstance(value, str) and value:
+                    found.append(value)
+            else:
+                _collect_instance_profile_refs(value, found)
+    elif isinstance(node, list):
+        for item in node:
+            _collect_instance_profile_refs(item, found)
+
+
+def _roles_from_instance_profiles(refs: list[str], account_id: str) -> list[str]:
+    """Resolve instance-profile refs to the role ARNs AWS treats as PassRole."""
+    if not refs:
+        return []
+    try:
+        from moto.iam.models import iam_backends
+
+        backend = iam_backends[account_id]["global"]
+    except Exception:
+        LOG.debug("iam backend unavailable for instance-profile PassRole", exc_info=True)
+        return []
+    roles: list[str] = []
+    for ref in refs:
+        try:
+            if ref.startswith("arn:"):
+                profile = backend.get_instance_profile_by_arn(ref)
+            else:
+                profile = backend.get_instance_profile(ref)
+        except Exception:
+            LOG.debug("instance profile lookup failed for %s", ref, exc_info=True)
+            continue
+        for role in getattr(profile, "roles", None) or []:
+            arn = getattr(role, "arn", None)
+            if isinstance(arn, str) and arn:
+                roles.append(arn)
+    return roles
 
 
 def _patch_pass_role() -> None:
@@ -336,8 +397,12 @@ def _patch_pass_role() -> None:
         caller = resolve_caller(access_key, account_id, context.region)
         if not caller or caller.principal_type == "Root":
             return
+        params = context.service_request or {}
         found: list[str] = []
-        _collect_passed_roles(context.service_request or {}, found)
+        _collect_passed_roles(params, found)
+        profile_refs: list[str] = []
+        _collect_instance_profile_refs(params, profile_refs)
+        found.extend(_roles_from_instance_profiles(profile_refs, account_id))
         roles = list(dict.fromkeys(found))
         if not roles:
             return
