@@ -134,7 +134,7 @@ HF cheap parity (#296/#297/#190/#294/#230 VPCE; skipped WAF/R53/Transfer/…): `
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| CloudWatch Logs | Log groups | Log groups | **Working** (basic) · sad [#169](https://github.com/kgz/awsl/issues/169) · create/detail UI [#352](https://github.com/kgz/awsl/issues/352) |
+| CloudWatch Logs | Log groups | Log groups · create · streams · filter events | **Working** · create/detail [#352](https://github.com/kgz/awsl/issues/352) · sad [#169](https://github.com/kgz/awsl/issues/169) |
 | API Gateway HTTP | APIs | HTTP APIs | **Partial** · sad [#170](https://github.com/kgz/awsl/issues/170) · detail UI [#354](https://github.com/kgz/awsl/issues/354) |
 | API Gateway REST (v1) | OpenAPI import · `aws_proxy` · REQUEST authorizers · custom domain Host + base path · VPC_LINK → NLB · API keys + usage plans (`x-api-key`, throttle, quota; IAM `apigateway:POST/GET/DELETE` on `/apikeys`, `/usageplans`) ([apigw-rest.md](apigw-rest.md)) | REST APIs list + detail (resources/methods, authorizers, stages, invoke URL) · keys [#310](https://github.com/kgz/awsl/issues/310) | **Partial** · ENI IP [#268](https://github.com/kgz/awsl/issues/268) · usage reporting [#309](https://github.com/kgz/awsl/issues/309) · IAM breadth [#311](https://github.com/kgz/awsl/issues/311) · create/deploy [#543](https://github.com/kgz/stackwrangler/issues/543) |
 | Metrics / Alarms / SSM / CloudTrail / Orgs (empty reads) | Enabled for scanners (Prowler) | — | **Partial** (read-empty) · [#198](https://github.com/kgz/awsl/issues/198) · [prowler.md](prowler.md) |

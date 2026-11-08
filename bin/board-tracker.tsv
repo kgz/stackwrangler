@@ -237,7 +237,7 @@
 349	done	Implement built console services from #319 OD mocks
 350	backlog	Epic: console full UI create/detail
 351	done	Debt: Lambda Create + detail + Monaco code
-352	backlog	Debt: Logs create + stream/detail
+352	in-progress	Debt: Logs create + stream/detail
 353	backlog	Debt: IAM Create user + user detail
 354	backlog	Debt: HTTP API detail routes/stages
 355	backlog	Debt: S3 console disabled controls (from #347)

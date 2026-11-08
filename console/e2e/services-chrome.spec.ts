@@ -24,7 +24,8 @@ const lists: Array<{
     path: '/logs',
     heading: 'Log groups',
     columns: ['Log group', 'Retention', 'Stored bytes', 'Metric filters'],
-    disabled: ['Actions ▾', 'Create log group'],
+    disabled: ['Actions ▾'],
+    enabledLinks: ['Create log group'],
   },
   {
     path: '/stepfunctions',
