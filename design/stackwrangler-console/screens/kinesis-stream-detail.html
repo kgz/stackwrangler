@@ -21,9 +21,9 @@
             <span>Created 2026-11-02 14:18:03</span>
           </div>
         </div>
-        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
-        <button type="button" class="btn btn-normal" data-od-id="btn-delete-stream" disabled aria-disabled="true" title="To implement">Delete</button>
-        <button type="button" class="btn btn-primary" data-od-id="btn-put-record" disabled aria-disabled="true" title="To implement">Put records</button>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="Refresh">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-stream">Delete</button>
+        <button type="button" class="btn btn-primary" data-od-id="btn-put-record">Put records</button>
       </div>
 
       <p class="aws-desc"><a href="kinesis-streams.html" data-od-id="back-list">← Data streams</a></p>
@@ -32,6 +32,7 @@
         <div class="aws-tabs" role="tablist" data-od-id="stream-detail-tabs">
           <button type="button" class="aws-tab active" data-tab="details" aria-current="page" data-od-id="tab-details">Details</button>
           <button type="button" class="aws-tab" data-tab="shards" data-od-id="tab-shards">Shards</button>
+          <button type="button" class="aws-tab" data-tab="tags" data-od-id="tab-tags">Tags</button>
         </div>
         <div class="aws-card-body aws-tab-panels">
           <div data-tab-panel="details" data-od-id="panel-details">
@@ -59,11 +60,11 @@
               </div>
               <div>
                 <dt>Retention period (hours)</dt>
-                <dd>24</dd>
+                <dd>24 <button type="button" class="btn btn-normal" data-od-id="btn-edit-retention">Edit</button></dd>
               </div>
               <div>
                 <dt>Encryption</dt>
-                <dd>NONE</dd>
+                <dd>NONE <button type="button" class="btn btn-normal" data-od-id="btn-edit-encryption">Edit</button></dd>
               </div>
               <div>
                 <dt>Created</dt>
@@ -91,6 +92,29 @@
                     <td><code class="aws-mono">0</code></td>
                     <td><code class="aws-mono">340282366920938463463374607431768211455</code></td>
                     <td><code class="aws-mono">0</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div data-tab-panel="tags" hidden data-od-id="panel-tags">
+            <h2 class="aws-section-title">Tags</h2>
+            <p class="aws-desc">LocalEmu <code>ListTagsForStream</code> / <code>AddTagsToStream</code> / <code>RemoveTagsFromStream</code>.</p>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="tags-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Key</span></th>
+                    <th scope="col"><span class="th-inner">Value</span></th>
+                    <th scope="col"><span class="th-inner">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code class="aws-mono">env</code></td>
+                    <td>demo</td>
+                    <td><button type="button" class="btn btn-normal">Remove</button></td>
                   </tr>
                 </tbody>
               </table>

@@ -165,6 +165,21 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 - Configure retention / encryption / tags, Put records, Delete (static detail), Refresh (static mock)
 - Column filters on list remain stubbed
 
+## Issue #615 — Kinesis put / retention / encryption / tags (from #539)
+
+### Mode
+- Hand-update #539 create + detail mocks (grey-rose); OD optional
+- Wire React against LocalEmu PutRecord, retention increase/decrease, Start/StopStreamEncryption, Add/List/RemoveTags
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `kinesis-create-data-stream.html` | Retention hours · encryption NONE/KMS · tags table |
+| `kinesis-stream-detail.html` | Put records · Edit retention/encryption · Tags tab |
+
+### Dead controls remaining
+- List column filters (`FilterHeader`) stay `title="To implement"` (shared console stub; not LocalEmu APIs)
+
 ## Issue #167 — SQS Queues list
 
 ### Mode
