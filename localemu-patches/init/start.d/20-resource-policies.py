@@ -270,35 +270,36 @@ def _install() -> None:
 
 
     orig_eval = evaluator.PolicyEvaluator.evaluate
+    # sts:AssumeRole uses the role trust policy (STS), not this both-must-allow path.
+    _CROSS_ACCOUNT_RP_SERVICES = frozenset({
+        "s3", "secretsmanager", "kms", "sqs", "sns", "lambda", "events",
+    })
 
     def evaluate(self, caller, action, resource, conditions, resource_policy=None):
+        # Cross-account (#233): identity Allow alone is never enough (including Root).
+        # Missing resource document → implicit deny in evaluate_both_required / kms helpers.
         _deny_layer.source = None
-        if getattr(caller, "principal_type", None) != "Root":
-            if isinstance(action, str) and action.startswith("kms:") and resource_policy:
-                decision = rp.evaluate_kms_crypto(
-                    orig_eval, self, caller, action, resource, conditions, resource_policy,
-                )
-            elif resource_policy:
-                region = (conditions or {}).get("aws:RequestedRegion") or "us-east-1"
-                owner = rp.resource_owner_account(
-                    action, resource or "", caller.account_id, region,
-                )
-                if owner != caller.account_id:
-                    decision = rp.evaluate_both_required(
-                        orig_eval, self, caller, action, resource, conditions, resource_policy,
-                    )
-                else:
-                    decision = orig_eval(
-                        self, caller, action, resource, conditions, resource_policy,
-                    )
-            else:
-                decision = orig_eval(
-                    self, caller, action, resource, conditions, resource_policy,
-                )
+        region = (conditions or {}).get("aws:RequestedRegion") or "us-east-1"
+        owner = rp.resource_owner_account(
+            action, resource or "", caller.account_id, region,
+        )
+        cross = owner != caller.account_id
+        service = action.split(":", 1)[0] if isinstance(action, str) and ":" in action else ""
+        is_kms = service == "kms"
+
+        if is_kms and (resource_policy is not None or cross):
+            decision = rp.evaluate_kms_crypto(
+                orig_eval, self, caller, action, resource, conditions, resource_policy,
+            )
+        elif cross and service in _CROSS_ACCOUNT_RP_SERVICES:
+            decision = rp.evaluate_both_required(
+                orig_eval, self, caller, action, resource, conditions, resource_policy,
+            )
         else:
             decision = orig_eval(
                 self, caller, action, resource, conditions, resource_policy,
             )
+
         if decision == Decision.EXPLICIT_DENY and resource_policy:
             if rp.resource_policy_effect(
                 resource_policy, caller, action, resource or "", conditions,

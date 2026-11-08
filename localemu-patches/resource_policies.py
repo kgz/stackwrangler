@@ -1107,6 +1107,38 @@ def _ssm_names_by_path(path: str, recursive: bool, account_id: str, region: str)
         LOG.debug("ssm path lookup failed for %s: %s", path, exc)
         return []
 
+def _s3_write_customer_kms_key(params: dict, account_id: str, region: str) -> str | None:
+    """CMK used when S3 writes with SSE-KMS (request or bucket default)."""
+    encryption = params.get("ServerSideEncryption")
+    key_id = params.get("SSEKMSKeyId")
+    bucket = _s3_bucket(str(params.get("Bucket") or ""), account_id, region)
+    rule = getattr(bucket, "encryption_rule", None) if bucket is not None else None
+    if isinstance(rule, dict):
+        default = rule.get("ApplyServerSideEncryptionByDefault") or {}
+        if isinstance(default, dict):
+            encryption = encryption or default.get("SSEAlgorithm")
+            if not key_id and encryption in ("aws:kms", "aws:kms:dsse"):
+                key_id = default.get("KMSMasterKeyID")
+    if encryption not in ("aws:kms", "aws:kms:dsse") and not key_id:
+        return None
+    return _customer_managed_key(key_id if isinstance(key_id, str) else None)
+
+
+def _s3_object_customer_kms_key(
+    bucket_name: str, object_key: str, version_id: str | None, account_id: str, region: str
+) -> str | None:
+    """CMK on an existing object (GetObject / HeadObject SSE-KMS path)."""
+    bucket = _s3_bucket(bucket_name, account_id, region)
+    if bucket is None:
+        return None
+    try:
+        s3_object = bucket.get_object(key=object_key, version_id=version_id, http_method="GET")
+    except Exception as exc:
+        LOG.debug("s3 object lookup failed for %s/%s: %s", bucket_name, object_key, exc)
+        return None
+    return _customer_managed_key(getattr(s3_object, "kms_key_id", None))
+
+
 def s3_via_service(region: str) -> str:
     """``kms:ViaService`` value AWS sets for S3-mediated KMS calls."""
     return f"s3.{region or 'us-east-1'}.amazonaws.com"
