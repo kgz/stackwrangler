@@ -309,7 +309,7 @@
 420	done	(batch/2026-11-04-v002-b)
 428	in-review	Public OSS: polish docs-site (Runa-grade + GitHub Pages prep)
 487	done	Public OSS: single Docker image install path
-535	in-progress	Debt: Secrets Manager store + secret detail (from #176)
+535	in-review	Debt: Secrets Manager store + secret detail (from #176)
 539	backlog	Debt: Kinesis create/detail (from #178)
 540	backlog	Debt: KMS create/detail (from #177)
 543	backlog	Debt: API Gateway REST create/deploy controls (from #189)
