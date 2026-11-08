@@ -540,7 +540,9 @@ section_223() {
 	on_cleanup "aws_r iam delete-user --user-name '$user'"
 	cat >"$WORK/via-pol.json" <<EOF
 {"Version":"2012-10-17","Statement":[
-  {"Effect":"Allow","Action":["kms:Encrypt","kms:Decrypt","kms:GenerateDataKey*"],"Resource":"${key_arn}",
+  {"Effect":"Allow","Action":["kms:Decrypt"],"Resource":"${key_arn}",
+   "Condition":{"StringEquals":{"kms:ViaService":"s3.${AWS_DEFAULT_REGION}.amazonaws.com"}}},
+  {"Effect":"Allow","Action":["kms:Encrypt","kms:GenerateDataKey","kms:GenerateDataKeyWithoutPlaintext"],"Resource":"${key_arn}",
    "Condition":{"StringEquals":{"kms:ViaService":"s3.${AWS_DEFAULT_REGION}.amazonaws.com"}}},
   {"Effect":"Allow","Action":["s3:PutObject","s3:GetObject"],"Resource":"arn:aws:s3:::${PREFIX}-via-bkt/*"}
 ]}
@@ -586,7 +588,7 @@ EOF
 		rc=$?
 		set -e
 		if [[ "$rc" -eq 0 ]]; then ok=1; break; fi
-		grep -qiE 'InvalidAccessKeyId|does not exist in our records' /tmp/${PREFIX}-s3kms.err || break
+		grep -qiE 'InvalidAccessKeyId|does not exist in our records|not authorized|AccessDenied' /tmp/${PREFIX}-s3kms.err || break
 		sleep 2
 	done
 	[[ "$ok" -eq 1 ]] || { fail "#223 S3 SSE-KMS PutObject: $(cat /tmp/${PREFIX}-s3kms.err)"; return; }
