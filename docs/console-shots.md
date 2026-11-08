@@ -20,9 +20,9 @@ PNG paths are under `docs/assets/console/` (docs-site serves them via `public/as
 | `apigateway-rest-apis.png` | `/apigateway/rest-apis` | Optional: seed via `apigw-rest-smoke.sh`; empty OK |
 | `sns-topics.png` | `/sns` | Optional: seed via `sns-sqs-fanout-smoke.sh`; empty OK |
 | `sqs-queues.png` | `/sqs` | Optional: seed via `sns-sqs-fanout-smoke.sh`; empty OK |
-| `logs-log-groups.png` | `/logs` | Optional: seed a log group; empty OK · create/detail [#352](https://github.com/kgz/stackwrangler/issues/352) |
-| `logs-create-log-group.png` | `/logs/create` | Needs [#352](https://github.com/kgz/stackwrangler/issues/352) create page |
-| `logs-log-group-detail.png` | `/logs/log-groups/:name` | Seed `/stackwrangler/docs-608` (+ stream); needs [#352](https://github.com/kgz/stackwrangler/issues/352) |
-| `logs-log-stream-events.png` | `/logs/log-groups/:name/log-streams/:stream` | Seed stream `docs-stream` + put-log-events; needs [#352](https://github.com/kgz/stackwrangler/issues/352) |
+| `logs-log-groups.png` | `/logs` | Optional: seed a log group; empty OK · list capture runs on main |
+| `logs-create-log-group.png` | `/logs/create` | Committed PNG; capture test skipped until [#352](https://github.com/kgz/stackwrangler/issues/352) / [#604](https://github.com/kgz/stackwrangler/pull/604) |
+| `logs-log-group-detail.png` | `/logs/log-groups/:name` | Committed PNG; capture skipped until #604 + seed `/stackwrangler/docs-608` |
+| `logs-log-stream-events.png` | `/logs/log-groups/:name/log-streams/:stream` | Committed PNG; capture skipped until #604 + seed `docs-stream` |
 
 No seed for a new shot → file **Doc:**; do not invent images or use `design/**/refs/` AWS recon PNGs.

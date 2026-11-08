@@ -32,4 +32,4 @@ Matrix: [smoke-matrix](https://github.com/kgz/stackwrangler/blob/main/docs/smoke
 
 ![Log stream events](/assets/console/logs-log-stream-events.png)
 
-Shots captured against the #352 console surface; re-run `./bin/docs-capture.sh` after that PR lands on main (seed `/stackwrangler/docs-608` + stream `docs-stream` for detail).
+Shots captured against the #352 console surface. List re-capture runs on main; create/detail/stream capture tests stay skipped until #604 merges — then unskip and seed `/stackwrangler/docs-608` + stream `docs-stream`.

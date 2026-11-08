@@ -178,7 +178,15 @@ test.describe('docs-capture', () => {
     })
   })
 
+  // Create / group detail / stream events land with #352 (PR #604). Skip on
+  // main-based checkouts so default `./bin/docs-capture.sh` stays green; PNGs
+  // for those routes stay committed. Re-enable after #604 merges (and seed
+  // `/stackwrangler/docs-608` + stream `docs-stream` for detail shots).
   test('cloudwatch logs create log group', async ({ page }) => {
+    test.skip(
+      true,
+      'needs #352 / PR #604 /logs/create; committed PNG kept until then',
+    )
     await shot(page, 'logs-create-log-group.png', '/logs/create', async () => {
       await expect(
         page.getByRole('heading', { name: 'Create log group', exact: true }),
@@ -190,6 +198,10 @@ test.describe('docs-capture', () => {
   })
 
   test('cloudwatch logs log group detail', async ({ page }) => {
+    test.skip(
+      true,
+      'needs #352 / PR #604 log-group detail + seed /stackwrangler/docs-608',
+    )
     const group = encodeURIComponent('/stackwrangler/docs-608')
     await shot(
       page,
@@ -213,6 +225,10 @@ test.describe('docs-capture', () => {
   })
 
   test('cloudwatch logs log stream events', async ({ page }) => {
+    test.skip(
+      true,
+      'needs #352 / PR #604 stream events + seed docs-stream',
+    )
     const group = encodeURIComponent('/stackwrangler/docs-608')
     await shot(
       page,
