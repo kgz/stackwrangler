@@ -9,8 +9,9 @@ Operations intercepted:
   - RegisterTargets           : add targets to router
   - DeregisterTargets         : remove targets from router
   - CreateListener            : start an actual HTTP listener (for HTTP ALBs)
-  - ModifyListener            : reload ACM TLS material when certificates change
-  - AddListenerCertificates   : reload ACM TLS material after certs are added
+  - ModifyListener            : reload ACM TLS material when default Certificates change
+  - AddListenerCertificates   : reload only if the default cert actually changes
+                                (first attach on a cert-less listener; never SNI flip)
   - DeleteListener            : stop the HTTP listener
   - DescribeLoadBalancers     : ensure DNS names match what we emit
   - DescribeTargetHealth      : return real TCP-probe-derived health
@@ -229,13 +230,12 @@ def _sync_listener_certificates(
     return arns[0]
 
 
-def _default_certificate_arn(
-    context: RequestContext, listener_arn: str, *sources,
+def _moto_default_certificate_arn(
+    context: RequestContext, listener_arn: str,
 ) -> str:
-    """Prefer request/result ARNs; else the moto listener's default cert."""
-    arn = _first_certificate_arn(*sources)
-    if arn or not listener_arn:
-        return arn
+    """Default (first) certificate ARN on the moto listener, or empty."""
+    if not listener_arn:
+        return ""
     try:
         import moto.backends as moto_backends
 
@@ -332,19 +332,19 @@ def _handle_modify_listener(
 def _handle_add_listener_certificates(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    result = call_moto(context)
     listener_arn = str(request.get("ListenerArn") or "")
     certificates = request.get("Certificates") or []
+    # AWS Add only attaches (SNI); it must not flip the default. Reload only
+    # when the default actually changes — e.g. first attach on a cert-less
+    # listener. Never reload to the *added* request ARN (#594).
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
     if listener_arn and certificates:
-        # Default cert is certificates[0] after the add (AWS / moto).
-        cert_arn = _default_certificate_arn(
-            context,
-            listener_arn,
-            result.get("Certificates"),
-            certificates,
-        )
-        if cert_arn:
-            get_router().reload_listener_certificate(listener_arn, cert_arn)
+        after = _moto_default_certificate_arn(context, listener_arn)
+        if after and after != before:
+            get_router().reload_listener_certificate(listener_arn, after)
     return result
 
 

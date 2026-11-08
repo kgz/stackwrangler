@@ -164,4 +164,4 @@ LIS_CERT="$(aws elbv2 describe-listeners --listener-arns "$LIS" \
 echo "OK: ALB HTTPS listener stores ${CERT}"
 
 echo "OK: acm smoke (request/import/describe/list + API domain + ALB HTTPS)"
-echo "NOTE: TLS handshake with the ACM keypair is covered by ./smokes/networking/elbv2-smoke.sh"
+echo "NOTE: TLS handshake with the ACM keypair is Debt [#242]"
