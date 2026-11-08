@@ -284,6 +284,33 @@ test.describe('EventBridge rules UI (#173 / #552 / #630)', () => {
       if (created) deleteRuleQuiet(name)
     }
   })
+
+  test('disables schedule when event bus is not default', async ({ page }) => {
+    const ts = Date.now()
+    const bus = `e2e-bus-sched-guard-${ts}`
+    try {
+      aws(['events', 'create-event-bus', '--name', bus])
+      await page.goto('/events/create')
+      await expect(
+        page.getByTestId('events-create-rule-type-schedule'),
+      ).toBeEnabled({ timeout: 15000 })
+      await page.getByTestId('events-create-rule-bus').selectOption(bus)
+      await expect(
+        page.getByTestId('events-create-rule-type-schedule'),
+      ).toBeDisabled()
+      await expect(
+        page.getByTestId('events-create-rule-type-schedule'),
+      ).toHaveAttribute(
+        'title',
+        'Schedule rules require the default event bus',
+      )
+      await expect(
+        page.getByTestId('events-create-rule-type-pattern'),
+      ).toBeChecked()
+    } finally {
+      deleteBusQuiet(bus)
+    }
+  })
 })
 
 test.describe('EventBridge event buses UI (#173 / #552)', () => {

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Notices } from '../components/ServiceUi'
 import {
   describeRule,
+  isDefaultEventBus,
   updateRule,
   type RuleType,
 } from '../lib/events'
@@ -76,6 +77,7 @@ export function EventBridgeEditRulePage() {
   }
 
   const backTo = `/events/rules/${encodeURIComponent(name)}?bus=${encodeURIComponent(eventBusName)}`
+  const scheduleAllowed = isDefaultEventBus(eventBusName)
 
   return (
     <>
@@ -211,13 +213,19 @@ export function EventBridgeEditRulePage() {
                         name="ruleType"
                         value="schedule"
                         checked={ruleType === 'schedule'}
+                        disabled={!scheduleAllowed}
+                        title={
+                          scheduleAllowed
+                            ? undefined
+                            : 'Schedule rules require the default event bus'
+                        }
                         onChange={() => setRuleType('schedule')}
                         data-testid="events-edit-rule-type-schedule"
                       />
                       <span>
                         <strong>Schedule</strong>
                         <span className="sub">
-                          Invoke on a rate or cron expression.
+                          Invoke on a rate or cron expression (default bus).
                         </span>
                       </span>
                     </label>

@@ -199,12 +199,22 @@ export async function describeEventBus(
   }
 }
 
+/** ScheduleExpression is only valid on the default bus (AWS + LocalEmu). */
+export function isDefaultEventBus(name: string): boolean {
+  return (name.trim() || 'default') === 'default'
+}
+
 export async function createRule(input: CreateRuleInput): Promise<void> {
   const name = input.name.trim()
   if (!name) throw new Error('Rule name is required')
   const eventBusName = input.eventBusName.trim() || 'default'
 
   if (input.ruleType === 'schedule') {
+    if (!isDefaultEventBus(eventBusName)) {
+      throw new Error(
+        'Schedule rules are only supported on the default event bus',
+      )
+    }
     const schedule = input.scheduleExpression?.trim() ?? ''
     if (!schedule) throw new Error('Schedule expression is required')
     await eventsClient().send(
