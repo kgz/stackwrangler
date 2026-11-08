@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deploy API — API Gateway</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="apigateway-rest-api-deploy" data-nav="apigateway-rest-apis" data-service="apigateway" data-title="Deploy API" data-crumb="Deploy API">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">Deploy API</h1>
+          <div class="aws-subtitle-row">
+            <span>demo-rest</span>
+            <span>REST</span>
+            <span>Regional</span>
+          </div>
+        </div>
+      </div>
+      <p class="aws-desc">
+        <a href="apigateway-rest-api-detail.html">← demo-rest</a>
+      </p>
+      <p class="aws-desc">
+        Create a deployment and attach it to a stage. LocalEmu invoke URL becomes
+        <code>/restapis/&lt;api-id&gt;/&lt;stage&gt;/_user_request_/</code>.
+      </p>
+
+      <section class="aws-card" data-od-id="deploy-form">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Stage</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="stage-name">Stage name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="stage-name" name="stageName" type="text" autocomplete="off" placeholder="prod" value="prod" data-od-id="field-stage-name" />
+              <p class="aws-hint">Letters, numbers, and hyphens. Creates the stage if it does not exist.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="deploy-desc">Deployment description — optional</label>
+              <input class="aws-input" id="deploy-desc" name="description" type="text" placeholder="Optional" value="Initial deploy" data-od-id="field-description" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="deploy-actions">
+        <a class="btn btn-normal" href="apigateway-rest-api-detail.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-deploy">Deploy</button>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

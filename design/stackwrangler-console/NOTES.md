@@ -350,3 +350,10 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="To implement"`: Create rule / Create event bus, Refresh, table settings, column filters, name dead links
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `eventbridge-rules.html` / `eventbridge-buses.html`
+
+## Issue #543 — REST create / deploy (hand mocks)
+
+### Mode
+- OD daemon reachable but agents failed (`cursor-agent` missing; `opencode` spawn ENOENT). Hand mocks landed instead of a successful `./bin/od-design-run.sh` web-clone.
+- Screens: `apigateway-rest-api-create.html`, `apigateway-rest-api-deploy.html`; list/detail Create + Deploy API enabled and linked. Delete / Actions / Create resource|method|authorizer|stage stay `title="To implement"` in mocks (resource/method wired in React).
+
