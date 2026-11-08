@@ -5,6 +5,15 @@ const baseURL =
   process.env.AWSBOX_CONSOLE_URL ||
   'http://127.0.0.1:3000'
 
+const consolePort = (() => {
+  try {
+    const port = new URL(baseURL).port
+    return port || '3000'
+  } catch {
+    return '3000'
+  }
+})()
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -35,10 +44,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'yarn dev --host 127.0.0.1 --port 3000',
+    command: `yarn dev --host 127.0.0.1 --port ${consolePort}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
 })
+
 

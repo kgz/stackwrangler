@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Send message — SQS</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sqs-send-message" data-nav="sqs-queues" data-service="sqs" data-title="Send message" data-crumb="Send message">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Send message</h1>
+      <p class="aws-desc">
+        Send a message to <strong>awsbox-sqs-demo</strong> via LocalEmu
+        <code>SendMessage</code>.
+      </p>
+      <p class="aws-desc"><a href="sqs-queue-detail.html" data-od-id="back-detail">← awsbox-sqs-demo</a></p>
+
+      <section class="aws-card" data-od-id="send-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Message</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="message-body">Body <span class="req" aria-hidden="true">*</span></label>
+              <textarea class="aws-input" id="message-body" name="body" rows="8" placeholder='{"hello":"world"}' data-od-id="field-body">{"event":"checkout","orderId":"42"}</textarea>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="delay-seconds">Delay seconds</label>
+              <input class="aws-input" id="delay-seconds" name="DelaySeconds" type="number" min="0" max="900" value="0" data-od-id="field-delay" style="max-width:160px" />
+              <p class="aws-hint">0–900. Overrides the queue default delay for this message.</p>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="fifo-section">
+            <h2 class="aws-section-title">FIFO parameters</h2>
+            <p class="aws-desc">Shown when the target queue is FIFO.</p>
+            <div class="aws-field">
+              <label class="aws-label" for="message-group-id">Message group ID <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="message-group-id" name="MessageGroupId" type="text" value="default" data-od-id="field-group-id" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="message-dedup-id">Message deduplication ID</label>
+              <input class="aws-input" id="message-dedup-id" name="MessageDeduplicationId" type="text" placeholder="optional when content-based dedup is on" data-od-id="field-dedup-id" />
+            </div>
+          </div>
+
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Message attributes</h2>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-attrs">Add attribute…</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="send-actions">
+        <a class="btn btn-normal" href="sqs-queue-detail.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-send">Send message</button>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
