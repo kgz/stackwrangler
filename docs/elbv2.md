@@ -15,7 +15,7 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 
 | Surface | Behaviour |
 |---------|-----------|
-| NLB TCP | Binds the listener port. Instance targets use the container address on the VPC bridge, not `127.0.0.1`. IP targets use the registered address (join the LB VPC so LocalEmu can reach them). |
+| NLB TCP | Binds the listener port. Instance targets use the container address on the VPC bridge, not `127.0.0.1`. ECS bridge host ports set `Target.host_override` to `host.docker.internal` so health and forward dial the published host port (#247). IP targets use the registered address (join the LB VPC so LocalEmu can reach them). |
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
 | NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. |
 | ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
@@ -30,6 +30,5 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 
 - No console ([#241](https://github.com/kgz/awsl/issues/241)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
-- ECS bridge-mode tasks behind an instance target group: the listener dials the EC2 container address, but bridge host ports are published on the Docker host. `./smokes/compute/ecs-ec2-smoke.sh` uses a loopback forwarder instead ([#247](https://github.com/kgz/awsl/issues/247)).
 - Classic ELB is not this path.
 - `elbv2-smoke.sh` needs EC2 containers; the mirror resource-id start.d patch breaks them on beta ([#299](https://github.com/kgz/awsl/issues/299)).

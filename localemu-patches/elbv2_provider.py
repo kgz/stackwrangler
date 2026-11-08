@@ -215,6 +215,22 @@ def _listener_certificate_arn(listener: dict, request: ServiceRequest) -> str:
     return ""
 
 
+def _forward_tg_arn(actions: list | None) -> str:
+    for action in actions or []:
+        if not isinstance(action, dict):
+            continue
+        if action.get("Type") != "forward":
+            continue
+        tg = action.get("TargetGroupArn") or ""
+        if tg:
+            return str(tg)
+        fw = action.get("ForwardConfig") or {}
+        tgs = fw.get("TargetGroups") or []
+        if tgs and isinstance(tgs[0], dict):
+            return str(tgs[0].get("TargetGroupArn") or "")
+    return ""
+
+
 def _handle_create_listener(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -229,19 +245,7 @@ def _handle_create_listener(
             continue
         requested_port = int(listener.get("Port") or 80)
 
-        # Pick the default target group from DefaultActions.
-        target_group_arn = ""
-        for action in listener.get("DefaultActions", []) or []:
-            if action.get("Type") == "forward":
-                target_group_arn = action.get("TargetGroupArn", "")
-                if not target_group_arn:
-                    fw = action.get("ForwardConfig") or {}
-                    tgs = fw.get("TargetGroups") or []
-                    if tgs:
-                        target_group_arn = tgs[0].get("TargetGroupArn", "")
-                if target_group_arn:
-                    break
-
+        target_group_arn = _forward_tg_arn(listener.get("DefaultActions"))
         if not target_group_arn:
             LOG.debug("Listener %s has no forward action; skipping HTTP proxy", listener_arn)
             continue
@@ -285,6 +289,28 @@ def _handle_delete_listener(
     result = call_moto(context)
     if listener_arn:
         get_router().stop_listener(listener_arn)
+    return result
+
+
+def _handle_modify_listener(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    """Keep the dataplane default TG in sync when DefaultActions change.
+
+    CodeDeploy blue/green (and any ModifyListener swap) used to rely on the
+    ECS loopback forwarder re-reading moto each accept. With #247 that
+    stand-in is gone, so the L4/HTTP listener must retarget here.
+    """
+    result = call_moto(context)
+    listener_arn = str(request.get("ListenerArn") or "")
+    tg_arn = _forward_tg_arn(request.get("DefaultActions"))
+    if not tg_arn:
+        for listener in result.get("Listeners", []) or []:
+            if str(listener.get("ListenerArn") or "") == listener_arn:
+                tg_arn = _forward_tg_arn(listener.get("DefaultActions"))
+                break
+    if listener_arn and tg_arn:
+        get_router().set_listener_target_group(listener_arn, tg_arn)
     return result
 
 
@@ -404,6 +430,7 @@ _INTERCEPTED_OPS = {
     "DeregisterTargets": _handle_deregister_targets,
     "CreateListener": _handle_create_listener,
     "DeleteListener": _handle_delete_listener,
+    "ModifyListener": _handle_modify_listener,
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,
     "ModifyRule": _handle_modify_rule,
