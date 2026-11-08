@@ -1,4 +1,4 @@
-"""Enforce ScalingConfig.MaximumConcurrency at SQS ESM poll/invoke time (#453).
+"""Enforce ScalingConfig.MaximumConcurrency at SQS ESM poll/invoke time (#453/#499).
 
 LocalEmu stores MaximumConcurrency on the mapping and refuses create when < 2,
 but the SQS poller processed batches serially and never capped concurrency.
@@ -10,6 +10,11 @@ When MaximumConcurrency is set, this patch dispatches up to that many concurrent
 ReceiveMessage→invoke pipelines (BatchSize batches) and caps them at
 min(MaximumConcurrency, ReservedConcurrentExecutions) when reserved is set.
 Mappings without ScalingConfig keep the stock serial poller.
+
+FIFO (#499): concurrent batch dispatch must not reorder a MessageGroupId.
+Receive up to `limit` batches, merge by MessageGroupId (preserving receive order),
+then run at most one invoke per group with up to `limit` groups in parallel —
+matching AWS (concurrency capped by min(MC, active groups); in-group order held).
 """
 
 from __future__ import annotations
@@ -125,20 +130,74 @@ def _receive_batch(poller, *, long_poll: bool) -> list:
     return messages
 
 
-def _dispatch_batch(poller, messages: list) -> None:
+def _await_futures(futures, *, uuid: str, kind: str) -> None:
+    errors: list[BaseException] = []
+    for fut in as_completed(futures):
+        try:
+            fut.result()
+        except Exception as e:
+            errors.append(e)
+            LOG.warning(
+                "ESM max-concurrency %s failed uuid=%s: %s",
+                kind,
+                uuid,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+    if errors:
+        raise errors[0]
+
+
+def _receive_up_to(poller, limit: int) -> list:
+    """Long-poll once, then short-poll up to limit-1 more non-empty batches."""
+    from localemu.services.lambda_.event_source_mapping.pollers.poller import (
+        EmptyPollResultsException,
+    )
+
+    messages: list = []
+    try:
+        messages.extend(_receive_batch(poller, long_poll=True))
+    except EmptyPollResultsException:
+        raise
+    for _ in range(max(0, limit - 1)):
+        try:
+            messages.extend(_receive_batch(poller, long_poll=False))
+        except EmptyPollResultsException:
+            break
+    return messages
+
+
+def _poll_fifo_with_max_concurrency(poller, worker, limit: int) -> None:
+    from localemu.services.lambda_.event_source_mapping.pollers.poller import (
+        EmptyPollResultsException,
+    )
     from localemu.services.lambda_.event_source_mapping.pollers.sqs_poller import (
         split_by_message_group_id,
     )
 
-    if poller.is_fifo_queue:
-        fifo_groups = split_by_message_group_id(messages)
-        for fifo_group_messages in fifo_groups.values():
-            poller.handle_messages(fifo_group_messages)
-    else:
-        poller.handle_messages(messages)
+    if limit <= 0:
+        raise EmptyPollResultsException(service="sqs", source_arn=poller.source_arn)
+
+    messages = _receive_up_to(poller, limit)
+    groups = split_by_message_group_id(messages)
+    LOG.debug(
+        "ESM FIFO max-concurrency uuid=%s groups=%d msgs=%d limit=%d",
+        worker.uuid,
+        len(groups),
+        len(messages),
+        limit,
+    )
+    with ThreadPoolExecutor(
+        max_workers=limit, thread_name_prefix=f"esm-fifo-mc-{worker.uuid[:8]}"
+    ) as pool:
+        futures = [
+            pool.submit(poller.handle_messages, group_messages)
+            for group_messages in groups.values()
+        ]
+        _await_futures(futures, uuid=worker.uuid, kind="fifo-group")
 
 
-def _poll_with_max_concurrency(poller, worker, limit: int) -> None:
+def _poll_standard_with_max_concurrency(poller, worker, limit: int) -> None:
     from localemu.services.lambda_.event_source_mapping.pollers.poller import (
         EmptyPollResultsException,
     )
@@ -167,22 +226,15 @@ def _poll_with_max_concurrency(poller, worker, limit: int) -> None:
                 limit,
                 len(messages),
             )
-            futures.append(pool.submit(_dispatch_batch, poller, messages))
+            futures.append(pool.submit(poller.handle_messages, messages))
 
-        errors: list[BaseException] = []
-        for fut in as_completed(futures):
-            try:
-                fut.result()
-            except Exception as e:
-                errors.append(e)
-                LOG.warning(
-                    "ESM max-concurrency batch failed uuid=%s: %s",
-                    worker.uuid,
-                    e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
-                )
-        if errors:
-            raise errors[0]
+        _await_futures(futures, uuid=worker.uuid, kind="batch")
+
+
+def _poll_with_max_concurrency(poller, worker, limit: int) -> None:
+    if getattr(poller, "is_fifo_queue", False):
+        return _poll_fifo_with_max_concurrency(poller, worker, limit)
+    return _poll_standard_with_max_concurrency(poller, worker, limit)
 
 
 def _wrap_worker_poll(worker) -> None:

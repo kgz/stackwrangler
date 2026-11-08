@@ -12,6 +12,7 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 ./smokes/lambda/sqs-lambda-batch-failures-smoke.sh   # ReportBatchItemFailures; needs python3 boto3
 ./smokes/lambda/sqs-lambda-esm-enable-smoke.sh
 ./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh   # needs AWSBOX_STS_ASSUME_ROLE_DURATION + recreate
+./smokes/lambda/sqs-lambda-fifo-esm-mc-smoke.sh   # FIFO + MaximumConcurrency group order; needs boto3
 ```
 
 | Area | Status |
@@ -29,4 +30,5 @@ LocalEmu `sqs` on `:4566` (`SERVICES` includes `sqs`).
 | SQS → Lambda ESM enable/disable | Working (`sqs-lambda-esm-enable-smoke.sh`; Disabled holds; re-enable drains; MessageRetentionPeriod drops expired) · [#446](https://github.com/kgz/awsl/issues/446) |
 | SQS → Lambda ESM credential refresh | Working (`sqs-lambda-esm-cred-refresh-smoke.sh`; short `AWSBOX_STS_ASSUME_ROLE_DURATION`; refresh past expiry; `LastProcessingResult` on hard fail) · [#475](https://github.com/kgz/awsl/issues/475) |
 | Lambda reserved concurrency (direct + SQS ESM) | Working (`lambda-reserved-concurrency-smoke.sh`; PutFunctionConcurrency throttle; ESM in-flight ≤ reserved; ESM `ScalingConfig.MaximumConcurrency` vs reserved lower-wins; MC alone when reserved unset) · [#453](https://github.com/kgz/awsl/issues/453) [#498](https://github.com/kgz/awsl/issues/498) |
+| SQS FIFO ESM + `ScalingConfig.MaximumConcurrency` | Working (`sqs-lambda-fifo-esm-mc-smoke.sh`; CreateEventSourceMapping on `.fifo` queues; one in-flight invoke per `MessageGroupId`; cross-group concurrency ≤ MC; in-group order preserved) · [#499](https://github.com/kgz/awsl/issues/499) |
 | Console queues list | Working (thin) — [#167](https://github.com/kgz/awsl/issues/167) · `console/e2e/sqs-queues.spec.ts` · create/detail/send [#548](https://github.com/kgz/awsl/issues/548) |

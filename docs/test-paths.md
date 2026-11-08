@@ -259,6 +259,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS ESM in-flight ≤ reserved concurrency; throttled msgs return to queue (not DLQ before maxReceiveCount) | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` vs reserved concurrency (lower wins) | sad/other | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | ESM `ScalingConfig.MaximumConcurrency` alone (reserved unset) → in-flight ≤ MaximumConcurrency | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
+| SQS FIFO ESM + MaximumConcurrency: in-group order + cross-group concurrency ≤ MC | happy | covered | `./smokes/lambda/sqs-lambda-fifo-esm-mc-smoke.sh` |
 | SNS console Topics list | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
