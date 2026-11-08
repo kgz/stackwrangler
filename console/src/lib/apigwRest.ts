@@ -1,10 +1,18 @@
 import {
   APIGatewayClient,
+  CreateDeploymentCommand,
+  CreateResourceCommand,
+  CreateRestApiCommand,
+  DeleteRestApiCommand,
   GetAuthorizersCommand,
   GetResourcesCommand,
   GetRestApiCommand,
   GetRestApisCommand,
   GetStagesCommand,
+  PutIntegrationCommand,
+  PutIntegrationResponseCommand,
+  PutMethodCommand,
+  PutMethodResponseCommand,
   type Authorizer,
   type Resource,
   type RestApi,
@@ -26,9 +34,15 @@ export type RestResourceMethodRow = {
   authorization: string
 }
 
+export type RestResourceNode = {
+  id: string
+  path: string
+}
+
 export type RestApiDetail = {
   api: RestApi
   resources: RestResourceMethodRow[]
+  resourceNodes: RestResourceNode[]
   authorizers: Authorizer[]
   stages: Stage[]
 }
@@ -36,6 +50,103 @@ export type RestApiDetail = {
 export async function listRestApis(): Promise<RestApiRow[]> {
   const out = await restClient().send(new GetRestApisCommand({}))
   return out.items ?? []
+}
+
+export async function createRestApi(input: {
+  name: string
+  description?: string
+}): Promise<string> {
+  const out = await restClient().send(
+    new CreateRestApiCommand({
+      name: input.name,
+      description: input.description,
+      endpointConfiguration: { types: ['REGIONAL'] },
+    }),
+  )
+  const id = out.id
+  if (!id) throw new Error('CreateRestApi returned no id')
+  return id
+}
+
+export async function deleteRestApi(apiId: string): Promise<void> {
+  await restClient().send(new DeleteRestApiCommand({ restApiId: apiId }))
+}
+
+export async function deployRestApi(input: {
+  apiId: string
+  stageName: string
+  description?: string
+}): Promise<void> {
+  await restClient().send(
+    new CreateDeploymentCommand({
+      restApiId: input.apiId,
+      stageName: input.stageName,
+      description: input.description,
+    }),
+  )
+}
+
+export async function createRestResource(input: {
+  apiId: string
+  parentId: string
+  pathPart: string
+}): Promise<string> {
+  const out = await restClient().send(
+    new CreateResourceCommand({
+      restApiId: input.apiId,
+      parentId: input.parentId,
+      pathPart: input.pathPart,
+    }),
+  )
+  const id = out.id
+  if (!id) throw new Error('CreateResource returned no id')
+  return id
+}
+
+/** NONE auth + MOCK integration with 200 responses (LocalEmu-friendly stub). */
+export async function createRestMethod(input: {
+  apiId: string
+  resourceId: string
+  httpMethod: string
+}): Promise<void> {
+  const client = restClient()
+  const method = input.httpMethod.toUpperCase()
+  await client.send(
+    new PutMethodCommand({
+      restApiId: input.apiId,
+      resourceId: input.resourceId,
+      httpMethod: method,
+      authorizationType: 'NONE',
+    }),
+  )
+  await client.send(
+    new PutIntegrationCommand({
+      restApiId: input.apiId,
+      resourceId: input.resourceId,
+      httpMethod: method,
+      type: 'MOCK',
+      requestTemplates: {
+        'application/json': '{"statusCode":200}',
+      },
+    }),
+  )
+  await client.send(
+    new PutMethodResponseCommand({
+      restApiId: input.apiId,
+      resourceId: input.resourceId,
+      httpMethod: method,
+      statusCode: '200',
+    }),
+  )
+  await client.send(
+    new PutIntegrationResponseCommand({
+      restApiId: input.apiId,
+      resourceId: input.resourceId,
+      httpMethod: method,
+      statusCode: '200',
+      selectionPattern: '',
+    }),
+  )
 }
 
 function integrationLabel(
@@ -59,11 +170,22 @@ function authorizationLabel(
   authorizers: Authorizer[],
 ): string {
   if (!authType || authType === 'NONE') return 'NONE'
-  if (authType === 'REQUEST' || authType === 'TOKEN' || authType === 'COGNITO_USER_POOLS') {
+  if (
+    authType === 'REQUEST' ||
+    authType === 'TOKEN' ||
+    authType === 'COGNITO_USER_POOLS'
+  ) {
     const name = authorizers.find((a) => a.id === authorizerId)?.name
     return name ? `${authType} · ${name}` : authType
   }
   return authType
+}
+
+function resourceNodesOf(resources: Resource[]): RestResourceNode[] {
+  return [...resources]
+    .filter((r): r is Resource & { id: string } => Boolean(r.id))
+    .map((r) => ({ id: r.id, path: r.path ?? '/' }))
+    .sort((a, b) => a.path.localeCompare(b.path))
 }
 
 function flattenResources(
@@ -114,9 +236,11 @@ export async function getRestApiDetail(apiId: string): Promise<RestApiDetail> {
     client.send(new GetStagesCommand({ restApiId: apiId })),
   ])
   const authorizers = authorizersOut.items ?? []
+  const items = resourcesOut.items ?? []
   return {
     api,
-    resources: flattenResources(resourcesOut.items ?? [], authorizers),
+    resources: flattenResources(items, authorizers),
+    resourceNodes: resourceNodesOf(items),
     authorizers,
     stages: stagesOut.item ?? [],
   }

@@ -126,27 +126,8 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 | `secrets-list-empty.html` | Empty twin · Refresh + Store a new secret + empty panel |
 
 ### Dead controls (`title="To implement"`)
-- Delete, Rotate, Refresh, header filters, table settings (list-only #176)
+- Store a new secret, Delete, Rotate, Refresh, header filters, secret name links, table settings
 - Working: find field filters rows through shared `data-find-table` wiring; pager and nav links unchanged
-
-## Issue #535 — Secrets Manager store + detail (from #176)
-
-### Mode
-- Extend Secrets Manager mocks: **Store a new secret** + **secret detail** (grey-rose web-clone shape)
-- OD daemon run API returned HTTP 404 and the container lacked a worktree mount — hand mocks landed to match existing chrome (`assets/console.css` / `console.js`); no real AWS resources
-- Structure follows `rds-create-database.html` / `lambda-function-detail.html` patterns
-
-### Deliverables
-| File | Covers |
-|---|---|
-| `secrets-store.html` | Other-type plaintext string secret · name / description · rotation off · Store → detail |
-| `secrets-detail.html` | Overview metadata · Retrieve secret value (gated) · Versions table · Delete/Rotate/Actions + Rotation/Resource tabs dead |
-| `secrets-list.html` / `secrets-list-empty.html` | Store link enabled; Name cells link to detail |
-
-### Dead controls (`title="To implement"`)
-- List: Delete, Rotate, Refresh, filters, table settings → Delete/Rotate follow-up [#606](https://github.com/kgz/awsl/issues/606)
-- Store: RDS/DocumentDB types, key/value + binary formats, CMK picker, enable rotation
-- Detail: Delete, Rotate, Actions, Refresh, Rotation tab, Resource permission tab
 
 ## Issue #178 — Kinesis Data streams list
 
@@ -161,28 +142,10 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 | `kinesis-streams.html` | Name / Status / Capacity mode / Monitoring / Created · 3 rows (`app-events`, `awsbox-kinesis-demo`, `orders-ingest`) |
 | `kinesis-streams-empty.html` | Empty twin · Refresh + Create data stream + empty panel · link to sample rows |
 
-### Dead controls (post-#539)
-- `title="To implement"`: Refresh, table settings, column filters
-- `title="Select a row"`: Delete (static mock; React wires confirm)
-- Working: Create → `kinesis-create-data-stream.html`; Name → `kinesis-stream-detail.html`; find field; pager; nav
-
-## Issue #539 — Kinesis create + detail (from #178)
-
-### Mode
-- Extend #178 list mocks with Create + stream detail (grey-rose chrome)
-- `./bin/od-design-run.sh --issue 539` failed (daemon HTTP 404 on conversation messages; agents: opencode only). Hand mocks match `sfn-create-state-machine.html` / `sfn-state-machine-detail.html`
-- LocalEmu-shaped provisioned / on-demand sample — no real AWS writes
-
-### Deliverables
-| File | Covers |
-|---|---|
-| `kinesis-create-data-stream.html` | Name · Provisioned (shard count) / On-demand · retention/encryption/tags stubs |
-| `kinesis-stream-detail.html` | Details / Shards tabs · Delete + Put records stubs |
-| `kinesis-streams.html` (+ empty) | Create → create screen; Name → detail |
-
-### Dead controls (`title="To implement"`)
-- Configure retention / encryption / tags, Put records, Delete (static detail), Refresh (static mock)
-- Column filters on list remain stubbed
+### Dead controls
+- `title="To implement"`: Create data stream, Refresh, table settings, column filters, stream name dead links
+- `title="Select a row"`: Delete
+- Working: find field (`data-find-table`), pager chrome, Services/search → `kinesis-streams.html`
 
 ## Issue #167 — SQS Queues list
 
@@ -388,20 +351,9 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `eventbridge-rules.html` / `eventbridge-buses.html`
 
-## Issue #533 — Step Functions create + detail (from #175)
+## Issue #543 — REST create / deploy (hand mocks)
 
 ### Mode
-- Extend #175 SFN list mocks with Create + state-machine detail (grey-rose chrome)
-- OD `./bin/od-design-run.sh --issue 533` failed (daemon HTTP 404 on conversation messages; agents: opencode only). Hand mocks match `ecs-create-cluster.html` / `apigateway-rest-api-detail.html`
-- LocalEmu-shaped Pass / Standard sample — no real AWS writes
+- OD daemon reachable but agents failed (`cursor-agent` missing; `opencode` spawn ENOENT). Hand mocks landed instead of a successful `./bin/od-design-run.sh` web-clone.
+- Screens: `apigateway-rest-api-create.html`, `apigateway-rest-api-deploy.html`; list/detail Create + Deploy API enabled and linked. Delete / Actions / Create resource|method|authorizer|stage stay `title="To implement"` in mocks (resource/method wired in React).
 
-### Deliverables
-| File | Covers |
-|---|---|
-| `sfn-create-state-machine.html` | Type Standard/Express · name · role ARN · ASL JSON · Workflow Studio stub |
-| `sfn-state-machine-detail.html` | Details / Definition / Executions tabs · Start execution stub |
-| `sfn-state-machines.html` (+ empty) | Create → create screen; Name → detail |
-
-### Dead controls (`title="To implement"`)
-- Workflow Studio, Configure logging, Start execution, Actions ▾, Refresh (static mock)
-- Working: Create link, name → detail, Cancel, Create → detail sample

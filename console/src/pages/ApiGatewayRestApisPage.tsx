@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { RestApi } from '@aws-sdk/client-api-gateway'
 import { ResourceLabel } from '../components/ResourceLabel'
-import { DeadButton, RefreshButton, TableTools } from '../components/S3Ui'
+import { RefreshButton, TableTools } from '../components/S3Ui'
 import {
   EmptyRow,
   FilterHeader,
@@ -13,7 +13,11 @@ import {
   SortHeader,
 } from '../components/ServiceUi'
 import { formatServiceDate } from '../lib/format'
-import { listRestApis, restListEndpoint } from '../lib/apigwRest'
+import {
+  deleteRestApi,
+  listRestApis,
+  restListEndpoint,
+} from '../lib/apigwRest'
 import { ApiGatewayTypeTabs } from '../components/ApiGatewayTypeTabs'
 
 export function ApiGatewayRestApisPage() {
@@ -22,6 +26,8 @@ export function ApiGatewayRestApisPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -58,6 +64,26 @@ export function ApiGatewayRestApisPage() {
     setSelected((cur) => (cur === id ? null : id))
   }
 
+  async function onDelete() {
+    if (!selected) return
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteRestApi(selected)
+      setConfirmDelete(false)
+      setSelected(null)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setConfirmDelete(false)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const selectedName =
+    apis.find((a) => a.id === selected)?.name ?? selected ?? ''
+
   return (
     <>
       <h1 className="aws-h1">APIs</h1>
@@ -70,12 +96,20 @@ export function ApiGatewayRestApisPage() {
             request validation, AWS WAF integration, and private integrations.
           </p>
           <div className="aws-toolbar">
-            <RefreshButton />
-            <DeadButton title={selected ? 'To implement' : 'Select a row'}>
+            <RefreshButton onClick={() => void refresh()} disabled={loading} />
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={!selected || busy}
+              title={selected ? undefined : 'Select a row'}
+              onClick={() => setConfirmDelete(true)}
+            >
               Delete
-            </DeadButton>
+            </button>
             <div className="spacer" />
-            <DeadButton variant="primary">Create</DeadButton>
+            <Link className="btn btn-primary" to="/apigateway/rest-apis/create">
+              Create
+            </Link>
           </div>
           <TableTools
             placeholder="Search APIs"
@@ -149,6 +183,37 @@ export function ApiGatewayRestApisPage() {
           </div>
         </div>
       </section>
+
+      {confirmDelete && selected ? (
+        <div className="modal-backdrop">
+          <div className="modal" data-testid="rest-api-delete-modal">
+            <h3>Delete API?</h3>
+            <p style={{ color: 'var(--awsbox-quiet)', marginTop: 0 }}>
+              Permanently delete <strong>{selectedName}</strong> ({selected}) and
+              its resources, methods, and stages.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-normal"
+                disabled={busy}
+                onClick={() => setConfirmDelete(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy}
+                onClick={() => void onDelete()}
+                data-testid="rest-api-delete-confirm"
+              >
+                {busy ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }
