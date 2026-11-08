@@ -268,6 +268,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ESM `ScalingConfig.MaximumConcurrency` alone (reserved unset) → in-flight ≤ MaximumConcurrency | happy | covered | `./smokes/lambda/lambda-reserved-concurrency-smoke.sh` |
 | SQS FIFO ESM + MaximumConcurrency: in-group order + cross-group concurrency ≤ MC | happy | covered | `./smokes/lambda/sqs-lambda-fifo-esm-mc-smoke.sh` |
 | SNS console Topics list | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 |
+| SNS console Topics list/create/detail | ui | covered | `console/e2e/sns-topics.spec.ts` · #172 / #546 |
 | SNS create/publish | happy | covered | `./smokes/messaging/sns-smoke.sh` |
 | SNS deny Publish | sad/authz | covered | `./smokes/messaging/sns-authz-smoke.sh` |
 | SNS Subscribe `sns:Protocol` / `sns:Endpoint` allow intake sqs; deny other-queue / https | happy + sad/authz | covered | `./smokes/messaging/sns-subscribe-conditions-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |

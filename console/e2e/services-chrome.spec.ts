@@ -88,7 +88,8 @@ const lists: Array<{
     path: '/sns',
     heading: 'Topics',
     columns: ['Name', 'Type', 'ARN'],
-    disabled: ['Delete', 'Create topic'],
+    disabled: ['Delete'],
+    enabledLinks: ['Create topic'],
   },
   {
     path: '/dynamodb',

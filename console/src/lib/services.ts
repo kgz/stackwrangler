@@ -214,6 +214,7 @@ const CRUMBS: Record<string, string> = {
   '/events/buses': 'Event buses',
   '/kms': 'Customer managed keys',
   '/sns': 'Topics',
+  '/sns/create': 'Create topic',
   '/dynamodb': 'Tables',
   '/apigateway': 'HTTP APIs',
   '/apigateway/rest-apis': 'REST APIs',
