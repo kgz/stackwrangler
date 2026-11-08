@@ -327,3 +327,4 @@
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
 518	in-review	sns:Protocol/Endpoint on Subscribe
+594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
