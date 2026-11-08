@@ -796,6 +796,14 @@ def _tls_cert_path(certificate_arn: Optional[str] = None) -> str:
     return _localemu_cert_path()
 
 
+
+
+def _build_server_ssl_context(certificate_arn: Optional[str] = None) -> ssl.SSLContext:
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(certfile=_tls_cert_path(certificate_arn))
+    return ctx
+
+
 def _allocate_port() -> int:
     """Allocate an ephemeral TCP port by binding to :0 and releasing."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -1033,6 +1041,16 @@ class ListenerRouter:
 
         class _Server(http.server.ThreadingHTTPServer):
             daemon_threads = True
+            # Mutable so ModifyListener / AddListenerCertificates can reload
+            # without rebinding the listening socket (#594).
+            _ssl_ctx: Optional[ssl.SSLContext] = None
+
+            def get_request(self):
+                conn, addr = self.socket.accept()
+                ctx = self._ssl_ctx
+                if ctx is not None:
+                    conn = ctx.wrap_socket(conn, server_side=True)
+                return conn, addr
 
         listener = Listener(
             arn=listener_arn, lb_arn=lb_arn, protocol=protocol,
@@ -1053,10 +1071,9 @@ class ListenerRouter:
 
         if (protocol or "").upper() in {"HTTPS", "TLS"}:
             try:
-                cert_pem_path = _tls_cert_path(certificate_arn)
-                ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                ssl_ctx.load_cert_chain(certfile=cert_pem_path)
-                server.socket = ssl_ctx.wrap_socket(server.socket, server_side=True)
+                ssl_ctx = _build_server_ssl_context(certificate_arn)
+                server._ssl_ctx = ssl_ctx
+                listener.ssl_ctx = ssl_ctx
             except Exception as e:
                 LOG.warning(
                     "Could not enable TLS on listener %s (%s); falling back to plain HTTP",
@@ -1078,6 +1095,39 @@ class ListenerRouter:
         )
         self._publish_dns()
         return port
+
+
+    def reload_listener_certificate(
+        self, listener_arn: str, certificate_arn: Optional[str] = None,
+    ) -> bool:
+        """Rebuild live TLS material for a running HTTPS/TLS listener (#594)."""
+        try:
+            ctx = _build_server_ssl_context(certificate_arn)
+        except Exception as exc:
+            LOG.warning(
+                "ELBv2 could not reload certificate for %s: %s", listener_arn, exc,
+            )
+            return False
+        with self._lock:
+            l4 = self.l4_listeners.get(listener_arn)
+            listener = self.listeners.get(listener_arn)
+        if l4 is not None and (l4.protocol or "").upper() == "TLS":
+            l4.ssl_ctx = ctx
+            LOG.info(
+                "ELBv2 TLS listener %s reloaded certificate %s",
+                listener_arn, certificate_arn or "(default)",
+            )
+            return True
+        if listener is not None and listener.server is not None:
+            listener.ssl_ctx = ctx
+            setattr(listener.server, "_ssl_ctx", ctx)
+            LOG.info(
+                "ELBv2 HTTPS listener %s reloaded certificate %s",
+                listener_arn, certificate_arn or "(default)",
+            )
+            return True
+        LOG.debug("ELBv2 reload skipped; no live listener for %s", listener_arn)
+        return False
 
     # ------------ Listener rules ------------
     def register_rule(
@@ -1178,9 +1228,7 @@ class ListenerRouter:
         )
         if protocol == "TLS":
             try:
-                ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                ctx.load_cert_chain(certfile=_tls_cert_path(certificate_arn))
-                l4.ssl_ctx = ctx
+                l4.ssl_ctx = _build_server_ssl_context(certificate_arn)
             except Exception as exc:
                 LOG.warning("ELBv2 TLS listener %s has no cert: %s", listener_arn, exc)
                 return 0

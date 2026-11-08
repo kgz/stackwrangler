@@ -332,7 +332,7 @@
 563	done	Doc: SQS queues console screenshot (from #167)
 564	backlog	Debt: CFN drift + stack notifications (from #147)
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
-594	backlog	Debt: ELBv2 ModifyListener ACM reload (from #242)
+594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
 596	backlog	Doc: API call log docs/screenshot (from #194)
 602	backlog	Debt: ECS/CLI call-log workload smoke (from #194)
 603	backlog	Debt: preserve ELBv2 host_override across RegisterTargets (from #247)

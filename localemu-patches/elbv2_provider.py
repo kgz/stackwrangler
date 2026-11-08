@@ -205,13 +205,95 @@ def _handle_deregister_targets(
     return result
 
 
+def _certificate_arn_from_entry(entry) -> str:
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return str(entry.get("CertificateArn") or "")
+    return ""
+
+
+def _first_certificate_arn(*sources) -> str:
+    for source in sources:
+        for entry in source or []:
+            arn = _certificate_arn_from_entry(entry)
+            if arn:
+                return arn
+    return ""
+
+
 def _listener_certificate_arn(listener: dict, request: ServiceRequest) -> str:
     """First CertificateArn from the moto listener or the create request."""
-    for source in (listener.get("Certificates"), request.get("Certificates")):
-        for entry in source or []:
-            arn = entry.get("CertificateArn") or ""
-            if arn:
-                return str(arn)
+    return _first_certificate_arn(
+        listener.get("Certificates"),
+        request.get("Certificates"),
+    )
+
+
+def _sync_listener_certificates(
+    context: RequestContext, listener_arn: str, certificates: list,
+) -> str:
+    """Write certificate ARNs onto the moto listener and return the default.
+
+    Moto's ModifyListener only rewrites certificates for HTTPS. TLS NLB
+    listeners need the same update so DescribeListenerCertificates and the
+    live reload agree (#594).
+    """
+    arns = [
+        arn for arn in (_certificate_arn_from_entry(entry) for entry in certificates)
+        if arn
+    ]
+    if not listener_arn or not arns:
+        return ""
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return arns[0]
+        listener = listeners[0]
+        if (listener.protocol or "").upper() in {"HTTPS", "TLS"}:
+            listener.certificate = arns[0]
+            listener.certificates = list(arns)
+    except Exception:
+        LOG.debug(
+            "elbv2: could not sync certificates for %s", listener_arn, exc_info=True,
+        )
+    return arns[0]
+
+
+def _moto_default_certificate_arn(
+    context: RequestContext, listener_arn: str,
+) -> str:
+    """Default (first) certificate ARN on the moto listener, or empty."""
+    if not listener_arn:
+        return ""
+    try:
+        import moto.backends as moto_backends
+
+        account_id = context.account_id or "000000000000"
+        region = context.region or "us-east-1"
+        backend = moto_backends.get_backend("elbv2")[account_id][region]
+        listeners = backend.describe_listeners(
+            load_balancer_arn=None, listener_arns=[listener_arn],
+        )
+        if not listeners:
+            return ""
+        listener = listeners[0]
+        if listener.certificate:
+            return str(listener.certificate)
+        if listener.certificates:
+            return str(listener.certificates[0])
+    except Exception:
+        LOG.debug(
+            "elbv2: could not read default certificate for %s",
+            listener_arn, exc_info=True,
+        )
     return ""
 
 
@@ -295,11 +377,12 @@ def _handle_delete_listener(
 def _handle_modify_listener(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
-    """Keep the dataplane default TG in sync when DefaultActions change.
+    """Keep dataplane TG + ACM material in sync on ModifyListener.
 
     CodeDeploy blue/green (and any ModifyListener swap) used to rely on the
     ECS loopback forwarder re-reading moto each accept. With #247 that
-    stand-in is gone, so the L4/HTTP listener must retarget here.
+    stand-in is gone, so the L4/HTTP listener must retarget here. Default
+    certificate changes also reload live handshake material (#594).
     """
     result = call_moto(context)
     listener_arn = str(request.get("ListenerArn") or "")
@@ -311,6 +394,37 @@ def _handle_modify_listener(
                 break
     if listener_arn and tg_arn:
         get_router().set_listener_target_group(listener_arn, tg_arn)
+    certificates = request.get("Certificates") or []
+    if listener_arn and certificates:
+        cert_arn = _sync_listener_certificates(context, listener_arn, certificates)
+        for listener in result.get("Listeners", []) or []:
+            if listener.get("ListenerArn") == listener_arn:
+                listener["Certificates"] = [
+                    {"CertificateArn": _certificate_arn_from_entry(entry)}
+                    for entry in certificates
+                    if _certificate_arn_from_entry(entry)
+                ]
+        if cert_arn:
+            get_router().reload_listener_certificate(listener_arn, cert_arn)
+    return result
+
+
+def _handle_add_listener_certificates(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    listener_arn = str(request.get("ListenerArn") or "")
+    certificates = request.get("Certificates") or []
+    # AWS Add only attaches (SNI); it must not flip the default. Reload only
+    # when the default actually changes — e.g. first attach on a cert-less
+    # listener. Never reload to the *added* request ARN (#594).
+    before = (
+        _moto_default_certificate_arn(context, listener_arn) if listener_arn else ""
+    )
+    result = call_moto(context)
+    if listener_arn and certificates:
+        after = _moto_default_certificate_arn(context, listener_arn)
+        if after and after != before:
+            get_router().reload_listener_certificate(listener_arn, after)
     return result
 
 
@@ -431,6 +545,7 @@ _INTERCEPTED_OPS = {
     "CreateListener": _handle_create_listener,
     "DeleteListener": _handle_delete_listener,
     "ModifyListener": _handle_modify_listener,
+    "AddListenerCertificates": _handle_add_listener_certificates,
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,
     "ModifyRule": _handle_modify_rule,

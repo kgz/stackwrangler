@@ -68,7 +68,7 @@ Smokes: Lambda via console/CLI · `./smokes/lambda/lambda-vpc-smoke.sh` · `./sm
 | VPC security groups | **Partial** · [sg-enforcement.md](sg-enforcement.md) · NLB client IP [#236](https://github.com/kgz/awsl/issues/236) · VPC Lambda [#237](https://github.com/kgz/awsl/issues/237) |
 | VPC Interface endpoint private DNS | **Partial** · [vpce-private-dns.md](vpce-private-dns.md) |
 | VPC / AZ polish | **Backlog** |
-| ALB / NLB / Classic ELB | **Partial** · [elbv2.md](elbv2.md) · console [#241](https://github.com/kgz/awsl/issues/241) · TLS ACM [#242](https://github.com/kgz/awsl/issues/242) · HTTP health [#243](https://github.com/kgz/awsl/issues/243) · ECS bridge smoke loopback forwarder [#247](https://github.com/kgz/awsl/issues/247) |
+| ALB / NLB / Classic ELB | **Partial** · [elbv2.md](elbv2.md) · console [#241](https://github.com/kgz/awsl/issues/241) · TLS ACM [#242](https://github.com/kgz/awsl/issues/242) · ModifyListener ACM reload [#594](https://github.com/kgz/awsl/issues/594) · HTTP health [#243](https://github.com/kgz/awsl/issues/243) · ECS bridge smoke loopback forwarder [#247](https://github.com/kgz/awsl/issues/247) |
 | Route 53 private zones | **Partial** — associated VPC only · `./smokes/networking/r53-private-smoke.sh` · [r53-private.md](r53-private.md) · console/Lambda [#245](https://github.com/kgz/awsl/issues/245) · API Gateway alias / public zones [#300](https://github.com/kgz/awsl/issues/300) |
 | WAFv2 | **Partial** — create/associate API GW stage · rule eval **not** real edge WAF · [waf.md](waf.md) · console [#324](https://github.com/kgz/awsl/issues/324) · CFN [#325](https://github.com/kgz/awsl/issues/325) · edge eval [#326](https://github.com/kgz/awsl/issues/326) |
 | CloudFront | **Backlog** (likely control-plane first) |
@@ -124,7 +124,7 @@ Smoke: `./smokes/messaging/sqs-smoke.sh` · `./smokes/messaging/sns-smoke.sh` ·
 | KMS | encrypt/decrypt · key policy on Encrypt/Decrypt/GenerateDataKey | list (+ empty) | **Partial** · key policy `./smokes/security/resource-policy-smoke.sh` · console CMK list [#177](https://github.com/kgz/awsl/issues/177) · create/detail [#540](https://github.com/kgz/awsl/issues/540) |
 | Secrets Manager | create/get · resource policy on Get/Describe | list (+ empty) | **Partial** · resource policy `./smokes/security/resource-policy-smoke.sh` · thin console list [#176](https://github.com/kgz/awsl/issues/176) · store/detail [#535](https://github.com/kgz/awsl/issues/535) |
 | Multiple accounts | Key→account, isolated state, cross-account AssumeRole + resource policies | — | **CLI + smoke** · [multi-account.md](multi-account.md) |
-| ACM | request / import / describe / list · ARN on API custom domain + ALB HTTPS listener ([acm.md](acm.md)) | — ([#333](https://github.com/kgz/awsl/issues/333)) | **Partial** · TLS handshake [#242](https://github.com/kgz/awsl/issues/242) |
+| ACM | request / import / describe / list · ARN on API custom domain + ALB HTTPS listener ([acm.md](acm.md)) | — ([#333](https://github.com/kgz/awsl/issues/333)) | **Partial** · TLS handshake [#242](https://github.com/kgz/awsl/issues/242) · ModifyListener reload [#594](https://github.com/kgz/awsl/issues/594) |
 | Cognito / detection | — | — | **Backlog** |
 | IAM Identity Center | — | — | **Backlog** |
 | Prowler posture scan | Isolated CLI smoke vs LocalEmu | — | **Working** (scoped) · full catalog [#197](https://github.com/kgz/awsl/issues/197) · [prowler.md](prowler.md) |

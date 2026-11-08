@@ -17,7 +17,7 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 |---------|-----------|
 | NLB TCP | Binds the listener port. Instance targets use the container address on the VPC bridge, not `127.0.0.1`. ECS bridge host ports set `Target.host_override` to `host.docker.internal` so health and forward dial the published host port (#247). IP targets use the registered address (join the LB VPC so LocalEmu can reach them). |
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
-| NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. |
+| NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. Create-time presentation is [#242](https://github.com/kgz/awsl/issues/242). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. |
 | ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
 | Health | TCP connect, or HTTP/HTTPS GET of `HealthCheckPath` honouring `Matcher.HttpCode`. `describe-target-health` and new connections skip `unhealthy` targets. |
 | DNS | LocalEmu and workloads on the LB VPC get the name in `/etc/hosts` (VPC address). The host list is `.awsbox/elbv2.hosts` (edge address for internet-facing). |

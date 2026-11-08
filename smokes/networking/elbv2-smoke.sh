@@ -48,6 +48,8 @@ TG_TLS=""
 TG_HC=""
 LB_HC=""
 CERT=""
+CERT2=""
+CERT3=""
 UD_A=""
 UD_B=""
 UD_C=""
@@ -83,6 +85,8 @@ cleanup() {
 		aws elbv2 delete-target-group --target-group-arn "$arn" >/dev/null 2>&1 || true
 	done
 	[[ -n "$CERT" ]] && aws acm delete-certificate --certificate-arn "$CERT" >/dev/null 2>&1 || true
+	[[ -n "$CERT2" ]] && aws acm delete-certificate --certificate-arn "$CERT2" >/dev/null 2>&1 || true
+	[[ -n "$CERT3" ]] && aws acm delete-certificate --certificate-arn "$CERT3" >/dev/null 2>&1 || true
 	for f in "$UD_A" "$UD_B" "$UD_C" "$PEER"; do
 		[[ -n "$f" ]] && rm -f "$f"
 	done
@@ -664,6 +668,54 @@ for i in $(seq 1 30); do
 done
 [[ "$HC_OK" == "healthy" ]] || fail "HTTP 200 health path stayed ${HC_OK}"
 echo "OK: HTTP health check matcher"
+
+peer_fp() {
+	python3 - "$EDGE" "$TLS_PORT" <<'PY'
+import hashlib, socket, ssl, sys
+ctx = ssl._create_unverified_context()
+raw = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)
+ss = ctx.wrap_socket(raw, server_hostname="elbv2.local")
+print(hashlib.sha256(ss.getpeercert(binary_form=True)).hexdigest())
+ss.close()
+PY
+}
+
+echo "==> ModifyListener reloads ACM certificate (#594)"
+CERT2="$(aws acm request-certificate --domain-name "elbv2-mod-${TS}.local" --validation-method DNS \
+	--query 'CertificateArn' --output text)"
+ACM2_PEM="$(aws acm get-certificate --certificate-arn "$CERT2" --query Certificate --output text)"
+ACM2_FP="$(pem_sha256 "$ACM2_PEM")"
+[[ -n "$ACM2_FP" && "$ACM2_FP" != "$ACM_FP" ]] || fail "second ACM cert fingerprint unusable"
+aws elbv2 modify-listener --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_MOD="$(peer_fp)"
+[[ "$PEER_MOD" == "$ACM2_FP" ]] || fail "ModifyListener presented ${PEER_MOD}, expected ${ACM2_FP}"
+echo "OK: ModifyListener presents replacement ACM cert"
+
+echo "==> AddListenerCertificates first-default reload (#594)"
+aws elbv2 delete-listener --listener-arn "$LIS_TLS" >/dev/null
+LIS_TLS="$(aws elbv2 create-listener --load-balancer-arn "$LB_TLS" --protocol TLS --port "$TLS_PORT" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_TLS}" --query 'Listeners[0].ListenerArn' --output text)"
+PEER_DEFAULT="$(peer_fp)"
+[[ "$PEER_DEFAULT" == "$DEFAULT_FP" ]] || fail "cert-less TLS presented ${PEER_DEFAULT}, expected default ${DEFAULT_FP}"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT2}" >/dev/null
+PEER_ADD="$(peer_fp)"
+[[ "$PEER_ADD" == "$ACM2_FP" ]] || fail "first AddListenerCertificates presented ${PEER_ADD}, expected ${ACM2_FP}"
+echo "OK: first Add on cert-less listener establishes default ACM cert"
+
+echo "==> secondary AddListenerCertificates does not flip default (#594)"
+CERT3="$(aws acm request-certificate --domain-name "elbv2-add-${TS}.local" --validation-method DNS \
+	--query 'CertificateArn' --output text)"
+ACM3_PEM="$(aws acm get-certificate --certificate-arn "$CERT3" --query Certificate --output text)"
+ACM3_FP="$(pem_sha256 "$ACM3_PEM")"
+[[ -n "$ACM3_FP" && "$ACM3_FP" != "$ACM2_FP" ]] || fail "third ACM cert fingerprint unusable"
+aws elbv2 add-listener-certificates --listener-arn "$LIS_TLS" \
+	--certificates "CertificateArn=${CERT3}" >/dev/null
+PEER_SEC="$(peer_fp)"
+[[ "$PEER_SEC" == "$ACM2_FP" ]] || fail "secondary Add flipped handshake to ${PEER_SEC}, expected default ${ACM2_FP}"
+[[ "$PEER_SEC" != "$ACM3_FP" ]] || fail "secondary Add presented added cert ${ACM3_FP}"
+echo "OK: secondary Add is SNI-only; default handshake unchanged"
 
 echo "==> unhealthy target drops out"
 docker exec "$CA" sh -c 'kill "$(cat /tmp/tcp-443.pid)"' || fail "could not stop A443"
