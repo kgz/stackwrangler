@@ -23,8 +23,8 @@ function aws(args: string[]): string {
   )
 }
 
-test.describe('Step Functions state machines UI (#175)', () => {
-  test('lists a seeded state machine', async ({ page }) => {
+test.describe('Step Functions state machines UI (#175 / #533)', () => {
+  test('lists a seeded state machine and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-sfn-ui-${ts}`
     const role = `e2e-sfn-role-${ts}`
@@ -76,14 +76,24 @@ test.describe('Step Functions state machines UI (#175)', () => {
         page.getByTestId('sfn-state-machines-table'),
       ).toBeVisible()
       await expect(
-        page.getByRole('button', { name, exact: true }),
+        page.getByRole('link', { name, exact: true }),
       ).toBeVisible({ timeout: 15000 })
       await expect(
-        page.getByRole('button', { name: 'Create state machine' }),
-      ).toBeDisabled()
+        page.getByRole('link', { name: 'Create state machine' }),
+      ).toBeVisible()
+
+      await page.getByRole('link', { name, exact: true }).click()
+      await expect(page).toHaveURL(
+        new RegExp(`/stepfunctions/state-machines/${name}$`),
+      )
       await expect(
-        page.getByRole('button', { name: 'Create state machine' }),
-      ).toHaveAttribute('title', 'To implement')
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible()
+      await expect(page.getByTestId('sfn-tab-details')).toBeVisible()
+      await page.getByTestId('sfn-tab-definition').click()
+      await expect(page.getByTestId('sfn-definition')).toContainText('Pass')
+      await page.getByTestId('sfn-tab-executions').click()
+      await expect(page.getByTestId('sfn-executions-table')).toBeVisible()
     } finally {
       if (smArn) {
         try {
@@ -101,6 +111,59 @@ test.describe('Step Functions state machines UI (#175)', () => {
         aws(['iam', 'delete-role', '--role-name', role])
       } catch {
         /* ignore */
+      }
+    }
+  })
+
+  test('creates a Pass Standard state machine in the console', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-sfn-create-${ts}`
+    let smArn = ''
+
+    try {
+      await page.goto('/stepfunctions')
+      await page.getByRole('link', { name: 'Create state machine' }).click()
+      await expect(page).toHaveURL(/\/stepfunctions\/create$/)
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Create state machine' }),
+      ).toBeVisible()
+      await page.getByTestId('sfn-create-name').fill(name)
+      await page.getByTestId('sfn-create-submit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/stepfunctions/state-machines/${name}$`),
+        { timeout: 20000 },
+      )
+      await expect(
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible()
+      await expect(page.getByText('Standard').first()).toBeVisible()
+      await page.getByTestId('sfn-tab-definition').click()
+      await expect(page.getByTestId('sfn-definition')).toContainText(
+        'HelloWorld',
+      )
+
+      smArn = aws([
+        'stepfunctions',
+        'list-state-machines',
+        '--query',
+        `stateMachines[?name==\`${name}\`].stateMachineArn`,
+        '--output',
+        'text',
+      ]).trim()
+    } finally {
+      if (smArn) {
+        try {
+          aws([
+            'stepfunctions',
+            'delete-state-machine',
+            '--state-machine-arn',
+            smArn,
+          ])
+        } catch {
+          /* ignore */
+        }
       }
     }
   })

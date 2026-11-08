@@ -30,7 +30,8 @@ const lists: Array<{
     path: '/stepfunctions',
     heading: 'State machines',
     columns: ['Name', 'Type', 'Creation date'],
-    disabled: ['Actions ▾', 'Create state machine'],
+    disabled: ['Actions ▾'],
+    enabledLinks: ['Create state machine'],
   },
   {
     path: '/secretsmanager',

@@ -192,6 +192,7 @@ const CRUMBS: Record<string, string> = {
   '/lambda/create': 'Create function',
   '/logs': 'Log groups',
   '/stepfunctions': 'State machines',
+  '/stepfunctions/create': 'Create state machine',
   '/secretsmanager': 'Secrets',
   '/kinesis': 'Data streams',
   '/sqs': 'Queues',

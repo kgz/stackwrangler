@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sfn-state-machine-detail.html",
+  "entry": "screens/sfn-state-machine-detail.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-08T11:35:00.000Z",
+  "updatedAt": "2026-11-08T11:35:00.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true,
+    "handMock": true,
+    "issue": 533,
+    "note": "OD daemon run 404 on conversation messages; hand mock vs apigateway-rest-api-detail chrome"
+  }
+}

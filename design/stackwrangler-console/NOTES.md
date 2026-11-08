@@ -350,3 +350,21 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="To implement"`: Create rule / Create event bus, Refresh, table settings, column filters, name dead links
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `eventbridge-rules.html` / `eventbridge-buses.html`
+
+## Issue #533 — Step Functions create + detail (from #175)
+
+### Mode
+- Extend #175 SFN list mocks with Create + state-machine detail (grey-rose chrome)
+- OD `./bin/od-design-run.sh --issue 533` failed (daemon HTTP 404 on conversation messages; agents: opencode only). Hand mocks match `ecs-create-cluster.html` / `apigateway-rest-api-detail.html`
+- LocalEmu-shaped Pass / Standard sample — no real AWS writes
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `sfn-create-state-machine.html` | Type Standard/Express · name · role ARN · ASL JSON · Workflow Studio stub |
+| `sfn-state-machine-detail.html` | Details / Definition / Executions tabs · Start execution stub |
+| `sfn-state-machines.html` (+ empty) | Create → create screen; Name → detail |
+
+### Dead controls (`title="To implement"`)
+- Workflow Studio, Configure logging, Start execution, Actions ▾, Refresh (static mock)
+- Working: Create link, name → detail, Cancel, Create → detail sample

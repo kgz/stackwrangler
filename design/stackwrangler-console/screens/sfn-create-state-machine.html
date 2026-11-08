@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create state machine — Step Functions</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="sfn-create-state-machine" data-nav="sfn-state-machines" data-service="sfn" data-title="Create state machine" data-crumb="Create state machine">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create state machine</h1>
+      <p class="aws-desc">
+        Define a Standard or Express workflow with an ASL definition and an execution role.
+        LocalEmu accepts Pass (and other) states — Workflow Studio stays out of scope.
+      </p>
+
+      <section class="aws-card" data-od-id="type-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Type</h2>
+          <ul class="aws-radio-list" data-od-id="type-options">
+            <li>
+              <label>
+                <input type="radio" name="smType" value="STANDARD" checked data-od-id="type-standard" />
+                <span>
+                  <strong>Standard</strong>
+                  <span class="sub">Exactly-once · durable executions (LocalEmu default).</span>
+                </span>
+              </label>
+            </li>
+            <li>
+              <label>
+                <input type="radio" name="smType" value="EXPRESS" data-od-id="type-express" />
+                <span>
+                  <strong>Express</strong>
+                  <span class="sub">At-least-once · short-lived / high-volume.</span>
+                </span>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="details-card" style="margin-top:16px">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="sm-name">State machine name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="sm-name" name="name" type="text" autocomplete="off" placeholder="MyStateMachine" value="demo-console-hello" data-od-id="field-name" />
+              <p class="aws-hint">1–80 characters. Letters, numbers, hyphens, and underscores.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="sm-role">Execution role ARN <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input aws-mono" id="sm-role" name="roleArn" type="text" autocomplete="off" placeholder="arn:aws:iam::000000000000:role/…" value="arn:aws:iam::000000000000:role/demo-sfn-role" data-od-id="field-role-arn" />
+              <p class="aws-hint">IAM role that Step Functions assumes. Trust <code>states.amazonaws.com</code>.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Logging</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-logging">Configure logging…</button>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="definition-section">
+            <h2 class="aws-section-title">Definition</h2>
+            <div class="aws-choice-row" role="group" aria-label="Definition source" data-od-id="definition-source">
+              <button type="button" class="aws-choice is-selected" aria-pressed="true" data-od-id="opt-write-asl">
+                <strong>Write ASL</strong>
+                <span>Paste Amazon States Language JSON.</span>
+              </button>
+              <button type="button" class="aws-choice" disabled aria-disabled="true" title="To implement" data-od-id="opt-workflow-studio">
+                <strong>Workflow Studio</strong>
+                <span>Visual designer (not in LocalEmu console yet).</span>
+              </button>
+            </div>
+            <div class="aws-field" style="margin-top:12px">
+              <label class="aws-label" for="sm-definition">Definition (JSON) <span class="req" aria-hidden="true">*</span></label>
+              <textarea class="aws-input aws-mono" id="sm-definition" name="definition" rows="14" spellcheck="false" data-od-id="field-definition" style="width:100%;font-family:var(--aws-mono, ui-monospace, monospace);font-size:12px;line-height:1.45;resize:vertical">{
+  "Comment": "A Hello World example of the Amazon States Language using a Pass state",
+  "StartAt": "HelloWorld",
+  "States": {
+    "HelloWorld": {
+      "Type": "Pass",
+      "Result": { "ok": true },
+      "End": true
+    }
+  }
+}</textarea>
+              <p class="aws-hint">Must be valid ASL JSON. Pass + Standard is the LocalEmu happy path.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-actions">
+        <a class="btn btn-normal" href="sfn-state-machines.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <a class="btn btn-primary" href="sfn-state-machine-detail.html" data-od-id="btn-create">Create</a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>
