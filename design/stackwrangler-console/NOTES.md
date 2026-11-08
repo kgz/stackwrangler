@@ -374,3 +374,15 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 ### Dead controls
 - `title="To implement"`: Actions ▾, Refresh (static mock), Create state machine (list; #533)
 - Working: name → detail, Start execution buttons
+
+## Issue #552 — EventBridge create + rule detail
+
+### Mode
+- Hand mocks (OD agents unavailable: cursor-agent conversation messages 404; opencode ENOENT)
+- Screens: `eventbridge-create-rule.html`, `eventbridge-create-event-bus.html`, `eventbridge-rule-detail.html`
+- List mocks: Create rule / Create event bus enabled; rule names link to detail; Delete stays selection-gated / stub
+
+### Wired in React
+- Create rule (pattern + schedule) → LocalEmu `PutRule`
+- Create event bus → LocalEmu `CreateEventBus`
+- Rule detail: pattern/schedule + targets via `DescribeRule` / `ListTargetsByRule`

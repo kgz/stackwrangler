@@ -63,13 +63,15 @@ const lists: Array<{
     path: '/events',
     heading: 'Rules',
     columns: ['Name', 'Status', 'Event bus', 'Type', 'Updated'],
-    disabled: ['Create rule'],
+    disabled: ['Delete'],
+    enabledLinks: ['Create rule'],
   },
   {
     path: '/events/buses',
     heading: 'Event buses',
     columns: ['Name', 'Type', 'Description'],
-    disabled: ['Create event bus'],
+    disabled: ['Delete'],
+    enabledLinks: ['Create event bus'],
   },
   {
     path: '/kms',

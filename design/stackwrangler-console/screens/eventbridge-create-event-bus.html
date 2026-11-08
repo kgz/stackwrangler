@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create event bus — EventBridge</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="eventbridge-create-event-bus" data-nav="eventbridge-buses" data-service="eventbridge" data-title="Create event bus" data-crumb="Create event bus">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create event bus</h1>
+      <p class="aws-desc">
+        Create a custom event bus to receive events from your applications and
+        partners. LocalEmu accepts <code>CreateEventBus</code>.
+      </p>
+
+      <section class="aws-card" data-od-id="details-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Event bus details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="bus-name">Name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="bus-name" name="name" type="text" autocomplete="off" placeholder="my-event-bus" value="orders" data-od-id="field-name" />
+              <p class="aws-hint">1–256 characters. Cannot be <code>default</code>.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="bus-description">Description</label>
+              <input class="aws-input" id="bus-description" name="description" type="text" autocomplete="off" placeholder="Optional" value="Order lifecycle events" data-od-id="field-description" />
+            </div>
+          </div>
+
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Additional settings</h2>
+            <div class="aws-field">
+              <label class="aws-label">Resource-based policy</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-policy">Add policy…</button>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">Tags</label>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-tags">Add tags…</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="create-actions">
+        <a class="btn btn-normal" href="eventbridge-buses.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <a class="btn btn-primary" href="eventbridge-buses.html" data-od-id="btn-create">Create event bus</a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

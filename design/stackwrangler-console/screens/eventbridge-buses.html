@@ -20,7 +20,7 @@
             <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
             <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-bus" title="Select a row">Delete</button>
             <div class="spacer"></div>
-            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-bus" title="To implement">Create event bus</button>
+            <a class="btn btn-primary" href="eventbridge-create-event-bus.html" data-od-id="btn-create-bus">Create event bus</a>
           </div>
           <div class="aws-table-tools">
             <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
@@ -46,19 +46,19 @@
               <tbody>
                 <tr data-name="app-domain">
                   <td class="check"><input type="checkbox" aria-label="Select app-domain" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="bus-app-domain">app-domain</button></td>
+                  <td><span data-od-id="bus-app-domain">app-domain</span></td>
                   <td>Custom</td>
                   <td>Domain events for the local app</td>
                 </tr>
                 <tr data-name="default">
                   <td class="check"><input type="checkbox" aria-label="Select default" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="bus-default">default</button></td>
+                  <td><span data-od-id="bus-default">default</span></td>
                   <td>Default</td>
                   <td>AWS default event bus</td>
                 </tr>
                 <tr data-name="orders">
                   <td class="check"><input type="checkbox" aria-label="Select orders" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="bus-orders">orders</button></td>
+                  <td><span data-od-id="bus-orders">orders</span></td>
                   <td>Custom</td>
                   <td>Order lifecycle events</td>
                 </tr>
