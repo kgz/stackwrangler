@@ -19,6 +19,7 @@ import { EventBridgeBusesPage } from './pages/EventBridgeBusesPage'
 import { EventBridgeCreateRulePage } from './pages/EventBridgeCreateRulePage'
 import { EventBridgeCreateBusPage } from './pages/EventBridgeCreateBusPage'
 import { EventBridgeRuleDetailPage } from './pages/EventBridgeRuleDetailPage'
+import { EventBridgeEditRulePage } from './pages/EventBridgeEditRulePage'
 import { KmsKeysPage } from './pages/KmsKeysPage'
 import { SnsTopicsPage } from './pages/SnsTopicsPage'
 import { DynamoDBTablesPage } from './pages/DynamoDBTablesPage'
@@ -67,6 +68,10 @@ export default function App() {
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="events" element={<EventBridgeRulesPage />} />
           <Route path="events/create" element={<EventBridgeCreateRulePage />} />
+          <Route
+            path="events/rules/:name/edit"
+            element={<EventBridgeEditRulePage />}
+          />
           <Route
             path="events/rules/:name"
             element={<EventBridgeRuleDetailPage />}

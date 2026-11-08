@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edit rule — EventBridge</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="eventbridge-edit-rule" data-nav="eventbridge-rules" data-service="eventbridge" data-title="Edit rule" data-crumb="Edit rule">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Edit rule</h1>
+      <p class="aws-desc">
+        Update description, state, and pattern or schedule via LocalEmu
+        <code>PutRule</code>. Name and event bus stay fixed.
+      </p>
+
+      <section class="aws-card" data-od-id="details-card">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Rule details</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="rule-name">Name <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="rule-name" name="name" type="text" autocomplete="off" value="awsbox-events-demo" data-od-id="field-name" disabled readonly />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="rule-description">Description</label>
+              <input class="aws-input" id="rule-description" name="description" type="text" autocomplete="off" placeholder="Optional" value="Demo rule for local EventBridge" data-od-id="field-description" />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label" for="rule-bus">Event bus</label>
+              <input class="aws-input" id="rule-bus" name="eventBusName" type="text" value="default" data-od-id="field-bus" disabled readonly />
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">State</label>
+              <ul class="aws-radio-list" data-od-id="state-options">
+                <li>
+                  <label>
+                    <input type="radio" name="state" value="ENABLED" checked data-od-id="state-enabled" />
+                    <span><strong>Enabled</strong><span class="sub">The rule evaluates matching events or schedules.</span></span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="state" value="DISABLED" data-od-id="state-disabled" />
+                    <span><strong>Disabled</strong><span class="sub">The rule is retained but does not match.</span></span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="aws-form-section" data-od-id="rule-type-section">
+            <h2 class="aws-section-title">Rule type</h2>
+            <ul class="aws-radio-list" data-od-id="rule-type-options">
+              <li>
+                <label>
+                  <input type="radio" name="ruleType" value="pattern" checked data-od-id="type-pattern" />
+                  <span><strong>Event pattern</strong><span class="sub">Match events by source, detail-type, and fields.</span></span>
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="radio" name="ruleType" value="schedule" data-od-id="type-schedule" />
+                  <span><strong>Schedule</strong><span class="sub">Invoke on a rate or cron expression (default bus).</span></span>
+                </label>
+              </li>
+            </ul>
+            <div class="aws-field" style="margin-top:12px" data-od-id="pattern-field">
+              <label class="aws-label" for="event-pattern">Event pattern <span class="req" aria-hidden="true">*</span></label>
+              <textarea class="aws-input" id="event-pattern" name="eventPattern" rows="8" data-od-id="field-pattern" style="font-family:var(--aws-mono, ui-monospace, monospace);">{
+{
+  "source": ["awsbox.demo"]
+}</textarea>
+              <p class="aws-hint">JSON event pattern accepted by LocalEmu <code>PutRule</code>.</p>
+            </div>
+            <div class="aws-field" style="margin-top:12px" hidden data-od-id="schedule-field">
+              <label class="aws-label" for="schedule-expression">Schedule expression <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="schedule-expression" name="scheduleExpression" type="text" placeholder="rate(5 minutes)" value="rate(5 minutes)" data-od-id="field-schedule" />
+              <p class="aws-hint">Examples: <code>rate(5 minutes)</code>, <code>cron(0 12 * * ? *)</code>.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <div class="aws-toolbar" style="margin-top:16px" data-od-id="edit-actions">
+        <a class="btn btn-normal" href="eventbridge-rule-detail.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer"></div>
+        <a class="btn btn-primary" href="eventbridge-rule-detail.html" data-od-id="btn-update">Update rule</a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

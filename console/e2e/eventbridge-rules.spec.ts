@@ -53,7 +53,7 @@ function deleteBusQuiet(name: string) {
   }
 }
 
-test.describe('EventBridge rules UI (#173 / #552)', () => {
+test.describe('EventBridge rules UI (#173 / #552 / #630)', () => {
   test('lists a seeded rule and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-events-ui-${ts}`
@@ -88,8 +88,8 @@ test.describe('EventBridge rules UI (#173 / #552)', () => {
       await expect(
         page.getByRole('link', { name: 'Create rule' }),
       ).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Delete' })).toBeDisabled()
-      await expect(page.getByRole('button', { name: 'Delete' })).toHaveAttribute(
+      await expect(page.getByTestId('events-delete')).toBeDisabled()
+      await expect(page.getByTestId('events-delete')).toHaveAttribute(
         'title',
         'Select a row',
       )
@@ -110,6 +110,120 @@ test.describe('EventBridge rules UI (#173 / #552)', () => {
       await expect(page.getByText('e2e-events-ui').first()).toBeVisible()
     } finally {
       deleteRuleQuiet(name)
+    }
+  })
+
+  test('edits a rule, puts and removes a target, then deletes', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-events-mutate-${ts}`
+    const targetArn =
+      'arn:aws:lambda:us-east-1:000000000000:function:e2e-events-mutate'
+    let created = false
+
+    try {
+      aws([
+        'events',
+        'put-rule',
+        '--name',
+        name,
+        '--event-pattern',
+        '{"source":["awsbox.e2e.mutate"]}',
+        '--state',
+        'ENABLED',
+      ])
+      created = true
+
+      await page.goto(
+        `/events/rules/${encodeURIComponent(name)}?bus=default`,
+      )
+      await expect(
+        page.getByRole('heading', { level: 1, name }),
+      ).toBeVisible({ timeout: 15000 })
+
+      await page.getByTestId('events-detail-edit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/events/rules/${name}/edit\\?bus=default$`),
+      )
+      await page.getByTestId('events-edit-rule-description').fill('edited')
+      await page
+        .getByTestId('events-edit-rule-pattern')
+        .fill('{"source":["awsbox.e2e.edited"]}')
+      await page.getByTestId('events-edit-rule-submit').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/events/rules/${name}\\?bus=default$`),
+        { timeout: 20000 },
+      )
+      await expect(page.getByTestId('events-rule-pattern')).toContainText(
+        'awsbox.e2e.edited',
+      )
+      await expect(page.getByText('edited').first()).toBeVisible()
+
+      await page.getByTestId('events-tab-targets').click()
+      await page.getByTestId('events-add-target').click()
+      await expect(page.getByTestId('events-add-target-modal')).toBeVisible()
+      await page.getByTestId('events-add-target-id').fill('1')
+      await page.getByTestId('events-add-target-arn').fill(targetArn)
+      await page.getByTestId('events-add-target-submit').click()
+      await expect(page.getByText(targetArn).first()).toBeVisible({
+        timeout: 15000,
+      })
+
+      await page.getByRole('radio', { name: 'Select 1' }).check()
+      await page.getByTestId('events-remove-target').click()
+      await page.getByTestId('events-confirm-remove-target').click()
+      await expect(page.getByText('No targets')).toBeVisible({
+        timeout: 15000,
+      })
+
+      await page.getByTestId('events-detail-delete').click()
+      await page.getByTestId('events-confirm-delete').click()
+      await expect(page).toHaveURL(/\/events$/, { timeout: 20000 })
+      await expect(
+        page.getByRole('link', { name, exact: true }),
+      ).toHaveCount(0)
+      created = false
+    } finally {
+      if (created) deleteRuleQuiet(name)
+    }
+  })
+
+  test('deletes a selected rule from the list', async ({ page }) => {
+    const ts = Date.now()
+    const name = `e2e-events-del-${ts}`
+    let created = false
+
+    try {
+      aws([
+        'events',
+        'put-rule',
+        '--name',
+        name,
+        '--event-pattern',
+        '{"source":["awsbox.e2e.del"]}',
+        '--state',
+        'ENABLED',
+      ])
+      created = true
+
+      await page.goto('/events')
+      await expect(
+        page.getByRole('link', { name, exact: true }),
+      ).toBeVisible({ timeout: 15000 })
+      await page
+        .getByRole('row')
+        .filter({ has: page.getByRole('link', { name, exact: true }) })
+        .click()
+      await expect(page.getByTestId('events-delete')).toBeEnabled()
+      await page.getByTestId('events-delete').click()
+      await page.getByTestId('events-confirm-delete').click()
+      await expect(
+        page.getByRole('link', { name, exact: true }),
+      ).toHaveCount(0, { timeout: 15000 })
+      created = false
+    } finally {
+      if (created) deleteRuleQuiet(name)
     }
   })
 
