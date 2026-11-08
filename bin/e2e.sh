@@ -24,6 +24,7 @@ echo "==> IAM SimulateCustomPolicy / SimulatePrincipalPolicy"
 echo "==> IAM OIDC + PassRole"
 ./smokes/security/oidc-smoke.sh
 ./smokes/security/iam-permissions-boundary-key-smoke.sh
+./smokes/security/iam-policy-arn-condition-smoke.sh
 
 echo "==> Service-origin condition keys (ViaService / SourceArn / EC2 PassRole)"
 ./smokes/security/service-origin-condition-keys-smoke.sh

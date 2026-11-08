@@ -1,9 +1,13 @@
-"""Set iam:PermissionsBoundary on CreateRole / role-policy IAM calls (#525).
+"""Set iam:PermissionsBoundary and iam:PolicyARN request condition keys.
 
-Deploy-role policies commonly allow iam:CreateRole / PutRolePolicy /
+#525 — Deploy-role policies commonly allow iam:CreateRole / PutRolePolicy /
 AttachRolePolicy only when Condition StringEquals iam:PermissionsBoundary
 matches a fixed boundary ARN. AWS puts that key in the request context;
 stock LocalEmu did not, so the Allow never matched.
+
+#648 — Attach/Detach*Policy statements often also ArnEquals iam:PolicyARN to
+the one managed policy the deployer may attach. Same gap: key missing from
+request context until this patch copies PolicyArn from the request.
 """
 
 from __future__ import annotations
@@ -21,6 +25,17 @@ _ROLE_BOUNDARY_OPS = frozenset(
         "AttachRolePolicy",
         "DetachRolePolicy",
         "DeleteRolePolicy",
+    }
+)
+# Attach/Detach managed policies: iam:PolicyARN = request PolicyArn (#648).
+_POLICY_ARN_OPS = frozenset(
+    {
+        "AttachRolePolicy",
+        "DetachRolePolicy",
+        "AttachUserPolicy",
+        "DetachUserPolicy",
+        "AttachGroupPolicy",
+        "DetachGroupPolicy",
     }
 )
 
@@ -80,13 +95,17 @@ def _install() -> None:
                     boundary = _role_boundary_arn(account_id, role_name)
             if boundary:
                 conditions["iam:PermissionsBoundary"] = boundary
+            if operation in _POLICY_ARN_OPS:
+                policy_arn = params.get("PolicyArn")
+                if isinstance(policy_arn, str) and policy_arn:
+                    conditions["iam:PolicyARN"] = policy_arn
         except Exception:
-            LOG.debug("iam:PermissionsBoundary context failed", exc_info=True)
+            LOG.debug("iam:PermissionsBoundary/PolicyARN context failed", exc_info=True)
         return conditions
 
     _build_conditions._awsbox_permissions_boundary = True
     enforcer_mod._build_conditions = _build_conditions
-    LOG.info("awsbox iam:PermissionsBoundary condition key applied")
+    LOG.info("awsbox iam:PermissionsBoundary + iam:PolicyARN condition keys applied")
 
 
 _install()
