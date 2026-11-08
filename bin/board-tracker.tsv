@@ -235,7 +235,7 @@
 349	done	Implement built console services from #319 OD mocks
 350	backlog	Epic: console full UI create/detail
 351	done	Debt: Lambda Create + detail + Monaco code
-352	backlog	Debt: Logs create + stream/detail
+352	in-review	Debt: Logs create + stream/detail
 353	backlog	Debt: IAM Create user + user detail
 354	backlog	Debt: HTTP API detail routes/stages
 355	backlog	Debt: S3 console disabled controls (from #347)
@@ -307,9 +307,6 @@
 491	done	Public OSS: drop WSL-centric copy; Linux primary
 495	done	Debt: Linux-first OD start hints (from #491)
 498	done	Debt: smoke MaximumConcurrency without reserved (from #453)
-420	done	(batch/2026-11-04-v002-b)
-428	in-review	Public OSS: polish docs-site (Runa-grade + GitHub Pages prep)
-487	done	Public OSS: single Docker image install path
 499	in-review	Debt: SQS FIFO ESM + MaximumConcurrency message-group ordering (from #453)
 517	in-review	IAM SimulateCustomPolicy / SimulatePrincipalPolicy
 518	in-review	sns:Protocol/Endpoint on Subscribe
@@ -332,9 +329,9 @@
 563	done	Doc: SQS queues console screenshot (from #167)
 564	backlog	Debt: CFN drift + stack notifications (from #147)
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
-518	in-review	sns:Protocol/Endpoint on Subscribe
-525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
 594	backlog	Debt: ELBv2 ModifyListener ACM reload (from #242)
 596	backlog	Doc: API call log docs/screenshot (from #194)
 602	backlog	Debt: ECS/CLI call-log workload smoke (from #194)
 603	backlog	Debt: preserve ELBv2 host_override across RegisterTargets (from #247)
+608	backlog	Doc: CloudWatch Logs create/detail console screenshot (from #352)
+609	backlog	Debt: CloudWatch Logs Tail poll distinct from Search (from #352)

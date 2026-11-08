@@ -11,6 +11,9 @@ import { LambdaFunctionDetailPage } from './pages/LambdaFunctionDetailPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { ApiCallLogPage } from './pages/ApiCallLogPage'
 import { LogsPage } from './pages/LogsPage'
+import { LogsCreateLogGroupPage } from './pages/LogsCreateLogGroupPage'
+import { LogsLogGroupDetailPage } from './pages/LogsLogGroupDetailPage'
+import { LogsLogStreamEventsPage } from './pages/LogsLogStreamEventsPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { SecretsPage } from './pages/SecretsPage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
@@ -59,6 +62,15 @@ export default function App() {
             element={<LambdaFunctionDetailPage />}
           />
           <Route path="logs" element={<LogsPage />} />
+          <Route path="logs/create" element={<LogsCreateLogGroupPage />} />
+          <Route
+            path="logs/log-groups/:name"
+            element={<LogsLogGroupDetailPage />}
+          />
+          <Route
+            path="logs/log-groups/:name/log-streams/:stream"
+            element={<LogsLogStreamEventsPage />}
+          />
           <Route path="cloudtrail" element={<ApiCallLogPage />} />
           <Route path="stepfunctions" element={<StepFunctionsPage />} />
           <Route path="secretsmanager" element={<SecretsPage />} />
