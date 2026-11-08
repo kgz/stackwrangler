@@ -11,7 +11,9 @@ import { LambdaFunctionDetailPage } from './pages/LambdaFunctionDetailPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
 import { LogsPage } from './pages/LogsPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
+import { SecretsDetailPage } from './pages/SecretsDetailPage'
 import { SecretsPage } from './pages/SecretsPage'
+import { SecretsStorePage } from './pages/SecretsStorePage'
 import { KinesisStreamsPage } from './pages/KinesisStreamsPage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
@@ -60,6 +62,14 @@ export default function App() {
           <Route path="logs" element={<LogsPage />} />
           <Route path="stepfunctions" element={<StepFunctionsPage />} />
           <Route path="secretsmanager" element={<SecretsPage />} />
+          <Route
+            path="secretsmanager/store"
+            element={<SecretsStorePage />}
+          />
+          <Route
+            path="secretsmanager/secrets/*"
+            element={<SecretsDetailPage />}
+          />
           <Route path="kinesis" element={<KinesisStreamsPage />} />
           <Route path="sqs" element={<SqsQueuesPage />} />
           <Route path="events" element={<EventBridgeRulesPage />} />

@@ -126,8 +126,27 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 | `secrets-list-empty.html` | Empty twin · Refresh + Store a new secret + empty panel |
 
 ### Dead controls (`title="To implement"`)
-- Store a new secret, Delete, Rotate, Refresh, header filters, secret name links, table settings
+- Delete, Rotate, Refresh, header filters, table settings (list-only #176)
 - Working: find field filters rows through shared `data-find-table` wiring; pager and nav links unchanged
+
+## Issue #535 — Secrets Manager store + detail (from #176)
+
+### Mode
+- Extend Secrets Manager mocks: **Store a new secret** + **secret detail** (grey-rose web-clone shape)
+- OD daemon run API returned HTTP 404 and the container lacked a worktree mount — hand mocks landed to match existing chrome (`assets/console.css` / `console.js`); no real AWS resources
+- Structure follows `rds-create-database.html` / `lambda-function-detail.html` patterns
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `secrets-store.html` | Other-type plaintext string secret · name / description · rotation off · Store → detail |
+| `secrets-detail.html` | Overview metadata · Retrieve secret value (gated) · Versions table · Delete/Rotate/Actions + Rotation/Resource tabs dead |
+| `secrets-list.html` / `secrets-list-empty.html` | Store link enabled; Name cells link to detail |
+
+### Dead controls (`title="To implement"`)
+- List: Delete, Rotate, Refresh, filters, table settings → Delete/Rotate follow-up [#606](https://github.com/kgz/awsl/issues/606)
+- Store: RDS/DocumentDB types, key/value + binary formats, CMK picker, enable rotation
+- Detail: Delete, Rotate, Actions, Refresh, Rotation tab, Resource permission tab
 
 ## Issue #178 — Kinesis Data streams list
 

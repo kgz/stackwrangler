@@ -36,7 +36,8 @@ const lists: Array<{
     path: '/secretsmanager',
     heading: 'Secrets',
     columns: ['Name', 'Description', 'Last retrieved', 'Created on'],
-    disabled: ['Delete', 'Rotate', 'Store a new secret'],
+    disabled: ['Delete', 'Rotate'],
+    enabledLinks: ['Store a new secret'],
   },
   {
     path: '/kinesis',
