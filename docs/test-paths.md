@@ -190,7 +190,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ACM ARN stored on ALB HTTPS listener | happy | covered | `./smokes/security/acm-smoke.sh` |
 | **ACM deny-user RequestCertificate → AccessDenied** | sad/authz | covered | `./smokes/security/acm-smoke.sh` |
 | ACM console | ui | missing | [#333](https://github.com/kgz/awsl/issues/333) |
-| ELBv2 HTTP health check treats 500 as unhealthy | sad/other | missing | [#243](https://github.com/kgz/awsl/issues/243) |
+| ELBv2 HTTP health check treats 500 as unhealthy | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
 | WAFv2 create WebACL + associate API GW stage; get/list association | happy | covered | `./smokes/networking/waf-smoke.sh` · [waf.md](waf.md) |
 | Network Firewall create rule group + firewall policy; describe/list | happy | covered | `./smokes/networking/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |
 | Firewall Manager put/get/list policy stub | happy | covered | `./smokes/networking/network-firewall-fms-smoke.sh` · [network-firewall.md](network-firewall.md) |

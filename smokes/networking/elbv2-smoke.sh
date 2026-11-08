@@ -45,6 +45,8 @@ TG_INT=""
 TG_A=""
 TG_B=""
 TG_TLS=""
+TG_HC=""
+LB_HC=""
 CERT=""
 UD_A=""
 UD_B=""
@@ -72,11 +74,11 @@ cleanup() {
 	if [[ "$HOSTS_ADDED" == "1" ]]; then
 		sudo sed -i "/# awsbox-elbv2-smoke-${TS}/d" /etc/hosts 2>/dev/null || true
 	fi
-	for arn in "$LB_EDGE" "$LB_INT" "$LB_ALB" "$LB_TLS"; do
+	for arn in "$LB_EDGE" "$LB_INT" "$LB_ALB" "$LB_TLS" "$LB_HC"; do
 		[[ -z "$arn" ]] && continue
 		aws elbv2 delete-load-balancer --load-balancer-arn "$arn" >/dev/null 2>&1 || true
 	done
-	for arn in "$TG_EDGE" "$TG_INT" "$TG_A" "$TG_B" "$TG_TLS"; do
+	for arn in "$TG_EDGE" "$TG_INT" "$TG_A" "$TG_B" "$TG_TLS" "$TG_HC"; do
 		[[ -z "$arn" ]] && continue
 		aws elbv2 delete-target-group --target-group-arn "$arn" >/dev/null 2>&1 || true
 	done
@@ -162,17 +164,41 @@ while True:
             except socket.timeout:
                 pass
             head = data.split(b"\r\n", 1)[0].decode("latin1", "replace")
+            path = "/"
+            parts = head.split(" ")
+            if len(parts) >= 2:
+                path = parts[1] or "/"
             host = ""
             for line in data.split(b"\r\n"):
                 if line.lower().startswith(b"host:"):
                     host = line.split(b":", 1)[1].strip().decode()
-            body = f"{name} {head} host={host}\n".encode()
-            conn.sendall(
-                b"HTTP/1.1 200 OK\r\nContent-Length: "
-                + str(len(body)).encode()
-                + b"\r\nConnection: close\r\n\r\n"
-                + body
-            )
+            if path.startswith("/health"):
+                status = 200
+                try:
+                    with open(f"/tmp/health-{port}.status", encoding="ascii") as fh:
+                        status = int(fh.read().strip() or "200")
+                except Exception:
+                    pass
+                body = b"ok\n" if status < 400 else b"fail\n"
+                reason = b"OK" if status < 400 else b"ERR"
+                conn.sendall(
+                    b"HTTP/1.1 "
+                    + str(status).encode()
+                    + b" "
+                    + reason
+                    + b"\r\nContent-Length: "
+                    + str(len(body)).encode()
+                    + b"\r\nConnection: close\r\n\r\n"
+                    + body
+                )
+            else:
+                body = f"{name} {head} host={host}\n".encode()
+                conn.sendall(
+                    b"HTTP/1.1 200 OK\r\nContent-Length: "
+                    + str(len(body)).encode()
+                    + b"\r\nConnection: close\r\n\r\n"
+                    + body
+                )
         else:
             conn.sendall(f"{name} peer={addr[0]}\n".encode())
     finally:
@@ -280,11 +306,20 @@ echo "private A=${PIP_A} B=${PIP_B} client=${PIP_C}"
 
 mk_tg() {
 	local name="$1" proto="$2" port="$3"
-	aws elbv2 create-target-group \
-		--name "$name" --protocol "$proto" --port "$port" \
-		--vpc-id "$VPC" --target-type instance \
-		--health-check-protocol TCP --health-check-port traffic-port \
-		--query 'TargetGroups[0].TargetGroupArn' --output text
+	if [[ "$proto" == "HTTP" || "$proto" == "HTTPS" ]]; then
+		aws elbv2 create-target-group \
+			--name "$name" --protocol "$proto" --port "$port" \
+			--vpc-id "$VPC" --target-type instance \
+			--health-check-protocol "$proto" --health-check-path /health \
+			--health-check-port traffic-port --matcher HttpCode=200 \
+			--query 'TargetGroups[0].TargetGroupArn' --output text
+	else
+		aws elbv2 create-target-group \
+			--name "$name" --protocol "$proto" --port "$port" \
+			--vpc-id "$VPC" --target-type instance \
+			--health-check-protocol TCP --health-check-port traffic-port \
+			--query 'TargetGroups[0].TargetGroupArn' --output text
+	fi
 }
 
 TG_EDGE="$(mk_tg "e443-${TS}" TCP 443)"
@@ -574,6 +609,61 @@ pin.wrap_socket(raw, server_hostname="elbv2.local")
 PY
 [[ "$PIN_RC" -ne 0 ]] || fail "client pinning LocalEmu default accepted ACM listener"
 echo "OK: ACM cert presented; LocalEmu-default pin rejected"
+echo "==> HTTP health check path + matcher"
+HC_PORT=18080
+TG_HC="$(aws elbv2 create-target-group \
+	--name "ehc-${TS}" --protocol HTTP --port 8080 \
+	--vpc-id "$VPC" --target-type instance \
+	--health-check-protocol HTTP --health-check-path /health \
+	--health-check-port traffic-port --matcher HttpCode=200 \
+	--query 'TargetGroups[0].TargetGroupArn' --output text)"
+aws elbv2 register-targets --target-group-arn "$TG_HC" \
+	--targets "Id=${IA},Port=8080" "Id=${IB},Port=8081"
+LB_HC="$(aws elbv2 create-load-balancer --name "hc-${TS}" --type application \
+	--scheme internet-facing --subnets "$SUB_A" "$SUB_B" \
+	--query 'LoadBalancers[0].LoadBalancerArn' --output text)"
+aws elbv2 create-listener --load-balancer-arn "$LB_HC" --protocol HTTP --port "$HC_PORT" \
+	--default-actions "Type=forward,TargetGroupArn=${TG_HC}" >/dev/null
+wait_healthy "$TG_HC" 2
+docker exec "$CA" sh -c 'echo 500 > /tmp/health-8080.status'
+HC_STATE=""
+for i in $(seq 1 30); do
+	HC_STATE="$(aws elbv2 describe-target-health --target-group-arn "$TG_HC" \
+		--targets "Id=${IA},Port=8080" --query 'TargetHealthDescriptions[0].TargetHealth.State' --output text)"
+	echo "  A8080=${HC_STATE}"
+	[[ "$HC_STATE" == "unhealthy" ]] && break
+	sleep 1
+done
+[[ "$HC_STATE" == "unhealthy" ]] || fail "HTTP 500 health path stayed ${HC_STATE}"
+HC_AFTER=""
+for _ in $(seq 1 8); do
+	line="$(python3 - "$EDGE" "$HC_PORT" <<'PY'
+import socket, sys
+host, port = sys.argv[1], int(sys.argv[2])
+s = socket.create_connection((host, port), 5)
+s.settimeout(5)
+s.sendall(b"GET /ping HTTP/1.1\r\nHost: hc.example\r\nConnection: close\r\n\r\n")
+data = s.recv(4096)
+s.close()
+sys.stdout.write(data.decode("latin1", "replace"))
+PY
+)"
+	echo "  ${line}"
+	HC_AFTER="${HC_AFTER} ${line}"
+done
+echo "$HC_AFTER" | grep -q TGA && fail "HTTP-unhealthy TGA still received traffic (${HC_AFTER})"
+echo "$HC_AFTER" | grep -q TGB || fail "healthy TGB got no traffic (${HC_AFTER})"
+docker exec "$CA" sh -c 'echo 200 > /tmp/health-8080.status'
+HC_OK=""
+for i in $(seq 1 30); do
+	HC_OK="$(aws elbv2 describe-target-health --target-group-arn "$TG_HC" \
+		--targets "Id=${IA},Port=8080" --query 'TargetHealthDescriptions[0].TargetHealth.State' --output text)"
+	echo "  A8080=${HC_OK}"
+	[[ "$HC_OK" == "healthy" ]] && break
+	sleep 1
+done
+[[ "$HC_OK" == "healthy" ]] || fail "HTTP 200 health path stayed ${HC_OK}"
+echo "OK: HTTP health check matcher"
 
 echo "==> unhealthy target drops out"
 docker exec "$CA" sh -c 'kill "$(cat /tmp/tcp-443.pid)"' || fail "could not stop A443"
