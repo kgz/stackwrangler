@@ -244,6 +244,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | S3 Control GetPublicAccessBlock / ListAccessPoints (account) | happy | covered | `./smokes/security/prowler-smoke.sh` spot-check |
 | SQS send/receive/delete | happy | covered | `./smokes/messaging/sqs-smoke.sh` |
 | SQS console queues create/detail/send/delete | happy | covered | `console/e2e/sqs-queues.spec.ts` · #548 |
+| SQS console send/receive/delete message + purge | happy | covered | `console/e2e/sqs-queues.spec.ts` · #627 |
 | SQS MessageRetentionPeriod > 14d → InvalidAttributeValue | sad/other | covered | `./smokes/messaging/sqs-smoke.sh` |
 | **SQS deny-user SendMessage → AccessDenied** | sad/authz | covered | `./smokes/messaging/sqs-authz-smoke.sh` |
 | Lambda SendMessage using CreateQueue / !Ref QueueUrl (`sqs.<region>.localhost`) | happy | covered | `./smokes/lambda/sqs-lambda-queueurl-smoke.sh` · [lambda-vpc.md](lambda-vpc.md) · [#459](https://github.com/kgz/awsl/issues/459) |

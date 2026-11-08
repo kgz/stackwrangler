@@ -15,6 +15,7 @@ import { formatServiceDate } from '../lib/format'
 import {
   deleteQueue,
   listQueues,
+  purgeQueue,
   type SqsQueueRow,
 } from '../lib/sqs'
 
@@ -25,7 +26,10 @@ export function SqsQueuesPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmPurge, setConfirmPurge] = useState(false)
+  const [purgeTyped, setPurgeTyped] = useState('')
   const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -84,15 +88,53 @@ export function SqsQueuesPage() {
     }
   }
 
+  async function onPurge() {
+    if (!selectedQueue) return
+    if (purgeTyped.trim().toLowerCase() !== 'purge') {
+      setError('Type purge to confirm')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      await purgeQueue(selectedQueue.url)
+      setConfirmPurge(false)
+      setPurgeTyped('')
+      setNotice(`Purged queue ${selectedQueue.name}`)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setConfirmPurge(false)
+      setPurgeTyped('')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <>
       <ListCard
         title="Queues"
         desc="Amazon Simple Queue Service (SQS) lets you send, store, and receive messages between software components at any volume, without losing messages or requiring other services to be available."
-        notices={<Notices error={error} />}
+        notices={<Notices error={error} toast={notice} />}
         toolbar={
           <>
             <RefreshButton onClick={() => void refresh()} />
+            <button
+              type="button"
+              className="btn btn-normal"
+              disabled={!selectedQueue || busy}
+              title={selectedQueue ? undefined : 'Select a row'}
+              onClick={() => {
+                setError(null)
+                setPurgeTyped('')
+                setConfirmPurge(true)
+              }}
+              data-testid="sqs-purge"
+            >
+              Purge
+            </button>
             <button
               type="button"
               className="btn btn-normal"
@@ -203,6 +245,63 @@ export function SqsQueuesPage() {
           </div>
         </div>
       ) : null}
+
+      {confirmPurge && selectedQueue ? (
+        <div className="modal-backdrop">
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            data-testid="sqs-purge-modal"
+          >
+            <h3>Purge queue?</h3>
+            <p style={{ color: 'var(--awsbox-quiet)', marginTop: 0 }}>
+              Delete all messages in <strong>{selectedQueue.name}</strong>,
+              including in-flight messages. This cannot be undone. Type{' '}
+              <code>purge</code> to confirm.
+            </p>
+            <div className="aws-field">
+              <label className="aws-label" htmlFor="sqs-list-purge-confirm">
+                Confirm
+              </label>
+              <input
+                className="aws-input"
+                id="sqs-list-purge-confirm"
+                type="text"
+                value={purgeTyped}
+                onChange={(e) => setPurgeTyped(e.target.value)}
+                data-testid="sqs-purge-confirm-input"
+                autoComplete="off"
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-normal"
+                disabled={busy}
+                onClick={() => {
+                  setConfirmPurge(false)
+                  setPurgeTyped('')
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={
+                  busy || purgeTyped.trim().toLowerCase() !== 'purge'
+                }
+                onClick={() => void onPurge()}
+                data-testid="sqs-confirm-purge"
+              >
+                {busy ? 'Purging…' : 'Purge'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
     </>
   )
 }

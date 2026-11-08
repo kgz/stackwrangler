@@ -1,9 +1,12 @@
 import {
   CreateQueueCommand,
+  DeleteMessageCommand,
   DeleteQueueCommand,
   GetQueueAttributesCommand,
   GetQueueUrlCommand,
   ListQueuesCommand,
+  PurgeQueueCommand,
+  ReceiveMessageCommand,
   SendMessageCommand,
   SQSClient,
 } from '@aws-sdk/client-sqs'
@@ -272,4 +275,73 @@ export async function sendQueueMessage(
     }),
   )
   return out.MessageId
+}
+
+export type SqsReceivedMessage = {
+  messageId: string
+  body: string
+  receiptHandle: string
+  md5OfBody: string | undefined
+  approximateReceiveCount: string | undefined
+  sentTimestamp: string | undefined
+}
+
+export type ReceiveQueueMessagesInput = {
+  queueUrl: string
+  maxNumberOfMessages?: number
+  waitTimeSeconds?: number
+}
+
+export async function receiveQueueMessages(
+  input: ReceiveQueueMessagesInput,
+): Promise<SqsReceivedMessage[]> {
+  let max = input.maxNumberOfMessages ?? 10
+  if (!Number.isFinite(max)) max = 10
+  max = Math.min(10, Math.max(1, Math.trunc(max)))
+  let wait = input.waitTimeSeconds ?? 1
+  if (!Number.isFinite(wait)) wait = 1
+  wait = Math.min(20, Math.max(0, Math.trunc(wait)))
+
+  const out = await sqsClient().send(
+    new ReceiveMessageCommand({
+      QueueUrl: input.queueUrl,
+      MaxNumberOfMessages: max,
+      WaitTimeSeconds: wait,
+      // AWS console peeks so messages remain available to other consumers.
+      VisibilityTimeout: 0,
+      AttributeNames: ['All'],
+    }),
+  )
+
+  return (out.Messages ?? []).flatMap((msg) => {
+    if (!msg.MessageId || !msg.ReceiptHandle) return []
+    const attrs = msg.Attributes ?? {}
+    return [
+      {
+        messageId: msg.MessageId,
+        body: msg.Body ?? '',
+        receiptHandle: msg.ReceiptHandle,
+        md5OfBody: msg.MD5OfBody,
+        approximateReceiveCount: attrs.ApproximateReceiveCount,
+        sentTimestamp: attrs.SentTimestamp,
+      } satisfies SqsReceivedMessage,
+    ]
+  })
+}
+
+export async function deleteQueueMessage(
+  queueUrl: string,
+  receiptHandle: string,
+): Promise<void> {
+  if (!receiptHandle) throw new Error('Receipt handle is required')
+  await sqsClient().send(
+    new DeleteMessageCommand({
+      QueueUrl: queueUrl,
+      ReceiptHandle: receiptHandle,
+    }),
+  )
+}
+
+export async function purgeQueue(queueUrl: string): Promise<void> {
+  await sqsClient().send(new PurgeQueueCommand({ QueueUrl: queueUrl }))
 }

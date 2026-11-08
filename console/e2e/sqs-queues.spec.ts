@@ -44,7 +44,7 @@ function queueUrlForName(name: string): string {
   ]).trim()
 }
 
-test.describe('SQS queues UI (#167 / #548)', () => {
+test.describe('SQS queues UI (#167 / #548 / #627)', () => {
   test('lists a seeded queue and opens detail', async ({ page }) => {
     const ts = Date.now()
     const name = `e2e-sqs-ui-${ts}`
@@ -74,6 +74,11 @@ test.describe('SQS queues UI (#167 / #548)', () => {
       ).toBeVisible()
       await expect(page.getByTestId('sqs-delete')).toBeDisabled()
       await expect(page.getByTestId('sqs-delete')).toHaveAttribute(
+        'title',
+        'Select a row',
+      )
+      await expect(page.getByTestId('sqs-purge')).toBeDisabled()
+      await expect(page.getByTestId('sqs-purge')).toHaveAttribute(
         'title',
         'Select a row',
       )
@@ -120,11 +125,15 @@ test.describe('SQS queues UI (#167 / #548)', () => {
       })
 
       await page.getByTestId('sqs-send-open').click()
+      await expect(page).toHaveURL(new RegExp(`/sqs/queues/${name}/send-receive$`))
       await page.getByTestId('sqs-send-body').fill('{"hello":"sqs"}')
       await page.getByTestId('sqs-send-submit').click()
       await expect(page.getByRole('status')).toContainText('Message sent', {
         timeout: 15000,
       })
+
+      await page.getByRole('link', { name: `← ${name}` }).click()
+      await expect(page).toHaveURL(new RegExp(`/sqs/queues/${name}$`))
       await expect(page.getByText('Messages available')).toBeVisible()
 
       await page.getByRole('link', { name: '← Queues' }).click()
@@ -176,6 +185,9 @@ test.describe('SQS queues UI (#167 / #548)', () => {
       ).toBeVisible()
 
       await page.getByTestId('sqs-send-open').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/sqs/queues/${name.replace('.', '\\.')}/send-receive$`),
+      )
       await page.getByTestId('sqs-send-body').fill('fifo-body')
       await page.getByTestId('sqs-send-group-id').fill('g1')
       await page.getByTestId('sqs-send-submit').click()
@@ -183,6 +195,10 @@ test.describe('SQS queues UI (#167 / #548)', () => {
         timeout: 15000,
       })
 
+      await page.getByRole('link', { name: new RegExp(`← ${name}`) }).click()
+      await expect(page).toHaveURL(
+        new RegExp(`/sqs/queues/${name.replace('.', '\\.')}$`),
+      )
       await page.getByTestId('sqs-detail-delete').click()
       await page.getByTestId('sqs-confirm-delete').click()
       await expect(page).toHaveURL(/\/sqs$/, { timeout: 20000 })
@@ -221,9 +237,12 @@ test.describe('SQS queues UI (#167 / #548)', () => {
       })
 
       await page.getByTestId('sqs-send-open').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/sqs/queues/${name.replace('.', '\\.')}/send-receive$`),
+      )
       await page.getByTestId('sqs-send-submit').click()
       await expect(
-        page.getByTestId('sqs-send-modal').getByText('Message body is required'),
+        page.getByTestId('sqs-send-card').getByText('Message body is required'),
       ).toBeVisible()
 
       await page.getByTestId('sqs-send-body').fill('fifo-no-cbd')
@@ -231,7 +250,7 @@ test.describe('SQS queues UI (#167 / #548)', () => {
       await page.getByTestId('sqs-send-submit').click()
       await expect(
         page
-          .getByTestId('sqs-send-modal')
+          .getByTestId('sqs-send-card')
           .getByText(
             'Message deduplication ID is required when content-based deduplication is off',
           ),
@@ -240,6 +259,81 @@ test.describe('SQS queues UI (#167 / #548)', () => {
       await page.getByTestId('sqs-send-dedup-id').fill(`dedup-${ts}`)
       await page.getByTestId('sqs-send-submit').click()
       await expect(page.getByRole('status')).toContainText('Message sent', {
+        timeout: 15000,
+      })
+
+      await page.getByRole('link', { name: new RegExp(`← ${name}`) }).click()
+      await expect(page).toHaveURL(
+        new RegExp(`/sqs/queues/${name.replace('.', '\\.')}$`),
+      )
+      await page.getByTestId('sqs-detail-delete').click()
+      await page.getByTestId('sqs-confirm-delete').click()
+      await expect(page).toHaveURL(/\/sqs$/, { timeout: 20000 })
+      created = false
+    } finally {
+      if (created) {
+        try {
+          deleteQuiet(queueUrlForName(name))
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  })
+
+  test('sends, polls, deletes a message, and purges the queue', async ({
+    page,
+  }) => {
+    const ts = Date.now()
+    const name = `e2e-sqs-recv-${ts}`
+    let created = false
+
+    try {
+      await page.goto('/sqs/create')
+      await page.getByTestId('sqs-create-name').fill(name)
+      await page.getByTestId('sqs-type-standard').check()
+      await page.getByTestId('sqs-create-submit').click()
+      await expect(page).toHaveURL(new RegExp(`/sqs/queues/${name}$`), {
+        timeout: 20000,
+      })
+      created = true
+
+      await page.getByTestId('sqs-send-open').click()
+      await expect(page).toHaveURL(
+        new RegExp(`/sqs/queues/${name}/send-receive$`),
+      )
+      await page.getByTestId('sqs-send-body').fill('{"poll":"me"}')
+      await page.getByTestId('sqs-send-submit').click()
+      await expect(page.getByRole('status')).toContainText('Message sent', {
+        timeout: 15000,
+      })
+
+      await page.getByTestId('sqs-poll').click()
+      await expect(page.getByTestId('sqs-messages-table')).toContainText(
+        'poll',
+        { timeout: 15000 },
+      )
+      const row = page.getByTestId('sqs-messages-table').locator('tbody tr').first()
+      await row.getByRole('radio').check()
+      await page.getByTestId('sqs-delete-message').click()
+      await page.getByTestId('sqs-confirm-delete-message').click()
+      await expect(page.getByRole('status')).toContainText('Deleted message', {
+        timeout: 15000,
+      })
+
+      await page.getByTestId('sqs-send-body').fill('{"purge":"me"}')
+      await page.getByTestId('sqs-send-submit').click()
+      await expect(page.getByRole('status')).toContainText('Message sent', {
+        timeout: 15000,
+      })
+
+      await page.getByRole('link', { name: `← ${name}` }).click()
+      await expect(page).toHaveURL(new RegExp(`/sqs/queues/${name}$`))
+      await page.getByTestId('sqs-detail-purge').click()
+      await expect(page.getByTestId('sqs-confirm-purge')).toBeDisabled()
+      await page.getByTestId('sqs-purge-confirm-input').fill('purge')
+      await page.getByTestId('sqs-confirm-purge').click()
+      await expect(page.getByRole('status')).toContainText('Purged queue', {
         timeout: 15000,
       })
 

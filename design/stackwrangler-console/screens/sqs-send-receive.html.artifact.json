@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/sqs-send-receive.html",
+  "entry": "screens/sqs-send-receive.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-08T12:36:05.000Z",
+  "updatedAt": "2026-11-08T12:36:05.000Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true,
+    "handMock": true,
+    "issue": 627,
+    "note": "OD run failed: cursor-agent missing; opencode ENOENT (cli_not_installed); hand mock for Send/Receive/DeleteMessage chrome"
+  }
+}
