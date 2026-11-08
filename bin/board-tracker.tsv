@@ -330,7 +330,7 @@
 564	backlog	Debt: CFN drift + stack notifications (from #147)
 579	done	Debt: CFN resource providers skip caller IAM (from #522)
 594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
-629	in-progress	Debt: elbv2-smoke HTTPS ALB ACM reload (from #594)
+629	in-review	Debt: elbv2-smoke HTTPS ALB ACM reload (from #594)
 596	backlog	Doc: API call log docs/screenshot (from #194)
 602	backlog	Debt: ECS/CLI call-log workload smoke (from #194)
 606	backlog	Debt: Secrets Manager delete + rotate (from #535)
