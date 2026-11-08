@@ -245,7 +245,7 @@
 360	done	ECS awsvpc detach bridge staticmethod
 363	done	SQS/ESM validation: VT vs timeout, MaximumConcurrency>=2, retention 60-14d
 364	done	API Gateway HTTP_PROXY form-urlencoded body passthrough
-367	backlog	Debt: UpdateEventSourceMapping VT/MC (from #363)
+367	in-review	Debt: UpdateEventSourceMapping VT/MC (from #363)
 369	done	batch/2026-10-27
 370	done	batch/2026-10-27
 371	done	batch/2026-10-27
