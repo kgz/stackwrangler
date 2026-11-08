@@ -51,7 +51,8 @@ Body: Why / Goal / Acceptance / Related #<parent>
           Impact: N / Effort: N   (also set via ./bin/issue-score.sh)
 Milestone: pillar for where the gap lives (see docs/version-plan.md)
 Label: only if theme + Impact gate match an open cut — else no version label
-Board: backlog
+Board: backlog — `./bin/issue-score.sh` sets Status=Backlog on first project add;
+          still run `./bin/board-status.sh backlog <n>` if the card was added another way
 Tracker: bin/board-tracker.tsv
 Link from docs and/or README status row
 ```
