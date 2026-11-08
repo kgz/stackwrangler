@@ -68,7 +68,7 @@ EOF
 
 	local dec
 	dec="$(aws_r iam simulate-custom-policy \
-		--policy-input-list "file://${WORK}/allow-sns.json" \
+		--policy-input-list "$(cat "$WORK/allow-sns.json")" \
 		--action-names sns:Publish \
 		--resource-arns "arn:aws:sns:${AWS_DEFAULT_REGION}:${ACCOUNT}:t" \
 		--query 'EvaluationResults[0].EvalDecision' --output text)"
@@ -79,7 +79,7 @@ EOF
 {"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":"sns:Publish","Resource":"*"}]}
 EOF
 	dec="$(aws_r iam simulate-custom-policy \
-		--policy-input-list "file://${WORK}/deny-sns.json" \
+		--policy-input-list "$(cat "$WORK/deny-sns.json")" \
 		--action-names sns:Publish \
 		--resource-arns "arn:aws:sns:${AWS_DEFAULT_REGION}:${ACCOUNT}:t" \
 		--query 'EvaluationResults[0].EvalDecision' --output text)"
@@ -180,7 +180,24 @@ section_518() {
 	# queue policy allow SNS
 	for qurl in "$intake_url" "$other_url"; do
 		qarn="$(aws_r sqs get-queue-attributes --queue-url "$qurl" --attribute-names QueueArn --query 'Attributes.QueueArn' --output text)"
-		aws_r sqs set-queue-attributes --queue-url "$qurl" --attributes "{\"Policy\":\"$(python3 -c "import json; print(json.dumps(json.dumps({'Version':'2012-10-17','Statement':[{'Effect':'Allow','Principal':{'Service':'sns.amazonaws.com'},'Action':'sqs:SendMessage','Resource':'$qarn'}]})))")\"}" >/dev/null
+		python3 - "$qurl" "$qarn" "$AWS_DEFAULT_REGION" <<'PY'
+import json, subprocess, sys
+qurl, qarn, region = sys.argv[1], sys.argv[2], sys.argv[3]
+policy = {
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Principal": {"Service": "sns.amazonaws.com"},
+        "Action": "sqs:SendMessage",
+        "Resource": qarn,
+    }],
+}
+attrs = json.dumps({"Policy": json.dumps(policy)})
+subprocess.check_call([
+    "aws", "--region", region, "sqs", "set-queue-attributes",
+    "--queue-url", qurl, "--attributes", attrs,
+])
+PY
 	done
 
 	cat >"$WORK/trust.json" <<EOF
@@ -571,8 +588,10 @@ EOF
 	aws_r iam create-role --role-name "$pass_role" --assume-role-policy-document "file://${WORK}/trust-ec2.json" >/dev/null
 	on_cleanup "aws_r iam delete-role --role-name '$pass_role'"
 	local dec
+	local pass_pol
+	pass_pol="$(python3 -c "import json; print(json.dumps({'Version':'2012-10-17','Statement':[{'Effect':'Allow','Action':'iam:PassRole','Resource':'*','Condition':{'StringEquals':{'iam:PassedToService':'ec2.amazonaws.com'}}}]}))")"
 	dec="$(aws_r iam simulate-custom-policy \
-		--policy-input-list "$(python3 -c "import json; print(json.dumps({'Version':'2012-10-17','Statement':[{'Effect':'Allow','Action':'iam:PassRole','Resource':'*','Condition':{'StringEquals':{'iam:PassedToService':'ec2.amazonaws.com'}}}]}))")" \
+		--policy-input-list "$pass_pol" \
 		--action-names iam:PassRole \
 		--resource-arns "arn:aws:iam::${ACCOUNT}:role/${pass_role}" \
 		--context-entries ContextKeyName=iam:PassedToService,ContextKeyValues=ec2.amazonaws.com,ContextKeyType=string \
@@ -581,7 +600,7 @@ EOF
 	pass "#223 PassRole simulate PassedToService=ec2 allowed"
 
 	dec="$(aws_r iam simulate-custom-policy \
-		--policy-input-list "$(python3 -c "import json; print(json.dumps({'Version':'2012-10-17','Statement':[{'Effect':'Allow','Action':'iam:PassRole','Resource':'*','Condition':{'StringEquals':{'iam:PassedToService':'ec2.amazonaws.com'}}}]}))")" \
+		--policy-input-list "$pass_pol" \
 		--action-names iam:PassRole \
 		--resource-arns "arn:aws:iam::${ACCOUNT}:role/${pass_role}" \
 		--context-entries ContextKeyName=iam:PassedToService,ContextKeyValues=events.amazonaws.com,ContextKeyType=string \

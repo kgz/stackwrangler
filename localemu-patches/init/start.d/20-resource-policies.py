@@ -85,10 +85,6 @@ def _install() -> None:
             canon = rp.canonical_secret_arn(str(ident), account_id, region)
             if canon:
                 return canon
-        if service == "dynamodb":
-            return rp.load_dynamodb_resource_policy(
-                resource_arn, account_id, region or "us-east-1",
-            )
         if service == "kms":
             key_ref = params.get("KeyId") or arn
             canon = rp.canonical_kms_arn(str(key_ref), account_id, region)
@@ -101,6 +97,10 @@ def _install() -> None:
     orig_get = enforcer._get_resource_policy
 
     def _get_resource_policy(service, resource_arn, account_id, region):
+        if service == "dynamodb":
+            return rp.load_dynamodb_resource_policy(
+                resource_arn, account_id, region or "us-east-1",
+            )
         if service == "secretsmanager":
             return rp.load_secretsmanager_policy_doc(
                 resource_arn, account_id, region or "us-east-1",
