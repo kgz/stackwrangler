@@ -176,6 +176,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | AccessDenied call recorded with denying policy/reason | sad/authz | covered | `./smokes/security/api-call-log-smoke.sh` |
 | `GET /_awsl/calls?workload=…` + `./bin/stackwrangler calls` | happy | covered | `./smokes/security/api-call-log-smoke.sh` |
 | Assertion helper: function made no `secretsmanager:*` / `s3:*` | happy | covered | `smokes/lib/api_call_log_assert.py` · `smokes/lib/api-call-log.sh` |
+| ECS task role session → call log `ecs-task-<id>` GetSecretValue | happy | covered | `./smokes/security/api-call-log-ecs-cli-smoke.sh` · [#602](https://github.com/kgz/stackwrangler/issues/602) (needs [#194](https://github.com/kgz/stackwrangler/issues/194)) |
+| CLI profile IAM user → call log `user/<name>` GetSecretValue | happy | covered | `./smokes/security/api-call-log-ecs-cli-smoke.sh` · [#602](https://github.com/kgz/stackwrangler/issues/602) |
 | Two awsvpc ECS tasks on one host: direct ENI works | happy | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
 | Same-host peer→NLB VIP fails under host DNAT (AWS-like hairpin) | sad/other | covered | `./smokes/networking/ecs-hairpin-smoke.sh` · [ecs-hairpin.md](ecs-hairpin.md) · [#181](https://github.com/kgz/awsl/issues/181) |
 | NLB TCP :443 → two instance targets | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [elbv2.md](elbv2.md) |
