@@ -453,12 +453,22 @@ def _customer_managed_key(key_id: str | None) -> str | None:
 
 
 def find_secret(account_id: str, region: str, ident: str):
-    """Resolve a secret by name, full ARN, or the unsuffixed ARN the enforcer builds."""
+    """Resolve a secret by name, full ARN, or the unsuffixed ARN the enforcer builds.
+
+    Cross-account callers pass a full ARN; the account/region in the ARN win
+    over the caller's context (same as SecretsmanagerProvider).
+    """
     if not ident:
         return None
     try:
         from moto.secretsmanager.models import secretsmanager_backends
 
+        if ident.startswith("arn:"):
+            parts = ident.split(":")
+            if len(parts) >= 5 and parts[4]:
+                account_id = parts[4]
+            if len(parts) >= 4 and parts[3]:
+                region = parts[3]
         backend = secretsmanager_backends[account_id][region]
         secret = backend.secrets.get(ident)
         if secret is not None:
@@ -498,10 +508,25 @@ def canonical_secret_arn(ident: str | None, account_id: str, region: str) -> str
 
 
 def secret_customer_kms_key(ident: str, account_id: str, region: str) -> str | None:
+    """CMK used by the secret, as a key ARN when possible (cross-account safe)."""
     secret = find_secret(account_id, region, ident)
     if secret is None:
         return None
-    return _customer_managed_key(getattr(secret, "kms_key_id", None))
+    key_ref = _customer_managed_key(getattr(secret, "kms_key_id", None))
+    if not key_ref:
+        return None
+    if key_ref.startswith("arn:"):
+        return key_ref
+    secret_arn = getattr(secret, "arn", None) or ""
+    key_account = account_id
+    key_region = region
+    if isinstance(secret_arn, str) and secret_arn.startswith("arn:"):
+        parts = secret_arn.split(":")
+        if len(parts) >= 5 and parts[4]:
+            key_account = parts[4]
+        if len(parts) >= 4 and parts[3]:
+            key_region = parts[3]
+    return f"arn:aws:kms:{key_region}:{key_account}:key/{key_ref}"
 
 
 def _native_kms_key(key_ref: str, account_id: str, region: str):

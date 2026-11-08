@@ -132,13 +132,70 @@ def _action_allows_assume(statement: dict[str, object]) -> bool:
 
 
 def _install_s3_isolation() -> None:
-    """A bucket owned by another account is not readable from this one.
+    """Cross-account S3 needs a bucket-policy Allow for *this* IAM action (#233).
 
-    Bucket policies that grant the other account are #233. Until then the
-    other account's objects stay hidden.
+    Root bypasses PolicyEvaluator entirely, so this gate is the only check for
+    Root. It must be action-specific: Allow on ListBucket must not open
+    GetObject, and an explicit Deny on the requested action must deny.
     """
     from localemu.aws.api.s3 import AccessDenied
+    from localemu.services.iam_enforcement import enforcer, resource_policies as rp
+    from localemu.services.iam_enforcement.identity import resolve_caller
+    from localemu.services.iam_enforcement.service_action_map import map_action
     from localemu.services.s3.provider import S3Provider
+
+    # Bucket-ARN actions (not arn:aws:s3:::bucket/*). Default is object ARN.
+    _BUCKET_RESOURCE_ACTIONS = frozenset({
+        "s3:ListBucket",
+        "s3:ListBucketVersions",
+        "s3:ListBucketMultipartUploads",
+        "s3:GetBucketLocation",
+        "s3:GetBucketTagging",
+        "s3:PutBucketTagging",
+        "s3:DeleteBucket",
+        "s3:CreateBucket",
+        "s3:GetEncryptionConfiguration",
+        "s3:PutEncryptionConfiguration",
+        "s3:GetBucketCORS",
+        "s3:PutBucketCORS",
+        "s3:GetReplicationConfiguration",
+        "s3:PutReplicationConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "s3:PutLifecycleConfiguration",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:PutBucketPublicAccessBlock",
+    })
+
+    def _s3_actions(context) -> list[str]:
+        op = getattr(getattr(context, "operation", None), "name", None)
+        if not op:
+            return ["s3:ListBucket"]
+        return map_action("s3", op)
+
+    def _s3_resource_arn(action: str, bucket_name: str) -> str:
+        if action in _BUCKET_RESOURCE_ACTIONS:
+            return f"arn:aws:s3:::{bucket_name}"
+        return f"arn:aws:s3:::{bucket_name}/*"
+
+    def _bucket_policy_allows(context, bucket_name: str, bucket, actions: list[str] | None = None) -> bool:
+        policy_raw = getattr(bucket, "policy", None)
+        policy = rp._parse_policy(policy_raw) if policy_raw else None
+        if not policy:
+            return False
+        access_key = enforcer._extract_access_key(context)
+        account_id = getattr(context, "account_id", None) or "000000000000"
+        region = getattr(context, "region", None) or "us-east-1"
+        caller = resolve_caller(access_key, account_id, region) if access_key else None
+        if caller is None:
+            return False
+        conditions = {"aws:RequestedRegion": region}
+        needed = actions if actions is not None else _s3_actions(context)
+        # Every IAM action this operation maps to must be Allowed (Deny/neutral fail).
+        for action in needed:
+            arn = _s3_resource_arn(action, bucket_name)
+            if rp.resource_policy_effect(policy, caller, action, arn, conditions) != "allow":
+                return False
+        return bool(needed)
 
     original_lookup = S3Provider._get_cross_account_bucket
 
@@ -146,7 +203,7 @@ def _install_s3_isolation() -> None:
         store, bucket = original_lookup(self, context, bucket_name, *args, **kwargs)
         owner = getattr(bucket, "bucket_account_id", None)
         caller = getattr(context, "account_id", None)
-        if owner and caller and owner != caller:
+        if owner and caller and owner != caller and not _bucket_policy_allows(context, bucket_name, bucket):
             raise AccessDenied("Access Denied")
         return store, bucket
 
@@ -159,7 +216,18 @@ def _install_s3_isolation() -> None:
             store = self.get_store(context.account_id, context.region)
             owner = store.global_bucket_map.get(bucket)
             if owner and owner != context.account_id:
-                raise AccessDenied("Access Denied")
+                try:
+                    from localemu.constants import AWS_REGION_US_EAST_1
+                    from localemu.services.s3.models import s3_stores
+
+                    remote = s3_stores[owner][AWS_REGION_US_EAST_1].buckets.get(bucket)
+                except Exception:
+                    remote = None
+                # HeadBucket → s3:ListBucket even if operation is missing on context.
+                if remote is None or not _bucket_policy_allows(
+                    context, bucket, remote, actions=["s3:ListBucket"],
+                ):
+                    raise AccessDenied("Access Denied")
         return original_head(
             self,
             context,

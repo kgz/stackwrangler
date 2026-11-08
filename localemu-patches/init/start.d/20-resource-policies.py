@@ -258,6 +258,10 @@ def _install() -> None:
     enforcer._build_conditions = _build_conditions
 
     orig_eval = evaluator.PolicyEvaluator.evaluate
+    # sts:AssumeRole uses the role trust policy (STS), not this both-must-allow path.
+    _CROSS_ACCOUNT_RP_SERVICES = frozenset({
+        "s3", "secretsmanager", "kms", "sqs", "sns", "lambda", "events",
+    })
 
     def evaluate(self, caller, action, resource, conditions, resource_policy=None):
         _deny_layer.source = None
@@ -295,6 +299,25 @@ def _install() -> None:
             else:
                 _deny_layer.source = "identity-based policy"
         return decision
+        region = (conditions or {}).get("aws:RequestedRegion") or "us-east-1"
+        owner = rp.resource_owner_account(
+            action, resource or "", caller.account_id, region,
+        )
+        cross = owner != caller.account_id
+        service = action.split(":", 1)[0] if isinstance(action, str) and ":" in action else ""
+        is_kms = service == "kms"
+
+        # Cross-account resource policies: identity Allow alone is never enough
+        # (including Root). Missing document → implicit deny in the helpers.
+        if is_kms and (resource_policy is not None or cross):
+            return rp.evaluate_kms_crypto(
+                orig_eval, self, caller, action, resource, conditions, resource_policy,
+            )
+        if cross and service in _CROSS_ACCOUNT_RP_SERVICES:
+            return rp.evaluate_both_required(
+                orig_eval, self, caller, action, resource, conditions, resource_policy,
+            )
+        return orig_eval(self, caller, action, resource, conditions, resource_policy)
 
     evaluator.PolicyEvaluator.evaluate = evaluate
 

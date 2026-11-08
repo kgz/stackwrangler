@@ -68,6 +68,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Secrets Manager | yes | **yes** | — | thin list [#176](https://github.com/kgz/awsl/issues/176) · store/detail [#535](https://github.com/kgz/awsl/issues/535) | `secrets-smoke.sh`, `secrets-authz-smoke.sh` · console e2e `secrets-list.spec.ts` |
 | KMS | yes | **yes** | — | list → [#177](https://github.com/kgz/awsl/issues/177) (`console/e2e/kms-keys.spec.ts`) · create/detail [#540](https://github.com/kgz/awsl/issues/540) | `kms-smoke.sh`, `kms-authz-smoke.sh` |
 | Resource policies (SM, KMS, S3, DynamoDB) | yes (delegation allows; DDB VPCE allow) | **yes** (explicit deny / no key-policy delegation; DDB SourceVpce) | cross-account [#233](https://github.com/kgz/awsl/issues/233) | — | `resource-policy-smoke.sh`, `dynamodb-resource-policy-smoke.sh` |
+| Resource policies (SM, KMS, S3) | yes (delegation allows) | **yes** (explicit deny / no key-policy delegation) | **yes** (A vs B both-must-allow + explicit Deny) | — | `resource-policy-smoke.sh`, `resource-policy-cross-account-smoke.sh` |
 | Kinesis | yes | **yes** | — | list → [#178](https://github.com/kgz/awsl/issues/178); create/detail → [#539](https://github.com/kgz/awsl/issues/539) | `kinesis-smoke.sh`, `kinesis-authz-smoke.sh` · console e2e `kinesis-streams.spec.ts` |
 | Transfer API | yes | **yes** (`transfer-authz-smoke.sh`) | — | list/create | `transfer-smoke.sh`, `transfer-authz-smoke.sh` |
 | Transfer SFTP→S3 | yes (sidecar) | no → [#141](https://github.com/kgz/awsl/issues/141) | — | — | `transfer-dataplane-smoke.sh` |
