@@ -185,6 +185,7 @@
 243	in-review	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
 247	in-review	Debt: ECS bridge target health vs ELBv2 instance IP (from #207)
+603	in-review	Debt: preserve ELBv2 host_override across RegisterTargets (from #247)
 254	done	Debt: ECS bridge/awsvpc task-role creds when image has no iptables (from #252)
 256	done	v1: mirror/fixture tags for TF data sources
 257	done	v1: Document Terraform against awsbox (backend/lock)
@@ -314,7 +315,6 @@
 518	in-review	sns:Protocol/Endpoint on Subscribe
 522	in-review	stackwrangler sls --role-arn deploy as live principal
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
-533	in-review	Debt: Step Functions create + state-machine detail (from #175)
 535	in-review	Debt: Secrets Manager store + secret detail (from #176)
 539	in-review	Debt: Kinesis create/detail (from #178)
 540	backlog	Debt: KMS create/detail (from #177)
@@ -325,7 +325,6 @@
 548	backlog	Debt: SQS create/detail/send (from #167)
 549	backlog	Debt: DynamoDB create/detail (from #174)
 552	backlog	Debt: EventBridge create + rule/bus detail (from #173)
-552	in-review	Debt: EventBridge create + rule/bus detail (from #173)
 556	done	Doc: RDS Create screenshot + interactions (from #145)
 561	done	Doc: REST APIs console screenshot (from #189)
 562	done	Doc: SNS Topics console screenshot (from #172)
@@ -335,11 +334,9 @@
 594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
 596	backlog	Doc: API call log docs/screenshot (from #194)
 602	backlog	Debt: ECS/CLI call-log workload smoke (from #194)
-603	backlog	Debt: preserve ELBv2 host_override across RegisterTargets (from #247)
 606	backlog	Debt: Secrets Manager delete + rotate (from #535)
 608	backlog	Doc: CloudWatch Logs create/detail console screenshot (from #352)
 609	backlog	Debt: CloudWatch Logs Tail poll distinct from Search (from #352)
-610	backlog	Debt: Step Functions Start execution (from #533)
 612	backlog	Debt: API Gateway REST authorizer + Actions controls (from #543)
 613	backlog	Doc: API Gateway REST create/deploy console screenshot (from #543)
 615	backlog	Debt: Kinesis put/retention/encryption/tags (from #539)
