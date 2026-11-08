@@ -10,7 +10,7 @@ docker compose up -d --force-recreate localstack
 | Surface | Happy | Sad |
 |---------|-------|-----|
 | SQS | `sqs-smoke.sh` | `sqs-authz-smoke.sh` |
-| SNS | `sns-smoke.sh` | `sns-authz-smoke.sh` |
+| SNS | `sns-smoke.sh` · `sns-subscribe-conditions-smoke.sh` | `sns-authz-smoke.sh` · `sns-subscribe-conditions-smoke.sh` |
 | SNS MaximumMessageSize | `sns-max-message-size-smoke.sh` (CreateTopic/Set + 300 KiB–1 MiB → SQS raw; large-topic sqs/lambda/firehose) | same (default >256 KiB; http/email/sms/application subscribe + Set with http sub → InvalidParameter) |
 | SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter; CMK with SNS grant) | same (wrong/missing queue `SourceArn`; `alias/aws/sqs` KMS; CMK without SNS grant; unsubscribe) |
 | EventBridge | `events-smoke.sh` | `events-authz-smoke.sh` |
