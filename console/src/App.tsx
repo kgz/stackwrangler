@@ -9,6 +9,7 @@ import { IamUsersPage } from './pages/IamUsersPage'
 import { LambdaCreateFunctionPage } from './pages/LambdaCreateFunctionPage'
 import { LambdaFunctionDetailPage } from './pages/LambdaFunctionDetailPage'
 import { LambdaFunctionsPage } from './pages/LambdaFunctionsPage'
+import { ApiCallLogPage } from './pages/ApiCallLogPage'
 import { LogsPage } from './pages/LogsPage'
 import { StepFunctionsPage } from './pages/StepFunctionsPage'
 import { SecretsPage } from './pages/SecretsPage'
@@ -58,6 +59,7 @@ export default function App() {
             element={<LambdaFunctionDetailPage />}
           />
           <Route path="logs" element={<LogsPage />} />
+          <Route path="cloudtrail" element={<ApiCallLogPage />} />
           <Route path="stepfunctions" element={<StepFunctionsPage />} />
           <Route path="secretsmanager" element={<SecretsPage />} />
           <Route path="kinesis" element={<KinesisStreamsPage />} />

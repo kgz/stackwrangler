@@ -12,6 +12,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Public Docker image install (#487) | yes (alt ports via `install/stackwrangler`) | — | up without docker.sock refused | baked console HTTP | `docker-image-install-smoke.sh` |
 | S3 SeaweedFS | yes | no (parity gaps) | dual-split | yes | `s3-parity.sh`, `s3-dual-endpoint-smoke.sh` |
 | IAM AccessDenied lab | — | **yes** (deny user) | — | yes | `iam-access-denied.sh` |
+| API call log (CloudTrail-lite) (#194) | yes (Lambda GetSecretValue only) | **yes** (denied + reason) | — | list + filters | `api-call-log-smoke.sh` |
 | IAM SimulateCustomPolicy / SimulatePrincipalPolicy | — | **yes** (allow/deny/context) | — | yes | `iam-simulate-policy-smoke.sh` |
 | IAM OIDC + PassRole | yes (`environment:prod`, `repo:org/*`, events PassRole, tagged GetRole) | **yes** (feature ref, other org, bad aud, bad signature, states PassRole, untagged GetRole) | — | no | `oidc-smoke.sh` |
 | IAM `iam:PermissionsBoundary` key (#525) | yes (create-role + attach with matching boundary) | **yes** (create without boundary; attach to role without boundary) | — | no | `iam-permissions-boundary-key-smoke.sh` |
