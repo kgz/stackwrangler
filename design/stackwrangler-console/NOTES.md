@@ -142,43 +142,10 @@ Regenerator: `node scripts/generate-screens.mjs` (S3) · `node scripts/generate-
 | `kinesis-streams.html` | Name / Status / Capacity mode / Monitoring / Created · 3 rows (`app-events`, `awsbox-kinesis-demo`, `orders-ingest`) |
 | `kinesis-streams-empty.html` | Empty twin · Refresh + Create data stream + empty panel · link to sample rows |
 
-### Dead controls (post-#539)
-- `title="To implement"`: Refresh, table settings, column filters
-- `title="Select a row"`: Delete (static mock; React wires confirm)
-- Working: Create → `kinesis-create-data-stream.html`; Name → `kinesis-stream-detail.html`; find field; pager; nav
-
-## Issue #539 — Kinesis create + detail (from #178)
-
-### Mode
-- Extend #178 list mocks with Create + stream detail (grey-rose chrome)
-- `./bin/od-design-run.sh --issue 539` failed (daemon HTTP 404 on conversation messages; agents: opencode only). Hand mocks match `sfn-create-state-machine.html` / `sfn-state-machine-detail.html`
-- LocalEmu-shaped provisioned / on-demand sample — no real AWS writes
-
-### Deliverables
-| File | Covers |
-|---|---|
-| `kinesis-create-data-stream.html` | Name · Provisioned (shard count) / On-demand · retention/encryption/tags stubs |
-| `kinesis-stream-detail.html` | Details / Shards tabs · Delete + Put records stubs |
-| `kinesis-streams.html` (+ empty) | Create → create screen; Name → detail |
-
-### Dead controls (`title="To implement"`)
-- Configure retention / encryption / tags, Put records, Delete (static detail), Refresh (static mock)
-- Column filters on list remain stubbed
-
-## Issue #615 — Kinesis put / retention / encryption / tags (from #539)
-
-### Mode
-- Hand-update #539 create + detail mocks (grey-rose); OD optional
-- Wire React against LocalEmu PutRecord, retention increase/decrease, Start/StopStreamEncryption, Add/List/RemoveTags
-
-### Deliverables
-| File | Covers |
-|---|---|
-| `kinesis-create-data-stream.html` | Retention hours · encryption NONE/KMS · tags table |
-| `kinesis-stream-detail.html` | Put records · Edit retention/encryption · Tags tab |
-
-### Dead controls remaining
-- List column filters (`FilterHeader`) stay `title="To implement"` (shared console stub; not LocalEmu APIs)
+### Dead controls
+- `title="To implement"`: Create data stream, Refresh, table settings, column filters, stream name dead links
+- `title="Select a row"`: Delete
+- Working: find field (`data-find-table`), pager chrome, Services/search → `kinesis-streams.html`
 
 ## Issue #167 — SQS Queues list
 
@@ -384,16 +351,15 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="Select a row"`: Delete
 - Working: find field (`data-find-table`), pager chrome, Services/search → `eventbridge-rules.html` / `eventbridge-buses.html`
 
-## Issue #543 — REST create / deploy (hand mocks)
+
+## Issue #552 — EventBridge create + rule detail
 
 ### Mode
-- OD daemon reachable but agents failed (`cursor-agent` missing; `opencode` spawn ENOENT). Hand mocks landed instead of a successful `./bin/od-design-run.sh` web-clone.
-- Screens: `apigateway-rest-api-create.html`, `apigateway-rest-api-deploy.html`; list/detail Create + Deploy API enabled and linked. Delete / Actions / Create resource|method|authorizer|stage stay `title="To implement"` in mocks (resource/method wired in React).
+- Hand mocks (OD agents unavailable: cursor-agent conversation messages 404; opencode ENOENT)
+- Screens: `eventbridge-create-rule.html`, `eventbridge-create-event-bus.html`, `eventbridge-rule-detail.html`
+- List mocks: Create rule / Create event bus enabled; rule names link to detail; Delete stays selection-gated / stub
 
-## Issue #616 — REST method integration picker (hand mocks)
-
-### Mode
-- OD daemon reachable; hand grey-rose mock (same path as #543) for Create method with integration type picker.
-- Screen: `apigateway-rest-api-create-method.html`. Wired types: MOCK, Lambda `AWS_PROXY`, `HTTP_PROXY`. Disabled `title="To implement"`: AWS (non-proxy), HTTP (non-proxy), VPC link.
-- Detail resources toolbar: Create method → `apigateway-rest-api-create-method.html`; Edit integration → `apigateway-rest-api-edit-integration.html` (selected `/hello` GET in mock).
-
+### Wired in React
+- Create rule (pattern + schedule) → LocalEmu `PutRule`
+- Create event bus → LocalEmu `CreateEventBus`
+- Rule detail: pattern/schedule + targets via `DescribeRule` / `ListTargetsByRule`

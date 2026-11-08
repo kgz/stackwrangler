@@ -322,7 +322,7 @@
 546	backlog	Debt: SNS create topic + topic detail (from #172)
 548	backlog	Debt: SQS create/detail/send (from #167)
 549	backlog	Debt: DynamoDB create/detail (from #174)
-552	backlog	Debt: EventBridge create + rule/bus detail (from #173)
+552	in-review	Debt: EventBridge create + rule/bus detail (from #173)
 556	done	Doc: RDS Create screenshot + interactions (from #145)
 561	done	Doc: REST APIs console screenshot (from #189)
 562	done	Doc: SNS Topics console screenshot (from #172)

@@ -4,6 +4,7 @@ import { DeadButton } from '../components/S3Ui'
 import { Notices } from '../components/ServiceUi'
 import {
   createRule,
+  isDefaultEventBus,
   listEventBuses,
   type EventBridgeBusRow,
   type RuleType,
@@ -26,6 +27,7 @@ export function EventBridgeCreateRulePage() {
     useState('rate(5 minutes)')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const scheduleAllowed = isDefaultEventBus(eventBusName)
 
   useEffect(() => {
     void listEventBuses()
@@ -126,7 +128,13 @@ export function EventBridgeCreateRulePage() {
                 id="rule-bus"
                 name="eventBusName"
                 value={eventBusName}
-                onChange={(e) => setEventBusName(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setEventBusName(next)
+                  if (!isDefaultEventBus(next) && ruleType === 'schedule') {
+                    setRuleType('pattern')
+                  }
+                }}
                 data-testid="events-create-rule-bus"
               >
                 {(buses.length > 0
@@ -217,13 +225,19 @@ export function EventBridgeCreateRulePage() {
                     name="ruleType"
                     value="schedule"
                     checked={ruleType === 'schedule'}
+                    disabled={!scheduleAllowed}
+                    title={
+                      scheduleAllowed
+                        ? undefined
+                        : 'Schedule rules require the default event bus'
+                    }
                     onChange={() => setRuleType('schedule')}
                     data-testid="events-create-rule-type-schedule"
                   />
                   <span>
                     <strong>Schedule</strong>
                     <span className="sub">
-                      Invoke on a rate or cron expression.
+                      Invoke on a rate or cron expression (default bus).
                     </span>
                   </span>
                 </label>

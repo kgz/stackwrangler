@@ -7,12 +7,12 @@
   "status": "complete",
   "exports": ["html", "pdf", "zip"],
   "createdAt": "2026-11-08T11:57:52.000Z",
-  "updatedAt": "2026-11-08T11:57:52.000Z",
+  "updatedAt": "2026-11-08T12:43:34.000Z",
   "metadata": {
     "inferred": true,
     "reconciled": true,
     "handMock": true,
-    "issue": 552,
-    "note": "OD agents unavailable (cursor-agent 404; opencode ENOENT); hand mock vs kinesis-stream-detail chrome"
+    "issue": 630,
+    "note": "Delete/Edit/Add target/Remove wired (#630); hand grey-rose from #552 mock"
   }
 }

@@ -1,5 +1,6 @@
 import {
   CreateEventBusCommand,
+  DeleteRuleCommand,
   DescribeEventBusCommand,
   DescribeRuleCommand,
   EventBridgeClient,
@@ -7,6 +8,8 @@ import {
   ListRulesCommand,
   ListTargetsByRuleCommand,
   PutRuleCommand,
+  PutTargetsCommand,
+  RemoveTargetsCommand,
   type EventBus,
   type Rule,
   type Target,
@@ -67,6 +70,11 @@ export type CreateRuleInput = {
 export type CreateEventBusInput = {
   name: string
   description?: string
+}
+
+export type PutRuleTargetInput = {
+  id: string
+  arn: string
 }
 
 function eventsClient(): EventBridgeClient {
@@ -191,12 +199,22 @@ export async function describeEventBus(
   }
 }
 
+/** ScheduleExpression is only valid on the default bus (AWS + LocalEmu). */
+export function isDefaultEventBus(name: string): boolean {
+  return (name.trim() || 'default') === 'default'
+}
+
 export async function createRule(input: CreateRuleInput): Promise<void> {
   const name = input.name.trim()
   if (!name) throw new Error('Rule name is required')
   const eventBusName = input.eventBusName.trim() || 'default'
 
   if (input.ruleType === 'schedule') {
+    if (!isDefaultEventBus(eventBusName)) {
+      throw new Error(
+        'Schedule rules are only supported on the default event bus',
+      )
+    }
     const schedule = input.scheduleExpression?.trim() ?? ''
     if (!schedule) throw new Error('Schedule expression is required')
     await eventsClient().send(
@@ -239,6 +257,87 @@ export async function createEventBus(input: CreateEventBusInput): Promise<void> 
     new CreateEventBusCommand({
       Name: name,
       Description: input.description?.trim() || undefined,
+    }),
+  )
+}
+
+/** PutRule upsert — same payload shape as create. */
+export async function updateRule(input: CreateRuleInput): Promise<void> {
+  await createRule(input)
+}
+
+export async function putRuleTargets(
+  name: string,
+  eventBusName: string,
+  targets: PutRuleTargetInput[],
+): Promise<void> {
+  const rule = name.trim()
+  if (!rule) throw new Error('Rule name is required')
+  if (targets.length === 0) throw new Error('At least one target is required')
+  const payload = targets.map((t) => {
+    const id = t.id.trim()
+    const arn = t.arn.trim()
+    if (!id) throw new Error('Target id is required')
+    if (!arn) throw new Error('Target ARN is required')
+    return { Id: id, Arn: arn }
+  })
+  const out = await eventsClient().send(
+    new PutTargetsCommand({
+      Rule: rule,
+      EventBusName: eventBusName.trim() || 'default',
+      Targets: payload,
+    }),
+  )
+  if ((out.FailedEntryCount ?? 0) > 0) {
+    const first = out.FailedEntries?.[0]
+    throw new Error(
+      first?.ErrorMessage?.trim() ||
+        `PutTargets failed (${out.FailedEntryCount})`,
+    )
+  }
+}
+
+export async function removeRuleTargets(
+  name: string,
+  eventBusName: string,
+  ids: string[],
+): Promise<void> {
+  const rule = name.trim()
+  if (!rule) throw new Error('Rule name is required')
+  const cleaned = ids.map((id) => id.trim()).filter(Boolean)
+  if (cleaned.length === 0) throw new Error('Select a target to remove')
+  const out = await eventsClient().send(
+    new RemoveTargetsCommand({
+      Rule: rule,
+      EventBusName: eventBusName.trim() || 'default',
+      Ids: cleaned,
+    }),
+  )
+  if ((out.FailedEntryCount ?? 0) > 0) {
+    const first = out.FailedEntries?.[0]
+    throw new Error(
+      first?.ErrorMessage?.trim() ||
+        `RemoveTargets failed (${out.FailedEntryCount})`,
+    )
+  }
+}
+
+export async function deleteRule(
+  name: string,
+  eventBusName = 'default',
+): Promise<void> {
+  const rule = name.trim()
+  if (!rule) throw new Error('Rule name is required')
+  const bus = eventBusName.trim() || 'default'
+  const targets = await listRuleTargets(rule, bus)
+  const ids = targets.map((t) => t.id).filter(Boolean)
+  if (ids.length > 0) {
+    await removeRuleTargets(rule, bus, ids)
+  }
+  await eventsClient().send(
+    new DeleteRuleCommand({
+      Name: rule,
+      EventBusName: bus,
     }),
   )
 }

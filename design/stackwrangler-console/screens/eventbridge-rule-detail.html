@@ -21,9 +21,9 @@
             <span>Event pattern</span>
           </div>
         </div>
-        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
-        <button type="button" class="btn btn-normal" data-od-id="btn-delete-rule" disabled aria-disabled="true" title="To implement">Delete</button>
-        <button type="button" class="btn btn-primary" data-od-id="btn-edit-rule" disabled aria-disabled="true" title="To implement">Edit</button>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="Refresh">↻</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-rule">Delete</button>
+        <a class="btn btn-primary" data-od-id="btn-edit-rule" href="eventbridge-edit-rule.html">Edit</a>
       </div>
 
       <p class="aws-desc"><a href="eventbridge-rules.html" data-od-id="back-list">← Rules</a></p>
@@ -75,20 +75,22 @@
             <h2 class="aws-section-title">Targets</h2>
             <p class="aws-desc">Targets from LocalEmu <code>ListTargetsByRule</code>.</p>
             <div class="aws-toolbar" style="margin-bottom:12px">
-              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-remove-targets">Remove</button>
+              <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="Select a row" data-od-id="btn-remove-targets">Remove</button>
               <div class="spacer"></div>
-              <button type="button" class="btn btn-primary" disabled aria-disabled="true" title="To implement" data-od-id="btn-add-target">Add target</button>
+              <button type="button" class="btn btn-primary" data-od-id="btn-add-target">Add target</button>
             </div>
             <div class="aws-table-wrap">
               <table class="aws-table" data-od-id="targets-table">
                 <thead>
                   <tr>
+                    <th class="check" scope="col" aria-label="Select"></th>
                     <th scope="col"><span class="th-inner">Id</span></th>
                     <th scope="col"><span class="th-inner">ARN</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
+                  <tr class="selectable">
+                    <td class="check"><input type="radio" name="selected-events-target" aria-label="Select 1" /></td>
                     <td>1</td>
                     <td><code class="aws-mono">arn:aws:lambda:us-east-1:000000000000:function:awsbox-events-demo</code></td>
                   </tr>

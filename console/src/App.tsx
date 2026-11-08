@@ -22,6 +22,10 @@ import { SqsSendReceivePage } from './pages/SqsSendReceivePage'
 import { SqsQueuesPage } from './pages/SqsQueuesPage'
 import { EventBridgeRulesPage } from './pages/EventBridgeRulesPage'
 import { EventBridgeBusesPage } from './pages/EventBridgeBusesPage'
+import { EventBridgeCreateRulePage } from './pages/EventBridgeCreateRulePage'
+import { EventBridgeCreateBusPage } from './pages/EventBridgeCreateBusPage'
+import { EventBridgeRuleDetailPage } from './pages/EventBridgeRuleDetailPage'
+import { EventBridgeEditRulePage } from './pages/EventBridgeEditRulePage'
 import { KmsKeysPage } from './pages/KmsKeysPage'
 import { SnsCreateTopicPage } from './pages/SnsCreateTopicPage'
 import { SnsTopicDetailPage } from './pages/SnsTopicDetailPage'
@@ -85,7 +89,20 @@ export default function App() {
             element={<SqsQueueDetailPage />}
           />
           <Route path="events" element={<EventBridgeRulesPage />} />
+          <Route path="events/create" element={<EventBridgeCreateRulePage />} />
+          <Route
+            path="events/rules/:name/edit"
+            element={<EventBridgeEditRulePage />}
+          />
+          <Route
+            path="events/rules/:name"
+            element={<EventBridgeRuleDetailPage />}
+          />
           <Route path="events/buses" element={<EventBridgeBusesPage />} />
+          <Route
+            path="events/buses/create"
+            element={<EventBridgeCreateBusPage />}
+          />
           <Route path="kms" element={<KmsKeysPage />} />
           <Route path="sns" element={<SnsTopicsPage />} />
           <Route path="sns/create" element={<SnsCreateTopicPage />} />
