@@ -26,6 +26,10 @@ def build_resource_arn(
     """
     params = request_params or {}
 
+    # Scheduler group vs schedule share Name; operation picks the ARN shape (#663).
+    if service == "scheduler":
+        return _scheduler_arn(operation, params, region, account_id)
+
     builder = _SERVICE_ARN_BUILDERS.get(service)
     if builder:
         return builder(params, region, account_id)
@@ -44,6 +48,28 @@ def build_resource_arn(
                 return val
             return f"arn:aws:{service}:{region}:{account_id}:{val}"
     return f"arn:aws:{service}:{region}:{account_id}:*"
+
+
+def _scheduler_arn(operation: str, params: dict, region: str, account_id: str) -> str:
+    """EventBridge Scheduler ARNs: schedule-group/<name> or schedule/<group>/<name>.
+
+    Group and schedule APIs both take ``Name``; only the operation distinguishes
+    them. Tag/Untag/ListTagsForResource pass ``ResourceArn`` as-is.
+    """
+    resource_arn = params.get("ResourceArn")
+    if resource_arn and isinstance(resource_arn, str) and resource_arn.startswith("arn:"):
+        return resource_arn
+    if operation.startswith("List") or not params.get("Name"):
+        return f"arn:aws:scheduler:{region}:{account_id}:*"
+    name = params["Name"]
+    if not isinstance(name, str):
+        return f"arn:aws:scheduler:{region}:{account_id}:*"
+    if operation.endswith("ScheduleGroup"):
+        return f"arn:aws:scheduler:{region}:{account_id}:schedule-group/{name}"
+    group = params.get("GroupName") or "default"
+    if not isinstance(group, str):
+        group = "default"
+    return f"arn:aws:scheduler:{region}:{account_id}:schedule/{group}/{name}"
 
 
 def _s3_arn(params: dict, region: str, account_id: str) -> str:

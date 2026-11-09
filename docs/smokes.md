@@ -36,7 +36,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/apigw/` | `apigw-*` |
 | `smokes/data/` | `dynamodb-*`, `rds-*` |
 | `smokes/transfer/` | `transfer-*` |
-| `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `api-call-log-*.sh` |
+| `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `scheduler-iam-arns-smoke.sh`, `api-call-log-*.sh` |
 | `smokes/s3/` | `s3-*` (including `s3-parity.sh`) |
 | `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `iac-smoke.sh` |
 | `smokes/account/` | `mirror-*`, `custom-id-*`, `labels-*` |

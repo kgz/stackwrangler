@@ -292,6 +292,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | EventBridge put-events + rule | happy | covered | `./smokes/messaging/events-smoke.sh` |
 | EventBridge console rules + event buses list | ui | covered | `console/e2e/eventbridge-rules.spec.ts` |
 | EventBridge deny PutEvents | sad/authz | covered | `./smokes/messaging/events-authz-smoke.sh` |
+| Scheduler scoped `schedule-group/<name>` + `schedule/<group>/*` create/get/delete | happy | covered | `./smokes/security/scheduler-iam-arns-smoke.sh` · [#663](https://github.com/kgz/stackwrangler/issues/663) |
+| Scheduler CreateScheduleGroup on other group → AccessDenied cites `schedule-group/<name>` | sad/authz | covered | `./smokes/security/scheduler-iam-arns-smoke.sh` |
 | EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `disable-rule` stops scheduled invocations | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./smokes/messaging/events-schedule-smoke.sh` |
