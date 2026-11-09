@@ -177,6 +177,37 @@ def _cloudformation_arn(params: dict, region: str, account_id: str) -> str:
     return f"arn:aws:cloudformation:{region}:{account_id}:stack/{stack_name}/*"
 
 
+def _normalize_iam_path(path: str | None) -> str:
+    """IAM path form used in ARNs: leading and trailing slash."""
+    if not path or not isinstance(path, str):
+        return "/"
+    if not path.startswith("/"):
+        path = f"/{path}"
+    if not path.endswith("/"):
+        path = f"{path}/"
+    return path
+
+
+def _iam_role_arn(role_name: str, account_id: str, params: dict) -> str:
+    """Role ARN with IAM path (``role{path}{name}``), matching real AWS.
+
+    Role-addressed APIs only send ``RoleName``. Path comes from the stored
+    role (or ``Path`` on CreateRole before the role exists).
+    """
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("iam")[account_id]["global"]
+        role = backend.get_role(role_name)
+        arn = getattr(role, "arn", None)
+        if isinstance(arn, str) and arn:
+            return arn
+    except Exception:
+        pass
+    path = _normalize_iam_path(params.get("Path") if isinstance(params.get("Path"), str) else None)
+    return f"arn:aws:iam::{account_id}:role{path}{role_name}"
+
+
 def _iam_arn(params: dict, region: str, account_id: str) -> str:
     """Build ARN for IAM resources (users, roles, policies, groups)."""
     user_name = params.get("UserName")
@@ -184,7 +215,7 @@ def _iam_arn(params: dict, region: str, account_id: str) -> str:
         return f"arn:aws:iam::{account_id}:user/{user_name}"
     role_name = params.get("RoleName")
     if role_name:
-        return f"arn:aws:iam::{account_id}:role/{role_name}"
+        return _iam_role_arn(role_name, account_id, params)
     policy_arn = params.get("PolicyArn")
     if policy_arn:
         return policy_arn
