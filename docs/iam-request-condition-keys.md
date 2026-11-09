@@ -9,7 +9,8 @@ Service-origin keys (`kms:ViaService`, calling-service `aws:SourceArn` / `aws:So
 | Key | When | Smoke |
 |-----|------|-------|
 | `sns:Protocol`, `sns:Endpoint` | `sns:Subscribe` from `Protocol` / `Endpoint` | `./smokes/messaging/sns-subscribe-conditions-smoke.sh` |
-| `aws:RequestTag/*`, `aws:TagKeys` | tag-on-create params | (enforcer) |
+| `aws:RequestTag/*`, `aws:TagKeys` | tag-on-create params (`Tags` / `TagSet`; EC2 `TagSpecifications` via #664) | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:Vpc`, `ec2:ResourceTag/*` | CreateSecurityGroup `VpcId`; later SG calls from moto group | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `iam:PassedToService` | PassRole field scan | `./smokes/security/oidc-smoke.sh` |
 | `iam:PermissionsBoundary` | `CreateRole` from request; role-policy ops from target role boundary | `./smokes/security/iam-permissions-boundary-key-smoke.sh` · [#525](https://github.com/kgz/stackwrangler/issues/525) |
 | `iam:PolicyARN` | `Attach`/`Detach` Role/User/Group Policy from request `PolicyArn` | `./smokes/security/iam-policy-arn-condition-smoke.sh` · [#648](https://github.com/kgz/stackwrangler/issues/648) |
@@ -24,6 +25,7 @@ Focus: services on the local serverless / authz path. Not an exhaustive SAR dump
 | **KMS** | `kms:EncryptionContext`, `kms:EncryptionContextKeys`, `kms:EncryptionAlgorithm`, `kms:KeyUsage` / `kms:KeySpec` (CreateKey), `kms:BypassPolicyLockoutSafetyCheck`, grant constraint keys | Crypto-context conditions common in least-privilege; ViaService is [#223](https://github.com/kgz/awsl/issues/223) |
 | **DynamoDB** | `dynamodb:LeadingKeys`, `dynamodb:Attributes`, `dynamodb:Select`, `dynamodb:ReturnValues`, `dynamodb:ReturnConsumedCapacity` | FGAC / attribute-level policies fail closed |
 | **S3** | `s3:prefix`, `s3:delimiter`, `s3:x-amz-acl`, `s3:x-amz-copy-source`, `s3:VersionId`, `s3:object-lock-*`, … | List/Get scoping by prefix is a frequent gap |
+| **EC2** | `ec2:CreateAction` on implicit CreateTags (tag-on-create) | SG Vpc/ResourceTag/RequestTag fixed in [#664](https://github.com/kgz/stackwrangler/issues/664); CreateAction → [#669](https://github.com/kgz/stackwrangler/issues/669) |
 | **Lambda** | `lambda:Principal`, `lambda:FunctionUrlAuthType`, `lambda:CodeSigningConfigArn`, `lambda:SecurityGroupIds` / `lambda:SubnetIds`, `lambda:EventSourceToken`, … | AddPermission / URL / VPC create paths |
 | **SQS** | mostly tag/resource today; few exclusive request keys | Low urgency vs SNS Subscribe |
 | **Secrets Manager** | `secretsmanager:Name`, `secretsmanager:Resource/AllowPublicPolicy`, … | Name-based Allows |

@@ -22,6 +22,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Lambda ESM Update/Delete `lambda:FunctionArn` (#650) | yes (matching function) | **yes** (other function's mapping) | — | no | `lambda-esm-function-arn-smoke.sh` |
 | IAM alarm + SNS subscription ARN (#651) | yes (`DescribeAlarms`/`DeleteAlarms` on `alarm:<name>`; SNS manage on subscription ARN) | **yes** (wrong alarm/topic deny cites concrete ARN, not `:*`) | — | no | `iam-alarm-sns-sub-arn-smoke.sh` |
 | Scheduler group/schedule ARNs (#663) | yes (scoped group create/get/delete + schedules) | **yes** (other group denied; cites `schedule-group/<name>`) | delivery → [#662](https://github.com/kgz/stackwrangler/issues/662) | no | `scheduler-iam-arns-smoke.sh` |
+| EC2 SG `ec2:Vpc` / `ec2:ResourceTag` / TagSpecifications RequestTag (#664) | yes (create + CreateTags/DeleteTags + egress + delete in allowed VPC) | **yes** (other VPC; create without RequestTag; CreateTags on untagged SG) | — | no | `ec2-vpc-condition-keys-smoke.sh` |
 | Service-origin condition keys | yes (S3 SSE-KMS ViaService/SourceArn; EC2 instance-profile PassRole) | **yes** (direct Decrypt; SourceArn mismatch; events PassRole) | — | no | `service-origin-condition-keys-smoke.sh` |
 | Multi-account AssumeRole | yes (A assumes B) | **yes** (C, missing ExternalId, user without sts:AssumeRole, unknown condition) | A's bucket/role hidden from B | — | `multi-account-smoke.sh` |
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |

@@ -155,7 +155,16 @@ def _ec2_arn(params: dict, region: str, account_id: str) -> str:
     for key in ("SecurityGroupId", "GroupId"):
         val = params.get(key)
         if val:
-            return f"arn:aws:ec2:{region}:{account_id}:security-group/{val}"
+            sg_id = val[0] if isinstance(val, list) else val
+            return f"arn:aws:ec2:{region}:{account_id}:security-group/{sg_id}"
+    # CreateTags / DeleteTags pass resource ids in Resources.
+    resources = params.get("Resources") or params.get("ResourceId") or []
+    if isinstance(resources, str):
+        resources = [resources]
+    if isinstance(resources, list):
+        for item in resources:
+            if isinstance(item, str) and item.startswith("sg-"):
+                return f"arn:aws:ec2:{region}:{account_id}:security-group/{item}"
     return f"arn:aws:ec2:{region}:{account_id}:*"
 
 
