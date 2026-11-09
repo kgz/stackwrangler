@@ -344,4 +344,4 @@
 615	in-review	Debt: Kinesis put/retention/encryption/tags (from #539)
 594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
 628	in-review	Debt: ELBv2 RemoveListenerCertificates / clear-default ACM reload (from #594)
-651	in-progress	IAM alarm + SNS subscription actions authorised against concrete ARNs
+651	in-review	IAM alarm + SNS subscription actions authorised against concrete ARNs
