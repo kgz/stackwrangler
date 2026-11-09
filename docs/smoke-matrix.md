@@ -17,6 +17,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | IAM OIDC + PassRole | yes (`environment:prod`, `repo:org/*`, events PassRole, tagged GetRole) | **yes** (feature ref, other org, bad aud, bad signature, states PassRole, untagged GetRole) | — | no | `oidc-smoke.sh` |
 | IAM `iam:PermissionsBoundary` key (#525) | yes (create-role + attach with matching boundary) | **yes** (create without boundary; attach to role without boundary) | — | no | `iam-permissions-boundary-key-smoke.sh` |
 | Service-origin condition keys | yes (S3 SSE-KMS ViaService/SourceArn; EC2 instance-profile PassRole) | **yes** (direct Decrypt; SourceArn mismatch; events PassRole) | — | no | `service-origin-condition-keys-smoke.sh` |
+| KMS ViaService + ResourceAliases (Secrets Manager) | yes (GetSecretValue with CMK alias) | **yes** (wrong alias; direct Decrypt) | — | no | `kms-via-secrets-aliases-smoke.sh` |
 | Multi-account AssumeRole | yes (A assumes B) | **yes** (C, missing ExternalId, user without sts:AssumeRole, unknown condition) | A's bucket/role hidden from B | — | `multi-account-smoke.sh` |
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |
 | Real AWS CFN S3+Lambda | **yes** (parity) | **yes** (empty role) | teardown | — | `aws-parity-cfn-s3-lambda.sh`, `aws-parity-cfn-authz.sh` |

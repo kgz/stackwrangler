@@ -25,6 +25,7 @@ Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/is
 | Dual S3 (SeaweedFS + LocalEmu) | partial | `s3-dual-endpoint-smoke.sh` | [home-s3-buckets](/assets/console/home-s3-buckets.png) | [dual-s3](./dual-s3) |
 | IAM AccessDenied lab | shipped | `iam-access-denied.sh` | — | [iam-deny](./iam-deny) |
 | S3 SSE-KMS ViaService / SourceArn | shipped | `service-origin-condition-keys-smoke.sh` | — | [s3-kms-via-service](./s3-kms-via-service) |
+| Secrets Manager CMK ViaService / ResourceAliases | shipped | `kms-via-secrets-aliases-smoke.sh` | — | [secrets-kms-via-aliases](./secrets-kms-via-aliases) |
 | Lambda VPC → host service | working | `lambda-vpc-smoke.sh` | non-VPC mapped name | [lambda-vpc-host](./lambda-vpc-host) |
 | SQS → Lambda (event source) | partial | see page | — | [sqs-to-lambda](./sqs-to-lambda) |
 | ECS task → ECR image pull | partial | `ecr-smoke.sh` | — | [ecs-ecr-pull](./ecs-ecr-pull) |

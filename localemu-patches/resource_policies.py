@@ -508,15 +508,18 @@ def canonical_secret_arn(ident: str | None, account_id: str, region: str) -> str
 
 
 def secret_customer_kms_key(ident: str, account_id: str, region: str) -> str | None:
-    """CMK used by the secret, as a key ARN when possible (cross-account safe)."""
+    """CMK used by the secret, as a key ARN when possible (cross-account safe).
+
+    Secrets often store ``KmsKeyId`` as an alias (``alias/foo``). Resolve to
+    the UUID key ARN — AWS authorises against ``key/<uuid>``, not
+    ``key/alias/...`` (#666).
+    """
     secret = find_secret(account_id, region, ident)
     if secret is None:
         return None
     key_ref = _customer_managed_key(getattr(secret, "kms_key_id", None))
     if not key_ref:
         return None
-    if key_ref.startswith("arn:"):
-        return key_ref
     secret_arn = getattr(secret, "arn", None) or ""
     key_account = account_id
     key_region = region
@@ -526,6 +529,14 @@ def secret_customer_kms_key(ident: str, account_id: str, region: str) -> str | N
             key_account = parts[4]
         if len(parts) >= 4 and parts[3]:
             key_region = parts[3]
+    canon = canonical_kms_arn(key_ref, key_account, key_region)
+    if canon:
+        return canon
+    if key_ref.startswith("arn:"):
+        return key_ref
+    # Unresolved alias — do not invent ``key/alias/...``.
+    if key_ref.startswith("alias/") or ":alias/" in key_ref:
+        return None
     return f"arn:aws:kms:{key_region}:{key_account}:key/{key_ref}"
 
 
@@ -1096,15 +1107,52 @@ def _s3_object_customer_kms_key(
     return _customer_managed_key(getattr(s3_object, "kms_key_id", None))
 
 
+def kms_via_service(service: str, region: str) -> str:
+    """``kms:ViaService`` host for a calling service (``s3``, ``secretsmanager``, ``ssm``)."""
+    return f"{service}.{region or 'us-east-1'}.amazonaws.com"
+
+
 def s3_via_service(region: str) -> str:
     """``kms:ViaService`` value AWS sets for S3-mediated KMS calls."""
-    return f"s3.{region or 'us-east-1'}.amazonaws.com"
+    return kms_via_service("s3", region)
 
 
-def service_origin_kms_context(source_arn: str | None, account_id: str, region: str) -> dict[str, str]:
-    """Condition keys S3 (and friends) present on mediated KMS calls (#223)."""
+def kms_resource_aliases(key_ref: str | None, account_id: str, region: str) -> list[str]:
+    """Aliases attached to a CMK — multi-valued ``kms:ResourceAliases`` (#666)."""
+    if not key_ref or not isinstance(key_ref, str):
+        return []
+    found = _native_kms_key(key_ref, account_id, region)
+    if not found:
+        return []
+    _key, account_id, region, key_id = found
+    try:
+        from localemu.services.kms.models import kms_stores
+
+        store = kms_stores[account_id][region]
+        out: list[str] = []
+        for name, alias in (getattr(store, "aliases", None) or {}).items():
+            if not isinstance(name, str):
+                continue
+            target = (getattr(alias, "metadata", None) or {}).get("TargetKeyId")
+            if target != key_id:
+                continue
+            out.append(name if name.startswith("alias/") else f"alias/{name}")
+        return out
+    except Exception as exc:
+        LOG.debug("kms ResourceAliases lookup failed for %s: %s", key_ref, exc)
+        return []
+
+
+def service_origin_kms_context(
+    source_arn: str | None,
+    account_id: str,
+    region: str,
+    *,
+    via_service: str | None = None,
+) -> dict[str, str]:
+    """Condition keys calling services present on mediated KMS calls (#223, #666)."""
     ctx: dict[str, str] = {
-        "kms:ViaService": s3_via_service(region),
+        "kms:ViaService": via_service or s3_via_service(region),
         "aws:SourceAccount": account_id,
     }
     if source_arn:
@@ -1112,37 +1160,70 @@ def service_origin_kms_context(source_arn: str | None, account_id: str, region: 
     return ctx
 
 
-def implicit_kms_checks(service: str, operation: str, params: dict | None, account_id: str, region: str) -> list[tuple[str, str]]:
+def _ssm_parameter_arn(name: str, account_id: str, region: str) -> str:
+    path = name if name.startswith("/") else f"/{name}"
+    return f"arn:aws:ssm:{region}:{account_id}:parameter{path}"
+
+
+def implicit_kms_checks(
+    service: str, operation: str, params: dict | None, account_id: str, region: str,
+) -> list[tuple[str, str, str | None]]:
     """Customer-managed keys touched implicitly by Secrets Manager or SSM.
 
-    Each pair is ``(kms_action, key_id)``. AWS-managed ``alias/aws/*`` keys
-    are omitted; the service uses those on the caller's behalf.
+    Each triple is ``(kms_action, key_id, source_arn)``. AWS-managed
+    ``alias/aws/*`` keys are omitted; the service uses those on the
+    caller's behalf.
     """
     params = params or {}
-    checks: list[tuple[str, str]] = []
+    checks: list[tuple[str, str, str | None]] = []
 
-    def add(action: str, key_id: str | None) -> None:
+    def add(action: str, key_id: str | None, source_arn: str | None = None) -> None:
         customer = _customer_managed_key(key_id)
         if customer:
-            checks.append((action, customer))
+            checks.append((action, customer, source_arn))
 
     if service == "secretsmanager":
         secret_id = params.get("SecretId") or params.get("Name") or ""
+        source = (
+            canonical_secret_arn(str(secret_id), account_id, region)
+            if secret_id
+            else None
+        )
         if operation == "GetSecretValue":
-            add("kms:Decrypt", secret_customer_kms_key(str(secret_id), account_id, region))
+            add(
+                "kms:Decrypt",
+                secret_customer_kms_key(str(secret_id), account_id, region),
+                source,
+            )
         elif operation in ("PutSecretValue", "UpdateSecret"):
-            add("kms:GenerateDataKey", secret_customer_kms_key(str(secret_id), account_id, region))
+            add(
+                "kms:GenerateDataKey",
+                secret_customer_kms_key(str(secret_id), account_id, region),
+                source,
+            )
             if operation == "UpdateSecret":
-                add("kms:GenerateDataKey", params.get("KmsKeyId"))
+                add("kms:GenerateDataKey", params.get("KmsKeyId"), source)
         elif operation == "CreateSecret":
-            add("kms:GenerateDataKey", params.get("KmsKeyId"))
+            name = params.get("Name")
+            create_source = (
+                f"arn:aws:secretsmanager:{region}:{account_id}:secret:{name}"
+                if isinstance(name, str) and name
+                else None
+            )
+            add("kms:GenerateDataKey", params.get("KmsKeyId"), create_source)
         return checks
 
     if service != "ssm":
         return checks
 
     if operation == "PutParameter" and params.get("Type") == "SecureString":
-        add("kms:Encrypt", params.get("KeyId"))
+        name = params.get("Name")
+        source = (
+            _ssm_parameter_arn(str(name), account_id, region)
+            if isinstance(name, str) and name
+            else None
+        )
+        add("kms:Encrypt", params.get("KeyId"), source)
         return checks
 
     if operation not in ("GetParameter", "GetParameters", "GetParametersByPath"):
@@ -1165,7 +1246,11 @@ def implicit_kms_checks(service: str, operation: str, params: dict | None, accou
             region,
         )
     for name in names:
-        add("kms:Decrypt", _ssm_parameter_key(name, account_id, region))
+        add(
+            "kms:Decrypt",
+            _ssm_parameter_key(name, account_id, region),
+            _ssm_parameter_arn(name, account_id, region),
+        )
     return checks
 
 
