@@ -29,6 +29,9 @@ echo "==> IAM OIDC + PassRole"
 echo "==> Service-origin condition keys (ViaService / SourceArn / EC2 PassRole)"
 ./smokes/security/service-origin-condition-keys-smoke.sh
 
+echo "==> Scheduler IAM schedule-group / schedule ARNs"
+./smokes/security/scheduler-iam-arns-smoke.sh
+
 echo "==> Lambda smoke"
 ./smokes/lambda/lambda-smoke.sh
 
