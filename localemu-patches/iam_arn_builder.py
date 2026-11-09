@@ -26,6 +26,10 @@ def build_resource_arn(
     """
     params = request_params or {}
 
+    # Scheduler group vs schedule share Name; operation picks the ARN shape (#663).
+    if service == "scheduler":
+        return _scheduler_arn(operation, params, region, account_id)
+
     builder = _SERVICE_ARN_BUILDERS.get(service)
     if builder:
         return builder(params, region, account_id)
@@ -44,6 +48,28 @@ def build_resource_arn(
                 return val
             return f"arn:aws:{service}:{region}:{account_id}:{val}"
     return f"arn:aws:{service}:{region}:{account_id}:*"
+
+
+def _scheduler_arn(operation: str, params: dict, region: str, account_id: str) -> str:
+    """EventBridge Scheduler ARNs: schedule-group/<name> or schedule/<group>/<name>.
+
+    Group and schedule APIs both take ``Name``; only the operation distinguishes
+    them. Tag/Untag/ListTagsForResource pass ``ResourceArn`` as-is.
+    """
+    resource_arn = params.get("ResourceArn")
+    if resource_arn and isinstance(resource_arn, str) and resource_arn.startswith("arn:"):
+        return resource_arn
+    if operation.startswith("List") or not params.get("Name"):
+        return f"arn:aws:scheduler:{region}:{account_id}:*"
+    name = params["Name"]
+    if not isinstance(name, str):
+        return f"arn:aws:scheduler:{region}:{account_id}:*"
+    if operation.endswith("ScheduleGroup"):
+        return f"arn:aws:scheduler:{region}:{account_id}:schedule-group/{name}"
+    group = params.get("GroupName") or "default"
+    if not isinstance(group, str):
+        group = "default"
+    return f"arn:aws:scheduler:{region}:{account_id}:schedule/{group}/{name}"
 
 
 def _s3_arn(params: dict, region: str, account_id: str) -> str:
@@ -69,6 +95,13 @@ def _dynamodb_arn(params: dict, region: str, account_id: str) -> str:
 
 
 def _lambda_arn(params: dict, region: str, account_id: str) -> str:
+    # Get/Update/DeleteEventSourceMapping take UUID; IAM resource is the
+    # mapping ARN (event-source-mapping:<uuid>), not function:* (#649).
+    # Create still uses FunctionName → function ARN. lambda:FunctionArn on
+    # Update/Delete is set from the mapping in 20-lambda-esm-function-arn (#650).
+    uuid = params.get("UUID")
+    if uuid:
+        return f"arn:aws:lambda:{region}:{account_id}:event-source-mapping:{uuid}"
     func = params.get("FunctionName", "*")
     # If it's already an ARN, return it
     if func.startswith("arn:"):
@@ -86,6 +119,11 @@ def _sqs_arn(params: dict, region: str, account_id: str) -> str:
 
 
 def _sns_arn(params: dict, region: str, account_id: str) -> str:
+    # Unsubscribe / Get/SetSubscriptionAttributes name SubscriptionArn (#651).
+    # Prefer the subscription ARN so topic ARN:* policies match CFN delete/rollback.
+    sub_arn = params.get("SubscriptionArn")
+    if isinstance(sub_arn, str) and sub_arn:
+        return sub_arn
     topic_arn = params.get("TopicArn", params.get("TargetArn", ""))
     if topic_arn:
         return topic_arn
@@ -117,7 +155,16 @@ def _ec2_arn(params: dict, region: str, account_id: str) -> str:
     for key in ("SecurityGroupId", "GroupId"):
         val = params.get(key)
         if val:
-            return f"arn:aws:ec2:{region}:{account_id}:security-group/{val}"
+            sg_id = val[0] if isinstance(val, list) else val
+            return f"arn:aws:ec2:{region}:{account_id}:security-group/{sg_id}"
+    # CreateTags / DeleteTags pass resource ids in Resources.
+    resources = params.get("Resources") or params.get("ResourceId") or []
+    if isinstance(resources, str):
+        resources = [resources]
+    if isinstance(resources, list):
+        for item in resources:
+            if isinstance(item, str) and item.startswith("sg-"):
+                return f"arn:aws:ec2:{region}:{account_id}:security-group/{item}"
     return f"arn:aws:ec2:{region}:{account_id}:*"
 
 
@@ -177,6 +224,37 @@ def _cloudformation_arn(params: dict, region: str, account_id: str) -> str:
     return f"arn:aws:cloudformation:{region}:{account_id}:stack/{stack_name}/*"
 
 
+def _normalize_iam_path(path: str | None) -> str:
+    """IAM path form used in ARNs: leading and trailing slash."""
+    if not path or not isinstance(path, str):
+        return "/"
+    if not path.startswith("/"):
+        path = f"/{path}"
+    if not path.endswith("/"):
+        path = f"{path}/"
+    return path
+
+
+def _iam_role_arn(role_name: str, account_id: str, params: dict) -> str:
+    """Role ARN with IAM path (``role{path}{name}``), matching real AWS.
+
+    Role-addressed APIs only send ``RoleName``. Path comes from the stored
+    role (or ``Path`` on CreateRole before the role exists).
+    """
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("iam")[account_id]["global"]
+        role = backend.get_role(role_name)
+        arn = getattr(role, "arn", None)
+        if isinstance(arn, str) and arn:
+            return arn
+    except Exception:
+        pass
+    path = _normalize_iam_path(params.get("Path") if isinstance(params.get("Path"), str) else None)
+    return f"arn:aws:iam::{account_id}:role{path}{role_name}"
+
+
 def _iam_arn(params: dict, region: str, account_id: str) -> str:
     """Build ARN for IAM resources (users, roles, policies, groups)."""
     user_name = params.get("UserName")
@@ -184,7 +262,7 @@ def _iam_arn(params: dict, region: str, account_id: str) -> str:
         return f"arn:aws:iam::{account_id}:user/{user_name}"
     role_name = params.get("RoleName")
     if role_name:
-        return f"arn:aws:iam::{account_id}:role/{role_name}"
+        return _iam_role_arn(role_name, account_id, params)
     policy_arn = params.get("PolicyArn")
     if policy_arn:
         return policy_arn
@@ -218,9 +296,20 @@ def _apigateway_arn(params: dict, region: str, account_id: str) -> str:
 
 
 def _cloudwatch_arn(params: dict, region: str, account_id: str) -> str:
+    # PutMetricAlarm / SetAlarmState use AlarmName; DescribeAlarms / DeleteAlarms
+    # (and Enable/DisableAlarmActions) use AlarmNames. Scoped policies need
+    # alarm:<name>, not account:* (#651). Multiple names are expanded per-ARN
+    # in expand_permission_checks; here we resolve a single name when present.
     alarm_name = params.get("AlarmName")
-    if alarm_name:
+    if isinstance(alarm_name, str) and alarm_name:
         return f"arn:aws:cloudwatch:{region}:{account_id}:alarm:{alarm_name}"
+    names = params.get("AlarmNames")
+    if isinstance(names, str) and names:
+        return f"arn:aws:cloudwatch:{region}:{account_id}:alarm:{names}"
+    if isinstance(names, list):
+        for name in names:
+            if isinstance(name, str) and name:
+                return f"arn:aws:cloudwatch:{region}:{account_id}:alarm:{name}"
     dashboard = params.get("DashboardName")
     if dashboard:
         return f"arn:aws:cloudwatch::{account_id}:dashboard/{dashboard}"

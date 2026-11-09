@@ -43,9 +43,25 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `iam:GetRole` only when `aws:ResourceTag/env=prod` | sad/authz | covered | `./smokes/security/oidc-smoke.sh` |
 | `iam:CreateRole` with matching `iam:PermissionsBoundary` | happy | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` · [oidc.md](oidc.md) |
 | `iam:CreateRole` without PermissionsBoundary denied by conditioned Allow | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
+| `lambda:Get/Update/DeleteEventSourceMapping` on `event-source-mapping:*` | happy | covered | `./smokes/security/lambda-esm-mapping-arn-smoke.sh` · [#649](https://github.com/kgz/stackwrangler/issues/649) |
+| `lambda:Get/Update/DeleteEventSourceMapping` allowed only on `function:*` → AccessDenied cites mapping ARN | sad/authz | covered | `./smokes/security/lambda-esm-mapping-arn-smoke.sh` |
+| `lambda:Update/DeleteEventSourceMapping` with `lambda:FunctionArn` matching mapping function | happy | covered | `./smokes/security/lambda-esm-function-arn-smoke.sh` · [#650](https://github.com/kgz/stackwrangler/issues/650) |
+| `lambda:Update/DeleteEventSourceMapping` with `lambda:FunctionArn` for another function denied | sad/authz | covered | `./smokes/security/lambda-esm-function-arn-smoke.sh` |
 | `iam:AttachRolePolicy` on role without matching boundary denied | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
-| `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
+| Role-addressed IAM actions use full ARN including path (`role/team/app/*`) | happy + sad/authz | covered | `./smokes/security/iam-role-path-arn-smoke.sh` |
+| `iam:AttachRolePolicy` / `DetachRolePolicy` with matching `iam:PolicyARN` | happy | covered | `./smokes/security/iam-policy-arn-condition-smoke.sh` |
+| `iam:AttachRolePolicy` of a different managed policy denied by `iam:PolicyARN` | sad/authz | covered | `./smokes/security/iam-policy-arn-condition-smoke.sh` |
+| `cloudwatch:DescribeAlarms` / `DeleteAlarms` on `alarm:<name>` from `AlarmNames` | happy | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · [#651](https://github.com/kgz/stackwrangler/issues/651) |
+| `cloudwatch:DescribeAlarms` with multi `AlarmNames` when one name is out of scope → AccessDenied cites that alarm ARN | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
+| `sns:Unsubscribe` / `GetSubscriptionAttributes` / `SetSubscriptionAttributes` on subscription ARN (`<topicArn>:*`) | happy | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · [#651](https://github.com/kgz/stackwrangler/issues/651) |
+| Alarm / SNS subscription manage actions allowed only on a different alarm or topic → AccessDenied cites concrete ARN (not `:*`) | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
+| `ec2:CreateSecurityGroup` with `ec2:Vpc` + TagSpecifications `aws:RequestTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |
+| `ec2:CreateSecurityGroup` in other VPC / without RequestTag denied | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:AuthorizeSecurityGroupEgress` / `DeleteSecurityGroup` with `ec2:Vpc` + `ec2:ResourceTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:CreateTags` / `DeleteTags` with `ec2:Vpc` + `ec2:ResourceTag` + `aws:ResourceTag` on SG | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:CreateTags` on untagged SG denied by ResourceTag conditions | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `kms:ViaService` / service-origin `aws:SourceArn` / `aws:SourceAccount` (S3 SSE-KMS); EC2 instance-profile PassRole | happy + sad/authz | covered | `./smokes/security/service-origin-condition-keys-smoke.sh` |
+| `kms:ViaService` + `kms:ResourceAliases` (Secrets Manager / SSM SecureString CMK alias) | happy + sad/authz | covered | `./smokes/security/kms-via-secrets-aliases-smoke.sh` |
 | Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./smokes/security/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |
 | S3 bucket and IAM role in A hidden from B | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
 | `sts:AssumeRole` role in B trusts `arn:aws:iam::<A>:root` + `sts:ExternalId`; user in A assumes | happy | covered | `./smokes/security/multi-account-smoke.sh` |
@@ -58,6 +74,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./smokes/lambda/lambda-authz-smoke.sh` |
 | Lambda role trust `aws:SourceAccount` = function account → CreateFunction ok; other account → refused; plain trust ok | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-condition-smoke.sh` |
 | Lambda role trust `aws:SourceArn` = function ARN → CreateFunction ok; other ARN → refused | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-sourcearn-smoke.sh` |
+| Scheduler target RoleArn trust `aws:SourceAccount` / `aws:SourceArn` (schedule-group); mismatch → DLQ | happy + sad/authz | covered | `./smokes/messaging/scheduler-trust-sourcearn-smoke.sh` |
 | REST API import from OpenAPI + `aws_proxy` public route | happy | covered | `./smokes/apigw/apigw-rest-smoke.sh` · [apigw-rest.md](apigw-rest.md) |
 | REST REQUEST authorizer Allow → handler gets context | happy | covered | `./smokes/apigw/apigw-rest-smoke.sh` |
 | REST authorizer, no token → 401 | sad/authz | covered | `./smokes/apigw/apigw-rest-smoke.sh` |
@@ -235,6 +252,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN delete-stack removes resources; `DeletionPolicy: Retain` kept | happy | covered | `./smokes/iac/cfn-lifecycle-smoke.sh` |
 | CFN failed update → `UPDATE_ROLLBACK_COMPLETE` (not `UPDATE_COMPLETE`) | sad/other | covered | `./smokes/iac/cfn-lifecycle-smoke.sh` |
 | CFN part-created stack delete skips never-created GetAtt deps → `DELETE_COMPLETE`, redeploy | sad/other | covered | `./smokes/iac/cfn-lifecycle-smoke.sh` (#470) |
+| CFN missing `Fn::ImportValue` (Sub map + direct property) → `No export named … found` | sad/other | covered | `./smokes/iac/cfn-importvalue-smoke.sh` · [#652](https://github.com/kgz/awsl/issues/652) |
 | CFN failed update reverts in-place resource changes | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./smokes/parity/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
@@ -290,8 +308,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SNS → SQS queue CMK without `sns.amazonaws.com` `kms:GenerateDataKey` + `kms:Decrypt` → not delivered | sad/authz | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue CMK whose key policy Allows `sns.amazonaws.com` those actions → delivered | happy | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./smokes/messaging/events-smoke.sh` |
+| EventBridge Scheduler create-schedule-group + one-off `at(...)` → SQS | happy | covered | `./smokes/messaging/scheduler-smoke.sh` · [#662](https://github.com/kgz/awsl/issues/662) |
 | EventBridge console rules + event buses list | ui | covered | `console/e2e/eventbridge-rules.spec.ts` |
 | EventBridge deny PutEvents | sad/authz | covered | `./smokes/messaging/events-authz-smoke.sh` |
+| Scheduler scoped `schedule-group/<name>` + `schedule/<group>/*` create/get/delete | happy | covered | `./smokes/security/scheduler-iam-arns-smoke.sh` · [#663](https://github.com/kgz/stackwrangler/issues/663) |
+| Scheduler CreateScheduleGroup on other group → AccessDenied cites `schedule-group/<name>` | sad/authz | covered | `./smokes/security/scheduler-iam-arns-smoke.sh` |
 | EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge `disable-rule` stops scheduled invocations | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
 | EventBridge rule → Lambda without `lambda:InvokeFunction` (`events.amazonaws.com`) → no invocation | sad/authz | covered | `./smokes/messaging/events-schedule-smoke.sh` |
@@ -417,3 +438,4 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 Wire new paths here **in the same PR** as the smoke. If deferred → Debt ticket + link in the Status column.
 | Real AWS batch10 messaging/data/crypto | happy+sad | covered | `./smokes/parity/aws-parity-batch10.sh` |
+| Dual-target parity suites (catalog) | happy+sad | covered | `./bin/parity list` / `./bin/parity run --tier free --target local` · [parity-suites.md](parity-suites.md) (#662–#666 checks + legacy) |

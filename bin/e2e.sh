@@ -24,9 +24,13 @@ echo "==> IAM SimulateCustomPolicy / SimulatePrincipalPolicy"
 echo "==> IAM OIDC + PassRole"
 ./smokes/security/oidc-smoke.sh
 ./smokes/security/iam-permissions-boundary-key-smoke.sh
+./smokes/security/iam-policy-arn-condition-smoke.sh
 
 echo "==> Service-origin condition keys (ViaService / SourceArn / EC2 PassRole)"
 ./smokes/security/service-origin-condition-keys-smoke.sh
+
+echo "==> Scheduler IAM schedule-group / schedule ARNs"
+./smokes/security/scheduler-iam-arns-smoke.sh
 
 echo "==> Lambda smoke"
 ./smokes/lambda/lambda-smoke.sh
@@ -42,6 +46,8 @@ echo "==> Lambda trust aws:SourceAccount"
 
 echo "==> Lambda trust aws:SourceArn"
 ./smokes/lambda/lambda-trust-sourcearn-smoke.sh
+echo "==> Scheduler trust SourceAccount / SourceArn"
+./smokes/messaging/scheduler-trust-sourcearn-smoke.sh
 
 echo "==> Lambda VPC → host services (sad: unmapped name)"
 ./smokes/lambda/lambda-vpc-smoke.sh
@@ -97,6 +103,7 @@ echo "==> SQS authz (sad: deny SendMessage)"
 echo "==> SNS / EventBridge / DynamoDB / SFN / Secrets / KMS / Kinesis"
 ./smokes/messaging/sns-smoke.sh && ./smokes/messaging/sns-authz-smoke.sh && ./smokes/messaging/sns-subscribe-conditions-smoke.sh && ./smokes/messaging/sns-max-message-size-smoke.sh
 ./smokes/messaging/events-smoke.sh && ./smokes/messaging/events-authz-smoke.sh
+./smokes/messaging/scheduler-smoke.sh
 ./smokes/data/dynamodb-smoke.sh && ./smokes/data/dynamodb-authz-smoke.sh && ./smokes/data/dynamodb-resource-policy-smoke.sh
 ./smokes/messaging/sfn-smoke.sh && ./smokes/messaging/sfn-authz-smoke.sh
 ./smokes/security/secrets-smoke.sh && ./smokes/security/secrets-authz-smoke.sh

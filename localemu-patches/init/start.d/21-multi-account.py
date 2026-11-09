@@ -31,7 +31,7 @@ _SUPPORTED_CONDITIONS = {
     "ArnEquals": _SOURCE_ARN_KEYS,
 }
 
-# Calling resource when a service assumes a role (function / rule / topic ARN).
+# Calling resource when a service assumes a role (function / rule / topic / schedule-group ARN).
 _PENDING_SOURCE_ARN: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "awsbox_pending_source_arn", default=None
 )
@@ -370,6 +370,20 @@ def _copy_handler(dst: object, src: object) -> None:
             setattr(dst, attr, getattr(src, attr))
 
 
+
+def _schedule_group_source_arn(schedule_arn: str) -> str | None:
+    """``…:schedule/<group>/<name>`` → ``…:schedule-group/<group>`` for trust SourceArn."""
+    marker = ":schedule/"
+    idx = schedule_arn.find(marker)
+    if idx < 0:
+        return None
+    rest = schedule_arn[idx + len(marker) :]
+    group, sep, _name = rest.partition("/")
+    if not sep or not group:
+        return None
+    return f"{schedule_arn[:idx]}:schedule-group/{group}"
+
+
 def _install_source_arn() -> None:
     """Carry the calling resource ARN on service AssumeRole."""
     from localemu.aws.connect import MetadataRequestInjector
@@ -399,13 +413,45 @@ def _install_source_arn() -> None:
     def assume_role(self, context, *args, **kwargs):
         internal = getattr(context, "internal_request_params", None)
         raw = None
+        service_principal = None
         if internal is not None:
             getter = getattr(internal, "get", None)
             if callable(getter):
                 raw = getter("source_arn")
+                service_principal = getter("service_principal")
         token = _STS_SOURCE_ARN.set(raw if isinstance(raw, str) else None)
         try:
             return original_assume(self, context, *args, **kwargs)
+        except Exception as exc:
+            code = getattr(exc, "code", None)
+            msg = str(getattr(exc, "message", "") or "")
+            if (
+                service_principal
+                and code == "AccessDenied"
+                and "sts:AssumeRole" in msg
+                and msg.startswith("User:")
+            ):
+                from localemu.aws.api import CommonServiceException
+                from localemu.services.iam_enforcement.resource_policies import (
+                    normalize_service_principal,
+                )
+
+                sp = (
+                    service_principal
+                    if isinstance(service_principal, str)
+                    else None
+                )
+                label = normalize_service_principal(sp)
+                if not label:
+                    raise
+                rewritten = re.sub(r"^User:\s+\S+", f"User: {label}", msg, count=1)
+                raise CommonServiceException(
+                    code="AccessDenied",
+                    message=rewritten,
+                    status_code=int(getattr(exc, "status_code", 403) or 403),
+                    sender_fault=bool(getattr(exc, "sender_fault", False)),
+                ) from None
+            raise
         finally:
             _STS_SOURCE_ARN.reset(token)
 
@@ -458,6 +504,37 @@ def _install_source_arn() -> None:
         )
     except Exception as exc:
         LOG.debug("apigw source_arn wrap skipped: %s", exc)
+
+    try:
+        from localemu.services.scheduler import target_invoker as scheduler_target
+
+        original_invoke = scheduler_target.invoke
+
+        def invoke(
+            *,
+            schedule_arn: str,
+            schedule_name: str,
+            target: dict,
+            account_id: str,
+            region: str,
+        ):
+            # AWS documents trust ArnLike on the schedule-group ARN (#665).
+            group_arn = _schedule_group_source_arn(schedule_arn)
+            token = _PENDING_SOURCE_ARN.set(group_arn)
+            try:
+                return original_invoke(
+                    schedule_arn=schedule_arn,
+                    schedule_name=schedule_name,
+                    target=target,
+                    account_id=account_id,
+                    region=region,
+                )
+            finally:
+                _PENDING_SOURCE_ARN.reset(token)
+
+        scheduler_target.invoke = invoke
+    except Exception as exc:
+        LOG.debug("scheduler source_arn wrap skipped: %s", exc)
 
 
 def _install_root_keys(per_key: dict[str, str]) -> None:

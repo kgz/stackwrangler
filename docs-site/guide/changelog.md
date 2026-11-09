@@ -2,6 +2,56 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.0.5 — Security / deps (2026-11-09)
+
+Close Dependabot on shipped surfaces, fix IAM condition-key / ARN shape gaps that created false confidence locally, enable EventBridge Scheduler in the default service set, and ship a dual-target parity CLI so free real-AWS checks stay cheap and repeatable.
+
+### Dependencies
+
+- Console + docs-site Dependabot clears (DOMPurify, react-router, vite/esbuild) ([#599](https://github.com/kgz/stackwrangler/issues/599))
+- Examples Dependabot triage (serverless-v3-rest + CDK locks) ([#600](https://github.com/kgz/stackwrangler/issues/600))
+
+### Identity & authz
+
+- IAM role actions use the full path ARN ([#647](https://github.com/kgz/stackwrangler/issues/647))
+- `iam:PolicyARN` on Attach/Detach*Policy ([#648](https://github.com/kgz/stackwrangler/issues/648))
+- Event source mapping authz against the mapping ARN ([#649](https://github.com/kgz/stackwrangler/issues/649)); `lambda:FunctionArn` on Update/DeleteEventSourceMapping ([#650](https://github.com/kgz/stackwrangler/issues/650))
+- CloudWatch alarm + SNS subscription actions on concrete ARNs ([#651](https://github.com/kgz/stackwrangler/issues/651))
+- `ec2:Vpc` / `ec2:ResourceTag` / TagSpecifications `aws:RequestTag` for security groups ([#664](https://github.com/kgz/stackwrangler/issues/664))
+- `kms:ViaService` + `kms:ResourceAliases` on Secrets Manager / SSM-mediated decrypt ([#666](https://github.com/kgz/stackwrangler/issues/666))
+
+### Scheduler / messaging
+
+- EventBridge Scheduler enabled in `SERVICES` ([#662](https://github.com/kgz/stackwrangler/issues/662))
+- Scheduler IAM ARNs use `schedule-group/` and `schedule/<group>/` ([#663](https://github.com/kgz/stackwrangler/issues/663))
+- Scheduler AssumeRole `aws:SourceArn` / `aws:SourceAccount` from the schedule group ([#665](https://github.com/kgz/stackwrangler/issues/665))
+
+### CloudFormation
+
+- Missing `ImportValue` export → `No export named … found` (AWS-shaped) ([#652](https://github.com/kgz/stackwrangler/issues/652))
+
+### Parity / platform
+
+- Dual-target `./bin/parity` suite (`local` + `real`, cost tiers, KMS fixture reuse) for the v0.0.5 checks — [parity-suites.md](https://github.com/kgz/stackwrangler/blob/main/docs/parity-suites.md)
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS S3, ECR registry, AWS profile `local` (CLI), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.0.5
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.5 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
+
+Optional thin host CLI (wraps the same `docker run`): [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.5/stackwrangler).
+
 ## v0.0.4 — Accuracy (2026-11-09)
 
 Depth on services already in the footprint: console create/detail/actions, ELBv2 ACM + health fidelity, ESM/stream correctness, and call-log / smoke coverage — so local behaviour matches AWS more closely than catalogue theatre.

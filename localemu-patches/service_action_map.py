@@ -288,6 +288,30 @@ def expand_permission_checks(
             checks.append(("dynamodb:BatchGetItem", ddb_arn(table, index)))
         return checks
 
+    # CloudWatch DescribeAlarms / DeleteAlarms / *AlarmActions take AlarmNames.
+    # Authorise each named alarm ARN; bare list-all stays on account:* (#651).
+    if service == "cloudwatch":
+        names = params.get("AlarmNames")
+        if isinstance(names, str) and names:
+            names = [names]
+        if isinstance(names, list) and names:
+            actions = map_action(service, operation_name)
+            checks = []
+            for name in names:
+                if not isinstance(name, str) or not name:
+                    continue
+                arn = build_resource_arn(
+                    "cloudwatch",
+                    operation_name,
+                    {"AlarmName": name},
+                    region,
+                    account_id,
+                )
+                for action in actions:
+                    checks.append((action, arn))
+            if checks:
+                return checks
+
     actions = map_action(service, operation_name)
     arn = build_resource_arn(
         service, operation_name, params, region, account_id

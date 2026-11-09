@@ -45,7 +45,8 @@ const lists: Array<{
     path: '/kinesis',
     heading: 'Data streams',
     columns: ['Name', 'Status', 'Capacity mode', 'Monitoring', 'Created'],
-    disabled: ['Delete', 'Create data stream'],
+    disabled: ['Delete'],
+    enabledLinks: ['Create data stream'],
   },
   {
     path: '/sqs',
@@ -57,7 +58,8 @@ const lists: Array<{
       'Messages available',
       'Messages in flight',
     ],
-    disabled: ['Delete', 'Create queue'],
+    disabled: ['Delete'],
+    enabledLinks: ['Create queue'],
   },
   {
     path: '/events',
@@ -123,7 +125,8 @@ const lists: Array<{
       'Protocol',
       'Endpoint',
     ],
-    disabled: ['Delete', 'Create'],
+    disabled: ['Delete'],
+    enabledLinks: ['Create'],
   },
   {
     path: '/cloudformation',
@@ -192,6 +195,8 @@ async function expectDisabledControlsExplained(page: Page) {
       'To implement',
       'Select a row',
       'Create a Lambda function first',
+      // wired RefreshButton while a list fetch is in flight
+      'Refresh',
     ]).toContain(t)
   }
 }

@@ -18,5 +18,12 @@
   "dependencies": {
     "@antv/g6": "^5.1.1",
     "dayjs": "^1.11.23"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "6.4.5",
+      "esbuild": "0.25.12",
+      "katex": ">=0.18.2"
+    }
   }
 }

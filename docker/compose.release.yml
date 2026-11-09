@@ -26,7 +26,7 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
-      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,elasticbeanstalk,apprunner,dax,wafv2,waf,network-firewall,fms
+      SERVICES: iam,sts,s3,s3control,lambda,logs,apigateway,apigatewayv2,route53,acm,ecs,ec2,ecr,elbv2,codedeploy,cloudformation,transfer,rds,sqs,sns,events,scheduler,dynamodb,dynamodbstreams,stepfunctions,secretsmanager,kms,kinesis,ssm,cloudwatch,cloudtrail,organizations,backup,batch,application-autoscaling,autoscaling,elasticbeanstalk,apprunner,dax,wafv2,waf,network-firewall,fms
       AWSBOX_ECR_REGISTRY: 127.0.0.1:${STACKWRANGLER_ECR_HOST_PORT:-5000}
       AWSBOX_ECS_CREDS_PORT: ${STACKWRANGLER_ECS_CREDS_PORT:-4571}
       AWSBOX_TRANSFER_SFTP_PORT: ${STACKWRANGLER_TRANSFER_SFTP_PORT:-2222}

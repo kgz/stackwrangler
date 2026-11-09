@@ -1,0 +1,150 @@
+# Dual-target parity catalog. Consumed by bin/parity.
+# cost_tier: free | low | high  (see docs/parity-suites.md)
+version: 1
+checks:
+  - id: scheduler-delivery
+    title: EventBridge Scheduler group + at() → SQS
+    issues: [662]
+    covers:
+      - "happy: create-schedule-group + one-off at(...) delivers to SQS"
+      - "confirms scheduler enabled in SERVICES (local) / API available (real)"
+    cost_tier: free
+    est_cost: "~$0 if torn down"
+    residual: none
+    suites: [scheduler, messaging, v005, free-ci]
+    script: smokes/parity/checks/scheduler-delivery.sh
+    targets: [local, real]
+
+  - id: scheduler-iam-arns
+    title: Scheduler IAM schedule-group / schedule ARNs
+    issues: [663]
+    covers:
+      - "happy: role scoped to one group can create/get/delete group + schedules"
+      - "sad: other group denied; AccessDenied cites schedule-group/<name>"
+    cost_tier: free
+    est_cost: "~$0 if torn down"
+    residual: none
+    suites: [scheduler, iam, v005, free-ci]
+    script: smokes/parity/checks/scheduler-iam-arns.sh
+    targets: [local, real]
+
+  - id: scheduler-trust-sourcearn
+    title: Scheduler AssumeRole SourceAccount / SourceArn
+    issues: [665]
+    covers:
+      - "happy: SourceAccount and ArnLike schedule-group trust → SQS"
+      - "sad: wrong account/group → DLQ; deny names scheduler.amazonaws.com"
+    cost_tier: free
+    est_cost: "~$0 if torn down"
+    residual: none
+    suites: [scheduler, iam, trust, v005, free-ci]
+    script: smokes/parity/checks/scheduler-trust-sourcearn.sh
+    targets: [local, real]
+
+  - id: ec2-vpc-condition-keys
+    title: EC2 SG ec2:Vpc / ResourceTag / RequestTag
+    issues: [664]
+    covers:
+      - "happy: CreateSecurityGroup + CreateTags/DeleteTags + egress + delete in allowed VPC"
+      - "sad: other VPC; missing RequestTag; CreateTags on untagged SG"
+    cost_tier: free
+    est_cost: "~$0 (empty VPCs + SGs; no NAT/EIP)"
+    residual: none
+    suites: [ec2, iam, v005, free-ci]
+    script: smokes/parity/checks/ec2-vpc-condition-keys.sh
+    targets: [local, real]
+
+  - id: kms-via-secrets-aliases
+    title: KMS ViaService + ResourceAliases via Secrets/SSM
+    issues: [666]
+    covers:
+      - "happy: GetSecretValue / GetParameter with ViaService + ResourceAliases"
+      - "sad: wrong alias denied; direct kms:Decrypt denied (key ARN not key/alias/…)"
+    cost_tier: free
+    est_cost: "~$0 when fixture reused; secret force-deleted"
+    residual: "none if fixture reused; else CMK PendingDeletion 7d (~$0.23)"
+    kms_fixture: alias/sw-parity-fixture-trust-via
+    suites: [kms, secrets, iam, v005, free-ci]
+    script: smokes/parity/checks/kms-via-secrets-aliases.sh
+    targets: [local, real]
+
+  # ---- legacy monoliths (unchanged bodies; catalog metadata only) ----
+  - id: legacy-iam-denied
+    title: "Legacy: IAM deny-user + empty role simulate"
+    issues: []
+    covers:
+      - "real: temporary deny user + SimulatePrincipalPolicy PutObject"
+    cost_tier: free
+    est_cost: "~$0"
+    residual: none
+    suites: [legacy, iam, free-ci]
+    script: smokes/parity/aws-parity-iam-denied.sh
+    targets: [real]
+    legacy: true
+
+  - id: legacy-batch10
+    title: "Legacy: messaging/data/crypto batch10"
+    issues: []
+    covers:
+      - "SNS/Events/DDB/SFN/Secrets/KMS/Kinesis + logs/apigw/ec2 deny"
+    cost_tier: free
+    est_cost: "~$0 if fixture CMK reused; else CMK 7d residual"
+    residual: "none if alias/sw-parity-fixture-batch10 present; else CMK 7d"
+    kms_fixture: alias/sw-parity-fixture-batch10
+    suites: [legacy, messaging, free-ci]
+    script: smokes/parity/aws-parity-batch10.sh
+    targets: [local, real]
+    legacy: true
+
+  - id: legacy-hf-cheap
+    title: "Legacy: high-focus cheap parity"
+    issues: []
+    covers:
+      - "DDB GSI/condition, schedule→Lambda, REST Deny 403, usage plan, S3 GW VPCE"
+    cost_tier: low
+    est_cost: "~$0–cents if torn down"
+    residual: none
+    suites: [legacy, low]
+    script: smokes/parity/aws-parity-hf-cheap.sh
+    targets: [local, real]
+    legacy: true
+
+  - id: legacy-cfn-s3-lambda
+    title: "Legacy: CFN S3+Lambda"
+    issues: []
+    covers:
+      - "happy: same template deploy on real"
+    cost_tier: free
+    est_cost: "~$0 if stack deleted"
+    residual: none
+    suites: [legacy, iac, free-ci]
+    script: smokes/parity/aws-parity-cfn-s3-lambda.sh
+    targets: [local, real]
+    legacy: true
+
+  - id: legacy-cfn-authz
+    title: "Legacy: CFN empty Lambda role AccessDenied"
+    issues: []
+    covers:
+      - "sad: empty role → AccessDenied on deploy"
+    cost_tier: free
+    est_cost: "~$0"
+    residual: none
+    suites: [legacy, iac, iam, free-ci]
+    script: smokes/parity/aws-parity-cfn-authz.sh
+    targets: [local, real]
+    legacy: true
+
+  - id: legacy-trust-v003
+    title: "Legacy: Trust v0.0.3 suite"
+    issues: []
+    covers:
+      - "IAM/SNS/DDB/CFN/ECR + ViaService fixture path"
+    cost_tier: free
+    est_cost: "~$0 if fixture reused; else CMK 7d residual"
+    residual: "none if alias/sw-parity-fixture-trust-via present; else CMK 7d"
+    kms_fixture: alias/sw-parity-fixture-trust-via
+    suites: [legacy, trust, free-ci]
+    script: smokes/parity/aws-parity-trust-v003.sh
+    targets: [real]
+    legacy: true
