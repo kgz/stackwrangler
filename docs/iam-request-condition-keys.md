@@ -13,6 +13,7 @@ Service-origin keys (`kms:ViaService`, calling-service `aws:SourceArn` / `aws:So
 | `iam:PassedToService` | PassRole field scan | `./smokes/security/oidc-smoke.sh` |
 | `iam:PermissionsBoundary` | `CreateRole` from request; role-policy ops from target role boundary | `./smokes/security/iam-permissions-boundary-key-smoke.sh` · [#525](https://github.com/kgz/stackwrangler/issues/525) |
 | `iam:PolicyARN` | `Attach`/`Detach` Role/User/Group Policy from request `PolicyArn` | `./smokes/security/iam-policy-arn-condition-smoke.sh` · [#648](https://github.com/kgz/stackwrangler/issues/648) |
+| `lambda:FunctionArn` | Create from `FunctionName`; Get/Update/Delete from mapping | `./smokes/security/lambda-esm-function-arn-smoke.sh` · [#650](https://github.com/kgz/stackwrangler/issues/650) |
 
 ## Gaps (documented request keys the enforcer does not set yet)
 

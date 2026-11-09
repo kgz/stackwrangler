@@ -45,6 +45,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `iam:CreateRole` without PermissionsBoundary denied by conditioned Allow | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
 | `lambda:Get/Update/DeleteEventSourceMapping` on `event-source-mapping:*` | happy | covered | `./smokes/security/lambda-esm-mapping-arn-smoke.sh` · [#649](https://github.com/kgz/stackwrangler/issues/649) |
 | `lambda:Get/Update/DeleteEventSourceMapping` allowed only on `function:*` → AccessDenied cites mapping ARN | sad/authz | covered | `./smokes/security/lambda-esm-mapping-arn-smoke.sh` |
+| `lambda:Update/DeleteEventSourceMapping` with `lambda:FunctionArn` matching mapping function | happy | covered | `./smokes/security/lambda-esm-function-arn-smoke.sh` · [#650](https://github.com/kgz/stackwrangler/issues/650) |
+| `lambda:Update/DeleteEventSourceMapping` with `lambda:FunctionArn` for another function denied | sad/authz | covered | `./smokes/security/lambda-esm-function-arn-smoke.sh` |
 | `iam:AttachRolePolicy` on role without matching boundary denied | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
 | Role-addressed IAM actions use full ARN including path (`role/team/app/*`) | happy + sad/authz | covered | `./smokes/security/iam-role-path-arn-smoke.sh` |
 | `iam:AttachRolePolicy` / `DetachRolePolicy` with matching `iam:PolicyARN` | happy | covered | `./smokes/security/iam-policy-arn-condition-smoke.sh` |
