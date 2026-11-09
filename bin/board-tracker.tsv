@@ -355,3 +355,6 @@
 665	in-review	Scheduler AssumeRole SourceArn/SourceAccount
 666	in-review	IAM: kms:ViaService + ResourceAliases on SM/SSM-mediated KMS
 669	backlog	Debt: ec2:CreateAction on tag-on-create CreateTags (from #664)
+675	backlog	v0.0.6 maturity
+676	backlog	v0.0.6 maturity
+677	backlog	v0.0.6 maturity

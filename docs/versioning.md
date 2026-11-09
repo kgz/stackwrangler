@@ -17,6 +17,8 @@ Current open cut: see [CURRENT_RELEASE](CURRENT_RELEASE).
 | **v0.0.2** | **Public** — install, docs-site, public hygiene (`public-ready`). |
 | **v0.0.3** | **Trust** — core-stack bugs + security/authz (false confidence). Impact ≥ 4. |
 | **v0.0.4** | **Accuracy** — core Debt/docs/smoke/console depth on shipped services. Impact ≥ 3. |
+| **v0.0.5** | **Security / deps** — Dependabot + IAM/condition-key fidelity (shipped). |
+| **v0.0.6** | **Maturity / testing** — parity suites, smoke-matrix sad/authz, free-ci. Impact ≥ 3 (CI/docs ≥ 2). |
 | **v0.1.0** | **Org path** — Transfer→…→RDS learning/staging path. |
 
 Far-future width (`v0.1.1`, `v0.1.2`, `v1.0.0`) is **not** an active planning label — leave work **unlabelled** until that cut is deliberately opened.
@@ -58,6 +60,8 @@ Agents must not create unlabelled-for-pillar or unscored tickets. Unlabelled-for
 | `v0.0.2` | Blocks public OSS (`public-ready` or equivalent). |
 | `v0.0.3` | Core-stack bug/authz with Impact ≥ 4 (Impact 5 always). |
 | `v0.0.4` | Core Debt/docs/accuracy with Impact ≥ 3. |
+| `v0.0.5` | Dependabot / lockfile or IAM fidelity on shipped surfaces (cut closed). |
+| `v0.0.6` | Core-stack smoke/parity/proof gap Impact ≥ 3; CI/docs that unlock proof Impact ≥ 2. |
 | `v0.1.0` | Org-path critical. |
 
 **Do not** default new / Debt tickets to `$(cat docs/CURRENT_RELEASE)`.
