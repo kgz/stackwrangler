@@ -384,15 +384,6 @@ def _schedule_group_source_arn(schedule_arn: str) -> str | None:
     return f"{schedule_arn[:idx]}:schedule-group/{group}"
 
 
-def _service_principal_label(service_principal: object) -> str:
-    text = str(service_principal).strip()
-    if not text:
-        return "unknown.amazonaws.com"
-    if "." not in text:
-        return f"{text}.amazonaws.com"
-    return text
-
-
 def _install_source_arn() -> None:
     """Carry the calling resource ARN on service AssumeRole."""
     from localemu.aws.connect import MetadataRequestInjector
@@ -441,8 +432,18 @@ def _install_source_arn() -> None:
                 and msg.startswith("User:")
             ):
                 from localemu.aws.api import CommonServiceException
+                from localemu.services.iam_enforcement.resource_policies import (
+                    normalize_service_principal,
+                )
 
-                label = _service_principal_label(service_principal)
+                sp = (
+                    service_principal
+                    if isinstance(service_principal, str)
+                    else None
+                )
+                label = normalize_service_principal(sp)
+                if not label:
+                    raise
                 rewritten = re.sub(r"^User:\s+\S+", f"User: {label}", msg, count=1)
                 raise CommonServiceException(
                     code="AccessDenied",
