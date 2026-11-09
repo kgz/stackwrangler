@@ -14,6 +14,7 @@ docker compose up -d --force-recreate localstack
 | SNS MaximumMessageSize | `sns-max-message-size-smoke.sh` (CreateTopic/Set + 300 KiB–1 MiB → SQS raw; large-topic sqs/lambda/firehose) | same (default >256 KiB; http/email/sms/application subscribe + Set with http sub → InvalidParameter) |
 | SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter; CMK with SNS grant) | same (wrong/missing queue `SourceArn`; `alias/aws/sqs` KMS; CMK without SNS grant; unsubscribe) |
 | EventBridge | `events-smoke.sh` | `events-authz-smoke.sh` |
+| EventBridge Scheduler | `scheduler-smoke.sh` (group + `at(...)` → SQS) | — |
 | DynamoDB | `dynamodb-smoke.sh` | `dynamodb-authz-smoke.sh` |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs; Batch/Transact [#306](https://github.com/kgz/awsl/issues/306); index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307)) |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs + Transact/Batch table-scoped); gap [#307](https://github.com/kgz/awsl/issues/307) |

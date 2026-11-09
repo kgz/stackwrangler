@@ -19,6 +19,7 @@ Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/is
 |------|--------|-------|---------|------|
 | SNS → SQS fan-out | shipped | `sns-sqs-fanout-smoke.sh` | — | [sns-to-sqs](./sns-to-sqs) |
 | EventBridge schedule → Lambda | shipped | `events-schedule-smoke.sh` | — | [events-to-lambda](./events-to-lambda) |
+| EventBridge Scheduler → SQS | shipped | `scheduler-smoke.sh` | — | [scheduler-to-sqs](./scheduler-to-sqs) |
 | API GW REST → VPC link → NLB → ECS | partial | `apigw-nlb-ecs-smoke.sh` | — | [apigw-nlb-ecs](./apigw-nlb-ecs) |
 | Lambda → Secrets → OAuth HTTP | shipped | `lambda-secret-oauth-smoke.sh` | — | [lambda-secrets-http](./lambda-secrets-http) |
 | Transfer SFTP → S3 | partial | `transfer-dataplane-smoke.sh`, `transfer-key-smoke.sh` | — | [transfer-sftp-s3](./transfer-sftp-s3) |
