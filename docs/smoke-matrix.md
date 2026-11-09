@@ -18,6 +18,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | IAM `iam:PermissionsBoundary` key (#525) | yes (create-role + attach with matching boundary) | **yes** (create without boundary; attach to role without boundary) | — | no | `iam-permissions-boundary-key-smoke.sh` |
 | IAM role path in resource ARN (#647) | yes (GetRole/PutRolePolicy/… on `role/team/app/*`) | **yes** (`role/other/path/*` deny cites pathed ARN) | — | no | `iam-role-path-arn-smoke.sh` |
 | IAM `iam:PolicyARN` key (#648) | yes (attach/detach allowed managed policy) | **yes** (attach different managed policy denied) | — | no | `iam-policy-arn-condition-smoke.sh` |
+| Lambda ESM Get/Update/Delete mapping ARN (#649) | yes (`event-source-mapping:*`) | **yes** (`function:*` deny cites mapping ARN) | FunctionArn condition → [#650](https://github.com/kgz/stackwrangler/issues/650) | no | `lambda-esm-mapping-arn-smoke.sh` |
 | Service-origin condition keys | yes (S3 SSE-KMS ViaService/SourceArn; EC2 instance-profile PassRole) | **yes** (direct Decrypt; SourceArn mismatch; events PassRole) | — | no | `service-origin-condition-keys-smoke.sh` |
 | Multi-account AssumeRole | yes (A assumes B) | **yes** (C, missing ExternalId, user without sts:AssumeRole, unknown condition) | A's bucket/role hidden from B | — | `multi-account-smoke.sh` |
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |

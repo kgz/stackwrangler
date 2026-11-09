@@ -69,6 +69,13 @@ def _dynamodb_arn(params: dict, region: str, account_id: str) -> str:
 
 
 def _lambda_arn(params: dict, region: str, account_id: str) -> str:
+    # Get/Update/DeleteEventSourceMapping take UUID; IAM resource is the
+    # mapping ARN (event-source-mapping:<uuid>), not function:* (#649).
+    # Create still uses FunctionName → function ARN. Leave lambda:FunctionArn
+    # condition keys to #650.
+    uuid = params.get("UUID")
+    if uuid:
+        return f"arn:aws:lambda:{region}:{account_id}:event-source-mapping:{uuid}"
     func = params.get("FunctionName", "*")
     # If it's already an ARN, return it
     if func.startswith("arn:"):

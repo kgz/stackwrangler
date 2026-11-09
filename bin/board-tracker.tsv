@@ -347,3 +347,4 @@
 628	in-review	Debt: ELBv2 RemoveListenerCertificates / clear-default ACM reload (from #594)
 652	in-review	CFN missing export error message (#652)
 647	in-review	IAM role-addressed actions use full ARN including path
+649	in-review	IAM ESM Get/Update/Delete authorised against event-source-mapping ARN
