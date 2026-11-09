@@ -11,6 +11,7 @@ Service-origin keys (`kms:ViaService`, calling-service `aws:SourceArn` / `aws:So
 | `sns:Protocol`, `sns:Endpoint` | `sns:Subscribe` from `Protocol` / `Endpoint` | `./smokes/messaging/sns-subscribe-conditions-smoke.sh` |
 | `aws:RequestTag/*`, `aws:TagKeys` | tag-on-create params | (enforcer) |
 | `iam:PassedToService` | PassRole field scan | `./smokes/security/oidc-smoke.sh` |
+| `lambda:FunctionArn` | Create from `FunctionName`; Get/Update/Delete from mapping | `./smokes/security/lambda-esm-function-arn-smoke.sh` · [#650](https://github.com/kgz/stackwrangler/issues/650) |
 
 ## Gaps (documented request keys the enforcer does not set yet)
 

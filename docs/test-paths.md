@@ -45,6 +45,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `iam:CreateRole` without PermissionsBoundary denied by conditioned Allow | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
 | `lambda:Get/Update/DeleteEventSourceMapping` on `event-source-mapping:*` | happy | covered | `./smokes/security/lambda-esm-mapping-arn-smoke.sh` · [#649](https://github.com/kgz/stackwrangler/issues/649) |
 | `lambda:Get/Update/DeleteEventSourceMapping` allowed only on `function:*` → AccessDenied cites mapping ARN | sad/authz | covered | `./smokes/security/lambda-esm-mapping-arn-smoke.sh` |
+| `lambda:Update/DeleteEventSourceMapping` with `lambda:FunctionArn` matching mapping function | happy | covered | `./smokes/security/lambda-esm-function-arn-smoke.sh` · [#650](https://github.com/kgz/stackwrangler/issues/650) |
+| `lambda:Update/DeleteEventSourceMapping` with `lambda:FunctionArn` for another function denied | sad/authz | covered | `./smokes/security/lambda-esm-function-arn-smoke.sh` |
 | `iam:AttachRolePolicy` on role without matching boundary denied | sad/authz | covered | `./smokes/security/iam-permissions-boundary-key-smoke.sh` |
 | `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
 | `kms:ViaService` / service-origin `aws:SourceArn` / `aws:SourceAccount` (S3 SSE-KMS); EC2 instance-profile PassRole | happy + sad/authz | covered | `./smokes/security/service-origin-condition-keys-smoke.sh` |

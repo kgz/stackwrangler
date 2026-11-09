@@ -2,7 +2,7 @@
 # Get/Update/DeleteEventSourceMapping authorise against event-source-mapping:<UUID> (#649).
 # Happy: policy on event-source-mapping:* allows get/update/delete.
 # Sad: policy on function:* still denies; AccessDenied cites the mapping ARN (not function:*).
-# Update/Delete may still need a FunctionArn-less policy until #650 — this smoke asserts resource ARN only.
+# Resource ARN only; FunctionArn condition is `lambda-esm-function-arn-smoke.sh` (#650).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
