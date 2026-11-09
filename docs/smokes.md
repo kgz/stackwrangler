@@ -40,6 +40,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `iam-policy-arn-condition-smoke.sh`, `api-call-log-*.sh` |
 | `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `lambda-esm-mapping-arn-smoke.sh`, `api-call-log-*.sh` |
 | `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `lambda-esm-mapping-arn-smoke.sh`, `lambda-esm-function-arn-smoke.sh`, `api-call-log-*.sh` |
+| `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `iam-alarm-sns-sub-arn-smoke.sh`, `api-call-log-*.sh` |
 | `smokes/s3/` | `s3-*` (including `s3-parity.sh`) |
 | `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `iac-smoke.sh` |
 | `smokes/account/` | `mirror-*`, `custom-id-*`, `labels-*` |

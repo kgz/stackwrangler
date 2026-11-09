@@ -51,6 +51,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Role-addressed IAM actions use full ARN including path (`role/team/app/*`) | happy + sad/authz | covered | `./smokes/security/iam-role-path-arn-smoke.sh` |
 | `iam:AttachRolePolicy` / `DetachRolePolicy` with matching `iam:PolicyARN` | happy | covered | `./smokes/security/iam-policy-arn-condition-smoke.sh` |
 | `iam:AttachRolePolicy` of a different managed policy denied by `iam:PolicyARN` | sad/authz | covered | `./smokes/security/iam-policy-arn-condition-smoke.sh` |
+| `cloudwatch:DescribeAlarms` / `DeleteAlarms` on `alarm:<name>` from `AlarmNames` | happy | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · [#651](https://github.com/kgz/stackwrangler/issues/651) |
+| `cloudwatch:DescribeAlarms` with multi `AlarmNames` when one name is out of scope → AccessDenied cites that alarm ARN | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
+| `sns:Unsubscribe` / `GetSubscriptionAttributes` / `SetSubscriptionAttributes` on subscription ARN (`<topicArn>:*`) | happy | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · [#651](https://github.com/kgz/stackwrangler/issues/651) |
+| Alarm / SNS subscription manage actions allowed only on a different alarm or topic → AccessDenied cites concrete ARN (not `:*`) | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
 | `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
 | `kms:ViaService` / service-origin `aws:SourceArn` / `aws:SourceAccount` (S3 SSE-KMS); EC2 instance-profile PassRole | happy + sad/authz | covered | `./smokes/security/service-origin-condition-keys-smoke.sh` |
 | Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./smokes/security/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |

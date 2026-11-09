@@ -26,6 +26,8 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [s3-backends.md](s3-backends.md) · smoke `./smokes/s3/s3-dual-endpoint-smoke.sh` |
 | IAM enforcement | **Partial** | simulate `./smokes/security/iam-simulate-policy-smoke.sh` · resource policies `./smokes/security/resource-policy-smoke.sh` · role path ARN `./smokes/security/iam-role-path-arn-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | IAM enforcement | **Partial** | resource policies `./smokes/security/resource-policy-smoke.sh` · cross-account `./smokes/security/resource-policy-cross-account-smoke.sh` · role path ARN `./smokes/security/iam-role-path-arn-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM enforcement | **Partial** | simulate `./smokes/security/iam-simulate-policy-smoke.sh` · resource policies `./smokes/security/resource-policy-smoke.sh` · alarm/SNS sub ARN `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
+| IAM enforcement | **Partial** | resource policies `./smokes/security/resource-policy-smoke.sh` · cross-account `./smokes/security/resource-policy-cross-account-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | Custom resource IDs + account in ARNs | **Working** | `_custom_id_` tag · [custom-ids.md](custom-ids.md) · `./smokes/account/custom-id-smoke.sh` |
 | Local smokes / Playwright | **Local smokes** | No GHA e2e (by design) |
 
