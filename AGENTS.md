@@ -31,7 +31,7 @@ git checkout -b feature/<issue>-<short-slug>   # or feature/<short-slug>
 ## Versioning (pillars + release label + scores)
 
 - **Milestone** = pillar (`Platform`, `Identity & authz`, …) — see [docs/version-plan.md](docs/version-plan.md).
-- **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.0.5` Security/deps, `v0.1.0` Org path). Only if theme + Impact gate match — otherwise **no version label**.
+- **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.0.5` Security/deps, `v0.0.6` Maturity/testing, `v0.1.0` Org path). Only if theme + Impact gate match — otherwise **no version label**.
 - New tickets: pillar + `./bin/issue-score.sh <n> --impact=N --effort=N`. Do **not** auto-label `CURRENT_RELEASE`. Freeze: every new issue needs pillar + scores; version label only if cut gate matches.
 - Debt: absorb small gaps in-parent ([docs/gap-check.md](docs/gap-check.md)); else evaluate-and-place.
 - Cut a release: `./bin/release-tag.sh vX.Y.Z` — only when asked. See [docs/versioning.md](docs/versioning.md).

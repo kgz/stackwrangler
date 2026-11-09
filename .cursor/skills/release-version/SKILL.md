@@ -61,7 +61,7 @@ After publish, that cut’s board view should be empty (or only waived leftovers
 
 ### 3. Re-evaluate the next cut(s)
 
-1. Confirm the next theme still matches [version-plan.md](docs/version-plan.md) (Public → Trust → Accuracy → Org path).
+1. Confirm the next theme still matches [version-plan.md](docs/version-plan.md) (Public → Trust → Accuracy → Security/deps → Maturity/testing → Org path).
 2. From **No version** / **Unscored**, pull issues that now match that cut’s **theme + Impact gate**; add the next label + scores.
 3. Leave everything else **unlabelled** (milestone only).
 4. Ensure the board view for the new cut exists (filter `label:vX.Y.Z`, sort Impact ↓ Effort ↑). Create label + view together if opening a cut that was parked.
@@ -89,6 +89,8 @@ Debt: absorb small gaps in-parent (`docs/gap-check.md`); else evaluate-and-place
 | `v0.0.2` | Public | `public-ready` / blocks public |
 | `v0.0.3` | Trust | Impact ≥ 4 core bug/authz |
 | `v0.0.4` | Accuracy | Impact ≥ 3 core debt/docs |
+| `v0.0.5` | Security / deps | Dependabot / lockfile; Impact ≥ 3 product (≥ 2 examples) |
+| `v0.0.6` | Maturity / testing | smoke/parity/proof Impact ≥ 3; CI/docs ≥ 2 |
 | `v0.1.0` | Org path | path-critical |
 
 Far-future labels (`v0.1.1`, `v0.1.2`, `v1.0.0`) stay parked until deliberately opened in step 3.

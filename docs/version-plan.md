@@ -95,7 +95,11 @@ Core Debt/docs/smoke-matrix/console depth on already-shipped services. Gate: Imp
 
 Dependabot + lockfile hygiene on shipped surfaces; IAM ARN/condition-key fidelity (role path, PolicyARN, ESM, alarm/SNS, EC2 VPC tags, KMS ViaService/aliases); EventBridge Scheduler SERVICES + schedule-group ARNs + trust SourceArn/SourceAccount; dual-target `./bin/parity`.
 
-### v0.1.0 — Org path *(active — `CURRENT_RELEASE`)*
+### v0.0.6 — Maturity / testing *(active — `CURRENT_RELEASE`)*
+
+Make shipped behaviour **provable**: grow the dual-target `./bin/parity` catalog (free-ci + real cheap), close smoke-matrix sad/authz gaps on the core hosting path, wire free local parity into CI, and clarify ephemeral test vs persistent local modes. Gate: Impact ≥ 3 for core-stack smoke/parity/proof gaps; Impact ≥ 2 OK for CI/docs that unlock that proof. Not catalogue width; not Transfer→RDS org-path E2E (that stays `v0.1.0`).
+
+### v0.1.0 — Org path
 
 Transfer→…→RDS learning/staging path honest end-to-end; path-critical only.
 
@@ -125,6 +129,7 @@ Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche 
 | **v0.0.3** | `label:v0.0.3` | Impact ↓, Effort ↑ |
 | **v0.0.4** | `label:v0.0.4` | Impact ↓, Effort ↑ |
 | **v0.0.5** | `label:v0.0.5` | Impact ↓, Effort ↑ |
+| **v0.0.6** | `label:v0.0.6` | Impact ↓, Effort ↑ |
 | **v0.1.0** | `label:v0.1.0` | Impact ↓, Effort ↑ |
 | **High Impact** | Impact ≥ 4 (or `label:high-focus` until scored) | Impact ↓, Effort ↑ |
 | **Unscored** | Impact empty | Updated ↓ |
