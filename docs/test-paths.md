@@ -438,3 +438,4 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 Wire new paths here **in the same PR** as the smoke. If deferred → Debt ticket + link in the Status column.
 | Real AWS batch10 messaging/data/crypto | happy+sad | covered | `./smokes/parity/aws-parity-batch10.sh` |
+| Dual-target parity suites (catalog) | happy+sad | covered | `./bin/parity list` / `./bin/parity run --tier free --target local` · [parity-suites.md](parity-suites.md) (#662–#666 checks + legacy) |

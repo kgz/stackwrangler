@@ -40,7 +40,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/s3/` | `s3-*` (including `s3-parity.sh`) |
 | `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `iac-smoke.sh` |
 | `smokes/account/` | `mirror-*`, `custom-id-*`, `labels-*` |
-| `smokes/parity/` | `aws-parity-*` |
+| `smokes/parity/` | `aws-parity-*` (legacy); dual-target `checks/*` + `catalog.yaml` via [`bin/parity`](../bin/parity) — [parity-suites.md](parity-suites.md) |
 | `smokes/logs/` | `logs-*` (CloudWatch Logs catalogue) |
 
 `sqs-lambda-dlq-smoke.sh` / `sqs-lambda-esm-enable-smoke.sh` / `sqs-lambda-esm-cred-refresh-smoke.sh` / `stream-lambda-esm-cred-refresh-smoke.sh` / `sqs-lambda-queueurl-smoke.sh` are lambda, not messaging (`dlq`/`batch-failures`/`cred-refresh` need `python3` with `boto3`). WAF is networking (same milestone as VPC / ELB / DNS).

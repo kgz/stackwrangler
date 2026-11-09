@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+# Dual-target parity suite runner (local LocalEmu + real AWS).
+# Usage:
+#   ./bin/parity list [--suite S] [--tier T]
+#   ./bin/parity run  [--suite S] [--tier T] [--id ID ...] --target local|real|both [--approve-cost] [--keep]
+# Docs: docs/parity-suites.md
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CATALOG="$ROOT/smokes/parity/catalog.yaml"
+
+usage() {
+	cat <<'EOF'
+Usage:
+  bin/parity list [--suite S] [--tier free|low|high]
+  bin/parity run  [--suite S] [--tier T] [--id ID ...] --target local|real|both [--approve-cost] [--keep]
+
+Cost tiers: free | low | high
+Real AWS (--target real|both) requires --approve-cost.
+Default automation-friendly:  bin/parity run --tier free --target local
+EOF
+}
+
+if [[ ! -f "$CATALOG" ]]; then
+	echo "error: missing catalog $CATALOG" >&2
+	exit 2
+fi
+
+cmd="${1:-}"
+[[ -n "$cmd" ]] || { usage >&2; exit 2; }
+shift || true
+
+SUITE=""
+TIER=""
+TARGET=""
+APPROVE=0
+KEEP=0
+IDS=()
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	--suite)
+		SUITE="${2:?}"
+		shift 2
+		;;
+	--suite=*)
+		SUITE="${1#*=}"
+		shift
+		;;
+	--tier)
+		TIER="${2:?}"
+		shift 2
+		;;
+	--tier=*)
+		TIER="${1#*=}"
+		shift
+		;;
+	--target)
+		TARGET="${2:?}"
+		shift 2
+		;;
+	--target=*)
+		TARGET="${1#*=}"
+		shift
+		;;
+	--id)
+		IDS+=("${2:?}")
+		shift 2
+		;;
+	--id=*)
+		IDS+=("${1#*=}")
+		shift
+		;;
+	--approve-cost)
+		APPROVE=1
+		shift
+		;;
+	--keep)
+		KEEP=1
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		echo "unknown arg: $1" >&2
+		usage >&2
+		exit 2
+		;;
+	esac
+done
+
+filter_json() {
+	SUITE="$SUITE" TIER="$TIER" IDS_CSV="$(
+		IFS=,
+		echo "${IDS[*]-}"
+	)" python3 -c '
+import json, os, sys, yaml
+data = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+suite = os.environ.get("SUITE") or ""
+tier = os.environ.get("TIER") or ""
+ids = [x for x in (os.environ.get("IDS_CSV") or "").split(",") if x]
+out = []
+for c in data.get("checks") or []:
+    if ids and c.get("id") not in ids:
+        continue
+    if suite and suite not in (c.get("suites") or []):
+        continue
+    if tier and c.get("cost_tier") != tier:
+        continue
+    out.append(c)
+print(json.dumps(out))
+' "$CATALOG"
+}
+
+CHECKS_JSON="$(filter_json)"
+COUNT="$(CHECKS_JSON="$CHECKS_JSON" python3 -c 'import json,os; print(len(json.loads(os.environ["CHECKS_JSON"])))')"
+
+if [[ "$COUNT" -eq 0 ]]; then
+	echo "no checks matched filters (suite=${SUITE:-*} tier=${TIER:-*} ids=${IDS[*]-*})" >&2
+	exit 1
+fi
+
+case "$cmd" in
+list)
+	CHECKS_JSON="$CHECKS_JSON" python3 -c '
+import json, os
+rows = json.loads(os.environ["CHECKS_JSON"])
+print("%-28s %-5s %-28s %s" % ("ID", "TIER", "SUITES", "EST_COST / RESIDUAL"))
+print("-" * 100)
+for c in rows:
+    suites = ",".join(c.get("suites") or [])[:28]
+    est = c.get("est_cost") or ""
+    res = c.get("residual") or "none"
+    print(
+        "%-28s %-5s %-28s %s | residual: %s"
+        % (c["id"][:28], c.get("cost_tier", "?"), suites, est, res)
+    )
+print("\n%d check(s)" % len(rows))
+'
+	;;
+run)
+	[[ -n "$TARGET" ]] || {
+		echo "error: --target local|real|both required" >&2
+		exit 2
+	}
+	case "$TARGET" in
+	local | real | both) ;;
+	*)
+		echo "error: --target must be local|real|both" >&2
+		exit 2
+		;;
+	esac
+
+	if [[ "$TARGET" == "real" || "$TARGET" == "both" ]]; then
+		if [[ "$APPROVE" -ne 1 ]]; then
+			echo "error: real AWS runs require --approve-cost" >&2
+			echo "" >&2
+			echo "Selected checks (cost / residual):" >&2
+			CHECKS_JSON="$CHECKS_JSON" python3 -c '
+import json, os, sys
+for c in json.loads(os.environ["CHECKS_JSON"]):
+    sys.stderr.write(
+        "  - %s [%s] %s | residual: %s\n"
+        % (c["id"], c.get("cost_tier"), c.get("est_cost"), c.get("residual"))
+    )
+'
+			echo "" >&2
+			echo "Re-run with:  bin/parity run ... --target ${TARGET} --approve-cost" >&2
+			exit 2
+		fi
+		echo "======== COST BANNER (approved) ========"
+		CHECKS_JSON="$CHECKS_JSON" python3 -c '
+import json, os
+for c in json.loads(os.environ["CHECKS_JSON"]):
+    print(
+        "  %s: tier=%s  %s  residual=%s"
+        % (c["id"], c.get("cost_tier"), c.get("est_cost"), c.get("residual"))
+    )
+'
+		echo "========================================"
+	fi
+
+	TARGETS=()
+	case "$TARGET" in
+	local) TARGETS=(local) ;;
+	real) TARGETS=(real) ;;
+	both) TARGETS=(local real) ;;
+	esac
+
+	FAIL=0
+	while IFS= read -r line; do
+		[[ -n "$line" ]] || continue
+		id="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["id"])' "$line")"
+		script="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["script"])' "$line")"
+		legacy="$(python3 -c 'import json,sys; print("1" if json.loads(sys.argv[1]).get("legacy") else "0")' "$line")"
+		path="$ROOT/$script"
+		[[ -f "$path" ]] || {
+			echo "FAIL: missing script $path" >&2
+			FAIL=1
+			continue
+		}
+		chmod +x "$path" 2>/dev/null || true
+
+		for t in "${TARGETS[@]}"; do
+			has_t="$(python3 -c 'import json,sys; print("1" if sys.argv[2] in (json.loads(sys.argv[1]).get("targets") or []) else "0")' "$line" "$t")"
+			if [[ "$has_t" != "1" ]]; then
+				echo "---- skip ${id} target=${t} (not in targets) ----"
+				continue
+			fi
+			echo "======== RUN ${id} target=${t} ========"
+			if [[ "$legacy" == "1" ]]; then
+				env_args=()
+				[[ "$KEEP" == "1" ]] && env_args+=(AWSBOX_PARITY_KEEP=1)
+				if [[ "$t" == "local" ]]; then
+					env_args+=(AWSBOX_PARITY_SKIP_REAL=1 AWSBOX_PARITY_SKIP_LOCAL=0)
+				else
+					env_args+=(AWSBOX_PARITY_SKIP_LOCAL=1 AWSBOX_PARITY_SKIP_REAL=0 AWSBOX_ALLOW_REAL_AWS=1)
+				fi
+				if ! env "${env_args[@]}" "$path"; then
+					echo "FAIL: ${id} (${t})" >&2
+					FAIL=1
+				fi
+			else
+				export PARITY_TARGET="$t"
+				if [[ "$KEEP" == "1" ]]; then
+					export AWSBOX_PARITY_KEEP=1
+				else
+					unset AWSBOX_PARITY_KEEP || true
+				fi
+				if ! "$path"; then
+					echo "FAIL: ${id} (${t})" >&2
+					FAIL=1
+				fi
+			fi
+		done
+	done < <(CHECKS_JSON="$CHECKS_JSON" python3 -c 'import json,os; [print(json.dumps(c)) for c in json.loads(os.environ["CHECKS_JSON"])]')
+
+	[[ "$FAIL" -eq 0 ]] || exit 1
+	echo "ALL OK ($COUNT check(s), target=${TARGET})"
+	;;
+*)
+	echo "unknown command: $cmd" >&2
+	usage >&2
+	exit 2
+	;;
+esac

@@ -91,11 +91,11 @@ Core-stack bugs + security/authz that create false confidence. Gate: Impact ≥ 
 
 Core Debt/docs/smoke-matrix/console depth on already-shipped services. Gate: Impact ≥ 3.
 
-### v0.0.5 — Security / deps *(active — `CURRENT_RELEASE`)*
+### v0.0.5 — Security / deps *(shipped 2026-11-09)*
 
-Dependabot + lockfile hygiene: clear open alerts on shipped surfaces (console, docs-site) and triage example locks (refresh or dismiss). Gate: Impact ≥ 3 for product-surface deps; Impact ≥ 2 OK for example-only when clearing this cut. Theme label — not a dump for unrelated Accuracy debt.
+Dependabot + lockfile hygiene on shipped surfaces; IAM ARN/condition-key fidelity (role path, PolicyARN, ESM, alarm/SNS, EC2 VPC tags, KMS ViaService/aliases); EventBridge Scheduler SERVICES + schedule-group ARNs + trust SourceArn/SourceAccount; dual-target `./bin/parity`.
 
-### v0.1.0 — Org path
+### v0.1.0 — Org path *(active — `CURRENT_RELEASE`)*
 
 Transfer→…→RDS learning/staging path honest end-to-end; path-critical only.
 
