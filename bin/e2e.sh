@@ -97,6 +97,7 @@ echo "==> SQS authz (sad: deny SendMessage)"
 echo "==> SNS / EventBridge / DynamoDB / SFN / Secrets / KMS / Kinesis"
 ./smokes/messaging/sns-smoke.sh && ./smokes/messaging/sns-authz-smoke.sh && ./smokes/messaging/sns-subscribe-conditions-smoke.sh && ./smokes/messaging/sns-max-message-size-smoke.sh
 ./smokes/messaging/events-smoke.sh && ./smokes/messaging/events-authz-smoke.sh
+./smokes/messaging/scheduler-smoke.sh
 ./smokes/data/dynamodb-smoke.sh && ./smokes/data/dynamodb-authz-smoke.sh && ./smokes/data/dynamodb-resource-policy-smoke.sh
 ./smokes/messaging/sfn-smoke.sh && ./smokes/messaging/sfn-authz-smoke.sh
 ./smokes/security/secrets-smoke.sh && ./smokes/security/secrets-authz-smoke.sh

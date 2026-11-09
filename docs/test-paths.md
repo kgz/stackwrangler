@@ -290,6 +290,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SNS → SQS queue CMK without `sns.amazonaws.com` `kms:GenerateDataKey` + `kms:Decrypt` → not delivered | sad/authz | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | SNS → SQS queue CMK whose key policy Allows `sns.amazonaws.com` those actions → delivered | happy | covered | `./smokes/messaging/sns-sqs-fanout-smoke.sh` |
 | EventBridge put-events + rule | happy | covered | `./smokes/messaging/events-smoke.sh` |
+| EventBridge Scheduler create-schedule-group + one-off `at(...)` → SQS | happy | covered | `./smokes/messaging/scheduler-smoke.sh` · [#662](https://github.com/kgz/awsl/issues/662) |
 | EventBridge console rules + event buses list | ui | covered | `console/e2e/eventbridge-rules.spec.ts` |
 | EventBridge deny PutEvents | sad/authz | covered | `./smokes/messaging/events-authz-smoke.sh` |
 | EventBridge `rate(1 minute)` rule invokes Lambda target (CFN `Events::Rule`) | happy | covered | `./smokes/messaging/events-schedule-smoke.sh` |
