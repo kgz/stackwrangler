@@ -1,6 +1,6 @@
 # Messaging / data / crypto smokes (LocalEmu)
 
-Requires `SERVICES` including: `sqs,sns,events,dynamodb,stepfunctions,secretsmanager,kms,kinesis` (see `docker-compose.yml`). Recreate LocalEmu after compose changes:
+Requires `SERVICES` including: `sqs,sns,events,scheduler,dynamodb,stepfunctions,secretsmanager,kms,kinesis` (see `docker-compose.yml`). Recreate LocalEmu after compose changes:
 
 ```bash
 docker compose up -d --force-recreate localstack
@@ -15,6 +15,7 @@ docker compose up -d --force-recreate localstack
 | SNS → SQS fan-out | `sns-sqs-fanout-smoke.sh` (envelope, raw, filter; CMK with SNS grant) | same (wrong/missing queue `SourceArn`; `alias/aws/sqs` KMS; CMK without SNS grant; unsubscribe) |
 | EventBridge | `events-smoke.sh` | `events-authz-smoke.sh` |
 | EventBridge Scheduler | `scheduler-smoke.sh` (group + `at(...)` → SQS) | — |
+| EventBridge Scheduler trust SourceArn | `scheduler-trust-sourcearn-smoke.sh` (SourceAccount; schedule-group ArnLike → SQS) | same (wrong account / group → DLQ) |
 | DynamoDB | `dynamodb-smoke.sh` | `dynamodb-authz-smoke.sh` |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs; Batch/Transact [#306](https://github.com/kgz/awsl/issues/306); index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307)) |
 | DynamoDB depth | `dynamodb-depth-smoke.sh` (GSI, conditions, UpdateItem, transactions, TTL) | same (index/table ARNs + Transact/Batch table-scoped); gap [#307](https://github.com/kgz/awsl/issues/307) |

@@ -352,5 +352,6 @@
 650	in-review	IAM ESM Update/Delete set lambda:FunctionArn from mapping
 651	in-review	IAM alarm + SNS subscription actions authorised against concrete ARNs
 664	in-review	IAM ec2:Vpc/ResourceTag/RequestTag for SGs
+665	in-review	Scheduler AssumeRole SourceArn/SourceAccount
 666	in-review	IAM: kms:ViaService + ResourceAliases on SM/SSM-mediated KMS
 669	backlog	Debt: ec2:CreateAction on tag-on-create CreateTags (from #664)
