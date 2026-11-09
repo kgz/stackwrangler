@@ -60,8 +60,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `ec2:AuthorizeSecurityGroupEgress` / `DeleteSecurityGroup` with `ec2:Vpc` + `ec2:ResourceTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` / `DeleteTags` with `ec2:Vpc` + `ec2:ResourceTag` + `aws:ResourceTag` on SG | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` on untagged SG denied by ResourceTag conditions | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
-| `kms:ViaService` / service-origin `aws:SourceArn` | sad/authz | missing | [#223](https://github.com/kgz/awsl/issues/223) |
 | `kms:ViaService` / service-origin `aws:SourceArn` / `aws:SourceAccount` (S3 SSE-KMS); EC2 instance-profile PassRole | happy + sad/authz | covered | `./smokes/security/service-origin-condition-keys-smoke.sh` |
+| `kms:ViaService` + `kms:ResourceAliases` (Secrets Manager / SSM SecureString CMK alias) | happy + sad/authz | covered | `./smokes/security/kms-via-secrets-aliases-smoke.sh` |
 | Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./smokes/security/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |
 | S3 bucket and IAM role in A hidden from B | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
 | `sts:AssumeRole` role in B trusts `arn:aws:iam::<A>:root` + `sts:ExternalId`; user in A assumes | happy | covered | `./smokes/security/multi-account-smoke.sh` |

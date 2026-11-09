@@ -240,19 +240,38 @@ def _install() -> None:
             from localemu.services.ec2.docker.vpc_routing import resolve_source_vpce
 
             service = _service_name(context)
+            account_id = (
+                getattr(caller, "account_id", None)
+                or context.account_id
+                or "000000000000"
+            )
+            region = context.region or "us-east-1"
             # SourceVpce is mostly meaningful for gateway-endpoint services.
             if service in ("dynamodb", "s3"):
                 remote = getattr(getattr(context, "request", None), "remote_addr", None)
                 vpce = resolve_source_vpce(
                     remote,
-                    getattr(caller, "account_id", None) or context.account_id or "000000000000",
-                    context.region or "us-east-1",
+                    account_id,
+                    region,
                     service=service,
                 )
                 if vpce:
                     conditions["aws:SourceVpce"] = vpce
+            # Direct KMS: multi-valued aliases on the target key (#666).
+            if service == "kms":
+                key_ref = getattr(context, "_iam_resource_arn", None)
+                params = context.service_request or {}
+                if not key_ref:
+                    key_ref = params.get("KeyId")
+                if not key_ref:
+                    key_ref = rp.key_id_from_ciphertext(params.get("CiphertextBlob"))
+                aliases = rp.kms_resource_aliases(
+                    str(key_ref) if key_ref else None, account_id, region,
+                )
+                if aliases:
+                    conditions["kms:ResourceAliases"] = aliases
         except Exception:
-            LOG.debug("aws:SourceVpce resolution failed", exc_info=True)
+            LOG.debug("aws:SourceVpce / kms:ResourceAliases resolution failed", exc_info=True)
         return conditions
 
     enforcer._build_conditions = _build_conditions
@@ -370,31 +389,42 @@ def _install() -> None:
             return
         base = enforcer._build_conditions(context, caller)
 
+        def _eval_mediated(kms_action, key_id, source_arn, via_service):
+            key_arn = rp.canonical_kms_arn(key_id, account_id, region)
+            policy = None
+            if key_arn:
+                policy = enforcer._get_resource_policy("kms", key_arn, account_id, region)
+            conditions = dict(base)
+            conditions.update(
+                rp.service_origin_kms_context(
+                    source_arn, account_id, region, via_service=via_service,
+                )
+            )
+            aliases = rp.kms_resource_aliases(key_arn or key_id, account_id, region)
+            if aliases:
+                conditions["kms:ResourceAliases"] = aliases
+            if not key_arn or not policy:
+                decision = Decision.IMPLICIT_DENY
+                resource = key_arn or key_id
+            else:
+                decision = self.evaluator.evaluate(
+                    caller, kms_action, key_arn, conditions, policy,
+                )
+                resource = key_arn
+            if decision == Decision.ALLOW:
+                return False
+            _deny_kms(self, enforce, audit, caller, kms_action, resource)
+            return True
+
         if service_name == "s3":
             s3_checks = rp.implicit_s3_kms_checks(
                 operation, context.service_request, account_id, region,
             )
             for kms_action, key_id, source_arn in s3_checks:
-                key_arn = rp.canonical_kms_arn(key_id, account_id, region)
-                policy = None
-                if key_arn:
-                    policy = enforcer._get_resource_policy("kms", key_arn, account_id, region)
-                conditions = dict(base)
-                conditions.update(
-                    rp.service_origin_kms_context(source_arn, account_id, region)
-                )
-                if not key_arn or not policy:
-                    decision = Decision.IMPLICIT_DENY
-                    resource = key_arn or key_id
-                else:
-                    decision = self.evaluator.evaluate(
-                        caller, kms_action, key_arn, conditions, policy,
-                    )
-                    resource = key_arn
-                if decision == Decision.ALLOW:
-                    continue
-                _deny_kms(self, enforce, audit, caller, kms_action, resource)
-                return
+                if _eval_mediated(
+                    kms_action, key_id, source_arn, rp.s3_via_service(region),
+                ):
+                    return
             return
 
         checks = rp.implicit_kms_checks(
@@ -402,23 +432,10 @@ def _install() -> None:
         )
         if not checks:
             return
-        for kms_action, key_id in checks:
-            key_arn = rp.canonical_kms_arn(key_id, account_id, region)
-            policy = None
-            if key_arn:
-                policy = enforcer._get_resource_policy("kms", key_arn, account_id, region)
-            if not key_arn or not policy:
-                decision = Decision.IMPLICIT_DENY
-                resource = key_arn or key_id
-            else:
-                decision = self.evaluator.evaluate(
-                    caller, kms_action, key_arn, base, policy,
-                )
-                resource = key_arn
-            if decision == Decision.ALLOW:
-                continue
-            _deny_kms(self, enforce, audit, caller, kms_action, resource)
-            return
+        via = rp.kms_via_service(service_name, region)
+        for kms_action, key_id, source_arn in checks:
+            if _eval_mediated(kms_action, key_id, source_arn, via):
+                return
 
     def _queue_allows_sns(queue_arn: str, topic_arn: str) -> bool:
         """True when the queue policy Allows sns.amazonaws.com from topic_arn."""
@@ -536,7 +553,7 @@ def _install() -> None:
     enforcer.IAMEnforcementHandler.__call__ = _call
     LOG.info(
         "awsbox resource policy hooks applied "
-        "(SNS→SQS + DDB SourceVpce + S3 SSE-KMS ViaService)"
+        "(SNS→SQS + DDB SourceVpce + S3/SM/SSM KMS ViaService + ResourceAliases)"
     )
 
 
