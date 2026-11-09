@@ -344,4 +344,4 @@
 615	in-review	Debt: Kinesis put/retention/encryption/tags (from #539)
 594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
 628	in-review	Debt: ELBv2 RemoveListenerCertificates / clear-default ACM reload (from #594)
-666	in-progress	IAM: kms:ViaService + ResourceAliases on SM/SSM-mediated KMS
+666	in-review	IAM: kms:ViaService + ResourceAliases on SM/SSM-mediated KMS
