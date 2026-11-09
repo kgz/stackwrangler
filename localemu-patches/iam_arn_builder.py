@@ -86,6 +86,11 @@ def _sqs_arn(params: dict, region: str, account_id: str) -> str:
 
 
 def _sns_arn(params: dict, region: str, account_id: str) -> str:
+    # Unsubscribe / Get/SetSubscriptionAttributes name SubscriptionArn (#651).
+    # Prefer the subscription ARN so topic ARN:* policies match CFN delete/rollback.
+    sub_arn = params.get("SubscriptionArn")
+    if isinstance(sub_arn, str) and sub_arn:
+        return sub_arn
     topic_arn = params.get("TopicArn", params.get("TargetArn", ""))
     if topic_arn:
         return topic_arn
@@ -218,9 +223,20 @@ def _apigateway_arn(params: dict, region: str, account_id: str) -> str:
 
 
 def _cloudwatch_arn(params: dict, region: str, account_id: str) -> str:
+    # PutMetricAlarm / SetAlarmState use AlarmName; DescribeAlarms / DeleteAlarms
+    # (and Enable/DisableAlarmActions) use AlarmNames. Scoped policies need
+    # alarm:<name>, not account:* (#651). Multiple names are expanded per-ARN
+    # in expand_permission_checks; here we resolve a single name when present.
     alarm_name = params.get("AlarmName")
-    if alarm_name:
+    if isinstance(alarm_name, str) and alarm_name:
         return f"arn:aws:cloudwatch:{region}:{account_id}:alarm:{alarm_name}"
+    names = params.get("AlarmNames")
+    if isinstance(names, str) and names:
+        return f"arn:aws:cloudwatch:{region}:{account_id}:alarm:{names}"
+    if isinstance(names, list):
+        for name in names:
+            if isinstance(name, str) and name:
+                return f"arn:aws:cloudwatch:{region}:{account_id}:alarm:{name}"
     dashboard = params.get("DashboardName")
     if dashboard:
         return f"arn:aws:cloudwatch::{account_id}:dashboard/{dashboard}"
