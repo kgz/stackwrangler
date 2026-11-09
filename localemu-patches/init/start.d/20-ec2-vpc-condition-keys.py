@@ -17,25 +17,6 @@ def _vpc_arn(region: str, account_id: str, vpc_id: str) -> str:
     return f"arn:aws:ec2:{region}:{account_id}:vpc/{vpc_id}"
 
 
-def _normalize_tags(raw) -> dict[str, str]:
-    if raw is None:
-        return {}
-    if isinstance(raw, dict):
-        return {str(k): str(v) for k, v in raw.items() if k}
-    if isinstance(raw, list):
-        out: dict[str, str] = {}
-        for entry in raw:
-            if isinstance(entry, dict):
-                key = entry.get("Key", entry.get("key", ""))
-                value = entry.get("Value", entry.get("value", ""))
-                if key:
-                    out[str(key)] = str(value)
-            elif isinstance(entry, (list, tuple)) and len(entry) >= 2:
-                out[str(entry[0])] = str(entry[1])
-        return out
-    return {}
-
-
 def _sg_ids_from_params(params: dict) -> list[str]:
     ids: list[str] = []
     for key in ("GroupId", "SecurityGroupId"):
@@ -86,14 +67,22 @@ def _lookup_security_group(account_id: str, region: str, group_id: str):
 
 
 def _group_tags(group) -> dict[str, str]:
+    from localemu.services.iam_enforcement.resource_tag_loader import (
+        _normalize_tag_list,
+    )
+
     try:
-        return _normalize_tags(group.get_tags())
+        return _normalize_tag_list(group.get_tags())
     except Exception:
         LOG.debug("ec2 security-group tag read failed", exc_info=True)
         return {}
 
 
 def _apply_tag_specifications(conditions: dict, params: dict) -> None:
+    from localemu.services.iam_enforcement.resource_tag_loader import (
+        _normalize_tag_list,
+    )
+
     specs = params.get("TagSpecifications") or params.get("TagSpecification") or []
     if isinstance(specs, dict):
         specs = [specs]
@@ -106,7 +95,7 @@ def _apply_tag_specifications(conditions: dict, params: dict) -> None:
         if not isinstance(spec, dict):
             continue
         tags = spec.get("Tags") or spec.get("tags") or []
-        for key, value in _normalize_tags(tags).items():
+        for key, value in _normalize_tag_list(tags).items():
             conditions[f"aws:RequestTag/{key}"] = value
             if key not in tag_keys:
                 tag_keys.append(key)

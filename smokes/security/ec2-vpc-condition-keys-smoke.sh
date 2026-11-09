@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ec2:Vpc / ec2:ResourceTag / TagSpecifications aws:RequestTag (#664).
 # Happy: deploy role CreateSecurityGroup in allowed VPC with RequestTag,
-#        then AuthorizeEgress + Delete with Vpc + ResourceTag.
-# Sad: same role denied CreateSecurityGroup in another VPC; denied without RequestTag.
+#        CreateTags/DeleteTags + AuthorizeEgress + Delete with Vpc +
+#        ec2:ResourceTag / aws:ResourceTag on the SG.
+# Sad: other VPC; create without RequestTag; CreateTags on untagged SG.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck disable=SC1091
@@ -29,6 +30,7 @@ aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }
 VPC_OK=""
 VPC_BAD=""
 SG_ID=""
+SG_BARE=""
 
 cleanup() {
 	rm -rf "$WORK"
@@ -37,6 +39,7 @@ cleanup() {
 	export AWS_ACCESS_KEY_ID="$ADMIN_KEY"
 	export AWS_SECRET_ACCESS_KEY="$ADMIN_SECRET"
 	[[ -n "$SG_ID" ]] && aws ec2 delete-security-group --group-id "$SG_ID" >/dev/null 2>&1 || true
+	[[ -n "$SG_BARE" ]] && aws ec2 delete-security-group --group-id "$SG_BARE" >/dev/null 2>&1 || true
 	if [[ -n "$DEPLOY_ROLE" ]]; then
 		aws iam delete-role-policy --role-name "$DEPLOY_ROLE" --policy-name allow >/dev/null 2>&1 || true
 		aws iam delete-role --role-name "$DEPLOY_ROLE" >/dev/null 2>&1 || true
@@ -60,6 +63,14 @@ VPC_OK="$(aws ec2 create-vpc --cidr-block 10.66.0.0/16 --query Vpc.VpcId --outpu
 VPC_BAD="$(aws ec2 create-vpc --cidr-block 10.67.0.0/16 --query Vpc.VpcId --output text)"
 VPC_OK_ARN="arn:aws:ec2:${REGION}:${ACCT}:vpc/${VPC_OK}"
 
+# Untagged SG in the allowed VPC — CreateTags as deploy role must deny
+# (ResourceTag / aws:ResourceTag absent).
+SG_BARE="$(aws ec2 create-security-group \
+	--group-name "awsbox-ec2vpc-bare-${TS}" \
+	--description "no stack tag" \
+	--vpc-id "$VPC_OK" \
+	--query GroupId --output text)"
+
 cat >"$WORK/deploy-trust.json" <<'EOF'
 {
   "Version": "2012-10-17",
@@ -76,6 +87,8 @@ aws iam create-role \
 
 # Mirrors CFN deploy-role SG scoping (stack-name tag stands in for
 # aws:cloudformation:stack-name — same condition-key wiring).
+# CreateTags/DeleteTags require both ec2:ResourceTag and aws:ResourceTag so
+# the Resources→SG ARN + resource_tag_loader path is exercised.
 cat >"$WORK/deploy-inline.json" <<EOF
 {
   "Version": "2012-10-17",
@@ -98,7 +111,21 @@ cat >"$WORK/deploy-inline.json" <<EOF
       "Action": [
         "ec2:AuthorizeSecurityGroupEgress",
         "ec2:RevokeSecurityGroupEgress",
-        "ec2:DeleteSecurityGroup",
+        "ec2:DeleteSecurityGroup"
+      ],
+      "Resource": "arn:aws:ec2:${REGION}:${ACCT}:security-group/*",
+      "Condition": {
+        "ArnEquals": {
+          "ec2:Vpc": "${VPC_OK_ARN}"
+        },
+        "StringEquals": {
+          "ec2:ResourceTag/stack-name": "${STACK_NAME}"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
         "ec2:CreateTags",
         "ec2:DeleteTags"
       ],
@@ -108,7 +135,8 @@ cat >"$WORK/deploy-inline.json" <<EOF
           "ec2:Vpc": "${VPC_OK_ARN}"
         },
         "StringEquals": {
-          "ec2:ResourceTag/stack-name": "${STACK_NAME}"
+          "ec2:ResourceTag/stack-name": "${STACK_NAME}",
+          "aws:ResourceTag/stack-name": "${STACK_NAME}"
         }
       }
     },
@@ -167,6 +195,28 @@ SG_ID="$(aws ec2 create-security-group \
 	--tag-specifications "ResourceType=security-group,Tags=[{Key=stack-name,Value=${STACK_NAME}}]" \
 	--query GroupId --output text)"
 echo "OK: create-security-group in allowed VPC with RequestTag"
+
+# Deny: CreateTags on untagged SG (ResourceTag / aws:ResourceTag absent).
+set +e
+aws ec2 create-tags \
+	--resources "$SG_BARE" \
+	--tags "Key=env,Value=prod" \
+	>"$WORK/tags-bare.out" 2>&1
+echo $? >"$WORK/tags-bare.out.rc"
+set -e
+expect_deny "create-tags on untagged SG denied" "$WORK/tags-bare.out"
+
+# Allow: CreateTags on stack-tagged SG (Resources→SG ARN + both ResourceTag keys).
+aws ec2 create-tags \
+	--resources "$SG_ID" \
+	--tags "Key=env,Value=prod" >/dev/null
+echo "OK: create-tags with ec2:Vpc + ec2:ResourceTag + aws:ResourceTag"
+
+# Allow: DeleteTags on the same tagged SG.
+aws ec2 delete-tags \
+	--resources "$SG_ID" \
+	--tags "Key=env,Value=prod" >/dev/null
+echo "OK: delete-tags with ec2:Vpc + ec2:ResourceTag + aws:ResourceTag"
 
 # Allow: authorize egress on tagged SG in VPC.
 aws ec2 authorize-security-group-egress \
