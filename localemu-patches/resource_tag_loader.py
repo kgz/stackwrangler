@@ -188,6 +188,40 @@ def _sns_topic_tags(arn: str, account_id: str, region: str) -> dict[str, str]:
     return _normalize_tag_list(getattr(topic, "_tags", getattr(topic, "tags", [])))
 
 
+def _ec2_resource_tags(arn: str, account_id: str, region: str) -> dict[str, str]:
+    """Tags for EC2 security groups (``security-group/<id>``).
+
+    Other EC2 resource types fall through to {} until needed — SG ResourceTag
+    is the deploy-role ABAC path for #664.
+    """
+    path = arn.split(":", 5)[-1] if ":" in arn else ""
+    if not path.startswith("security-group/"):
+        return {}
+    group_id = path.split("/", 1)[1]
+    if not group_id:
+        return {}
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("ec2")[account_id][region]
+    except Exception:
+        return {}
+    group = None
+    try:
+        if hasattr(backend, "get_security_group_from_id"):
+            group = backend.get_security_group_from_id(group_id)
+        elif hasattr(backend, "get_security_group_by_name_or_id"):
+            group = backend.get_security_group_by_name_or_id(group_id)
+    except Exception:
+        return {}
+    if group is None:
+        return {}
+    try:
+        return _normalize_tag_list(group.get_tags())
+    except Exception:
+        return {}
+
+
 def _normalize_tag_list(raw) -> dict[str, str]:
     """Accept moto's various tag shapes: dict, list-of-{Key,Value} dicts,
     list-of-(Key, Value) tuples."""
@@ -199,7 +233,11 @@ def _normalize_tag_list(raw) -> dict[str, str]:
         out: dict[str, str] = {}
         for entry in raw:
             if isinstance(entry, dict):
-                out[entry.get("Key", "")] = entry.get("Value", "")
+                # moto EC2 describe_tags uses lowercase key/value.
+                key = entry.get("Key", entry.get("key", ""))
+                value = entry.get("Value", entry.get("value", ""))
+                if key:
+                    out[str(key)] = str(value)
             elif isinstance(entry, (list, tuple)) and len(entry) >= 2:
                 out[str(entry[0])] = str(entry[1])
         return out
@@ -215,6 +253,7 @@ _LOADERS = {
     "kms":      _kms_key_tags,             # (arn, account_id, region)
     "sqs":      _sqs_queue_tags,           # (arn, account_id, region)
     "sns":      _sns_topic_tags,           # (arn, account_id, region)
+    "ec2":      _ec2_resource_tags,        # (arn, account_id, region)
 }
 
 

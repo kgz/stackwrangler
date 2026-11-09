@@ -337,6 +337,7 @@
 609	backlog	Debt: CloudWatch Logs Tail poll distinct from Search (from #352)
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
 518	in-review	sns:Protocol/Endpoint on Subscribe
+664	in-progress	ec2:Vpc / ResourceTag / TagSpecifications RequestTag for SG calls
 622	in-review	Debt: SNS delete topic + Create subscription (from #546)
 612	backlog	Debt: API Gateway REST authorizer + Actions controls (from #543)
 613	backlog	Doc: API Gateway REST create/deploy console screenshot (from #543)
@@ -344,3 +345,4 @@
 615	in-review	Debt: Kinesis put/retention/encryption/tags (from #539)
 594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
 628	in-review	Debt: ELBv2 RemoveListenerCertificates / clear-default ACM reload (from #594)
+669	backlog	Debt: ec2:CreateAction on tag-on-create CreateTags (from #664)
