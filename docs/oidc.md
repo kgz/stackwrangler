@@ -17,6 +17,8 @@ Trust-policy condition keys are `<provider-host-and-path>:sub` and `:aud`, for e
 
 `iam:PermissionsBoundary` is set on `CreateRole` (from the request's `--permissions-boundary`) and on `PutRolePolicy` / `AttachRolePolicy` / `DetachRolePolicy` / `DeleteRolePolicy` (from the target role's current boundary ARN). A deploy-role Allow conditioned on that key matches locally the same way it does on AWS ([#525](https://github.com/kgz/stackwrangler/issues/525)). Smoke: `./smokes/security/iam-permissions-boundary-key-smoke.sh`.
 
+`iam:PolicyARN` is set from the request `PolicyArn` on `Attach`/`Detach` Role/User/Group Policy, so an Allow limited to one managed policy (e.g. `AWSLambdaVPCAccessExecutionRole`) matches locally ([#648](https://github.com/kgz/stackwrangler/issues/648)). Smoke: `./smokes/security/iam-policy-arn-condition-smoke.sh`.
+
 Request-parameter condition keys that are still missing include SNS `sns:Protocol` / `sns:Endpoint` on Subscribe ([#518](https://github.com/kgz/stackwrangler/issues/518)).
 
 `aws:ResourceTag/*` is evaluated for tagged IAM roles (and the services the enforcer already loads). `kms:ViaService`, `aws:SourceArn`, and service-origin `aws:SourceAccount` are not set by the calling service yet — an Allow that requires them fails closed. Follow-up: [#223](https://github.com/kgz/awsl/issues/223).

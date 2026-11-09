@@ -336,6 +336,7 @@
 608	backlog	Doc: CloudWatch Logs create/detail console screenshot (from #352)
 609	backlog	Debt: CloudWatch Logs Tail poll distinct from Search (from #352)
 525	in-review	iam:PermissionsBoundary condition key on CreateRole / role-policy ops
+648	in-review	iam:PolicyARN condition key on Attach/Detach*Policy
 518	in-review	sns:Protocol/Endpoint on Subscribe
 622	in-review	Debt: SNS delete topic + Create subscription (from #546)
 612	backlog	Debt: API Gateway REST authorizer + Actions controls (from #543)
