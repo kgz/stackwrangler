@@ -345,4 +345,4 @@
 594	in-review	Debt: ELBv2 ModifyListener/AddListenerCertificates ACM reload (from #242)
 628	in-review	Debt: ELBv2 RemoveListenerCertificates / clear-default ACM reload (from #594)
 649	in-review	IAM ESM Get/Update/Delete authorised against event-source-mapping ARN
-650	in-progress	IAM ESM Update/Delete set lambda:FunctionArn from mapping
+650	in-review	IAM ESM Update/Delete set lambda:FunctionArn from mapping
