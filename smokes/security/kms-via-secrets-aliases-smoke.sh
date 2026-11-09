@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Secrets Manager → KMS ViaService + ResourceAliases (#666).
-# Happy: GetSecretValue allowed when kms:ViaService=secretsmanager.<region>
-#        and ForAnyValue kms:ResourceAliases matches the CMK alias.
+# Secrets Manager / SSM → KMS ViaService + ResourceAliases (#666).
+# Happy: GetSecretValue / GetParameter allowed when kms:ViaService matches the
+#        calling service and ForAnyValue kms:ResourceAliases matches the CMK alias.
 # Sad: wrong alias denied; direct kms:Decrypt denied (no ViaService).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -23,6 +23,7 @@ mkdir -p "$WORKDIR"
 ALIAS="alias/local-app-signing-${TS}"
 WRONG_ALIAS="alias/other-signing-${TS}"
 SECRET_NAME="awsbox/kms-via-${TS}"
+PARAM_NAME="/local/kms-via-${TS}"
 USER="awsbox-kms-via-sec-${TS}"
 POLICY_NAME="AwsboxKmsViaSec-${TS}"
 WRONG_POLICY_NAME="AwsboxKmsViaSecWrong-${TS}"
@@ -37,6 +38,7 @@ cleanup() {
 	rm -rf "$WORKDIR"
 	[[ "$KEEP" == "1" ]] && return 0
 	[[ -n "$SECRET_ARN" ]] && aws secretsmanager delete-secret --secret-id "$SECRET_ARN" --force-delete-without-recovery >/dev/null 2>&1 || true
+	aws ssm delete-parameter --name "$PARAM_NAME" >/dev/null 2>&1 || true
 	[[ -n "$USER_KEY" ]] && aws iam delete-access-key --user-name "$USER" --access-key-id "$USER_KEY" >/dev/null 2>&1 || true
 	[[ -n "$POLICY_ARN" ]] && aws iam detach-user-policy --user-name "$USER" --policy-arn "$POLICY_ARN" >/dev/null 2>&1 || true
 	[[ -n "$POLICY_ARN" ]] && aws iam delete-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1 || true
@@ -62,7 +64,8 @@ expect_deny() {
 	echo "OK: ${label}"
 }
 
-VIA="secretsmanager.${REGION}.amazonaws.com"
+VIA_SM="secretsmanager.${REGION}.amazonaws.com"
+VIA_SSM="ssm.${REGION}.amazonaws.com"
 
 KEY_ID="$(aws kms create-key --description "awsbox-kms-via-sec-${TS}" --query 'KeyMetadata.KeyId' --output text)"
 KEY_ARN="$(aws kms describe-key --key-id "$KEY_ID" --query 'KeyMetadata.Arn' --output text)"
@@ -74,19 +77,29 @@ SECRET_ARN="$(aws secretsmanager create-secret \
 	--kms-key-id "$ALIAS" \
 	--query 'ARN' --output text)"
 
-# Deny resource must be the UUID key ARN (not key/alias/...).
+aws ssm put-parameter \
+	--name "$PARAM_NAME" \
+	--type SecureString \
+	--value 'kms-via-param' \
+	--key-id "$ALIAS" \
+	--overwrite >/dev/null
+
 DESCRIBE_KMS="$(aws secretsmanager describe-secret --secret-id "$SECRET_ARN" --query 'KmsKeyId' --output text || true)"
 echo "secret KmsKeyId stored as: ${DESCRIBE_KMS}"
 
-python3 - "$WORKDIR/user-policy.json" "$VIA" "$ALIAS" <<'PY'
+python3 - "$WORKDIR/user-policy.json" "$VIA_SM" "$VIA_SSM" "$ALIAS" <<'PY'
 import json, sys
-path, via, alias = sys.argv[1:]
+path, via_sm, via_ssm, alias = sys.argv[1:]
 json.dump({
     "Version": "2012-10-17",
     "Statement": [
         {
             "Effect": "Allow",
-            "Action": ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+            "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+                "ssm:GetParameter",
+            ],
             "Resource": "*",
         },
         {
@@ -94,7 +107,7 @@ json.dump({
             "Action": "kms:Decrypt",
             "Resource": "*",
             "Condition": {
-                "StringEquals": {"kms:ViaService": via},
+                "StringEquals": {"kms:ViaService": [via_sm, via_ssm]},
                 "ForAnyValue:StringEquals": {"kms:ResourceAliases": alias},
             },
         },
@@ -110,7 +123,11 @@ USER_SECRET="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessKe
 
 GOT="$(as_user secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query 'SecretString' --output text)"
 [[ "$GOT" == "kms-via-secret" ]]
-echo "OK: GetSecretValue allowed with kms:ViaService=${VIA} and kms:ResourceAliases=${ALIAS}"
+echo "OK: GetSecretValue allowed with kms:ViaService=${VIA_SM} and kms:ResourceAliases=${ALIAS}"
+
+GOT_PARAM="$(as_user ssm get-parameter --name "$PARAM_NAME" --with-decryption --query 'Parameter.Value' --output text)"
+[[ "$GOT_PARAM" == "kms-via-param" ]]
+echo "OK: GetParameter allowed with kms:ViaService=${VIA_SSM} and kms:ResourceAliases=${ALIAS}"
 
 # Deny message must name key/<uuid>, not key/alias/...
 set +e
@@ -136,15 +153,19 @@ echo "OK: direct kms:Decrypt denied without ViaService (resource is key ARN)"
 
 # Wrong alias: swap identity policy to a different ResourceAliases value.
 aws iam detach-user-policy --user-name "$USER" --policy-arn "$POLICY_ARN" >/dev/null
-python3 - "$WORKDIR/wrong-policy.json" "$VIA" "$WRONG_ALIAS" <<'PY'
+python3 - "$WORKDIR/wrong-policy.json" "$VIA_SM" "$VIA_SSM" "$WRONG_ALIAS" <<'PY'
 import json, sys
-path, via, alias = sys.argv[1:]
+path, via_sm, via_ssm, alias = sys.argv[1:]
 json.dump({
     "Version": "2012-10-17",
     "Statement": [
         {
             "Effect": "Allow",
-            "Action": ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+            "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+                "ssm:GetParameter",
+            ],
             "Resource": "*",
         },
         {
@@ -152,7 +173,7 @@ json.dump({
             "Action": "kms:Decrypt",
             "Resource": "*",
             "Condition": {
-                "StringEquals": {"kms:ViaService": via},
+                "StringEquals": {"kms:ViaService": [via_sm, via_ssm]},
                 "ForAnyValue:StringEquals": {"kms:ResourceAliases": alias},
             },
         },
@@ -163,5 +184,7 @@ WRONG_POLICY_ARN="$(aws iam create-policy --policy-name "$WRONG_POLICY_NAME" --p
 aws iam attach-user-policy --user-name "$USER" --policy-arn "$WRONG_POLICY_ARN" >/dev/null
 expect_deny "GetSecretValue denied when kms:ResourceAliases mismatches" \
 	as_user secretsmanager get-secret-value --secret-id "$SECRET_ARN"
+expect_deny "GetParameter denied when kms:ResourceAliases mismatches" \
+	as_user ssm get-parameter --name "$PARAM_NAME" --with-decryption
 
-echo "OK: kms ViaService + ResourceAliases secrets smoke"
+echo "OK: kms ViaService + ResourceAliases secrets/SSM smoke"

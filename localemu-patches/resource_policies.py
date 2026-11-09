@@ -534,9 +534,11 @@ def secret_customer_kms_key(ident: str, account_id: str, region: str) -> str | N
         return canon
     if key_ref.startswith("arn:"):
         return key_ref
-    # Unresolved alias — do not invent ``key/alias/...``.
+    # Unresolved alias: return the alias ref so mediated checks still run and
+    # fail closed (canonical_kms_arn → implicit deny). Do not invent
+    # ``key/alias/...``, and do not return None (that drops the check).
     if key_ref.startswith("alias/") or ":alias/" in key_ref:
-        return None
+        return key_ref
     return f"arn:aws:kms:{key_region}:{key_account}:key/{key_ref}"
 
 
