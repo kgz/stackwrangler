@@ -58,6 +58,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./smokes/lambda/lambda-authz-smoke.sh` |
 | Lambda role trust `aws:SourceAccount` = function account → CreateFunction ok; other account → refused; plain trust ok | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-condition-smoke.sh` |
 | Lambda role trust `aws:SourceArn` = function ARN → CreateFunction ok; other ARN → refused | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-sourcearn-smoke.sh` |
+| Scheduler target RoleArn trust `aws:SourceAccount` / `aws:SourceArn` (schedule-group); mismatch → DLQ | happy + sad/authz | covered | `./smokes/messaging/scheduler-trust-sourcearn-smoke.sh` |
 | REST API import from OpenAPI + `aws_proxy` public route | happy | covered | `./smokes/apigw/apigw-rest-smoke.sh` · [apigw-rest.md](apigw-rest.md) |
 | REST REQUEST authorizer Allow → handler gets context | happy | covered | `./smokes/apigw/apigw-rest-smoke.sh` |
 | REST authorizer, no token → 401 | sad/authz | covered | `./smokes/apigw/apigw-rest-smoke.sh` |

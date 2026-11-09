@@ -49,11 +49,11 @@ Trust statements honour:
 | `StringEquals` `sts:ExternalId` | Must equal `ExternalId` on the call. A list means any value. |
 | `Bool` `aws:MultiFactorAuthPresent` = `true` | Call must include `SerialNumber`. |
 | `StringEquals` `aws:SourceAccount` | Set when a service assumes the role: from the calling resource ARN's account when present, otherwise (Lambda only) the role's account. A user call never satisfies it. |
-| `ArnLike` / `ArnEquals` `aws:SourceArn` | Set from the calling resource (function / rule / topic ARN) when a service assumes the role. A list means any value. A user call never satisfies it. |
+| `ArnLike` / `ArnEquals` `aws:SourceArn` | Set from the calling resource (function / rule / topic / schedule-group ARN) when a service assumes the role. Scheduler uses the schedule-group ARN. A list means any value. A user call never satisfies it. |
 | Anything else (`aws:PrincipalOrgID`, …) | That statement does not apply. |
 
 `Action` must be `sts:AssumeRole`, `sts:*`, or `*`. An explicit `Deny` that matches wins. Service principals (`lambda.amazonaws.com` and the rest) are unchanged.
 
 Organizations (OU, SCP) are not evaluated. Cross-account secret / key / bucket access needs Allow on both the caller identity policy and the resource policy (`./smokes/security/resource-policy-cross-account-smoke.sh`).
 
-Smoke: `./smokes/security/multi-account-smoke.sh`. Lambda trust `aws:SourceAccount` / `aws:SourceArn`: `./smokes/lambda/lambda-trust-condition-smoke.sh`, `./smokes/lambda/lambda-trust-sourcearn-smoke.sh`.
+Smoke: `./smokes/security/multi-account-smoke.sh`. Lambda trust `aws:SourceAccount` / `aws:SourceArn`: `./smokes/lambda/lambda-trust-condition-smoke.sh`, `./smokes/lambda/lambda-trust-sourcearn-smoke.sh`. Scheduler target trust: `./smokes/messaging/scheduler-trust-sourcearn-smoke.sh`.

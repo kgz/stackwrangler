@@ -27,6 +27,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Lambda → Secrets Manager → OAuth token → external API | yes (+ per-stage secret isolation, env-var base URL) | **yes** (role without `GetSecretValue`: mock sees no requests) | wrong client secret → 401, no document posted | — | `lambda-secret-oauth-smoke.sh` |
 | Lambda trust `aws:SourceAccount` | yes (same account; plain trust) | **yes** (other account refused) | — | — | `lambda-trust-condition-smoke.sh` |
 | Lambda trust `aws:SourceArn` | yes (function ARN) | **yes** (other function ARN refused) | — | — | `lambda-trust-sourcearn-smoke.sh` |
+| Scheduler trust SourceAccount / SourceArn | yes (account; schedule-group ArnLike) | **yes** (wrong account / group → DLQ) | — | — | `scheduler-trust-sourcearn-smoke.sh` |
 | Lambda invoke/deploy | yes | **yes** (`lambda-authz-smoke.sh`) | state wait | thin | `lambda-smoke.sh`, `lambda-deploy-smoke.sh`, `lambda-authz-smoke.sh` |
 | Lambda reserved concurrency | yes (ESM in-flight ≤ reserved / ≤ MaximumConcurrency; throttled msgs stay on queue) | — | **yes** (reserved=1 → 429 on 2nd sync invoke; reserved=0 → every invoke 429; reserved=5+MC=2 → ≤2; reserved=1+MC=5 → ≤1) | — | `lambda-reserved-concurrency-smoke.sh` (needs `boto3`) |
 | Logs | yes | **yes** (`logs-authz-smoke.sh`) | — | thin | `logs-smoke.sh`, `logs-authz-smoke.sh` |

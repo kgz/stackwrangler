@@ -42,6 +42,8 @@ echo "==> Lambda trust aws:SourceAccount"
 
 echo "==> Lambda trust aws:SourceArn"
 ./smokes/lambda/lambda-trust-sourcearn-smoke.sh
+echo "==> Scheduler trust SourceAccount / SourceArn"
+./smokes/messaging/scheduler-trust-sourcearn-smoke.sh
 
 echo "==> Lambda VPC → host services (sad: unmapped name)"
 ./smokes/lambda/lambda-vpc-smoke.sh
