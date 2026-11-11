@@ -281,4 +281,58 @@ if ! echo "$DENY_REASON" | grep -qiE 'BatchGetImage|AccessDenied|not authorized|
 	exit 1
 fi
 echo "OK: execution role without ecr:BatchGetImage → STOPPED (${DENY_REASON:0:100})"
-echo "OK: ecr smoke (push/pull / ecs pull / deny BatchGetImage)"
+
+# #684: LocalEmu restart clears moto ECR; registry volume keeps blobs. Catalog
+# resync must re-record tags without a new push (docker push would be a no-op).
+echo "== #684 restart catalog resync =="
+COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
+"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null
+for _ in $(seq 1 90); do
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$EP/" || true)"
+	[[ "$code" =~ ^[12345][0-9][0-9]$ ]] && break
+	sleep 2
+done
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$EP/" || true)"
+if [[ ! "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+	echo "FAIL: LocalEmu not ready after recreate (${code})" >&2
+	exit 1
+fi
+
+RESYNC_TAGS=""
+for _ in $(seq 1 60); do
+	RESYNC_TAGS="$(
+		aws ecr describe-images --repository-name "$REPO" \
+			--query 'imageDetails[].imageTags[]' --output text 2>/dev/null || true
+	)"
+	echo "$RESYNC_TAGS" | grep -qw latest && break
+	sleep 2
+done
+if ! echo "$RESYNC_TAGS" | grep -qw latest; then
+	echo "FAIL: after LocalEmu recreate, describe-images missing latest (${RESYNC_TAGS:-empty})" >&2
+	exit 1
+fi
+if ! echo "$RESYNC_TAGS" | grep -qw "$INDEX_TAG"; then
+	echo "FAIL: after LocalEmu recreate, missing OCI index tag ${INDEX_TAG} (${RESYNC_TAGS})" >&2
+	exit 1
+fi
+echo "OK: catalog resync restored tags after LocalEmu recreate (${RESYNC_TAGS})"
+
+# delete-repository + create-repository should adopt registry tags (#684).
+aws ecr delete-repository --repository-name "$REPO" --force >/dev/null
+aws ecr create-repository --repository-name "$REPO" >/dev/null
+ADOPT_TAGS=""
+for _ in $(seq 1 30); do
+	ADOPT_TAGS="$(
+		aws ecr describe-images --repository-name "$REPO" \
+			--query 'imageDetails[].imageTags[]' --output text 2>/dev/null || true
+	)"
+	echo "$ADOPT_TAGS" | grep -qw latest && break
+	sleep 1
+done
+if ! echo "$ADOPT_TAGS" | grep -qw latest; then
+	echo "FAIL: create-repository did not adopt registry tag latest (${ADOPT_TAGS:-empty})" >&2
+	exit 1
+fi
+echo "OK: create-repository adopted registry tags (${ADOPT_TAGS})"
+
+echo "OK: ecr smoke (push/pull / ecs pull / deny BatchGetImage / restart resync)"
