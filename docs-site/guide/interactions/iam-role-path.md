@@ -2,7 +2,7 @@
 
 Role-addressed IAM APIs (`GetRole`, `PutRolePolicy`, `TagRole`, `CreateRole`, …) authorise against the role’s **full** ARN, including its IAM path — e.g. `arn:aws:iam::acct:role/team/app/target-role`. For `CreateRole`, the path comes from the request `Path` before the role exists. Policies scoped to `role/team/app/*` match; `role/other/path/*` does not.
 
-CloudFormation’s `AWS::IAM::Role` handler calls `iam:GetRole` **before** `CreateRole`. A role that does not exist yet is authorised as pathless `role/<name>`, so path-scoped `CreateRole` grants alone get AccessDenied on GetRole until a second grant covers `role/<name-prefix>-*` for GetRole / DeleteRolePolicy / ….
+CloudFormation’s `AWS::IAM::Role` handler calls `iam:GetRole` **before** `CreateRole`. A role that does not exist yet is authorised as pathless `role/<name>`, so path-scoped `CreateRole` grants alone get AccessDenied on GetRole until a second grant covers `role/<name-prefix>-*` for GetRole / DeleteRolePolicy / …. On a new stack that failure’s rollback still probes those pathless cleanup APIs and ends `DELETE_FAILED`.
 
 **Status:** shipped
 

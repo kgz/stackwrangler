@@ -2,7 +2,7 @@
 # CFN AWS::IAM::Role as a path-scoped deploy role (#679).
 #
 # Sad: CreateRole/PutRolePolicy only on role/<path>/* → iam:GetRole AccessDenied
-#      on pathless role/<name> in stack events; cleanup may DELETE_FAILED.
+#      on pathless role/<name> in stack events; new-stack rollback → DELETE_FAILED.
 # Happy: add pathless grant for GetRole/DeleteRolePolicy/… → CREATE_COMPLETE.
 set -euo pipefail
 
@@ -202,14 +202,11 @@ aws_as cloudformation create-stack \
 
 ST="$(wait_stack_terminal "$STACK_DENY" 60)"
 echo "    status=${ST}"
-case "$ST" in
-	CREATE_FAILED|*ROLLBACK*|*DELETE_FAILED*) ;;
-	*)
-		echo "FAIL: expected CREATE_FAILED/ROLLBACK/DELETE_FAILED, got ${ST}" >&2
-		events_blob "$STACK_DENY" >&2
-		exit 1
-		;;
-esac
+[[ "$ST" == "DELETE_FAILED" ]] || {
+	echo "FAIL: expected DELETE_FAILED on new-stack path-scoped create, got ${ST}" >&2
+	events_blob "$STACK_DENY" >&2
+	exit 1
+}
 
 BLOB="$(events_blob "$STACK_DENY")"
 echo "$BLOB" | grep -qiE 'iam:GetRole' || {
@@ -238,27 +235,16 @@ if echo "$BLOB" | grep -q "$PATHED"; then
 		exit 1
 	fi
 fi
-echo "OK: path-scoped-only → iam:GetRole AccessDenied on pathless ARN"
-
-# New-stack rollback with nothing created → ROLLBACK_COMPLETE (AWS-shaped).
-# DELETE_FAILED shows up when CFN still invokes pathless DeleteRolePolicy/GetRole
-# during cleanup; LocalEmu skips never-created resources, so admin-delete the
-# failed stack and move on once GetRole deny is proven.
-case "$ST" in
-	*DELETE_FAILED*)
-		echo "OK: stack already DELETE_FAILED after failed create"
-		;;
-	*)
-		echo "OK: failed create ended ${ST} (GetRole deny proven; never-created skip)"
-		;;
-esac
+echo "OK: path-scoped-only → iam:GetRole AccessDenied + DELETE_FAILED"
 
 echo "==> happy: add pathless grant, create-stack succeeds"
 unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
-# Best-effort; don't wait — happy path uses a distinct stack/role name.
-aws_admin cloudformation delete-stack --stack-name "$STACK_DENY" >/dev/null 2>&1 || true
+# DELETE_FAILED stack: admin force-delete so happy path can run.
+aws_admin cloudformation delete-stack --stack-name "$STACK_DENY" \
+	--deletion-mode FORCE_DELETE_STACK >/dev/null 2>&1 \
+	|| aws_admin cloudformation delete-stack --stack-name "$STACK_DENY" >/dev/null 2>&1 || true
 aws_admin iam put-role-policy --role-name "$DEPLOY_ROLE" --policy-name pathless \
 	--policy-document "file://${WORKDIR}/pathless.json" >/dev/null
 

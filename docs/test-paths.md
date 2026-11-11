@@ -235,7 +235,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN admin-key create unchanged | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh`, `./smokes/iac/cfn-smoke.sh` |
 | CFN CreateStack `RoleARN` — resource ops as service role (`iam:PassRole`) | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
 | CFN admin CreateStack with limited `RoleARN` → resource IAM deny (no internal elevate) | sad/authz | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
-| CFN `AWS::IAM::Role` (Path + PermissionsBoundary) as path-scoped deploy role → `iam:GetRole` AccessDenied on pathless `role/<name>` | sad/authz | covered | `./smokes/iac/cfn-path-scoped-role-smoke.sh` · [#679](https://github.com/kgz/stackwrangler/issues/679) |
+| CFN `AWS::IAM::Role` (Path + PermissionsBoundary) as path-scoped deploy role → `iam:GetRole` AccessDenied on pathless `role/<name>` + new-stack `DELETE_FAILED` | sad/authz | covered | `./smokes/iac/cfn-path-scoped-role-smoke.sh` · [#679](https://github.com/kgz/stackwrangler/issues/679) |
 | CFN same deploy role after pathless `GetRole`/`DeleteRolePolicy`/… grant → `CREATE_COMPLETE` | happy | covered | `./smokes/iac/cfn-path-scoped-role-smoke.sh` · [#679](https://github.com/kgz/stackwrangler/issues/679) |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` |
