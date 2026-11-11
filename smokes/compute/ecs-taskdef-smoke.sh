@@ -4,6 +4,7 @@
 #   2) execution role lacking GetSecretValue → ResourceInitializationError / STOPPED
 #   3) host networkMode + portMappings starts and listens on host port
 #   4) failed container create → STOPPED + stoppedReason
+# #685: entryPoint overrides image ENTRYPOINT (docker --entrypoint)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -34,6 +35,7 @@ SECRET_NAME="awsbox-ecs-td-${TS}"
 PARAM_NAME="/ecs-td/${TS}/token"
 HOST_PORT=""
 TASK_ARNS=()
+EP_IMAGE=""
 
 cleanup() {
 	[[ "$KEEP" == "1" ]] && return 0
@@ -47,6 +49,7 @@ cleanup() {
 	aws iam delete-role --role-name "$DENY_ROLE" >/dev/null 2>&1 || true
 	[[ -n "${SECRET_ARN:-}" ]] && aws secretsmanager delete-secret --secret-id "$SECRET_ARN" --force-delete-without-recovery >/dev/null 2>&1 || true
 	aws ssm delete-parameter --name "$PARAM_NAME" >/dev/null 2>&1 || true
+	[[ -n "$EP_IMAGE" ]] && docker rmi -f "$EP_IMAGE" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -269,4 +272,93 @@ if [[ -z "$FAIL_REASON" ]]; then
 fi
 echo "OK: failed start → STOPPED (${FAIL_REASON:0:80}…)"
 
-echo "OK: ecs taskdef smoke (secrets / deny / host / failed-start)"
+# --- 5) entryPoint overrides image ENTRYPOINT (#685) ---
+# Image ENTRYPOINT is ["echo","from-image"]; without --entrypoint the task would
+# exit immediately. With entryPoint ["sh"] + sleep command it stays RUNNING.
+EP_IMAGE="awsbox-ecs-ep-${TS}"
+EP_DOCKERFILE="$(mktemp)"
+cat >"$EP_DOCKERFILE" <<'EOF'
+FROM alpine:3.20
+ENTRYPOINT ["echo", "from-image"]
+CMD ["default-cmd"]
+EOF
+docker build -t "$EP_IMAGE" -f "$EP_DOCKERFILE" "$(dirname "$EP_DOCKERFILE")" >/dev/null
+rm -f "$EP_DOCKERFILE"
+
+FAMILY_EP="awsbox-ecs-ep-${TS}"
+CDEFS_EP=$(cat <<EOF
+[{
+  "name": "probe",
+  "image": "${EP_IMAGE}",
+  "essential": true,
+  "memory": 64,
+  "entryPoint": ["sh"],
+  "command": ["-c", "sleep 60"]
+}]
+EOF
+)
+
+aws ecs register-task-definition \
+	--family "$FAMILY_EP" \
+	--requires-compatibilities EC2 \
+	--network-mode bridge \
+	--container-definitions "$CDEFS_EP" \
+	>/dev/null
+
+# describe must round-trip entryPoint
+EP_STORED="$(
+	aws ecs describe-task-definition --task-definition "$FAMILY_EP" \
+		--query 'taskDefinition.containerDefinitions[0].entryPoint' --output text
+)"
+if [[ "$EP_STORED" != *"sh"* ]]; then
+	echo "FAIL: describe-task-definition missing entryPoint, got: ${EP_STORED}" >&2
+	exit 1
+fi
+
+EP_TASK="$(
+	aws ecs run-task \
+		--cluster "$CLUSTER" \
+		--task-definition "$FAMILY_EP" \
+		--launch-type EC2 \
+		--query 'tasks[0].taskArn' --output text
+)"
+TASK_ARNS+=("$EP_TASK")
+
+EP_STATUS=""
+for _ in $(seq 1 60); do
+	EP_STATUS="$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$EP_TASK" --query 'tasks[0].lastStatus' --output text)"
+	[[ "$EP_STATUS" == "RUNNING" || "$EP_STATUS" == "STOPPED" ]] && break
+	sleep 1
+done
+if [[ "$EP_STATUS" != "RUNNING" ]]; then
+	aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$EP_TASK" >&2
+	echo "FAIL: entryPoint override task not RUNNING (status=${EP_STATUS}) — image ENTRYPOINT likely still applied" >&2
+	exit 1
+fi
+
+# docker inspect must show Entrypoint overridden (not image ["echo","from-image"])
+EP_DOCKER="$(
+	docker ps --filter "label=localemu.task-arn=${EP_TASK}" --filter "label=localemu.container-name=probe" \
+		--format '{{.ID}}' | head -1
+)"
+if [[ -z "$EP_DOCKER" ]]; then
+	# task-arn label may be the full ARN; fall back to name prefix
+	EP_DOCKER="$(docker ps --filter "label=localemu.container-name=probe" --format '{{.ID}} {{.Labels}}' \
+		| awk -v arn="$EP_TASK" '$0 ~ arn {print $1; exit}')"
+fi
+if [[ -z "$EP_DOCKER" ]]; then
+	echo "FAIL: could not find docker container for entryPoint task ${EP_TASK}" >&2
+	exit 1
+fi
+EP_INSPECT="$(docker inspect -f '{{json .Config.Entrypoint}}' "$EP_DOCKER")"
+if [[ "$EP_INSPECT" == *'from-image'* ]] || [[ "$EP_INSPECT" == *'echo'* ]]; then
+	echo "FAIL: container still using image ENTRYPOINT: ${EP_INSPECT}" >&2
+	exit 1
+fi
+if [[ "$EP_INSPECT" != *'sh'* ]]; then
+	echo "FAIL: expected Entrypoint [\"sh\"], got: ${EP_INSPECT}" >&2
+	exit 1
+fi
+echo "OK: entryPoint overrides image ENTRYPOINT (${EP_INSPECT})"
+
+echo "OK: ecs taskdef smoke (secrets / deny / host / failed-start / entryPoint)"
