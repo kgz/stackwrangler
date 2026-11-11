@@ -2,6 +2,47 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.0.6 — Maturity / testing (2026-11-11)
+
+Close high-impact fidelity gaps on the core hosting path (ECR, ECS, CFN, Route 53, security groups) so local behaviour matches AWS on the smokes we ship, and grow dual-side cheap parity for the ones that stay under cents.
+
+### Compute / ECR / ECS
+
+- ECR records OCI image index pushes (BuildKit provenance) ([#683](https://github.com/kgz/stackwrangler/issues/683))
+- ECR catalog resync after LocalEmu restart so tags return without a no-op re-push ([#684](https://github.com/kgz/stackwrangler/issues/684))
+- ECS applies container `entryPoint` as docker `--entrypoint` ([#685](https://github.com/kgz/stackwrangler/issues/685))
+- ECS SG enforcement exempts task-role credentials and the `AWS_ENDPOINT_URL` VPCE stand-in ([#686](https://github.com/kgz/stackwrangler/issues/686))
+- ECS tasks get `https://` `AWS_ENDPOINT_URL` plus a trusted gateway CA so `aws:SecureTransport` matches AWS ([#687](https://github.com/kgz/stackwrangler/issues/687))
+
+### Networking / IAM / CFN
+
+- Security group prefix-list rule `Description` round-trips (Terraform perpetual-diff fix) ([#682](https://github.com/kgz/stackwrangler/issues/682))
+- `CreateHostedZone` works when `HostedZoneConfig` omits `Comment` ([#681](https://github.com/kgz/stackwrangler/issues/681))
+- CFN path-scoped deploy role: `iam:GetRole` deny on pathless `role/<name>` → rollback/`DELETE_FAILED`; pathless grant → `CREATE_COMPLETE` ([#679](https://github.com/kgz/stackwrangler/issues/679))
+
+### Parity / platform
+
+- Dual-side reusable parity scripts for #679 / #682 (`aws-parity-cfn-path-scoped-role`, `aws-parity-sg-prefixlist-description`) plus shared `smokes/lib/parity-sides.sh` — [aws-parity-batch-2026-11-11.md](https://github.com/kgz/stackwrangler/blob/main/docs/aws-parity-batch-2026-11-11.md)
+- Stable LocalEmu gateway CA across recreates (boot.d seed + reuse) so ECS HTTPS trust survives ECR restart smokes
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS S3, ECR registry, AWS profile `local` (CLI), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.0.6
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.6 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
+
+Optional thin host CLI (wraps the same `docker run`): [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.6/stackwrangler).
+
 ## v0.0.5 — Security / deps (2026-11-09)
 
 Close Dependabot on shipped surfaces, fix IAM condition-key / ARN shape gaps that created false confidence locally, enable EventBridge Scheduler in the default service set, and ship a dual-target parity CLI so free real-AWS checks stay cheap and repeatable.
