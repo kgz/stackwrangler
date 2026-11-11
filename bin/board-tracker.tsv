@@ -363,6 +363,7 @@
 682	in-review	ec2: SG prefix-list rule Description stored/returned
 679	in-review	CFN path-scoped role grants vs pathless GetRole (#679)
 685	in-review	ecs: container entryPoint from task definition ignored
+686	in-review	ECS SG exempt task-creds + AWS_ENDPOINT_URL VPCE stand-in
 687	in-review	ECS https AWS_ENDPOINT_URL + CA for SecureTransport
 696	backlog	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
 684	in-review	ecr: restart catalog resync when registry keeps blobs
