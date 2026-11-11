@@ -34,6 +34,10 @@ if "/opt/awsbox/ecr" not in sys.path:
     sys.path.insert(0, "/opt/awsbox/ecr")
 import awsbox_ecr_pull as ecr_pull  # noqa: E402
 
+if "/opt/awsbox/tls" not in sys.path:
+    sys.path.insert(0, "/opt/awsbox/tls")
+import awsbox_gateway_tls as gateway_tls  # noqa: E402
+
 LOG = logging.getLogger(__name__)
 
 # Label for identifying ECS containers
@@ -591,9 +595,18 @@ class DockerTaskManager:
                 # publishes :4566 on 127.0.0.1 only. Point at this LocalEmu
                 # container's docker-network IP (same idea as EC2 IMDS) and
                 # attach the task to that network after start.
+                # #687: https + trusted CA so aws:SecureTransport matches AWS
+                # (TLS-only bucket policies must not deny task-role calls).
                 _gw_host, _gw_net = self._emulator_endpoint_target(network_mode)
-                env_vars["AWS_ENDPOINT_URL"] = f"http://{_gw_host}:{_gw_port}"
-                self._append_no_proxy(env_vars, _gw_host)
+                _endpoint_host = self._emulator_tls_endpoint_host(
+                    network_mode, _gw_host
+                )
+                env_vars["AWS_ENDPOINT_URL"] = (
+                    f"https://{_endpoint_host}:{_gw_port}"
+                )
+                self._append_no_proxy(env_vars, _endpoint_host)
+                if _gw_host != _endpoint_host:
+                    self._append_no_proxy(env_vars, _gw_host)
                 if task_role_arn:
                     if network_mode == "host":
                         # Host mode shares the host netns: no DNAT (it would land in
@@ -747,6 +760,14 @@ class DockerTaskManager:
                             volumes.append(
                                 BindMount(host_path, container_path, read_only=read_only)
                             )
+                # #687: trust the LocalEmu gateway CA (AWS_CA_BUNDLE / Node / curl).
+                try:
+                    gateway_tls.inject_task_tls_trust(env_vars, volumes)
+                except Exception:
+                    LOG.warning(
+                        "could not inject gateway CA into ECS task env",
+                        exc_info=True,
+                    )
 
                 # Determine Docker network mode
                 docker_network = None
@@ -861,6 +882,10 @@ class DockerTaskManager:
                     )
                     additional_flags_parts.append(
                         f"--add-host sqs.{region}.{_emu_dns}:{_gw_host}"
+                    )
+                    # #687: AWS_ENDPOINT_URL uses localemu.awsbox (cert SAN).
+                    additional_flags_parts.append(
+                        f"--add-host {gateway_tls.EMU_DNS_NAME}:{_gw_host}"
                     )
                 if network_mode == "awsvpc":
                     awsvpc_cfg = (network_configuration or {}).get(
@@ -1129,6 +1154,23 @@ class DockerTaskManager:
         if ip:
             return ip, net if net and net != "bridge" else None
         return "host.docker.internal", None
+
+    @staticmethod
+    def _emulator_tls_endpoint_host(network_mode: str, gw_host: str) -> str:
+        """Hostname used in ``https://`` ``AWS_ENDPOINT_URL`` (#687).
+
+        Non-host tasks dial ``localemu.awsbox`` (cert SAN + ``--add-host``).
+        Host-network tasks keep loopback (SAN includes 127.0.0.1).
+        """
+        if network_mode == "host" or gw_host in ("127.0.0.1", "localhost"):
+            return "127.0.0.1"
+        try:
+            import ipaddress as _ipaddress
+
+            _ipaddress.ip_address(gw_host)
+            return gateway_tls.EMU_DNS_NAME
+        except ValueError:
+            return gw_host
 
     def _connect_to_emulator_network(self, docker_name: str, network: str) -> None:
         """Attach the task to LocalEmu's docker network for AWS_ENDPOINT_URL (#269)."""

@@ -148,8 +148,10 @@ done
 ENV_OUT="$(docker exec "$NAME" printenv)"
 echo "$ENV_OUT" | grep -q '^AWS_CONTAINER_CREDENTIALS_RELATIVE_URI=/v2/credentials/' \
 	|| fail "missing AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: $ENV_OUT"
-echo "$ENV_OUT" | grep -qE '^AWS_ENDPOINT_URL=http://' \
-	|| fail "missing AWS_ENDPOINT_URL: $ENV_OUT"
+echo "$ENV_OUT" | grep -qE '^AWS_ENDPOINT_URL=https://' \
+	|| fail "missing https AWS_ENDPOINT_URL: $ENV_OUT"
+echo "$ENV_OUT" | grep -qE '^AWS_CA_BUNDLE=/etc/awsbox/certs/' \
+	|| fail "missing AWS_CA_BUNDLE: $ENV_OUT"
 
 REL_URI="$(docker exec "$NAME" printenv AWS_CONTAINER_CREDENTIALS_RELATIVE_URI)"
 CREDS_BODY="$(docker exec "$NAME" wget -qO- --timeout=5 "http://169.254.170.2${REL_URI}")" \
