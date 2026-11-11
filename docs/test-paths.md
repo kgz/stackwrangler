@@ -130,7 +130,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Public hosted zone + UPSERT A / A-alias / CNAME; `list-resource-record-sets` | happy | covered | `./smokes/networking/route53-smoke.sh` · [r53.md](r53.md) |
 | Public zone names resolve via `dig @127.0.0.1` inside LocalEmu | happy | covered | `./smokes/networking/route53-smoke.sh` |
 | Profile `local` `route53 list-hosted-zones` includes the public zone | happy | covered | `./smokes/networking/route53-smoke.sh` |
-| Private zone create still works alongside public | happy | covered | `./smokes/networking/route53-smoke.sh` |
+| Private zone create without `HostedZoneConfig.Comment` still works alongside public | happy | covered | `./smokes/networking/route53-smoke.sh` · [#681](https://github.com/kgz/stackwrangler/issues/681) |
 | **`route53:ListHostedZones` explicit deny** (public smoke) | sad/authz | covered | `./smokes/networking/route53-smoke.sh` |
 | Private zone CNAME → internal NLB resolves and connects from ECS in the associated VPC | happy | covered | `./smokes/networking/r53-private-smoke.sh` · [r53-private.md](r53-private.md) |
 | Private zone alias to ALB returns the ALB addresses | happy | covered | `./smokes/networking/r53-private-smoke.sh` |

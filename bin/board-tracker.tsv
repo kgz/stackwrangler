@@ -359,3 +359,4 @@
 676	backlog	v0.0.6 maturity
 677	backlog	v0.0.6 maturity
 683	in-review	ecr: record OCI image index pushes (BuildKit provenance)
+681	in-review	route53 CreateHostedZone without HostedZoneConfig.Comment
