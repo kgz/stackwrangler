@@ -41,11 +41,30 @@ run_side() {
 			return 0
 		}
 		echo "==> ${label}: teardown"
+		# Pathless grant so CFN --role-arn can finish delete of orphan roles.
+		[[ -f "$workdir/pathless.json" ]] && \
+			aws_cli iam put-role-policy --role-name "$deploy_role" --policy-name pathless \
+				--policy-document "file://${workdir}/pathless.json" >/dev/null 2>&1 || true
+		sleep 3
 		aws_cli cloudformation delete-stack --stack-name "$stack_deny" \
 			--deletion-mode FORCE_DELETE_STACK >/dev/null 2>&1 \
 			|| aws_cli cloudformation delete-stack --stack-name "$stack_deny" >/dev/null 2>&1 || true
-		aws_cli cloudformation delete-stack --stack-name "$stack_ok" >/dev/null 2>&1 || true
-		sleep 2
+		aws_cli cloudformation delete-stack --stack-name "$stack_ok" \
+			--deletion-mode FORCE_DELETE_STACK >/dev/null 2>&1 \
+			|| aws_cli cloudformation delete-stack --stack-name "$stack_ok" >/dev/null 2>&1 || true
+		local i st
+		for i in $(seq 1 60); do
+			st="$(aws_cli cloudformation describe-stacks --stack-name "$stack_deny" \
+				--query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo GONE)"
+			[[ "$st" == "GONE" || "$st" == "DELETE_COMPLETE" ]] && break
+			sleep 2
+		done
+		for i in $(seq 1 60); do
+			st="$(aws_cli cloudformation describe-stacks --stack-name "$stack_ok" \
+				--query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo GONE)"
+			[[ "$st" == "GONE" || "$st" == "DELETE_COMPLETE" ]] && break
+			sleep 2
+		done
 		local r arn
 		for r in "$app_role" "$app_role_ok" "$deploy_role"; do
 			aws_cli iam delete-role-policy --role-name "$r" --policy-name inline >/dev/null 2>&1 || true
@@ -62,22 +81,15 @@ run_side() {
 		rm -rf "$workdir"
 	}
 
-	assume_env() {
-		local role_arn="$1" session="$2" creds
-		creds="$(aws_cli sts assume-role --role-arn "$role_arn" --role-session-name "$session" --output json)"
-		export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
-		AWS_ACCESS_KEY_ID="$(echo "$creds" | python3 -c 'import json,sys; print(json.load(sys.stdin)["Credentials"]["AccessKeyId"])')"
-		AWS_SECRET_ACCESS_KEY="$(echo "$creds" | python3 -c 'import json,sys; print(json.load(sys.stdin)["Credentials"]["SecretAccessKey"])')"
-		AWS_SESSION_TOKEN="$(echo "$creds" | python3 -c 'import json,sys; print(json.load(sys.stdin)["Credentials"]["SessionToken"])')"
-	}
-
 	wait_stack_terminal() {
 		local stack="$1" timeout="${2:-120}" i st
 		for i in $(seq 1 "$timeout"); do
 			st="$(aws_cli cloudformation describe-stacks --stack-name "$stack" \
 				--query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo MISSING)"
 			case "$st" in
-				*COMPLETE|*FAILED|*ROLLBACK*)
+				*_IN_PROGRESS|MISSING)
+					;;
+				*COMPLETE|*FAILED)
 					echo "$st"
 					return 0
 					;;
@@ -96,16 +108,6 @@ run_side() {
 
 	account="$(aws_cli sts get-caller-identity --query Account --output text)"
 
-	cat >"$workdir/trust.json" <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": {"AWS": "arn:aws:iam::${account}:root"},
-    "Action": "sts:AssumeRole"
-  }]
-}
-EOF
 	cat >"$workdir/boundary.json" <<'EOF'
 {
   "Version": "2012-10-17",
@@ -121,15 +123,21 @@ EOF
 		--policy-document "file://${workdir}/boundary.json" \
 		--query Policy.Arn --output text)"
 
+	# CFN service principal trust — create-stack --role-arn (PassRole), not caller AssumeRole.
+	cat >"$workdir/cfn-trust.json" <<'EOF'
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Service": "cloudformation.amazonaws.com"},
+    "Action": "sts:AssumeRole"
+  }]
+}
+EOF
 	cat >"$workdir/path-only.json" <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "cloudformation:*",
-      "Resource": "*"
-    },
     {
       "Effect": "Allow",
       "Action": [
@@ -169,19 +177,21 @@ EOF
 }
 EOF
 
-	echo "==> ${label}: create path-scoped deploy role"
+	echo "==> ${label}: create path-scoped CFN deploy role"
 	aws_cli iam create-role --role-name "$deploy_role" \
-		--assume-role-policy-document "file://${workdir}/trust.json" >/dev/null
+		--assume-role-policy-document "file://${workdir}/cfn-trust.json" >/dev/null
 	aws_cli iam put-role-policy --role-name "$deploy_role" --policy-name inline \
 		--policy-document "file://${workdir}/path-only.json" >/dev/null
 
-	# IAM propagation on real AWS
-	sleep 8
+	# IAM / CFN role propagation on real AWS
+	sleep 12
 
-	echo "==> ${label}: sad create-stack (expect DELETE_FAILED + iam:GetRole)"
-	assume_env "arn:aws:iam::${account}:role/${deploy_role}" "cfn-psr-${label}-deny"
+	deploy_arn="arn:aws:iam::${account}:role/${deploy_role}"
+
+	echo "==> ${label}: sad create-stack --role-arn (expect DELETE_FAILED + iam:GetRole)"
 	aws_cli cloudformation create-stack \
 		--stack-name "$stack_deny" \
+		--role-arn "$deploy_arn" \
 		--template-body "file://${EX}/template.yaml" \
 		--capabilities CAPABILITY_NAMED_IAM \
 		--parameters \
@@ -189,60 +199,52 @@ EOF
 		"ParameterKey=RolePath,ParameterValue=${role_path}" \
 		"ParameterKey=PermissionsBoundaryArn,ParameterValue=${boundary_arn}" >/dev/null
 
-	st="$(wait_stack_terminal "$stack_deny" 90)"
+	st="$(wait_stack_terminal "$stack_deny" 120)"
 	echo "    status=${st}"
-	[[ "$st" == "DELETE_FAILED" ]] || {
-		echo "FAIL (${label}): expected DELETE_FAILED, got ${st}" >&2
-		events_blob "$stack_deny" >&2
-		# drop assumed creds for teardown
-		unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
-		teardown
-		return 1
-	}
+	# LocalEmu: DELETE_FAILED. Real: ROLLBACK_FAILED (cannot DeleteRolePolicy/GetRole)
+	# or ROLLBACK_COMPLETE when the role never materialised.
+	case "$st" in
+		DELETE_FAILED|ROLLBACK_FAILED|ROLLBACK_COMPLETE) ;;
+		*)
+			echo "FAIL (${label}): expected DELETE_FAILED|ROLLBACK_FAILED|ROLLBACK_COMPLETE, got ${st}" >&2
+			events_blob "$stack_deny" >&2
+			teardown
+			return 1
+			;;
+	esac
 	blob="$(events_blob "$stack_deny")"
 	echo "$blob" | grep -qiE 'iam:GetRole' || {
 		echo "FAIL (${label}): expected iam:GetRole in events" >&2
 		echo "$blob" >&2
-		unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
 		teardown
 		return 1
 	}
 	echo "$blob" | grep -qiE 'not authorized|AccessDenied' || {
 		echo "FAIL (${label}): expected AccessDenied in events" >&2
 		echo "$blob" >&2
-		unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
 		teardown
 		return 1
 	}
-	echo "$blob" | grep -q "role/${app_role}" || {
-		echo "FAIL (${label}): expected pathless role/${app_role} in deny reason" >&2
+	# LocalEmu cites role/<name>; real IAM error text uses "role <name>".
+	echo "$blob" | grep -qE "role(/| )${app_role}" || {
+		echo "FAIL (${label}): expected pathless role ${app_role} in deny reason" >&2
 		echo "$blob" >&2
-		unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
 		teardown
 		return 1
 	}
-	echo "OK (${label}): path-scoped-only → iam:GetRole AccessDenied + DELETE_FAILED"
-
-	unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
-	# Restore admin/default creds for pathless grant — real side uses default chain again.
-	if [[ "$label" == "local" ]]; then
-		export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
-		export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
-	else
-		unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
-	fi
+	echo "OK (${label}): path-scoped-only → iam:GetRole AccessDenied (${st})"
 
 	aws_cli cloudformation delete-stack --stack-name "$stack_deny" \
 		--deletion-mode FORCE_DELETE_STACK >/dev/null 2>&1 \
 		|| aws_cli cloudformation delete-stack --stack-name "$stack_deny" >/dev/null 2>&1 || true
 	aws_cli iam put-role-policy --role-name "$deploy_role" --policy-name pathless \
 		--policy-document "file://${workdir}/pathless.json" >/dev/null
-	sleep 8
+	sleep 12
 
-	echo "==> ${label}: happy create-stack after pathless grant"
-	assume_env "arn:aws:iam::${account}:role/${deploy_role}" "cfn-psr-${label}-ok"
+	echo "==> ${label}: happy create-stack --role-arn after pathless grant"
 	aws_cli cloudformation create-stack \
 		--stack-name "$stack_ok" \
+		--role-arn "$deploy_arn" \
 		--template-body "file://${EX}/template.yaml" \
 		--capabilities CAPABILITY_NAMED_IAM \
 		--parameters \
@@ -255,18 +257,9 @@ EOF
 	[[ "$st" == "CREATE_COMPLETE" ]] || {
 		echo "FAIL (${label}): expected CREATE_COMPLETE, got ${st}" >&2
 		events_blob "$stack_ok" >&2
-		unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
 		teardown
 		return 1
 	}
-
-	unset AWS_SESSION_TOKEN AWS_SECURITY_TOKEN || true
-	if [[ "$label" == "local" ]]; then
-		export AWS_ACCESS_KEY_ID="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
-		export AWS_SECRET_ACCESS_KEY="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
-	else
-		unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
-	fi
 
 	app_arn="$(aws_cli iam get-role --role-name "$app_role_ok" --query 'Role.Arn' --output text)"
 	case "$app_arn" in

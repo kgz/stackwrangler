@@ -38,8 +38,11 @@ parity_run_sides() {
 		echo "======== REAL ========"
 		export AWSBOX_ALLOW_REAL_AWS=1
 		export STACKWRANGLER_ALLOW_REAL_AWS=1
+		# local-emu-env.sh points shared files at /dev/null — restore default chain.
 		unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN
 		unset AWS_PROFILE AWS_DEFAULT_PROFILE
+		unset AWS_CONFIG_FILE AWS_SHARED_CREDENTIALS_FILE
+		unset AWS_EC2_METADATA_DISABLED
 		export AWS_DEFAULT_REGION="$REAL_REGION"
 		aws_cli() {
 			command aws --region "$REAL_REGION" "$@"
