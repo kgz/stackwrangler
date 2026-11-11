@@ -124,6 +124,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
 | ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
+| ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
+| ECR `delete-repository` + `create-repository` adopts tags still in the local registry | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
 | ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
