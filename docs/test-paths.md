@@ -269,6 +269,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./smokes/parity/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./smokes/parity/aws-parity-cfn-authz.sh` |
+| Real AWS CFN path-scoped role GetRole deny + pathless grant | happy+sad | covered | `./smokes/parity/aws-parity-cfn-path-scoped-role.sh` (~$0) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) |
+| Real AWS SG prefix-list rule Description round-trip | happy | covered | `./smokes/parity/aws-parity-sg-prefixlist-description.sh` (~$0) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) |
 | Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./smokes/parity/aws-parity-hf-cheap.sh` (~$0–cents; ask before real) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Real AWS Trust (v0.0.3) | happy+sad | covered | `./smokes/parity/aws-parity-trust-v003.sh` (KMS 7d residual) |
 | Real AWS HF skipped: WAF, R53 zone, ACM without DNS, Transfer, CodeDeploy target stack, Batch/ASG compute | — | skipped (cost) | [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) skipped gaps |

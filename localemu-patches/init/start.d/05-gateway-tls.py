@@ -1,4 +1,9 @@
-"""Mint LocalEmu gateway CA/leaf with compose-network SANs before SSL load (#687)."""
+"""Idempotent gateway TLS ensure after infra start (#687).
+
+boot.d/05-gateway-tls.py does the pre-gateway install. This start.d copy
+reuses the stable CA (no remint) so a late SAN refresh still updates
+``.awsbox`` material for the next boot / task mounts.
+"""
 
 import logging
 import sys

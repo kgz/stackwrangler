@@ -29,6 +29,8 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Multi-account AssumeRole | yes (A assumes B) | **yes** (C, missing ExternalId, user without sts:AssumeRole, unknown condition) | A's bucket/role hidden from B | — | `multi-account-smoke.sh` |
 | Real AWS IAM parity | — | **yes** (~$0) | — | — | `aws-parity-iam-denied.sh` |
 | Real AWS CFN S3+Lambda | **yes** (parity) | **yes** (empty role) | teardown | — | `aws-parity-cfn-s3-lambda.sh`, `aws-parity-cfn-authz.sh` |
+| Real AWS path-scoped CFN role (#679) | **yes** (parity) | **yes** (GetRole deny → DELETE_FAILED) | teardown | — | `aws-parity-cfn-path-scoped-role.sh` |
+| Real AWS SG prefix-list Description (#682) | **yes** (parity) | n/a | teardown | — | `aws-parity-sg-prefixlist-description.sh` |
 | Real AWS HF cheap (#296/#297/#190/#294/#230 VPCE) | **yes** (focused) | **yes** (Deny 403, missing/disabled key) | schedule quiet after disable | — | `aws-parity-hf-cheap.sh` · skipped gaps [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Real AWS Trust v0.0.3 | local smokes + **yes** | IAM/SNS/DDB/CFN/ECR/KMS | teardown (+KMS 7d) | — | `aws-parity-trust-v003.sh` |
 | Lambda VPC → host service | yes | — | unmapped name; non-VPC mapped name ENOTFOUND ([#187](https://github.com/kgz/awsl/issues/187)) | — | `lambda-vpc-smoke.sh` |

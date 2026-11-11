@@ -7,11 +7,17 @@ IAM correctly sets ``aws:SecureTransport=false`` for plain ``http://``
 ``AWS_ENDPOINT_URL``.
 
 This module:
-  * mints a local CA + leaf with those SANs
-  * overwrites LocalEmu's ``server.test.pem`` before the gateway loads it
+  * mints a local CA + leaf with those SANs (CA reused across restarts)
+  * installs the leaf into LocalEmu's ``server.test.pem`` *before*
+    gateway SSL init (boot.d) so ``create_ssl_cert`` keeps our files
   * publishes the CA under ``/var/lib/awsbox/tls`` (compose ``./.awsbox``)
     so ECS can bind-mount it and set ``AWS_CA_BUNDLE`` /
     ``NODE_EXTRA_CA_CERTS`` / ``SSL_CERT_FILE``
+
+Reminting the CA on every start breaks verification: tasks mount the new
+CA from ``.awsbox`` while the live gateway still serves the previous leaf
+(or a leaf signed by the previous CA). Keep the CA stable; only refresh
+the leaf when SANs change.
 """
 
 from __future__ import annotations
@@ -34,17 +40,15 @@ EMU_DNS_NAME = "localemu.awsbox"
 TASK_CA_DIR = "/etc/awsbox/certs"
 
 
-def ensure_gateway_tls() -> Path:
-    """Create/refresh CA + leaf and install into LocalEmu's SSL cache.
+def ensure_gateway_tls(*, force_remint: bool = False) -> Path:
+    """Ensure CA + leaf exist and are installed into LocalEmu's SSL cache.
 
-    Safe to call on every start; always rewrites so compose-network IP
-    changes are reflected in the SAN list.
+    Safe to call from boot.d (before gateway SSL) and start.d (idempotent).
+    Reuses the on-disk CA unless ``force_remint``; remints the leaf only when
+    SANs drift (compose-network IP change) or material is missing.
     """
     TLS_DIR.mkdir(parents=True, exist_ok=True)
     sans_dns, sans_ip = _san_lists()
-    ca_cert_pem, ca_key_pem, leaf_cert_pem, leaf_key_pem = _mint_ca_and_leaf(
-        sans_dns, sans_ip
-    )
 
     ca_crt = TLS_DIR / CA_CERT_NAME
     ca_key = TLS_DIR / CA_KEY_NAME
@@ -52,17 +56,46 @@ def ensure_gateway_tls() -> Path:
     leaf_key = TLS_DIR / LEAF_KEY_NAME
     bundle = TLS_DIR / CA_BUNDLE_NAME
 
-    ca_crt.write_bytes(ca_cert_pem)
-    ca_key.write_bytes(ca_key_pem)
-    leaf_crt.write_bytes(leaf_cert_pem)
-    leaf_key.write_bytes(leaf_key_pem)
-    ca_key.chmod(0o600)
-    leaf_key.chmod(0o600)
+    have_ca = ca_crt.is_file() and ca_key.is_file()
+    have_leaf = leaf_crt.is_file() and leaf_key.is_file()
+    leaf_ok = have_leaf and _leaf_covers_sans(leaf_crt, sans_dns, sans_ip)
+
+    if force_remint or not have_ca:
+        ca_cert_pem, ca_key_pem, leaf_cert_pem, leaf_key_pem = _mint_ca_and_leaf(
+            sans_dns, sans_ip
+        )
+        ca_crt.write_bytes(ca_cert_pem)
+        ca_key.write_bytes(ca_key_pem)
+        leaf_crt.write_bytes(leaf_cert_pem)
+        leaf_key.write_bytes(leaf_key_pem)
+        # Local-only material; keep readable so boot.d (root) + start.d agree.
+        _relax_key_perms(ca_key, leaf_key)
+        LOG.info("gateway TLS minted new CA + leaf")
+    elif not leaf_ok:
+        ca_cert_pem = ca_crt.read_bytes()
+        ca_key_pem = ca_key.read_bytes()
+        leaf_cert_pem, leaf_key_pem = _mint_leaf_with_ca(
+            ca_cert_pem, ca_key_pem, sans_dns, sans_ip
+        )
+        leaf_crt.write_bytes(leaf_cert_pem)
+        leaf_key.write_bytes(leaf_key_pem)
+        _relax_key_perms(ca_key, leaf_key)
+        LOG.info("gateway TLS reminted leaf (SANs changed; CA reused)")
+    else:
+        ca_cert_pem = ca_crt.read_bytes()
+        leaf_cert_pem = leaf_crt.read_bytes()
+        leaf_key_pem = leaf_key.read_bytes()
+        LOG.debug("gateway TLS reusing existing CA + leaf")
 
     bundle_parts = [_system_ca_bundle_bytes(), ca_cert_pem]
-    bundle.write_bytes(b"".join(p for p in bundle_parts if p))
+    try:
+        bundle.write_bytes(b"".join(p for p in bundle_parts if p))
+    except OSError:
+        # boot.d often runs as root; start.d as localemu — skip rewrite if owned.
+        LOG.debug("ca-bundle rewrite skipped", exc_info=True)
 
     _install_localemu_server_pem(leaf_cert_pem, leaf_key_pem)
+    _chown_tls_tree()
     LOG.info(
         "gateway TLS ready dns=%s ips=%s ca=%s",
         ",".join(sans_dns),
@@ -128,7 +161,6 @@ def _san_lists() -> tuple[list[str], list[str]]:
                 ips.append(addr)
     except Exception:
         LOG.debug("hostname IPs for TLS SAN skipped", exc_info=True)
-    # de-dupe, preserve order
     dns_out: list[str] = []
     for d in dns:
         if d not in dns_out:
@@ -140,13 +172,33 @@ def _san_lists() -> tuple[list[str], list[str]]:
     return dns_out, ip_out
 
 
+def _leaf_covers_sans(leaf_path: Path, dns_names: list[str], ip_names: list[str]) -> bool:
+    try:
+        from cryptography import x509
+
+        cert = x509.load_pem_x509_certificate(leaf_path.read_bytes())
+        ext = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName)
+        have_dns = {n for n in ext.value.get_values_for_type(x509.DNSName)}
+        have_ip = {str(n) for n in ext.value.get_values_for_type(x509.IPAddress)}
+    except Exception:
+        LOG.debug("leaf SAN parse failed; will remint leaf", exc_info=True)
+        return False
+    for d in dns_names:
+        if d not in have_dns:
+            return False
+    for ip in ip_names:
+        if ip not in have_ip:
+            return False
+    return True
+
+
 def _mint_ca_and_leaf(
     dns_names: list[str], ip_names: list[str]
 ) -> tuple[bytes, bytes, bytes, bytes]:
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
-    from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
+    from cryptography.x509.oid import NameOID
 
     now = datetime.now(timezone.utc)
     ca_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -182,6 +234,42 @@ def _mint_ca_and_leaf(
         .sign(private_key=ca_key, algorithm=hashes.SHA256())
     )
 
+    leaf_cert_pem, leaf_key_pem = _mint_leaf_with_ca(
+        ca_cert.public_bytes(serialization.Encoding.PEM),
+        ca_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption(),
+        ),
+        dns_names,
+        ip_names,
+    )
+    return (
+        ca_cert.public_bytes(serialization.Encoding.PEM),
+        ca_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption(),
+        ),
+        leaf_cert_pem,
+        leaf_key_pem,
+    )
+
+
+def _mint_leaf_with_ca(
+    ca_cert_pem: bytes,
+    ca_key_pem: bytes,
+    dns_names: list[str],
+    ip_names: list[str],
+) -> tuple[bytes, bytes]:
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
+
+    ca_cert = x509.load_pem_x509_certificate(ca_cert_pem)
+    ca_key = serialization.load_pem_private_key(ca_key_pem, password=None)
+    now = datetime.now(timezone.utc)
     leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     leaf_name = x509.Name(
         [
@@ -198,7 +286,7 @@ def _mint_ca_and_leaf(
     leaf_cert = (
         x509.CertificateBuilder()
         .subject_name(leaf_name)
-        .issuer_name(ca_name)
+        .issuer_name(ca_cert.subject)
         .public_key(leaf_key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(now - timedelta(minutes=5))
@@ -225,18 +313,14 @@ def _mint_ca_and_leaf(
         )
         .sign(private_key=ca_key, algorithm=hashes.SHA256())
     )
-
-    def _pem_cert(c: x509.Certificate) -> bytes:
-        return c.public_bytes(serialization.Encoding.PEM)
-
-    def _pem_key(k: rsa.RSAPrivateKey) -> bytes:
-        return k.private_bytes(
+    return (
+        leaf_cert.public_bytes(serialization.Encoding.PEM),
+        leaf_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption(),
-        )
-
-    return _pem_cert(ca_cert), _pem_key(ca_key), _pem_cert(leaf_cert), _pem_key(leaf_key)
+        ),
+    )
 
 
 def _system_ca_bundle_bytes() -> bytes:
@@ -257,7 +341,11 @@ def _system_ca_bundle_bytes() -> bytes:
 
 
 def _install_localemu_server_pem(cert_pem: bytes, key_pem: bytes) -> None:
-    """Overwrite LocalEmu's default combined PEM (+ split .crt/.key)."""
+    """Overwrite LocalEmu's default combined PEM (+ split .crt/.key).
+
+    Must run before ``_init_gateway_server`` so ``generate_ssl_cert`` sees
+    existing files and returns them instead of minting a LocalEmu Org leaf.
+    """
     try:
         from localemu.utils.ssl import get_cert_pem_file_path
     except Exception:
@@ -272,7 +360,31 @@ def _install_localemu_server_pem(cert_pem: bytes, key_pem: bytes) -> None:
     target.write_bytes(combined)
     Path(f"{target}.key").write_bytes(key_pem)
     Path(f"{target}.crt").write_bytes(cert_pem)
-    Path(f"{target}.key").chmod(0o600)
+    _relax_key_perms(Path(f"{target}.key"))
+
+
+def _relax_key_perms(*paths: Path) -> None:
+    for path in paths:
+        try:
+            path.chmod(0o644)
+        except OSError:
+            LOG.debug("chmod %s skipped", path, exc_info=True)
+
+
+def _chown_tls_tree() -> None:
+    """boot.d is root; start.d / task mounts need localemu-readable+writable."""
+    try:
+        import pwd
+
+        ent = pwd.getpwnam("localemu")
+    except (KeyError, ImportError, OSError):
+        return
+    try:
+        os.chown(TLS_DIR, ent.pw_uid, ent.pw_gid)
+        for path in TLS_DIR.iterdir():
+            os.chown(path, ent.pw_uid, ent.pw_gid)
+    except OSError:
+        LOG.debug("chown tls tree skipped", exc_info=True)
 
 
 def _resolve_host_bind(container_abs: str) -> str | None:
