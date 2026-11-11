@@ -358,3 +358,4 @@
 675	backlog	v0.0.6 maturity
 676	backlog	v0.0.6 maturity
 677	backlog	v0.0.6 maturity
+681	in-progress	route53 CreateHostedZone without HostedZoneConfig.Comment
