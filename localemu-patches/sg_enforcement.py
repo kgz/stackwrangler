@@ -30,6 +30,7 @@ class Workload:
     region: str
     sg_ids: list[str]
     kind: str
+    vpc_id: str = ""
 
 
 _workloads: dict[str, Workload] = {}
@@ -85,7 +86,7 @@ def attach_container(
         sg_ids=groups,
         instance_id=f"{kind}:{docker_name}",
     )
-    _remember(docker_name, eni_id, account_id, region, groups, kind)
+    _remember(docker_name, eni_id, account_id, region, groups, kind, vpc_id)
     _apply(docker_name, groups, account_id, region)
     _refresh_referencers(groups, account_id, region)
 
@@ -270,12 +271,12 @@ def _attach_rds(info) -> None:
         sg_ids=sg_ids,
         instance_id=f"rds:{db_id}",
     )
-    _remember(container, eni_id, account_id, region, sg_ids, "rds")
+    _remember(container, eni_id, account_id, region, sg_ids, "rds", vpc_id)
     _apply(container, sg_ids, account_id, region)
     _refresh_referencers(sg_ids, account_id, region)
 
 
-def _remember(container, eni_id, account_id, region, sg_ids, kind) -> None:
+def _remember(container, eni_id, account_id, region, sg_ids, kind, vpc_id="") -> None:
     wl = Workload(
         container=container,
         eni_id=eni_id,
@@ -283,6 +284,7 @@ def _remember(container, eni_id, account_id, region, sg_ids, kind) -> None:
         region=region,
         sg_ids=list(sg_ids),
         kind=kind,
+        vpc_id=vpc_id or "",
     )
     with _lock:
         _workloads[container] = wl
@@ -332,6 +334,8 @@ def _apply(container: str, sg_ids: list[str], account_id: str, region: str) -> b
         wl = _workloads.get(container)
     if ok and wl is not None and wl.kind == "lambda":
         _allow_lambda_control_plane(container)
+    if ok and wl is not None and wl.kind == "ecs":
+        _allow_ecs_task_plane(container, wl)
     return ok
 
 
@@ -367,6 +371,151 @@ def _allow_lambda_control_plane(container: str) -> None:
             container,
             exc_info=True,
         )
+
+
+def _allow_ecs_task_plane(container: str, wl: Workload) -> None:
+    """Exempt ECS task-creds link-local and stand-in AWS_ENDPOINT_URL (#686).
+
+    On AWS the credentials endpoint is link-local and not subject to security
+    groups. Locally filter OUTPUT sees the post-DNAT destination (LocalEmu
+    creds port), so that /32:port is accepted too.
+
+    Injected ``AWS_ENDPOINT_URL`` traffic is accepted only when the VPC has a
+    VPC endpoint and the task SG would allow HTTPS egress that would reach an
+    interface ENI (VPC CIDR :443) or a gateway prefix list — same shape as the
+    real path through private endpoints.
+    """
+    try:
+        from localemu.services.ec2.docker.vpc_endpoint import _localemu_gateway
+        from localemu.services.ec2.docker.vpc_routing import _sh_netns
+
+        parts = [
+            # Link-local task metadata / credentials (pre-DNAT dest).
+            "iptables -C SG_OUT -d 169.254.170.2/32 -j ACCEPT 2>/dev/null || "
+            "iptables -I SG_OUT 1 -d 169.254.170.2/32 -j ACCEPT",
+        ]
+        gw_ip, _gw_net = _localemu_gateway()
+        if gw_ip:
+            creds_port = _ecs_creds_port()
+            if creds_port:
+                # Post-DNAT: 169.254.170.2:80 → LocalEmu compose IP:creds_port.
+                parts.append(
+                    f"iptables -C SG_OUT -d {gw_ip}/32 -p tcp "
+                    f"--dport {creds_port} -j ACCEPT 2>/dev/null || "
+                    f"iptables -I SG_OUT 1 -d {gw_ip}/32 -p tcp "
+                    f"--dport {creds_port} -j ACCEPT"
+                )
+            if _endpoint_url_sg_stand_in_allowed(
+                wl.vpc_id, wl.sg_ids, wl.account_id, wl.region
+            ):
+                gw_port = _gateway_listen_port()
+                if gw_port:
+                    parts.append(
+                        f"iptables -C SG_OUT -d {gw_ip}/32 -p tcp "
+                        f"--dport {gw_port} -j ACCEPT 2>/dev/null || "
+                        f"iptables -I SG_OUT 1 -d {gw_ip}/32 -p tcp "
+                        f"--dport {gw_port} -j ACCEPT"
+                    )
+        if not _sh_netns(container, "; ".join(parts)):
+            LOG.warning("ECS task-plane SG_OUT allow failed for %s", container)
+    except Exception:
+        LOG.warning(
+            "ECS task-plane SG_OUT allow failed for %s",
+            container,
+            exc_info=True,
+        )
+
+
+def _ecs_creds_port() -> int | None:
+    try:
+        from localemu.services.ecs.docker.task_credentials import (
+            get_task_credentials_server,
+        )
+
+        return int(get_task_credentials_server().port)
+    except Exception:
+        LOG.debug("ECS creds port lookup failed", exc_info=True)
+        return None
+
+
+def _gateway_listen_port() -> int | None:
+    try:
+        from localemu import config as _le_config
+
+        return int(_le_config.GATEWAY_LISTEN[0].port)
+    except Exception:
+        LOG.debug("gateway listen port lookup failed", exc_info=True)
+        return None
+
+
+def _endpoint_url_sg_stand_in_allowed(
+    vpc_id: str, sg_ids: list[str], account_id: str, region: str
+) -> bool:
+    """Allow AWS_ENDPOINT_URL when a VPCE exists and SG would allow HTTPS to it."""
+    if not vpc_id or not sg_ids:
+        return False
+    if not _vpc_has_endpoints(vpc_id, account_id, region):
+        return False
+    return _sg_allows_https_egress(sg_ids, account_id, region)
+
+
+def _vpc_has_endpoints(vpc_id: str, account_id: str, region: str) -> bool:
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("ec2")[account_id][region]
+        for ep in (getattr(backend, "vpc_end_points", None) or {}).values():
+            if getattr(ep, "vpc_id", None) == vpc_id:
+                return True
+    except Exception:
+        LOG.debug("VPC endpoint lookup failed for %s", vpc_id, exc_info=True)
+    return False
+
+
+def _sg_allows_https_egress(
+    sg_ids: list[str], account_id: str, region: str
+) -> bool:
+    """True when compiled SG_OUT would ACCEPT tcp/443 or any-protocol egress."""
+    try:
+        from localemu.services.ec2.docker import sg_iptables
+
+        _in_rules, out_rules = sg_iptables._collect_rules(sg_ids, account_id, region)
+    except Exception:
+        LOG.debug("SG egress inspect failed", exc_info=True)
+        return False
+    for rule in out_rules:
+        if "-j ACCEPT" not in rule:
+            continue
+        # Any-protocol ACCEPT (no ``-p``) covers ENI HTTPS on AWS.
+        if " -p " not in rule:
+            return True
+        if " -p all " in rule:
+            return True
+        if " -p tcp " not in rule and " -p 6 " not in rule:
+            continue
+        if _tcp_rule_covers_https(rule):
+            return True
+    return False
+
+
+def _tcp_rule_covers_https(rule: str) -> bool:
+    """Return True when an iptables tcp ACCEPT rule covers destination port 443."""
+    marker = "--dport "
+    idx = rule.find(marker)
+    if idx < 0:
+        # ``-p tcp`` without dport = all TCP ports.
+        return True
+    token = rule[idx + len(marker) :].split(None, 1)[0]
+    if ":" in token:
+        left, right = token.split(":", 1)
+        try:
+            return int(left) <= 443 <= int(right)
+        except ValueError:
+            return False
+    try:
+        return int(token) == 443
+    except ValueError:
+        return False
 
 
 def _refresh_referencers(sg_ids: list[str], account_id: str, region: str) -> None:
