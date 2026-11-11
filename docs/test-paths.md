@@ -184,6 +184,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
 | SG rule revoke/authorize updates a running target | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
+| Prefix-list SG rule Description round-trips on describe | happy | covered | `./smokes/networking/sg-prefixlist-description-smoke.sh` · [#682](https://github.com/kgz/stackwrangler/issues/682) |
 | RDS on a subnet allows 5432 only from SG A | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
 | VPC Lambda traffic filtered by its security groups | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) · [#237](https://github.com/kgz/awsl/issues/237) |
