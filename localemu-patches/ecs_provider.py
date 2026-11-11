@@ -363,6 +363,10 @@ def _handle_run_task(
                 "environment": src_def.get("environment", []),
                 "command": src_def.get("command"),
             }
+            # #685: keep entryPoint so the task manager can pass docker --entrypoint
+            ep = src_def.get("entryPoint") or src_def.get("entry_point")
+            if ep is not None:
+                cdef["entryPoint"] = ep
             if src_def.get("secrets"):
                 cdef["secrets"] = src_def["secrets"]
             if src_def.get("healthCheck"):
@@ -514,6 +518,13 @@ def _resolve_task_definition(context: RequestContext, task_def_arn: str) -> list
                         val = getattr(cdef, attr, None)
                         if val is not None:
                             d[attr] = val
+                    # #685: entryPoint may be snake_case on object-shaped defs
+                    ep = (
+                        getattr(cdef, "entry_point", None)
+                        or getattr(cdef, "entryPoint", None)
+                    )
+                    if ep is not None:
+                        d["entryPoint"] = ep
                     # Moto uses port_mappings (snake_case)
                     pm = getattr(cdef, "port_mappings", None) or getattr(cdef, "portMappings", None)
                     if pm is not None:

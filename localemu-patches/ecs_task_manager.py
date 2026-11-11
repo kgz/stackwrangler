@@ -507,6 +507,16 @@ class DockerTaskManager:
                 else:
                     command = None
 
+                # #685: task-def entryPoint overrides the image ENTRYPOINT
+                # (docker --entrypoint). ContainerOverride has no entryPoint.
+                raw_ep = cdef.get("entryPoint") or cdef.get("entry_point")
+                if raw_ep and isinstance(raw_ep, str):
+                    entrypoint: list[str] | str | None = shlex.split(raw_ep)
+                elif raw_ep and isinstance(raw_ep, list):
+                    entrypoint = raw_ep
+                else:
+                    entrypoint = None
+
                 # Build environment variables
                 env_vars: dict[str, str] = {}
                 for env in cdef.get("environment", []):
@@ -875,6 +885,7 @@ class DockerTaskManager:
                     command=command if isinstance(command, list) else (
                         [command] if command else None
                     ),
+                    entrypoint=entrypoint,
                     detach=True,
                     network=docker_network,
                     cpu_shares=cpu_shares,

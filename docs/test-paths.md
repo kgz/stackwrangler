@@ -118,6 +118,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS `networkMode: host` task role: creds on host 127.0.0.1 (`AWS_CONTAINER_CREDENTIALS_FULL_URI`), endpoint on loopback, no DNAT | happy | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
 | ECS host task without a role gets no credentials env; another task id → 404 | sad/authz | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
+| ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
 | ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
 | ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
