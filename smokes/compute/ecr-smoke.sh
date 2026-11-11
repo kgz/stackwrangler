@@ -105,6 +105,75 @@ if ! echo "$DESCRIBED" | grep -qw latest; then
 fi
 echo "OK: describe-images shows latest"
 
+# #683: BuildKit provenance tags an OCI image index. Docker's default driver may
+# refuse --provenance=true, so PUT an index via the registry API (same notify path).
+INDEX_TAG="oci-index"
+python3 - "$REGISTRY" "$REPO" "$INDEX_TAG" <<'PY'
+import json, sys, urllib.request
+
+registry, repo, tag = sys.argv[1:4]
+accept = (
+	"application/vnd.oci.image.index.v1+json,"
+	"application/vnd.oci.image.manifest.v1+json,"
+	"application/vnd.docker.distribution.manifest.v2+json"
+)
+req = urllib.request.Request(
+	f"http://{registry}/v2/{repo}/manifests/latest",
+	headers={"Accept": accept},
+)
+with urllib.request.urlopen(req) as resp:
+	child = resp.read()
+	child_digest = resp.headers.get("Docker-Content-Digest")
+	child_ct = resp.headers.get("Content-Type") or "application/vnd.docker.distribution.manifest.v2+json"
+if not child_digest:
+	raise SystemExit("missing Docker-Content-Digest for latest")
+index = {
+	"schemaVersion": 2,
+	"mediaType": "application/vnd.oci.image.index.v1+json",
+	"manifests": [
+		{
+			"mediaType": child_ct.split(";", 1)[0].strip(),
+			"size": len(child),
+			"digest": child_digest,
+			"platform": {"architecture": "amd64", "os": "linux"},
+		}
+	],
+}
+raw = json.dumps(index).encode()
+put = urllib.request.Request(
+	f"http://{registry}/v2/{repo}/manifests/{tag}",
+	data=raw,
+	method="PUT",
+	headers={"Content-Type": "application/vnd.oci.image.index.v1+json"},
+)
+with urllib.request.urlopen(put) as resp:
+	if resp.status not in (201, 202):
+		raise SystemExit(f"index PUT status {resp.status}")
+print(f"OK: registry PUT OCI index {repo}:{tag}")
+PY
+
+BATCH_MEDIA=""
+for _ in $(seq 1 30); do
+	BATCH_MEDIA="$(
+		aws ecr batch-get-image \
+			--repository-name "$REPO" \
+			--image-ids "imageTag=${INDEX_TAG}" \
+			--query 'images[0].imageManifestMediaType' \
+			--output text 2>/dev/null || true
+	)"
+	[[ -n "$BATCH_MEDIA" && "$BATCH_MEDIA" != "None" ]] && break
+	sleep 1
+done
+if [[ -z "$BATCH_MEDIA" || "$BATCH_MEDIA" == "None" ]]; then
+	echo "FAIL: batch-get-image ImageNotFound for OCI index tag ${INDEX_TAG}" >&2
+	exit 1
+fi
+if ! echo "$BATCH_MEDIA" | grep -q 'image.index'; then
+	echo "FAIL: expected OCI index mediaType, got ${BATCH_MEDIA}" >&2
+	exit 1
+fi
+echo "OK: batch-get-image ${INDEX_TAG} mediaType=${BATCH_MEDIA}"
+
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
 ALLOW_POLICY='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ecr:BatchGetImage","ecr:GetDownloadUrlForLayer","ecr:BatchCheckLayerAvailability"],"Resource":"*"}]}'
 DENY_POLICY='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ecr:DescribeRepositories","Resource":"*"}]}'
