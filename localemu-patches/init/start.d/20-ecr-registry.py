@@ -31,6 +31,16 @@ def _backend_for_repository(name: str):
     return None
 
 
+def _is_recordable_media(media: str) -> bool:
+    """Docker/OCI manifests and OCI indexes (BuildKit provenance default)."""
+    if not media:
+        return False
+    if "manifest" in media:
+        return True
+    # application/vnd.oci.image.index.v1+json — tag often points here, not a child manifest
+    return "image.index" in media
+
+
 def _record_push(payload: bytes) -> None:
     try:
         body = json.loads(payload.decode() or "{}")
@@ -49,7 +59,16 @@ def _record_push(payload: bytes) -> None:
         media = str(target.get("mediaType") or "")
         tag = target.get("tag")
         repo = target.get("repository")
-        if not tag or not repo or "manifest" not in media:
+        if not tag or not repo:
+            continue
+        if not _is_recordable_media(media):
+            # Tagged blob/layer pushes are uncommon; warn so silent drops are visible (#683).
+            LOG.warning(
+                "ecr push hook: skip %s:%s unsupported mediaType=%s",
+                repo,
+                tag,
+                media or "?",
+            )
             continue
         backend = _backend_for_repository(str(repo))
         if backend is None:
@@ -74,7 +93,7 @@ def _record_push(payload: bytes) -> None:
                 image_manifest_mediatype=media,
                 digest=target.get("digest"),
             )
-            LOG.info("ecr push hook: %s:%s", repo, tag)
+            LOG.info("ecr push hook: %s:%s mediaType=%s", repo, tag, media)
         except Exception as exc:
             name = type(exc).__name__
             if name == "ImageAlreadyExistsException":
