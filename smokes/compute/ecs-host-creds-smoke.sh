@@ -73,7 +73,7 @@ OUT1="$(container_output "$T1")"
 [[ "$OUT1" == *"AWS_CONTAINER_CREDENTIALS_FULL_URI=http://127.0.0.1:${CREDS_PORT}/v2/credentials/"* ]] \
 	|| fail "role task missing loopback FULL_URI: $OUT1"
 [[ "$OUT1" != *"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"* ]] || fail "role task still has RELATIVE_URI"
-[[ "$OUT1" == *"AWS_ENDPOINT_URL=http://127.0.0.1:"* ]] || fail "host task endpoint not on loopback: $OUT1"
+[[ "$OUT1" == *"AWS_ENDPOINT_URL=https://127.0.0.1:"* ]] || fail "host task endpoint not https on loopback: $OUT1"
 BODY1="$(printf '%s\n' "$OUT1" | sed -n '/^--body$/,/^--other$/p' | sed '1d;$d')"
 GOT_ROLE="$(printf '%s' "$BODY1" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("RoleArn",""))' 2>/dev/null || true)"
 [[ "$GOT_ROLE" == "$ROLE_ARN" ]] || fail "creds RoleArn '$GOT_ROLE', want $ROLE_ARN"

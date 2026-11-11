@@ -172,6 +172,21 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     outputs=self.outputs,
                     failure_message=failure_message,
                 )
+            # New-stack create failed: AWS::IAM::Role still probes GetRole /
+            # DeleteRolePolicy by RoleName. Pathless AccessDenied → DELETE_FAILED (#679).
+            if not is_update and not self._probe_failed_iam_role_deletes():
+                failure_message = (
+                    f"{failure_message}; IAM role cleanup denied on pathless role ARN"
+                )
+                self._change_set.stack.set_stack_status(
+                    StackStatus.DELETE_FAILED,
+                    failure_message,
+                )
+                return ChangeSetModelExecutorResult(
+                    resources=self.resources,
+                    outputs=self.outputs,
+                    failure_message=failure_message,
+                )
         elif self._deferred_actions:
             if not is_deletion:
                 self._change_set.stack.set_stack_status(
@@ -205,6 +220,48 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             if existing_id != logical_id
         ]
         self._created_this_operation.append((logical_id, policy))
+
+    def _probe_failed_iam_role_deletes(self) -> bool:
+        """Run IAM::Role delete probes after CREATE_FAILED (#679).
+
+        Real AWS CFN still calls GetRole / List*RolePolicies / DeleteRolePolicy
+        with the intended RoleName when create failed before CreateRole. A missing
+        role is authorised as pathless ``role/<name>``; AccessDenied fails cleanup
+        and the new stack ends ``DELETE_FAILED``.
+        """
+        ok = True
+        for logical_id, resource in list(self.resources.items()):
+            if resource.get("Type") != "AWS::IAM::Role":
+                continue
+            if resource.get("ResourceStatus") != ResourceStatus.CREATE_FAILED:
+                continue
+            props = resource.get("Properties") or {}
+            if not isinstance(props, dict) or not props.get("RoleName"):
+                continue
+            self._process_event(
+                action=ChangeAction.Remove,
+                logical_resource_id=logical_id,
+                event_status=OperationStatus.IN_PROGRESS,
+                resource_type="AWS::IAM::Role",
+            )
+            event = self._execute_resource_action(
+                action=ChangeAction.Remove,
+                logical_resource_id=logical_id,
+                resource_type="AWS::IAM::Role",
+                before_properties=PreprocProperties(properties=props),
+                after_properties=None,
+            )
+            self._process_event(
+                action=ChangeAction.Remove,
+                logical_resource_id=logical_id,
+                event_status=event.status,
+                resource_type="AWS::IAM::Role",
+                reason=event.message,
+            )
+            if event.status != OperationStatus.SUCCESS:
+                ok = False
+                self._delete_failures.append(logical_id)
+        return ok
 
     def _rollback_new_resources(self) -> bool:
         ok = True
@@ -816,6 +873,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
                 resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
                 resolved_resource["ResourceStatusReason"] = reason
+                # Keep intended properties (e.g. RoleName) so rollback can probe
+                # IAM cleanup APIs after CREATE_FAILED (#679).
+                if (
+                    action == ChangeAction.Add
+                    and after_properties
+                    and isinstance(after_properties.properties, dict)
+                    and after_properties.properties
+                ):
+                    resolved_resource["Properties"] = dict(after_properties.properties)
 
                 emit_stack_failure(reason, exception=exception)
 

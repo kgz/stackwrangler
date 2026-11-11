@@ -245,15 +245,16 @@ done
 
 # --- private zone still creatable (resolution covered by r53-private-smoke) ---
 PRIV_VPC="$(aws ec2 create-vpc --cidr-block 10.56.0.0/16 --query 'Vpc.VpcId' --output text)"
+# Comment is optional (#681); omit it so we catch moto KeyError regressions.
 PRIV_ZONE_ID="$(aws route53 create-hosted-zone \
 	--name "priv-${TS}.internal" \
 	--caller-reference "r53z-priv-${TS}" \
-	--hosted-zone-config "PrivateZone=true,Comment=awsbox" \
+	--hosted-zone-config "PrivateZone=true" \
 	--vpc "VPCRegion=${REGION},VPCId=${PRIV_VPC}" \
 	--query 'HostedZone.Id' --output text)"
 PRIV_CFG="$(aws route53 get-hosted-zone --id "$PRIV_ZONE_ID" --query 'HostedZone.Config.PrivateZone' --output text)"
 [[ "$PRIV_CFG" == "True" || "$PRIV_CFG" == "true" ]] || fail "private zone Config.PrivateZone=${PRIV_CFG}"
-echo "ok private zone create ${PRIV_ZONE_ID}"
+echo "ok private zone create without Comment ${PRIV_ZONE_ID}"
 
 # --- optional profile local list (endpoint override; profile still supplies keys) ---
 if [[ "$PROFILE_CHECK" == "1" ]]; then

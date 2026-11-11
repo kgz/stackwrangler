@@ -105,6 +105,75 @@ if ! echo "$DESCRIBED" | grep -qw latest; then
 fi
 echo "OK: describe-images shows latest"
 
+# #683: BuildKit provenance tags an OCI image index. Docker's default driver may
+# refuse --provenance=true, so PUT an index via the registry API (same notify path).
+INDEX_TAG="oci-index"
+python3 - "$REGISTRY" "$REPO" "$INDEX_TAG" <<'PY'
+import json, sys, urllib.request
+
+registry, repo, tag = sys.argv[1:4]
+accept = (
+	"application/vnd.oci.image.index.v1+json,"
+	"application/vnd.oci.image.manifest.v1+json,"
+	"application/vnd.docker.distribution.manifest.v2+json"
+)
+req = urllib.request.Request(
+	f"http://{registry}/v2/{repo}/manifests/latest",
+	headers={"Accept": accept},
+)
+with urllib.request.urlopen(req) as resp:
+	child = resp.read()
+	child_digest = resp.headers.get("Docker-Content-Digest")
+	child_ct = resp.headers.get("Content-Type") or "application/vnd.docker.distribution.manifest.v2+json"
+if not child_digest:
+	raise SystemExit("missing Docker-Content-Digest for latest")
+index = {
+	"schemaVersion": 2,
+	"mediaType": "application/vnd.oci.image.index.v1+json",
+	"manifests": [
+		{
+			"mediaType": child_ct.split(";", 1)[0].strip(),
+			"size": len(child),
+			"digest": child_digest,
+			"platform": {"architecture": "amd64", "os": "linux"},
+		}
+	],
+}
+raw = json.dumps(index).encode()
+put = urllib.request.Request(
+	f"http://{registry}/v2/{repo}/manifests/{tag}",
+	data=raw,
+	method="PUT",
+	headers={"Content-Type": "application/vnd.oci.image.index.v1+json"},
+)
+with urllib.request.urlopen(put) as resp:
+	if resp.status not in (201, 202):
+		raise SystemExit(f"index PUT status {resp.status}")
+print(f"OK: registry PUT OCI index {repo}:{tag}")
+PY
+
+BATCH_MEDIA=""
+for _ in $(seq 1 30); do
+	BATCH_MEDIA="$(
+		aws ecr batch-get-image \
+			--repository-name "$REPO" \
+			--image-ids "imageTag=${INDEX_TAG}" \
+			--query 'images[0].imageManifestMediaType' \
+			--output text 2>/dev/null || true
+	)"
+	[[ -n "$BATCH_MEDIA" && "$BATCH_MEDIA" != "None" ]] && break
+	sleep 1
+done
+if [[ -z "$BATCH_MEDIA" || "$BATCH_MEDIA" == "None" ]]; then
+	echo "FAIL: batch-get-image ImageNotFound for OCI index tag ${INDEX_TAG}" >&2
+	exit 1
+fi
+if ! echo "$BATCH_MEDIA" | grep -q 'image.index'; then
+	echo "FAIL: expected OCI index mediaType, got ${BATCH_MEDIA}" >&2
+	exit 1
+fi
+echo "OK: batch-get-image ${INDEX_TAG} mediaType=${BATCH_MEDIA}"
+
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
 ALLOW_POLICY='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ecr:BatchGetImage","ecr:GetDownloadUrlForLayer","ecr:BatchCheckLayerAvailability"],"Resource":"*"}]}'
 DENY_POLICY='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ecr:DescribeRepositories","Resource":"*"}]}'
@@ -212,4 +281,58 @@ if ! echo "$DENY_REASON" | grep -qiE 'BatchGetImage|AccessDenied|not authorized|
 	exit 1
 fi
 echo "OK: execution role without ecr:BatchGetImage → STOPPED (${DENY_REASON:0:100})"
-echo "OK: ecr smoke (push/pull / ecs pull / deny BatchGetImage)"
+
+# #684: LocalEmu restart clears moto ECR; registry volume keeps blobs. Catalog
+# resync must re-record tags without a new push (docker push would be a no-op).
+echo "== #684 restart catalog resync =="
+COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
+"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null
+for _ in $(seq 1 90); do
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$EP/" || true)"
+	[[ "$code" =~ ^[12345][0-9][0-9]$ ]] && break
+	sleep 2
+done
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$EP/" || true)"
+if [[ ! "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+	echo "FAIL: LocalEmu not ready after recreate (${code})" >&2
+	exit 1
+fi
+
+RESYNC_TAGS=""
+for _ in $(seq 1 60); do
+	RESYNC_TAGS="$(
+		aws ecr describe-images --repository-name "$REPO" \
+			--query 'imageDetails[].imageTags[]' --output text 2>/dev/null || true
+	)"
+	echo "$RESYNC_TAGS" | grep -qw latest && break
+	sleep 2
+done
+if ! echo "$RESYNC_TAGS" | grep -qw latest; then
+	echo "FAIL: after LocalEmu recreate, describe-images missing latest (${RESYNC_TAGS:-empty})" >&2
+	exit 1
+fi
+if ! echo "$RESYNC_TAGS" | grep -qw "$INDEX_TAG"; then
+	echo "FAIL: after LocalEmu recreate, missing OCI index tag ${INDEX_TAG} (${RESYNC_TAGS})" >&2
+	exit 1
+fi
+echo "OK: catalog resync restored tags after LocalEmu recreate (${RESYNC_TAGS})"
+
+# delete-repository + create-repository should adopt registry tags (#684).
+aws ecr delete-repository --repository-name "$REPO" --force >/dev/null
+aws ecr create-repository --repository-name "$REPO" >/dev/null
+ADOPT_TAGS=""
+for _ in $(seq 1 30); do
+	ADOPT_TAGS="$(
+		aws ecr describe-images --repository-name "$REPO" \
+			--query 'imageDetails[].imageTags[]' --output text 2>/dev/null || true
+	)"
+	echo "$ADOPT_TAGS" | grep -qw latest && break
+	sleep 1
+done
+if ! echo "$ADOPT_TAGS" | grep -qw latest; then
+	echo "FAIL: create-repository did not adopt registry tag latest (${ADOPT_TAGS:-empty})" >&2
+	exit 1
+fi
+echo "OK: create-repository adopted registry tags (${ADOPT_TAGS})"
+
+echo "OK: ecr smoke (push/pull / ecs pull / deny BatchGetImage / restart resync)"

@@ -117,8 +117,17 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS `networkMode: host` + portMappings listens on host | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS `networkMode: host` task role: creds on host 127.0.0.1 (`AWS_CONTAINER_CREDENTIALS_FULL_URI`), endpoint on loopback, no DNAT | happy | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
 | ECS host task without a role gets no credentials env; another task id → 404 | sad/authz | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
+| ECS awsvpc task gets `https://localemu.awsbox:4566` + CA env; DenyNonSSL bucket allows task GetObject | happy | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
+| ECS task role over plain `http://` GetObject denied by bucket `aws:SecureTransport=false` Deny | sad/authz | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
+| ECS private awsvpc + tight egress SG + VPCEs: task-role creds + `AWS_ENDPOINT_URL` / S3 GetObject | happy | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
+| ECS tight egress SG without VPCEs: creds still work; `AWS_ENDPOINT_URL` times out | sad/other | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
+| Lambda (and EC2) `https` `AWS_ENDPOINT_URL` + CA for SecureTransport | happy | missing | [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
+| ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
 | ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
+| ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
+| ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
+| ECR `delete-repository` + `create-repository` adopts tags still in the local registry | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
 | ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
@@ -129,7 +138,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Public hosted zone + UPSERT A / A-alias / CNAME; `list-resource-record-sets` | happy | covered | `./smokes/networking/route53-smoke.sh` · [r53.md](r53.md) |
 | Public zone names resolve via `dig @127.0.0.1` inside LocalEmu | happy | covered | `./smokes/networking/route53-smoke.sh` |
 | Profile `local` `route53 list-hosted-zones` includes the public zone | happy | covered | `./smokes/networking/route53-smoke.sh` |
-| Private zone create still works alongside public | happy | covered | `./smokes/networking/route53-smoke.sh` |
+| Private zone create without `HostedZoneConfig.Comment` still works alongside public | happy | covered | `./smokes/networking/route53-smoke.sh` · [#681](https://github.com/kgz/stackwrangler/issues/681) |
 | **`route53:ListHostedZones` explicit deny** (public smoke) | sad/authz | covered | `./smokes/networking/route53-smoke.sh` |
 | Private zone CNAME → internal NLB resolves and connects from ECS in the associated VPC | happy | covered | `./smokes/networking/r53-private-smoke.sh` · [r53-private.md](r53-private.md) |
 | Private zone alias to ALB returns the ALB addresses | happy | covered | `./smokes/networking/r53-private-smoke.sh` |
@@ -183,6 +192,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
 | SG rule revoke/authorize updates a running target | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
+| Prefix-list SG rule Description round-trips on describe | happy | covered | `./smokes/networking/sg-prefixlist-description-smoke.sh` · [#682](https://github.com/kgz/stackwrangler/issues/682) |
 | RDS on a subnet allows 5432 only from SG A | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
 | VPC Lambda traffic filtered by its security groups | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) · [#237](https://github.com/kgz/awsl/issues/237) |
@@ -235,6 +245,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN admin-key create unchanged | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh`, `./smokes/iac/cfn-smoke.sh` |
 | CFN CreateStack `RoleARN` — resource ops as service role (`iam:PassRole`) | happy | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
 | CFN admin CreateStack with limited `RoleARN` → resource IAM deny (no internal elevate) | sad/authz | covered | `./smokes/iac/cfn-caller-iam-smoke.sh` · [#524](https://github.com/kgz/awsl/issues/524) |
+| CFN `AWS::IAM::Role` (Path + PermissionsBoundary) as path-scoped deploy role → `iam:GetRole` AccessDenied on pathless `role/<name>` + new-stack `DELETE_FAILED` | sad/authz | covered | `./smokes/iac/cfn-path-scoped-role-smoke.sh` · [#679](https://github.com/kgz/stackwrangler/issues/679) |
+| CFN same deploy role after pathless `GetRole`/`DeleteRolePolicy`/… grant → `CREATE_COMPLETE` | happy | covered | `./smokes/iac/cfn-path-scoped-role-smoke.sh` · [#679](https://github.com/kgz/stackwrangler/issues/679) |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` |
 | Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |
@@ -257,6 +269,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./smokes/parity/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./smokes/parity/aws-parity-cfn-authz.sh` |
+| Real AWS CFN path-scoped role GetRole deny + pathless grant | happy+sad | covered | `./smokes/parity/aws-parity-cfn-path-scoped-role.sh` (~$0) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) |
+| Real AWS SG prefix-list rule Description round-trip | happy | covered | `./smokes/parity/aws-parity-sg-prefixlist-description.sh` (~$0) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) |
 | Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./smokes/parity/aws-parity-hf-cheap.sh` (~$0–cents; ask before real) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Real AWS Trust (v0.0.3) | happy+sad | covered | `./smokes/parity/aws-parity-trust-v003.sh` (KMS 7d residual) |
 | Real AWS HF skipped: WAF, R53 zone, ACM without DNS, Transfer, CodeDeploy target stack, Batch/ASG compute | — | skipped (cost) | [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) skipped gaps |
