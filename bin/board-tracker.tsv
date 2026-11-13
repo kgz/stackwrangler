@@ -365,6 +365,6 @@
 685	in-review	ecs: container entryPoint from task definition ignored
 686	in-review	ECS SG exempt task-creds + AWS_ENDPOINT_URL VPCE stand-in
 687	in-review	ECS https AWS_ENDPOINT_URL + CA for SecureTransport
-696	backlog	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
+696	in-review	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
 684	in-review	ecr: restart catalog resync when registry keeps blobs
 709	in-review	IAM ECR repository actions use repository ARN

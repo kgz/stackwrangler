@@ -13,6 +13,7 @@ Close high-impact fidelity gaps on the core hosting path (ECR, ECS, CFN, Route 
 - ECS applies container `entryPoint` as docker `--entrypoint` ([#685](https://github.com/kgz/stackwrangler/issues/685))
 - ECS SG enforcement exempts task-role credentials and the `AWS_ENDPOINT_URL` VPCE stand-in ([#686](https://github.com/kgz/stackwrangler/issues/686))
 - ECS tasks get `https://` `AWS_ENDPOINT_URL` plus a trusted gateway CA so `aws:SecureTransport` matches AWS ([#687](https://github.com/kgz/stackwrangler/issues/687))
+- Lambda and EC2 instance containers get the same https `AWS_ENDPOINT_URL` + gateway CA ([#696](https://github.com/kgz/stackwrangler/issues/696))
 
 ### Networking / IAM / CFN
 

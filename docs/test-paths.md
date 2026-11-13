@@ -121,7 +121,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS task role over plain `http://` GetObject denied by bucket `aws:SecureTransport=false` Deny | sad/authz | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
 | ECS private awsvpc + tight egress SG + VPCEs: task-role creds + `AWS_ENDPOINT_URL` / S3 GetObject | happy | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
 | ECS tight egress SG without VPCEs: creds still work; `AWS_ENDPOINT_URL` times out | sad/other | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
-| Lambda (and EC2) `https` `AWS_ENDPOINT_URL` + CA for SecureTransport | happy | missing | [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
+| Lambda `https://localemu.awsbox:4566` + CA env/mount; DenyNonSSL bucket allows role GetObject | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
+| EC2 instance containers get same https `AWS_ENDPOINT_URL` + CA as ECS/Lambda | happy | covered | wiring in `localemu-patches/init/start.d/20-ec2-imds.py` · [#696](https://github.com/kgz/stackwrangler/issues/696) (no dedicated EC2 DenyNonSSL smoke; Lambda smoke covers SecureTransport path) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
 | ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
@@ -444,6 +445,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./smokes/lambda/lambda-smoke.sh           # happy
 ./smokes/lambda/lambda-authz-smoke.sh     # sad/authz
+./smokes/lambda/lambda-secure-transport-smoke.sh  # https endpoint + DenyNonSSL (#696)
 ./smokes/security/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
 ./smokes/security/resource-policy-cross-account-smoke.sh # A role vs B secret/key/bucket policies
 ./smokes/transfer/transfer-key-smoke.sh
