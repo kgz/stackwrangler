@@ -936,7 +936,14 @@ class DockerTaskManager:
                     if parsed_ulimits:
                         container_ulimits = parsed_ulimits
 
-                container_labels = {
+                # User dockerLabels first; reserved localemu.* always win
+                # so task-role reminting (#79) and filters stay intact.
+                container_labels: dict[str, str] = {}
+                docker_labels = cdef.get("dockerLabels")
+                if isinstance(docker_labels, dict):
+                    for dk, dv in docker_labels.items():
+                        container_labels[str(dk)] = str(dv)
+                container_labels.update({
                     "localemu.service": "ecs",
                     "localemu.cluster": cluster_name,
                     "localemu.task-arn": effective_arn,
@@ -945,11 +952,7 @@ class DockerTaskManager:
                     # #79: task-role is persisted on the container so
                     # the on-load reconciler can re-mint creds.
                     "localemu.task-role-arn": task_role_arn or "",
-                }
-                docker_labels = cdef.get("dockerLabels")
-                if isinstance(docker_labels, dict):
-                    for dk, dv in docker_labels.items():
-                        container_labels[str(dk)] = str(dv)
+                })
 
                 workdir = cdef.get("workingDirectory") or None
                 if workdir is not None:
