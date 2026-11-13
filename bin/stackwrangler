@@ -58,6 +58,8 @@ iam_endpoint_url() {
 
 # shellcheck disable=SC1091
 source "$ROOT/bin/stackwrangler-wait-healthy.sh"
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-dev-apply-hook.sh"
 
 sftp_host_port() {
 	local from_file
@@ -258,6 +260,9 @@ cmd_up() {
 	cleanup_localemu_vpc_networks
 	"${COMPOSE[@]}" up -d
 	wait_healthy
+	# Optional IaC re-apply after healthy (#290). Env/config works without --dev; #288 wires mode.
+	load_root_env
+	run_dev_apply_hook
 	"$ROOT/bin/stackwrangler-profile" write "$@"
 	sync_console_env
 	local ep iam

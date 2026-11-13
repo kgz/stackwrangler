@@ -116,6 +116,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Prowler | yes (scoped unused-services) | ratchet (failing API count) | S3 Control host | — | `prowler-smoke.sh` |
 | Account mirror | yes (synthetic apply) | n/a (local apply) | in-repo write + non-local endpoint | — | `mirror-smoke.sh` |
 | Terraform S3 backend + lock | yes (opt-in) | — | canary abort if real AWS STS succeeds | — | `terraform-backend-smoke.sh` (`AWSBOX_TERRAFORM_BACKEND_SMOKE=1`) |
+| Dev apply hook on `up` (#290) | yes (env + `.awsbox/dev-apply-hook`; no Docker) | — | missing path / non-zero apply exits non-zero | — | `dev-apply-hook-smoke.sh` |
 | Account mirror tags | yes (tagged VPC/subnet/RT + TF data sources) | n/a (local apply) | — | — | `mirror-tags-smoke.sh` |
 | Custom resource IDs | yes | n/a (same create APIs as service smokes) | bad `_custom_id_` | n/a | `custom-id-smoke.sh` |
 | Console labels | yes (VPC id + NLB ARN glob) | — | missing file → no labels | list/detail | `labels-smoke.sh` |

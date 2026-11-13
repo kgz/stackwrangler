@@ -108,6 +108,35 @@ When the emulator sits on an **internal** Docker network with no route to the pu
 
 Provider `endpoints` and backend `endpoints` must use the **emulator’s Docker DNS name and port on that network** (not only `127.0.0.1` from the host), still with path-style S3 and the same `skip_*` flags.
 
+A post-`up` apply hook (below) must use the same isolation: run Terraform/serverless **on that network**, with endpoints aimed at the emulator — never a real account route.
+
+## Dev apply hook (IaC as source of truth)
+
+Saved emulator state can drift from wiring that does not round-trip. Prefer re-applying **your** Terraform / serverless after the stack is healthy, treating that IaC as the source of truth.
+
+After `wait_healthy`, `./bin/stackwrangler up` runs an optional hook when configured (same path on the image CLI). A failing hook makes `up` exit non-zero with the error.
+
+| Config | Meaning |
+|--------|---------|
+| `STACKWRANGLER_DEV_APPLY_HOOK` (or `AWSBOX_DEV_APPLY_HOOK`) | Path to one executable / bash script |
+| `.awsbox/dev-apply-hook` (gitignored) | One script path per line (`#` comments ok); used when the env var is unset |
+| `STACKWRANGLER_DEV_APPLY_HOOK_FILE` | Override path to that list file |
+
+`--dev` mode selection is [#288](https://github.com/kgz/stackwrangler/issues/288) (not required yet). Today the hook runs whenever the env/config is set — keep it unset for hermetic smokes.
+
+Example (copy outside the repo; no real account names):
+
+```bash
+cp examples/dev-apply/terraform-apply.example.sh ~/.stackwrangler/dev-apply.sh
+chmod +x ~/.stackwrangler/dev-apply.sh
+export STACKWRANGLER_DEV_APPLY_HOOK=$HOME/.stackwrangler/dev-apply.sh
+./bin/stackwrangler up
+```
+
+**Idempotency:** a second `up` with the same hook should apply with no changes when state and IaC agree. If they disagree (manual console edits, partial apply, wiped LocalEmu with leftover remote state), Terraform/serverless reports the drift — fix IaC or state; the hook does not auto-reconcile beyond a normal apply.
+
+**Unit smoke (no Docker):** `./smokes/iac/dev-apply-hook-smoke.sh`
+
 ## Clean apply + empty second plan
 
 After bootstrap + override:
