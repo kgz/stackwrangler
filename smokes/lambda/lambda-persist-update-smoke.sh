@@ -38,8 +38,9 @@ cleanup() {
 	aws_emu lambda delete-function --function-name "$FN" >/dev/null 2>&1 || true
 	aws_emu iam delete-role --role-name "$ROLE_NAME" >/dev/null 2>&1 || true
 	rm -f "$ZIP1" "$ZIP2" "$OUT"
-	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	# Drop override first so recreate does not keep the named persist volume.
 	rm -f "$OVERRIDE"
+	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
 	docker volume rm -f "$VOL" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -57,26 +58,41 @@ PY
 }
 
 wait_ready() {
-	local code=""
+	# Prefer /_localemu/health — any HTTP on / races mid --force-recreate
+	# (dying gateway still answers; create then lands on a wiped process →
+	# get-function empty State for the whole wait_state loop).
+	local body=""
 	for _ in $(seq 1 90); do
-		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$EMU/" || true)"
-		[[ "$code" =~ ^[12345][0-9][0-9]$ ]] && return 0
+		body="$(curl -sf --max-time 2 "$EMU/_localemu/health" 2>/dev/null || true)"
+		if [[ "$body" == *'"services"'* ]]; then
+			if aws_emu iam list-roles --max-items 1 >/dev/null 2>&1 \
+				&& aws_emu lambda list-functions --max-items 1 >/dev/null 2>&1; then
+				return 0
+			fi
+		fi
 		sleep 2
 	done
-	echo "FAIL: LocalEmu not ready (${code:-none})" >&2
+	echo "FAIL: LocalEmu not ready (health/IAM/Lambda)" >&2
 	return 1
 }
 
 wait_state() {
 	local want="$1"
 	local st=""
+	local err=""
+	local out=""
 	for _ in $(seq 1 90); do
-		st="$(aws_emu lambda get-function --function-name "$FN" \
-			--query 'Configuration.State' --output text 2>/dev/null || true)"
-		[[ "$st" == "$want" ]] && return 0
+		if out="$(aws_emu lambda get-function --function-name "$FN" \
+			--query 'Configuration.State' --output text 2>&1)"; then
+			st="$out"
+			[[ "$st" == "$want" ]] && return 0
+		else
+			err="$out"
+			st=""
+		fi
 		sleep 2
 	done
-	echo "FAIL: State=${st:-empty} want=${want}" >&2
+	echo "FAIL: State=${st:-empty} want=${want} last=${err:-none}" >&2
 	return 1
 }
 
@@ -84,16 +100,22 @@ wait_state() {
 # Lambda API state so recreate hits the unrestored / no-manager path (#713).
 wipe_persisted_s3_bodies() {
 	# Reuse the LocalEmu image (already pulled) as a scratch fs tool.
-	local img
+	local img left
 	img="$("${COMPOSE[@]}" config --images 2>/dev/null | awk '/localemu/{print; exit}')"
 	[[ -n "$img" ]] || img="localemu/localemu:latest"
 	docker run --rm --entrypoint sh -v "${VOL}:/var/lib/localemu" "$img" -c '
 		set -e
-		find /var/lib/localemu -type d -name s3_bodies -print | while read -r d; do
-			rm -rf "$d"
-		done
-		find /var/lib/localemu -type f -name s3_bodies.state -delete
+		find /var/lib/localemu -type d -name s3_bodies -exec rm -rf {} + 2>/dev/null || true
+		find /var/lib/localemu -type f -name s3_bodies.state -delete 2>/dev/null || true
+		# Recreate empty dirs so persistence layout stays familiar.
+		mkdir -p /var/lib/localemu/state/state/assets/s3_bodies
 	' >/dev/null
+	left="$(docker run --rm --entrypoint sh -v "${VOL}:/var/lib/localemu" "$img" -c \
+		'find /var/lib/localemu -type f -path "*/s3_bodies/*" 2>/dev/null | wc -l')"
+	[[ "${left// /}" == "0" ]] || {
+		echo "FAIL: s3_bodies wipe left ${left} file(s)" >&2
+		return 1
+	}
 }
 
 recreate_localemu() {

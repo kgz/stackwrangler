@@ -193,15 +193,39 @@ def _patch_deferred_restore() -> None:
 
 
 def _late_sweep_pending() -> None:
-    """Mark Pending leftovers if deferred restore finished before our patch."""
-    time.sleep(_code_wait_s() + _DEFERRED_CREATE_TIMEOUT_S)
+    """Mark restore-era Pending leftovers if deferred restore raced our patch.
+
+    Snapshot Pending ARNs after a short delay (Phase 1 may still be landing if
+    start.d raced ahead of state load), then wait for deferred restore. Never
+    re-scan the whole store after user traffic — that raced cold
+    ``create-function`` under short smoke wait_s (#713).
+    """
+    snap_s = 1.0
+    time.sleep(snap_s)
+    try:
+        restore_arns = frozenset(
+            ver.id.qualified_arn() for _, ver in _pending_from_store()
+        )
+    except Exception:
+        LOG.exception("Lambda persistence late sweep snapshot failed (#713)")
+        return
+    if not restore_arns:
+        LOG.info("Lambda persistence late sweep: no restore-era Pending (#713)")
+        return
+    remaining = max(0.0, _code_wait_s() + _DEFERRED_CREATE_TIMEOUT_S - snap_s)
+    time.sleep(remaining)
     try:
         from localemu.services.plugins import SERVICE_PLUGINS
 
         svc = SERVICE_PLUGINS.get_service("lambda")
         provider = getattr(svc, "_provider", None) if svc else None
         lambda_service = _lambda_service_from_provider(provider)
-        marked = _mark_pending_failed(_pending_from_store(), lambda_service)
+        pairs = [
+            (fn, ver)
+            for fn, ver in _pending_from_store()
+            if ver.id.qualified_arn() in restore_arns
+        ]
+        marked = _mark_pending_failed(pairs, lambda_service)
         if marked:
             LOG.info(
                 "Lambda persistence late sweep: marked %d Pending version(s) Failed (#713)",
