@@ -370,3 +370,4 @@
 709	in-review	IAM ECR repository actions use repository ARN
 714	in-review	sls: do not recreate LocalEmu via aws-redirect (#714)
 710	in-review	rds: param group Source=user for TF converge
+712	in-review	LocalEmu S3 spool + body restore across recreate
