@@ -379,4 +379,4 @@
 713	in-review	Lambda UpdateFunctionCode after PERSISTENCE recreate
 742	backlog	Debt: Terraform S3+DDB empty plan after LocalEmu recreate (from #200)
 743	backlog	Debt: RDS MySQL/Aurora SQL persist after LocalEmu recreate (from #200)
-289	in-progress	warm restart prebuilt images + preserve stopped containers
+289	in-review	warm restart prebuilt images + preserve stopped containers
