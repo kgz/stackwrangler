@@ -420,7 +420,15 @@ cmd_reset() {
 	cleanup_localemu_vpc_networks
 
 	echo "reset: wiping .awsbox/dev (LocalEmu state + ECR registry blobs)…"
-	rm -rf "$DEV_STATE_DIR"
+	# LocalEmu runs as root (docker.sock); TLS cache under .awsbox/dev can be root-owned.
+	if [[ -e "$DEV_STATE_DIR" ]] && ! rm -rf "$DEV_STATE_DIR" 2>/dev/null; then
+		docker run --rm \
+			-v "$ROOT/.awsbox:/awsbox" \
+			--entrypoint rm \
+			alpine:3.20 \
+			-rf /awsbox/dev
+	fi
+	rm -rf "$DEV_STATE_DIR" 2>/dev/null || true
 	mkdir -p "$ROOT/.awsbox"
 
 	echo "reset: removing Seaweed named volumes (test + dev)…"
