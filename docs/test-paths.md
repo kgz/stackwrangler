@@ -409,7 +409,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Transfer connector retrieve / AS2 | happy | missing | [#314](https://github.com/kgz/awsl/issues/314) |
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./smokes/data/rds-smoke.sh` |
-| RDS stable host port (`--port` / tag, reboot keep, conflict) | happy+sad | covered | `./smokes/data/rds-stable-host-port-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| RDS stable host port (`--port` / tag, reboot keep, conflict; CreateDBCluster unpinned ≠ 3306/5432 + pinned writer) | happy+sad | covered | `./smokes/data/rds-stable-host-port-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
 | RDS host port survives LocalEmu restart + PERSISTENCE recreate | happy | covered | `./smokes/data/rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./smokes/data/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |

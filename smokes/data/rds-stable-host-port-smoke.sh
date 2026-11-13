@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Stable selectable RDS host ports (#705): --port / tag, reboot, conflict.
+# Stable selectable RDS host ports (#705): --port / tag, reboot, conflict,
+# CreateDBCluster unpinned (no engine-default pin) + pinned writer port.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -15,12 +16,15 @@ TS="$(date +%s)"
 ID="awsbox-rds-port-${TS}"
 ID2="awsbox-rds-port2-${TS}"
 IDT="awsbox-rds-portt-${TS}"
+CID_FREE="awsbox-rds-clfree-${TS}"
+CID_PIN="awsbox-rds-clpin-${TS}"
 USER="awsbox"
 PASS="AwsboxRds1!"
 DB="awsbox"
 # High ports avoid colliding with host postgres/mysql.
 HOST_PORT=$((13000 + (TS % 2000)))
 TAG_PORT=$((HOST_PORT + 1))
+CLUSTER_PORT=$((HOST_PORT + 2))
 KEEP="${STACKWRANGLER_RDS_KEEP:-${AWSBOX_RDS_KEEP:-0}}"
 
 export AWS_ACCESS_KEY_ID="$KEY"
@@ -36,11 +40,17 @@ cleanup() {
 	aws rds delete-db-instance --db-instance-identifier "$ID" --skip-final-snapshot >/dev/null 2>&1 || true
 	aws rds delete-db-instance --db-instance-identifier "$ID2" --skip-final-snapshot >/dev/null 2>&1 || true
 	aws rds delete-db-instance --db-instance-identifier "$IDT" --skip-final-snapshot >/dev/null 2>&1 || true
+	aws rds delete-db-cluster --db-cluster-identifier "$CID_FREE" --skip-final-snapshot >/dev/null 2>&1 || true
+	aws rds delete-db-cluster --db-cluster-identifier "$CID_PIN" --skip-final-snapshot >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 command -v psql >/dev/null || {
 	echo "FAIL: psql required for RDS host-port smoke" >&2
+	exit 1
+}
+command -v mysql >/dev/null || {
+	echo "FAIL: mysql client required for CreateDBCluster host-port assertions" >&2
 	exit 1
 }
 
@@ -154,4 +164,68 @@ HOSTT="${HOSTT:-127.0.0.1}"
 }
 wait_psql "$HOSTT" "$PORTT"
 
-echo "OK: rds stable host-port ${ID}@${HOST_PORT} tag=${TAG_PORT} reboot+conflict"
+wait_cluster_port() {
+	local cid="$1" want="${2:-}"
+	local port=""
+	for _ in $(seq 1 90); do
+		port="$(aws rds describe-db-clusters --db-cluster-identifier "$cid" \
+			--query 'DBClusters[0].Port' --output text 2>/dev/null || true)"
+		if [[ -n "$port" && "$port" != "None" ]]; then
+			if [[ -z "$want" || "$port" == "$want" ]]; then
+				echo "$port"
+				return 0
+			fi
+		fi
+		sleep 2
+	done
+	echo "FAIL: no cluster Port for ${cid} (want=${want:-any})" >&2
+	return 1
+}
+
+wait_mysql() {
+	local port="$1"
+	for _ in $(seq 1 60); do
+		if MYSQL_PWD="$PASS" mysql --protocol=tcp --get-server-public-key --connect-timeout=5 \
+			-h 127.0.0.1 -P "$port" -u "$USER" "$DB" -e 'SELECT 1' >/dev/null 2>&1; then
+			return 0
+		fi
+		sleep 2
+	done
+	echo "FAIL: mysql not ready on 127.0.0.1:${port}" >&2
+	return 1
+}
+
+echo "CreateDBCluster unpinned must not publish engine Port 3306/5432"
+aws rds create-db-cluster \
+	--db-cluster-identifier "$CID_FREE" \
+	--engine aurora-mysql \
+	--engine-version 8.0 \
+	--master-username "$USER" \
+	--master-user-password "$PASS" \
+	--database-name "$DB" >/dev/null
+FREE_PORT="$(wait_cluster_port "$CID_FREE")"
+[[ "$FREE_PORT" != "3306" && "$FREE_PORT" != "5432" ]] || {
+	echo "FAIL: unpinned cluster pinned engine Port ${FREE_PORT}" >&2
+	exit 1
+}
+wait_mysql "$FREE_PORT"
+echo "OK: unpinned cluster writer on ephemeral ${FREE_PORT}"
+
+echo "CreateDBCluster --port ${CLUSTER_PORT} publishes that host port"
+aws rds create-db-cluster \
+	--db-cluster-identifier "$CID_PIN" \
+	--engine aurora-mysql \
+	--engine-version 8.0 \
+	--master-username "$USER" \
+	--master-user-password "$PASS" \
+	--database-name "$DB" \
+	--port "$CLUSTER_PORT" >/dev/null
+PIN_PORT="$(wait_cluster_port "$CID_PIN" "$CLUSTER_PORT")"
+[[ "$PIN_PORT" == "$CLUSTER_PORT" ]] || {
+	echo "FAIL: pinned cluster Port=${PIN_PORT} want ${CLUSTER_PORT}" >&2
+	exit 1
+}
+wait_mysql "$PIN_PORT"
+echo "OK: pinned cluster writer on ${CLUSTER_PORT}"
+
+echo "OK: rds stable host-port ${ID}@${HOST_PORT} tag=${TAG_PORT} reboot+conflict cluster free=${FREE_PORT} pin=${CLUSTER_PORT}"

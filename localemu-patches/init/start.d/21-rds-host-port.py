@@ -376,21 +376,27 @@ def _install() -> None:
     def _handle_create_db_cluster(context, request):
         err_token = _PORT_ALLOC_ERROR.set(None)
         preferred = _resolve_preferred_host_port(request)
-        # Cluster member creates may inherit moto engine Port (3306) — that
-        # must stay engine-listen only. Explicit cluster --port / tag still
-        # pins via ContextVar for members created on this call stack.
+        # Writer container id == DBClusterIdentifier. Pending survives the
+        # worker-thread hop; ContextVar alone does not. Unpinned clusters
+        # still pass moto engine Port (3306/5432) with cluster_id set — that
+        # stays listen-only in _do_create.
+        cluster_id = _request_get(request, "DBClusterIdentifier")
+        if preferred is not None:
+            _set_pending_host_port(cluster_id, preferred)
         pref_token = _PREFERRED_HOST_PORT.set(preferred)
         try:
             if preferred is not None:
                 try:
                     _ensure_host_port_free(preferred)
                 except HostPortInUse as exc:
+                    _set_pending_host_port(cluster_id, None)
                     _raise_port_in_use(exc.port)
                 _apply_preferred_to_request(request, preferred)
             result = orig_create_cluster(context, request)
             _raise_if_port_alloc_failed(preferred)
             return result
         except HostPortInUse as exc:
+            _set_pending_host_port(cluster_id, None)
             _raise_port_in_use(exc.port)
         finally:
             _PREFERRED_HOST_PORT.reset(pref_token)
