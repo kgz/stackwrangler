@@ -31,7 +31,7 @@ Default compose keeps `PERSISTENCE=0` so smokes stay hermetic. With `PERSISTENCE
 - Object **bodies** are snapshotted under `state/assets/s3_bodies` and restored after the S3 provider starts
 - Runtime spool dirs live under `/var/lib/localemu/s3/<bucket>/` (not `/tmp/localemu-s3-storage`), and missing bucket dirs are recreated on restore so `PutObject` does not ENOENT
 
-SeaweedFS already has `seaweed-data`; full dual-S3 wipe/`reset` remains [#200](https://github.com/kgz/stackwrangler/issues/200).
+SeaweedFS already has `seaweed-data` / `seaweed-data-dev`. `./bin/stackwrangler reset` wipes LocalEmu state (incl. LocalEmu S3) **and** both Seaweed volumes ([#200](https://github.com/kgz/stackwrangler/issues/200) · [dev-mode.md](dev-mode.md)).
 
 ## Console
 

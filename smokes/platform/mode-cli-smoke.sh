@@ -30,6 +30,11 @@ echo test >"$ROOT/.awsbox/mode"
 mode="$(tr -d '[:space:]' <"$ROOT/.awsbox/mode")"
 [[ "$mode" == "test" ]] || fail "wipe should set mode=test (got ${mode})"
 
+# #200: reset must target RDS containers + data volumes (marker — behavioral proof in mode-reset-rds-wipe-smoke).
+grep -qF 'wipe_localemu_rds_backends' "$ROOT/bin/stackwrangler" || fail "reset missing wipe_localemu_rds_backends"
+grep -qF 'localemu-rds-' "$ROOT/bin/stackwrangler" || fail "reset missing localemu-rds wipe"
+grep -qF 'localemu-rds-*-data' "$ROOT/bin/stackwrangler" || fail "reset missing localemu-rds-*-data wipe"
+
 # status shows mode without requiring a live stack
 out="$("$ROOT/bin/stackwrangler" status 2>&1 || true)"
 echo "$out" | grep -qE '^mode:[[:space:]]+test' || fail "status missing mode: test"
