@@ -4,8 +4,9 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 
 ```bash
 ./bin/stackwrangler up --force
-./smokes/data/rds-smoke.sh          # Postgres
-./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
+./smokes/data/rds-smoke.sh              # Postgres
+./smokes/data/rds-mysql-smoke.sh        # MySQL instance + Aurora MySQL cluster
+./smokes/data/rds-param-groups-smoke.sh # DB / cluster parameter groups → container
 ```
 
 Keep resources: `STACKWRANGLER_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
@@ -19,6 +20,7 @@ Needs host `psql` (Postgres smoke) or `mysql` (MySQL smoke).
 - Further `create-db-instance --db-cluster-identifier` adds a **reader**. Its endpoint is the instance host port (read-only). The cluster `ReaderEndpoint` hostname is the same style as the writer (`localhost`); the published port is on the reader instance
 - `ManageMasterUserPassword` stores `{"username","password"}` in Secrets Manager (`rds!…`). The container uses that password
 - SQL via `psql` or `mysql`
+- DB / cluster parameter groups: user-set parameters are passed into the Docker CMD (`--name=value` MySQL, `-c name=value` Postgres). `modify-*-parameter-group` + `reboot-db-instance` re-applies via `SET GLOBAL` / `ALTER SYSTEM` + reload ([#703](https://github.com/kgz/stackwrangler/issues/703))
 
 Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.py` (mounted with the other init scripts). `SERVICES` already includes `rds` and `secretsmanager`.
 
@@ -34,6 +36,7 @@ Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.p
 | Security groups / VPC | Enforced on the VPC address when a DB subnet group is set ([docs/sg-enforcement.md](sg-enforcement.md)); published host port is separate |
 | Private DNS from workloads | [#206](https://github.com/kgz/awsl/issues/206) |
 | Console create | Wired for Postgres/MySQL `CreateDBInstance` (`/rds/create`). Aurora engine choice disabled — use `./smokes/data/rds-mysql-smoke.sh` |
+| Parameter groups | User overrides apply to the container CMD at create. MySQL `reboot-db-instance` re-applies via `SET GLOBAL`; Postgres recreates the container so `-c` flags refresh (CLI outranks `ALTER SYSTEM`). Engine-default groups stay at image defaults. `describe-db-parameters` `Source` fields are [#710](https://github.com/kgz/stackwrangler/issues/710) |
 
 ## Aurora scope
 
