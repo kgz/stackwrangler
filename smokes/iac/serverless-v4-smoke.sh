@@ -211,7 +211,8 @@ PY
 }
 
 start_tls_proxy_again() {
-	"${COMPOSE[@]}" --profile aws-redirect up -d --force-recreate aws-redirect >/dev/null
+	# --no-deps: do not reconcile localstack (would drop user compose overrides; #714)
+	"${COMPOSE[@]}" --profile aws-redirect up -d --force-recreate --no-deps aws-redirect >/dev/null
 	local i id
 	for i in $(seq 1 60); do
 		id="$(redirect_id)"

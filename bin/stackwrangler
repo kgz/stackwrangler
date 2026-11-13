@@ -391,10 +391,25 @@ aws_redirect_tls_ready() {
 
 # Ensure aws-redirect (DNS + TLS edge) is up; print only its IPv4 on stdout.
 # Does not treat DNS-only as ready — TLS can be down while dnsmasq still answers.
+# Never starts or reconciles localstack: compose without a user override would
+# recreate LocalEmu and drop PERSISTENCE / volumes / restart policy (#714).
 ensure_aws_redirect() {
 	load_root_env
 	mkdir -p "$ROOT/.awsbox/aws-redirect"
-	"${COMPOSE[@]}" --profile aws-redirect up -d --build aws-redirect >&2
+	local ls_id ls_running
+	ls_id="$("${COMPOSE[@]}" ps -q localstack 2>/dev/null | head -1 || true)"
+	ls_running=""
+	if [[ -n "$ls_id" ]]; then
+		ls_running="$(docker inspect -f '{{.State.Running}}' "$ls_id" 2>/dev/null || true)"
+	fi
+	if [[ "$ls_running" != "true" ]]; then
+		echo "error: localstack is not running; start the stack first (./bin/stackwrangler up)" >&2
+		echo "  aws-redirect will not start or recreate LocalEmu (preserves compose overrides; #714)" >&2
+		return 1
+	fi
+	# --no-deps: aws-redirect depends_on localstack; without this, compose
+	# reconciles localstack against the base file and recreates it.
+	"${COMPOSE[@]}" --profile aws-redirect up -d --build --no-deps aws-redirect >&2
 	local i id ip health
 	for i in $(seq 1 90); do
 		id="$("${COMPOSE[@]}" --profile aws-redirect ps -q aws-redirect 2>/dev/null | head -1 || true)"

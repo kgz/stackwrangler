@@ -93,7 +93,7 @@ Use the transparent redirect instead:
 
 ```bash
 ./bin/stackwrangler up
-# starts aws-redirect on first use
+# starts aws-redirect on first use (does not recreate LocalEmu; stack must already be up — #714)
 export SERVERLESS_ACCESS_KEY=…   # or SERVERLESS_LICENSE_KEY / SERVERLESS_LOCAL_ONLY_LICENCE_KEY
 
 cd examples/serverless-v4-sns-sqs && npm i
@@ -105,7 +105,9 @@ aws ssm put-parameter --name /demo/sls4/dev/app-name --type String --value my-ap
 ./bin/stackwrangler sls --cwd examples/serverless-v4-sns-sqs/consumer -- deploy --stage local
 ```
 
-Manual compose (optional): `docker compose --profile aws-redirect up -d aws-redirect`.
+`sls` / `ensure_aws_redirect` bring up **only** the `aws-redirect` container (`--no-deps`). They fail if LocalEmu is not already running, so a user compose override (e.g. `PERSISTENCE=1`, state volume) is not stripped mid-deploy ([#714](https://github.com/kgz/awsl/issues/714)). Longer term: wire `STACKWRANGLER_COMPOSE_OVERRIDE` into `COMPOSE` ([#288](https://github.com/kgz/awsl/issues/288) / [#291](https://github.com/kgz/awsl/issues/291)).
+
+Manual compose (optional): `docker compose --profile aws-redirect up -d --no-deps aws-redirect`.
 
 ### Yarn / npm workspaces
 
