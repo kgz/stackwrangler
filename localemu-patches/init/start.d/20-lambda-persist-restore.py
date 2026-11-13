@@ -1,11 +1,17 @@
 """Lambda PERSISTENCE restore: wait for code spool; mark Failed if missing (#713).
 
-Phase 2 of ``on_after_state_load`` starts versions by reading
-``awslambda-*-tasks``. With #712, S3 bodies restore *after* post-load hooks,
-so the first download can miss. Wait for the zip in the ephemeral store
-(or a short deadline), run upstream restore, then flip any leftover
-``Pending`` versions to ``Failed`` so ``UpdateFunctionCode`` can replace
-them via ``update_version`` → create (#713).
+``boot.d`` runs in a separate entrypoint process, so monkeypatches there never
+reach the main LocalEmu server. This lives in ``start.d`` (in-process).
+
+Persistence load (``on_infra_start`` priority 5) runs *before* start.d
+(priority 0) and schedules deferred restore on a worker thread. We:
+1. Patch ``_run_deferred_restore`` so the worker marks leftover Pending Failed.
+2. Run a late sweep in case the worker already finished the unpatched path.
+
+With #712, S3 bodies restore *after* post-load hooks, so the first download
+can miss. Wait for the zip in the ephemeral store (or a short deadline), run
+upstream restore, then flip leftover ``Pending`` versions to ``Failed`` so
+``UpdateFunctionCode`` can replace them via ``update_version`` → create.
 """
 
 from __future__ import annotations
@@ -13,6 +19,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
+import threading
 import time
 from io import BytesIO
 
@@ -33,6 +40,8 @@ def _code_wait_s() -> float:
 
 
 _CODE_POLL_S = 0.5
+# Upstream create_function_version().result(timeout=30) during deferred restore.
+_DEFERRED_CREATE_TIMEOUT_S = 35.0
 _MISSING_CODE_REASON = (
     "Function code is unavailable after LocalEmu restart; "
     "call UpdateFunctionCode to replace it."
@@ -72,6 +81,20 @@ def _pending_versions(pending_functions):
         for fn_version in list(fn.versions.values()):
             if fn_version.config.state.state == State.Pending:
                 out.append((fn, fn_version))
+    return out
+
+
+def _pending_from_store():
+    from localemu.aws.api.lambda_ import State
+    from localemu.services.lambda_.invocation.models import lambda_stores
+
+    out = []
+    for account_bundle in lambda_stores.values():
+        for region_state in account_bundle.values():
+            for fn in region_state.functions.values():
+                for fn_version in list(fn.versions.values()):
+                    if fn_version.config.state.state == State.Pending:
+                        out.append((fn, fn_version))
     return out
 
 
@@ -119,14 +142,37 @@ def _mark_version_failed(fn, fn_version) -> None:
 
 
 def _discard_starting(lambda_service, qualified_arn: str) -> None:
+    if lambda_service is None:
+        return
     with lambda_service.lambda_version_manager_lock:
         stale = lambda_service.lambda_starting_versions.pop(qualified_arn, None)
     if stale is not None:
         lambda_service.task_executor.submit(stale.stop)
 
 
-def _patch_deferred_restore() -> None:
+def _lambda_service_from_provider(provider):
+    return getattr(provider, "lambda_service", None)
+
+
+def _mark_pending_failed(pending_pairs, lambda_service) -> int:
     from localemu.aws.api.lambda_ import State
+
+    marked = 0
+    for fn, fn_version in pending_pairs:
+        live = fn.versions.get(fn_version.id.qualifier) or fn_version
+        if live.config.state.state != State.Pending:
+            continue
+        LOG.warning(
+            "Marking unrestored Lambda version Failed: %s",
+            live.id.qualified_arn(),
+        )
+        _mark_version_failed(fn, live)
+        _discard_starting(lambda_service, live.id.qualified_arn())
+        marked += 1
+    return marked
+
+
+def _patch_deferred_restore() -> None:
     from localemu.services.lambda_.provider import LambdaProvider
 
     original = LambdaProvider._run_deferred_restore
@@ -138,22 +184,40 @@ def _patch_deferred_restore() -> None:
         # Upstream leaves Pending when create never ran or timed out before
         # start() could report Failed. Surface that as Failed so clients and
         # UpdateFunctionCode see a terminal state (#713).
-        for fn, fn_version in _pending_versions(pending_functions):
-            live = fn.versions.get(fn_version.id.qualifier) or fn_version
-            if live.config.state.state != State.Pending:
-                continue
-            LOG.warning(
-                "Marking unrestored Lambda version Failed: %s",
-                live.id.qualified_arn(),
-            )
-            _mark_version_failed(fn, live)
-            _discard_starting(self.lambda_service, live.id.qualified_arn())
+        _mark_pending_failed(
+            _pending_versions(pending_functions),
+            _lambda_service_from_provider(self),
+        )
 
     LambdaProvider._run_deferred_restore = _run_deferred_restore
 
 
+def _late_sweep_pending() -> None:
+    """Mark Pending leftovers if deferred restore finished before our patch."""
+    time.sleep(_code_wait_s() + _DEFERRED_CREATE_TIMEOUT_S)
+    try:
+        from localemu.services.plugins import SERVICE_PLUGINS
+
+        svc = SERVICE_PLUGINS.get_service("lambda")
+        provider = getattr(svc, "_provider", None) if svc else None
+        lambda_service = _lambda_service_from_provider(provider)
+        marked = _mark_pending_failed(_pending_from_store(), lambda_service)
+        if marked:
+            LOG.info(
+                "Lambda persistence late sweep: marked %d Pending version(s) Failed (#713)",
+                marked,
+            )
+    except Exception:
+        LOG.exception("Lambda persistence late sweep failed (#713)")
+
+
 try:
     _patch_deferred_restore()
+    threading.Thread(
+        target=_late_sweep_pending,
+        name="lambda-persist-failed-sweep",
+        daemon=True,
+    ).start()
     LOG.info("Lambda persistence restore wait/Failed marking installed (#713)")
 except Exception:
     LOG.exception("Failed to install Lambda persistence restore patch (#713)")
