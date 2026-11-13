@@ -46,14 +46,15 @@ Ship a docs-site entry for the cut — do not leave GitHub Release as the only n
 #### Tag + GitHub Release
 
 ```bash
-./bin/release-tag.sh vX.Y.Z
+./bin/release-tag.sh vX.Y.Z --next vX.Y.Z+1
+./bin/check-current-release.sh
 ```
 
-That tags `origin/main` (or `--sha`), creates the GitHub Release, ensures the label exists, writes `docs/CURRENT_RELEASE`.
+That tags `origin/main` (or `--sha`), creates the GitHub Release, ensures labels exist, and writes `docs/CURRENT_RELEASE` to **`--next`** (required — never leave CURRENT pointing at the shipped tag).
 
 5. **Align Release body** with the docs changelog (same install one-liner + highlights). Prefer `gh api` PATCH of the release if `gh release edit` is unavailable.
 6. Confirm GHCR publish + Release asset `install/stackwrangler` (re-upload / `workflow_dispatch` publish-images if the tag-push job skipped the CLI asset).
-7. Commit the `CURRENT_RELEASE` bump to the **next** open cut (e.g. after `v0.0.2` → `v0.0.3`) and mark the shipped cut in `docs/version-plan.md`.
+7. Mark the shipped cut in `docs/version-plan.md`; strip leftover `label:<shipped>` from open issues; commit the `CURRENT_RELEASE` / plan bump. `./bin/check-current-release.sh` must pass.
 
 Do not cut **Public** while open Impact ≥ 5 core trust bugs are unwaived.
 
@@ -91,6 +92,7 @@ Debt: absorb small gaps in-parent (`docs/gap-check.md`); else evaluate-and-place
 | `v0.0.4` | Accuracy | Impact ≥ 3 core debt/docs |
 | `v0.0.5` | Security / deps | Dependabot / lockfile; Impact ≥ 3 product (≥ 2 examples) |
 | `v0.0.6` | Maturity / testing | smoke/parity/proof Impact ≥ 3; CI/docs ≥ 2 |
+| `v0.0.7` | Dev persistence / local fidelity | Impact ≥ 4 restore/dev-mode/fidelity |
 | `v0.1.0` | Org path | path-critical |
 
 Far-future labels (`v0.1.1`, `v0.1.2`, `v1.0.0`) stay parked until deliberately opened in step 3.

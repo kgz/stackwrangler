@@ -18,8 +18,9 @@ Current open cut: see [CURRENT_RELEASE](CURRENT_RELEASE).
 | **v0.0.3** | **Trust** — core-stack bugs + security/authz (false confidence). Impact ≥ 4. |
 | **v0.0.4** | **Accuracy** — core Debt/docs/smoke/console depth on shipped services. Impact ≥ 3. |
 | **v0.0.5** | **Security / deps** — Dependabot + IAM/condition-key fidelity (shipped). |
-| **v0.0.6** | **Maturity / testing** — parity suites, smoke-matrix sad/authz, free-ci. Impact ≥ 3 (CI/docs ≥ 2). |
-| **v0.1.0** | **Org path** — Transfer→…→RDS learning/staging path. |
+| **v0.0.6** | **Maturity / testing** — parity suites, smoke-matrix sad/authz, free-ci (shipped). |
+| **v0.0.7** | **Dev persistence / local fidelity** — restore/dev-mode + ECS/RDS/IAM local fidelity. Impact ≥ 4. |
+| **v0.1.0** | **Org path** — Transfer→…→RDS learning/staging path (next after v0.0.7). |
 
 Far-future width (`v0.1.1`, `v0.1.2`, `v1.0.0`) is **not** an active planning label — leave work **unlabelled** until that cut is deliberately opened.
 
@@ -61,8 +62,9 @@ Agents must not create unlabelled-for-pillar or unscored tickets. Unlabelled-for
 | `v0.0.3` | Core-stack bug/authz with Impact ≥ 4 (Impact 5 always). |
 | `v0.0.4` | Core Debt/docs/accuracy with Impact ≥ 3. |
 | `v0.0.5` | Dependabot / lockfile or IAM fidelity on shipped surfaces (cut closed). |
-| `v0.0.6` | Core-stack smoke/parity/proof gap Impact ≥ 3; CI/docs that unlock proof Impact ≥ 2. |
-| `v0.1.0` | Org-path critical. |
+| `v0.0.6` | (shipped) Core-stack smoke/parity/proof gap Impact ≥ 3; CI/docs Impact ≥ 2. |
+| `v0.0.7` | Dev persistence / local fidelity; Impact ≥ 4. |
+| `v0.1.0` | Org-path critical (next cut). |
 
 **Do not** default new / Debt tickets to `$(cat docs/CURRENT_RELEASE)`.
 
@@ -87,16 +89,17 @@ Project #8 should keep a view per active cut plus triage views. Filters/sorts: [
 Before / with the tag, add a **docs-site changelog** entry in [`docs-site/guide/changelog.md`](../docs-site/guide/changelog.md) (nav: Changelog). Include install one-liner (`ghcr.io/kgz/stackwrangler:vX.Y.Z` `docker run … up` — APIs + CLI profile + console web app) and issue-linked highlights. Align the GitHub Release body with that page. Agent loop: skill `release-version`.
 
 ```bash
-./bin/release-tag.sh v0.0.3
+./bin/release-tag.sh v0.0.6 --next v0.0.7
+./bin/check-current-release.sh
 ```
 
 That script:
 
 1. Tags `origin/main` (or `RELEASE_SHA`) as the version
 2. Creates a GitHub Release
-3. Ensures the label exists
-4. Writes `docs/CURRENT_RELEASE`
+3. Ensures labels exist for the shipped cut **and** `--next`
+4. Writes `docs/CURRENT_RELEASE` to **`--next`** (never the tag just shipped)
 
-Then bump `CURRENT_RELEASE` to the **next** open cut and mark the shipped cut in [version-plan.md](version-plan.md).
+Then mark the shipped cut in [version-plan.md](version-plan.md), strip leftover `label:<shipped>` from open issues, and confirm with `./bin/check-current-release.sh` (fails if `CURRENT_RELEASE` still points at a shipped Release, or open issues still carry a shipped cut label).
 
 Do not cut a public GitHub Release while open Impact ≥ 5 core trust bugs are unwaived.
