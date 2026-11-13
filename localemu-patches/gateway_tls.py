@@ -152,31 +152,17 @@ def _ensure_flag_token(flags: str, needle: str, extra: str) -> str:
     return f"{flags} {extra}".strip() if flags else extra
 
 
-def docker_tls_flags(existing_flags: str, gw_ip: str) -> str:
-    """Add ``--add-host`` + ``-v`` CA mounts for Lambda-style additional_flags."""
+def inject_lambda_tls_trust(env_vars: dict, existing_flags: str, gw_ip: str) -> str:
+    """Lambda ``additional_flags`` path: ``--add-host`` + ``-v`` CA, then CA env.
+
+    Same guard as ``inject_task_tls_trust``: set ``AWS_CA_BUNDLE`` /
+    ``NODE_EXTRA_CA_CERTS`` / ``SSL_CERT_FILE`` only after CA mounts can succeed.
+    Missing CA or unresolved host bind still gets ``--add-host`` so the https
+    endpoint hostname resolves.
+    """
     flags = (existing_flags or "").strip()
     if not gw_ip:
         return flags
-    ca_ctr_src = TLS_DIR / CA_CERT_NAME
-    bundle_ctr_src = TLS_DIR / CA_BUNDLE_NAME
-    if not ca_ctr_src.is_file() or not bundle_ctr_src.is_file():
-        LOG.warning("gateway CA files missing (%s); skip docker TLS flags", ca_ctr_src)
-        return _ensure_flag_token(
-            flags,
-            f"--add-host={EMU_DNS_NAME}:",
-            f"--add-host={EMU_DNS_NAME}:{gw_ip}",
-        )
-    ca_host, bundle_host = task_ca_host_paths()
-    if not ca_host or not bundle_host:
-        LOG.warning(
-            "gateway CA host path unresolved; skip CA volume flags (#696)"
-        )
-        return _ensure_flag_token(
-            flags,
-            f"--add-host={EMU_DNS_NAME}:",
-            f"--add-host={EMU_DNS_NAME}:{gw_ip}",
-        )
-    ca_ctr, bundle_ctr = container_ca_paths()
     if (
         f"--add-host={EMU_DNS_NAME}:" not in flags
         and f"--add-host {EMU_DNS_NAME}:" not in flags
@@ -186,6 +172,22 @@ def docker_tls_flags(existing_flags: str, gw_ip: str) -> str:
             f"--add-host={EMU_DNS_NAME}:",
             f"--add-host={EMU_DNS_NAME}:{gw_ip}",
         )
+
+    ca_ctr_src = TLS_DIR / CA_CERT_NAME
+    bundle_ctr_src = TLS_DIR / CA_BUNDLE_NAME
+    if not ca_ctr_src.is_file() or not bundle_ctr_src.is_file():
+        LOG.warning(
+            "gateway CA files missing (%s); skip CA mount/env (#696)", ca_ctr_src
+        )
+        return flags
+    ca_host, bundle_host = task_ca_host_paths()
+    if not ca_host or not bundle_host:
+        LOG.warning(
+            "gateway CA host path unresolved; skip CA mount/env (#696)"
+        )
+        return flags
+
+    ca_ctr, bundle_ctr = container_ca_paths()
     flags = _ensure_flag_token(
         flags,
         f"{ca_ctr}:",
@@ -196,6 +198,7 @@ def docker_tls_flags(existing_flags: str, gw_ip: str) -> str:
         f"{bundle_ctr}:",
         f"-v {bundle_host}:{bundle_ctr}:ro",
     )
+    apply_ca_env(env_vars)
     return flags
 
 

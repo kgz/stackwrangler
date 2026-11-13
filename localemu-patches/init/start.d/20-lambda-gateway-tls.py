@@ -4,6 +4,9 @@ Upstream injects ``AWS_ENDPOINT_URL=http://<compose-ip>:4566``. Rewrite to
 ``https://localemu.awsbox:<port>`` (cert SAN), mount the gateway CA, and set
 ``AWS_CA_BUNDLE`` / ``NODE_EXTRA_CA_CERTS`` / ``SSL_CERT_FILE`` so
 ``aws:SecureTransport`` matches ECS (#687).
+
+CA env is applied only after ``-v`` mounts can succeed (same guard as
+``inject_task_tls_trust``).
 """
 
 from __future__ import annotations
@@ -39,23 +42,20 @@ def _patch_lambda() -> None:
     port = le_config.GATEWAY_LISTEN[0].port
 
     def _do_start(self, env_vars):
-        # Always set https endpoint when LocalEmu would inject one (default on).
-        if not le_config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
-            gateway_tls.apply_https_endpoint(env_vars, port=port)
-            gateway_tls.apply_ca_env(env_vars)
-
         previous = le_config.LAMBDA_DOCKER_FLAGS
         try:
-            ip = _emulator_ip()
-            if ip and not le_config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
-                le_config.LAMBDA_DOCKER_FLAGS = gateway_tls.docker_tls_flags(
-                    previous or "", ip
-                )
-            elif not ip:
-                LOG.warning(
-                    "lambda gateway TLS: no LocalEmu IP; %s may not resolve",
-                    gateway_tls.EMU_DNS_NAME,
-                )
+            if not le_config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
+                gateway_tls.apply_https_endpoint(env_vars, port=port)
+                ip = _emulator_ip()
+                if ip:
+                    le_config.LAMBDA_DOCKER_FLAGS = gateway_tls.inject_lambda_tls_trust(
+                        env_vars, previous or "", ip
+                    )
+                else:
+                    LOG.warning(
+                        "lambda gateway TLS: no LocalEmu IP; %s may not resolve",
+                        gateway_tls.EMU_DNS_NAME,
+                    )
             original(self, env_vars)
         finally:
             le_config.LAMBDA_DOCKER_FLAGS = previous
