@@ -654,11 +654,33 @@ def _handle_stop_task(
     if mgr and task_arn:
         try:
             mgr.stop_task(task_arn)
-            # After containers are stopped, update to final STOPPED state
-            if result.get("task"):
-                result["task"]["lastStatus"] = "STOPPED"
         except Exception as e:
             LOG.warning("Failed to stop Docker containers for ECS task %s: %s", task_arn, e)
+
+    # Always finish STOPPED on the moto record. Ghost / DEACTIVATING tasks
+    # with no container must not linger holding host ports (#716).
+    if result.get("task"):
+        result["task"]["lastStatus"] = "STOPPED"
+        result["task"]["desiredStatus"] = "STOPPED"
+    if task_arn:
+        short = str(task_arn).split("/")[-1]
+        try:
+            for _acct, _region, backend in _iter_ecs_backends():
+                for cluster_tasks in (getattr(backend, "tasks", {}) or {}).values():
+                    for tid, task in list(cluster_tasks.items()):
+                        arn = getattr(task, "task_arn", None) or tid
+                        if (
+                            short not in (str(arn), str(tid))
+                            and not str(arn).endswith(short)
+                            and not str(tid).endswith(short)
+                        ):
+                            continue
+                        if (getattr(task, "last_status", "") or "").upper() != "STOPPED":
+                            _force_stop_missing_task(
+                                backend, task, reason or "Task stopped by user"
+                            )
+        except Exception:
+            LOG.debug("StopTask moto finalize failed for %s", task_arn, exc_info=True)
 
     return result
 
@@ -1066,6 +1088,59 @@ def _iter_ecs_backends():
             yield acct, region, backend
 
 
+_MISSING_CONTAINER_REASON = "Task container not restored"
+
+
+def _task_cluster_name(task) -> str:
+    name = getattr(task, "cluster_name", None) or ""
+    if name:
+        return str(name)
+    cluster_arn = getattr(task, "cluster_arn", "") or ""
+    if "/" in cluster_arn:
+        return cluster_arn.split("/")[-1]
+    return "default"
+
+
+def _force_stop_missing_task(backend, task, reason: str = _MISSING_CONTAINER_REASON) -> None:
+    """Mark a ghost task STOPPED and release container-instance resources (#716).
+
+    Prefer moto ``stop_task`` (releases CPU/memory/PORTS). If that fails
+    mid-transition (e.g. DEACTIVATING with a partial PORTS set), fall back
+    to a best-effort resource release and force ``last_status=STOPPED`` so
+    the task never blocks placement indefinitely.
+    """
+    status = (getattr(task, "_status", None) or getattr(task, "last_status", "") or "").upper()
+    if status == "STOPPED":
+        return
+    cluster_name = _task_cluster_name(task)
+    task_arn = getattr(task, "task_arn", None) or ""
+    try:
+        backend.stop_task(cluster_name, task_arn, reason)
+        return
+    except Exception as exc:
+        LOG.warning(
+            "ECS reconcile stop_task failed for %s: %s — forcing STOPPED",
+            task_arn, exc,
+        )
+    ci_arn = getattr(task, "container_instance_arn", None)
+    reqs = getattr(task, "resource_requirements", None)
+    if ci_arn and reqs:
+        try:
+            ci_id = str(ci_arn).split("/")[-1]
+            cis = (getattr(backend, "container_instances", {}) or {}).get(cluster_name) or {}
+            ci = cis.get(ci_id)
+            if ci is not None:
+                backend.update_container_instance_resources(ci, reqs, removing=True)
+        except Exception:
+            LOG.debug(
+                "ECS reconcile resource release fallback failed for %s",
+                task_arn, exc_info=True,
+            )
+    task.last_status = "STOPPED"
+    task.desired_status = "STOPPED"
+    task.stopped_reason = reason
+
+
 def _ecs_on_after_state_load() -> None:
     """Reconcile persisted ECS records with the live Docker daemon.
 
@@ -1078,13 +1153,11 @@ def _ecs_on_after_state_load() -> None:
     2. Resume every task whose containers still exist on the host via
        ``docker start`` - their writable layer, env vars, and port
        bindings all survive the restart.
-
-    Tasks whose containers are missing (user ran ``docker rm``, image
-    pruned) are logged as data-loss; moto's record is left as-is so
-    ``DescribeTasks`` still returns the persisted view. Re-launching
-    from the task definition is possible future work - for now we
-    prefer honest "container gone" over silently starting a fresh
-    container that doesn't match what the user left behind.
+    3. Tasks whose containers are missing (``docker rm``, prune, or
+       never recovered) are marked ``STOPPED`` with stoppedReason
+       ``Task container not restored`` and their container-instance
+       resources / host ports are released (#716). Never leave a task
+       in RUNNING / PENDING / DEACTIVATING without a container.
     """
     # Clear module-level caches - moto rewrote the state under us.
     _task_def_cache.clear()
@@ -1112,29 +1185,59 @@ def _ecs_on_after_state_load() -> None:
                 _synthetic_instances[_normalize_cluster_name(cluster_name)] = ec2_id
 
     # Step 2: reconcile every persisted task against tracked containers.
+    # Read ManagedState via ``_status`` — ``last_status`` / ``status`` can
+    # advance RUNNING→DEACTIVATING when a persisted tick is already pending.
     resumed = missing = skipped = 0
     for _acct, _region, backend in _iter_ecs_backends():
         tasks = getattr(backend, "tasks", {}) or {}
-        for _cluster_arn, cluster_tasks in tasks.items():
+        for _cluster_key, cluster_tasks in tasks.items():
             for task_id, task in list(cluster_tasks.items()):
-                status = (getattr(task, "last_status", "") or "").upper()
+                status = (getattr(task, "_status", None) or "").upper()
+                if not status:
+                    status = (getattr(task, "last_status", "") or "").upper()
                 if status in ("STOPPED", "DEPROVISIONING"):
                     skipped += 1
                     continue
                 task_arn = getattr(task, "task_arn", None) or task_id
+                desired = (getattr(task, "desired_status", "") or "").upper()
                 tracked = mgr._tasks.get(task_arn) if hasattr(mgr, "_tasks") else None
-                if not tracked:
-                    LOG.warning(
-                        "ECS task %s: persisted but no tracked container on host "
-                        "(data loss)",
-                        task_arn,
+
+                # Finish stop only when desired is STOPPED (never leave
+                # DEACTIVATING holding ports). Do not treat a ManagedState
+                # tick into DEACTIVATING with desired RUNNING as a stop.
+                if desired == "STOPPED":
+                    if tracked is not None:
+                        try:
+                            mgr.stop_task(task_arn)
+                        except Exception:
+                            LOG.debug(
+                                "ECS reconcile docker stop failed for %s",
+                                task_arn, exc_info=True,
+                            )
+                    stop_reason = (
+                        _MISSING_CONTAINER_REASON
+                        if tracked is None
+                        else (getattr(task, "stopped_reason", None) or "Task stopped")
                     )
+                    _force_stop_missing_task(backend, task, reason=stop_reason)
                     missing += 1
                     continue
-                if _resume_task_containers(tracked):
+
+                if tracked and _resume_task_containers(tracked):
+                    task.last_status = "RUNNING"
+                    task.desired_status = "RUNNING"
                     resumed += 1
-                else:
-                    missing += 1
+                    continue
+                LOG.warning(
+                    "ECS task %s: container missing on restore — marking STOPPED "
+                    "(%s)",
+                    task_arn,
+                    _MISSING_CONTAINER_REASON,
+                )
+                _force_stop_missing_task(backend, task)
+                if tracked is not None and hasattr(mgr, "_tasks"):
+                    mgr._tasks.pop(task_arn, None)
+                missing += 1
 
     # Step 3: rebuild _service_tasks from moto. Required so the scheduler
     # (and DescribeServices) return accurate counts.
@@ -1199,7 +1302,9 @@ def _resume_task_containers(task_info) -> bool:
             container.status = "STOPPED"
     if any_running:
         task_info.status = "RUNNING"
-    return any_running
+        return True
+    task_info.status = "STOPPED"
+    return False
 
 
 class EcsStateLifecycleHook(ServiceLifecycleHook):
@@ -1211,8 +1316,8 @@ class EcsStateLifecycleHook(ServiceLifecycleHook):
 
     ``on_after_state_load`` is the persistence path: reconcile persisted
     moto records with the live Docker daemon. Containers that survived
-    shutdown get ``docker start``ed; containers that are gone get
-    re-launched from their task definition.
+    shutdown get ``docker start``ed; containers that are gone mark the
+    task STOPPED and release instance resources (#716).
     """
 
     def on_before_state_reset(self) -> None:

@@ -124,6 +124,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Lambda (and EC2) `https` `AWS_ENDPOINT_URL` + CA for SecureTransport | happy | missing | [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
+| ECS persist reconcile: missing container → STOPPED + resources freed; stopped container resumed | happy | covered | `./smokes/compute/ecs-persist-reconcile-smoke.sh` · [#716](https://github.com/kgz/stackwrangler/issues/716) |
+| ECS ghost stop-task finishes STOPPED (not stuck DEACTIVATING) and new host-mode task places | sad/other | covered | `./smokes/compute/ecs-persist-reconcile-smoke.sh` · [#716](https://github.com/kgz/stackwrangler/issues/716) |
 | ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
 | ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |

@@ -367,3 +367,4 @@
 687	in-review	ECS https AWS_ENDPOINT_URL + CA for SecureTransport
 696	backlog	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
 684	in-review	ecr: restart catalog resync when registry keeps blobs
+716	in-progress	Persistence: restored ECS tasks stay RUNNING/DEACTIVATING with no container
