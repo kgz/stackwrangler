@@ -25,6 +25,7 @@ from localemu.utils.container_utils.container_client import (
     BindMount,
     ContainerConfiguration,
     PortMappings,
+    Ulimit,
     VolumeMappings,
 )
 from localemu.utils.docker_utils import DOCKER_CLIENT
@@ -898,7 +899,61 @@ class DockerTaskManager:
                     )
                     if dns_ip:
                         additional_flags_parts.append(f"--dns {dns_ip}")
+                # #711: readonlyRootFilesystem → docker --read-only
+                if cdef.get("readonlyRootFilesystem"):
+                    additional_flags_parts.append("--read-only")
                 additional_flags = " ".join(additional_flags_parts) if additional_flags_parts else None
+
+                # #711: containerDefinitions.user (uid / uid:gid / name / name:group)
+                container_user = cdef.get("user")
+                if container_user is not None:
+                    container_user = str(container_user).strip() or None
+
+                container_ulimits: list[Ulimit] | None = None
+                raw_ulimits = cdef.get("ulimits")
+                if isinstance(raw_ulimits, list) and raw_ulimits:
+                    parsed_ulimits: list[Ulimit] = []
+                    for u in raw_ulimits:
+                        if not isinstance(u, dict):
+                            continue
+                        name = u.get("name")
+                        soft = u.get("softLimit", u.get("soft"))
+                        hard = u.get("hardLimit", u.get("hard"))
+                        if name is None or soft is None:
+                            continue
+                        try:
+                            soft_i = int(soft)
+                            hard_i = int(hard) if hard is not None else None
+                        except (TypeError, ValueError):
+                            continue
+                        parsed_ulimits.append(
+                            Ulimit(
+                                name=str(name),
+                                soft_limit=soft_i,
+                                hard_limit=hard_i,
+                            )
+                        )
+                    if parsed_ulimits:
+                        container_ulimits = parsed_ulimits
+
+                container_labels = {
+                    "localemu.service": "ecs",
+                    "localemu.cluster": cluster_name,
+                    "localemu.task-arn": effective_arn,
+                    "localemu.container-name": c_name,
+                    "localemu.network-mode": network_mode,
+                    # #79: task-role is persisted on the container so
+                    # the on-load reconciler can re-mint creds.
+                    "localemu.task-role-arn": task_role_arn or "",
+                }
+                docker_labels = cdef.get("dockerLabels")
+                if isinstance(docker_labels, dict):
+                    for dk, dv in docker_labels.items():
+                        container_labels[str(dk)] = str(dv)
+
+                workdir = cdef.get("workingDirectory") or None
+                if workdir is not None:
+                    workdir = str(workdir).strip() or None
 
                 # Container config
                 container_config = ContainerConfiguration(
@@ -916,21 +971,16 @@ class DockerTaskManager:
                     cpu_shares=cpu_shares,
                     mem_limit=mem_limit,
                     additional_flags=additional_flags,
+                    user=container_user,
+                    privileged=bool(cdef.get("privileged")),
+                    ulimits=container_ulimits,
+                    workdir=workdir,
                     # #79/#154: NET_ADMIN for in-netns DNAT when the image
                     # has iptables; otherwise vpc_routing's alpine sidecar
                     # programs the same rule. SDKs require 169.254.170.2
                     # (not host.docker.internal) for the creds URI.
                     cap_add=["NET_ADMIN"],
-                    labels={
-                        "localemu.service": "ecs",
-                        "localemu.cluster": cluster_name,
-                        "localemu.task-arn": effective_arn,
-                        "localemu.container-name": c_name,
-                        "localemu.network-mode": network_mode,
-                        # #79: task-role is persisted on the container so
-                        # the on-load reconciler can re-mint creds.
-                        "localemu.task-role-arn": task_role_arn or "",
-                    },
+                    labels=container_labels,
                 )
 
                 LOG.info(

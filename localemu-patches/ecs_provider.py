@@ -354,32 +354,8 @@ def _handle_run_task(
         # what we actually launched (and downstream status updates
         # find each container by name).
         registered_defs = _resolve_task_definition(context, task_def_arn)
-        container_defs = []
-        for src_def in registered_defs:
-            cdef = {
-                "name": src_def.get("name", ""),
-                "image": src_def.get("image", ""),
-                "portMappings": src_def.get("portMappings", []),
-                "environment": src_def.get("environment", []),
-                "command": src_def.get("command"),
-            }
-            # #685: keep entryPoint so the task manager can pass docker --entrypoint
-            ep = src_def.get("entryPoint") or src_def.get("entry_point")
-            if ep is not None:
-                cdef["entryPoint"] = ep
-            if src_def.get("secrets"):
-                cdef["secrets"] = src_def["secrets"]
-            if src_def.get("healthCheck"):
-                cdef["healthCheck"] = src_def["healthCheck"]
-            if src_def.get("mountPoints"):
-                cdef["mountPoints"] = src_def["mountPoints"]
-            if src_def.get("cpu"):
-                cdef["cpu"] = src_def["cpu"]
-            if src_def.get("memory"):
-                cdef["memory"] = src_def["memory"]
-            if src_def.get("memoryReservation"):
-                cdef["memoryReservation"] = src_def["memoryReservation"]
-            container_defs.append(cdef)
+        # #685/#711: pass through Docker-mapped containerDefinition fields
+        container_defs = [_copy_container_def_fields(src_def) for src_def in registered_defs]
 
         # If moto only emitted the first container, append synthetic
         # entries so DescribeTasks shows every running container.
@@ -491,6 +467,59 @@ def _lookup_container_image(
 # Cache of resolved task definitions to avoid repeated Moto lookups
 _task_def_cache: dict[str, list[dict]] = {}
 
+# Docker-relevant containerDefinition keys the task manager understands.
+# Keep in sync with localemu-patches/ecs_task_manager.py + docs/status.md (#711).
+_CONTAINER_DEF_PASSTHROUGH = (
+    "name",
+    "image",
+    "command",
+    "environment",
+    "cpu",
+    "memory",
+    "memoryReservation",
+    "secrets",
+    "user",
+    "privileged",
+    "ulimits",
+    "dockerLabels",
+    "readonlyRootFilesystem",
+    "workingDirectory",
+)
+
+
+def _copy_container_def_fields(src: dict) -> dict:
+    """Copy known containerDefinition fields for Docker launch (#711)."""
+    cdef: dict = {
+        "name": src.get("name", ""),
+        "image": src.get("image", ""),
+        "portMappings": src.get("portMappings", []),
+        "environment": src.get("environment", []),
+        "command": src.get("command"),
+    }
+    ep = src.get("entryPoint") or src.get("entry_point")
+    if ep is not None:
+        cdef["entryPoint"] = ep
+    if src.get("secrets"):
+        cdef["secrets"] = src["secrets"]
+    if src.get("healthCheck"):
+        cdef["healthCheck"] = src["healthCheck"]
+    if src.get("mountPoints"):
+        cdef["mountPoints"] = src["mountPoints"]
+    for key in (
+        "cpu",
+        "memory",
+        "memoryReservation",
+        "user",
+        "privileged",
+        "ulimits",
+        "dockerLabels",
+        "readonlyRootFilesystem",
+        "workingDirectory",
+    ):
+        if src.get(key) is not None:
+            cdef[key] = src[key]
+    return cdef
+
 
 def _resolve_task_definition(context: RequestContext, task_def_arn: str) -> list[dict]:
     """Resolve the full containerDefinitions for a task definition ARN.
@@ -511,10 +540,7 @@ def _resolve_task_definition(context: RequestContext, task_def_arn: str) -> list
                 else:
                     # Convert Moto container definition object to dict
                     d: dict = {}
-                    for attr in (
-                        "name", "image", "command", "environment",
-                        "cpu", "memory", "memoryReservation", "secrets",
-                    ):
+                    for attr in _CONTAINER_DEF_PASSTHROUGH:
                         val = getattr(cdef, attr, None)
                         if val is not None:
                             d[attr] = val
@@ -546,6 +572,16 @@ def _resolve_task_definition(context: RequestContext, task_def_arn: str) -> list
                     mp = getattr(cdef, "mount_points", None) or getattr(cdef, "mountPoints", None)
                     if mp is not None:
                         d["mountPoints"] = mp
+                    # Snake_case aliases Moto may use for #711 fields
+                    for snake, camel in (
+                        ("docker_labels", "dockerLabels"),
+                        ("readonly_root_filesystem", "readonlyRootFilesystem"),
+                        ("working_directory", "workingDirectory"),
+                    ):
+                        if camel not in d:
+                            alt = getattr(cdef, snake, None)
+                            if alt is not None:
+                                d[camel] = alt
                     container_defs.append(d)
     except Exception as e:
         LOG.debug("Could not look up task definition %s: %s", task_def_arn, e)
