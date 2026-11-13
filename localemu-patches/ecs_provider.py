@@ -626,6 +626,37 @@ def _lookup_task_definition_details(
     return None
 
 
+def _finalize_stopped_task_backends(task_arn: str, reason: str) -> None:
+    """Force every matching moto task record to STOPPED and release resources.
+
+    Runs even when moto ``stop_task`` raised mid-update (e.g. PORTS
+    ``.remove`` ValueError) so a ghost task cannot keep host ports (#716).
+    """
+    if not task_arn:
+        return
+    short = str(task_arn).split("/")[-1]
+    try:
+        for _acct, _region, backend in _iter_ecs_backends():
+            for cluster_tasks in (getattr(backend, "tasks", {}) or {}).values():
+                for tid, task in list(cluster_tasks.items()):
+                    arn = getattr(task, "task_arn", None) or tid
+                    if (
+                        short not in (str(arn), str(tid))
+                        and not str(arn).endswith(short)
+                        and not str(tid).endswith(short)
+                    ):
+                        continue
+                    raw = (
+                        getattr(task, "_status", None)
+                        or getattr(task, "last_status", "")
+                        or ""
+                    ).upper()
+                    if raw != "STOPPED":
+                        _force_stop_missing_task(backend, task, reason)
+    except Exception:
+        LOG.debug("StopTask moto finalize failed for %s", task_arn, exc_info=True)
+
+
 def _handle_stop_task(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -633,54 +664,88 @@ def _handle_stop_task(
     # ECS uses JSON protocol - parameters are in the parsed `request` dict,
     # NOT in context.request.values (which is empty for JSON bodies).
     task_arn = request.get("task") or ""
-    cluster = request.get("cluster", "default")
+    # cluster is on the request; moto resolves it via call_moto(context).
+    _ = request.get("cluster", "default")
     # Capture the stop reason
-    reason = request.get("reason", "")
+    reason = request.get("reason", "") or "Task stopped by user"
+    result: dict | None = None
+    call_error: Exception | None = None
 
-    result = call_moto(context)
-
-    # Propagate reason to the response
-    if reason and result.get("task"):
-        result["task"]["stoppedReason"] = reason
-
-    # Set STOPPING transitional state
-    if result.get("task"):
-        result["task"]["lastStatus"] = "STOPPING"
-        result["task"]["desiredStatus"] = "STOPPED"
-        # Add stoppedAt timestamp
-        result["task"]["stoppedAt"] = time.time()
-
-    mgr = _init_task_manager()
-    if mgr and task_arn:
+    try:
         try:
-            mgr.stop_task(task_arn)
-        except Exception as e:
-            LOG.warning("Failed to stop Docker containers for ECS task %s: %s", task_arn, e)
+            result = call_moto(context)
+        except Exception as exc:
+            # moto stop_task can raise mid-resource update (PORTS .remove).
+            # Finalize in ``finally`` still releases ports / forces STOPPED.
+            call_error = exc
+            LOG.warning(
+                "StopTask moto call failed for %s: %s — will force-finalize",
+                task_arn, exc,
+            )
+            result = {}
 
-    # Always finish STOPPED on the moto record. Ghost / DEACTIVATING tasks
-    # with no container must not linger holding host ports (#716).
+        # Propagate reason to the response
+        if reason and result.get("task"):
+            result["task"]["stoppedReason"] = reason
+
+        # Set STOPPING transitional state
+        if result.get("task"):
+            result["task"]["lastStatus"] = "STOPPING"
+            result["task"]["desiredStatus"] = "STOPPED"
+            # Add stoppedAt timestamp
+            result["task"]["stoppedAt"] = time.time()
+
+        mgr = _init_task_manager()
+        if mgr and task_arn:
+            try:
+                mgr.stop_task(task_arn)
+            except Exception as e:
+                LOG.warning(
+                    "Failed to stop Docker containers for ECS task %s: %s",
+                    task_arn, e,
+                )
+    finally:
+        # Always finish STOPPED on the moto record — even when call_moto
+        # raised before returning. Ghost / DEACTIVATING tasks with no
+        # container must not linger holding host ports (#716).
+        _finalize_stopped_task_backends(task_arn, reason)
+
+    if result is None:
+        result = {}
     if result.get("task"):
         result["task"]["lastStatus"] = "STOPPED"
         result["task"]["desiredStatus"] = "STOPPED"
-    if task_arn:
+        if reason:
+            result["task"]["stoppedReason"] = reason
+    elif call_error is not None:
+        # Moto failed and gave no task payload — still surface a stopped
+        # view when we can find the record we just finalized.
         short = str(task_arn).split("/")[-1]
-        try:
-            for _acct, _region, backend in _iter_ecs_backends():
-                for cluster_tasks in (getattr(backend, "tasks", {}) or {}).values():
-                    for tid, task in list(cluster_tasks.items()):
-                        arn = getattr(task, "task_arn", None) or tid
-                        if (
-                            short not in (str(arn), str(tid))
-                            and not str(arn).endswith(short)
-                            and not str(tid).endswith(short)
-                        ):
-                            continue
-                        if (getattr(task, "last_status", "") or "").upper() != "STOPPED":
-                            _force_stop_missing_task(
-                                backend, task, reason or "Task stopped by user"
+        for _acct, _region, backend in _iter_ecs_backends():
+            for cluster_tasks in (getattr(backend, "tasks", {}) or {}).values():
+                for tid, task in list(cluster_tasks.items()):
+                    arn = getattr(task, "task_arn", None) or tid
+                    if short not in (str(arn), str(tid)) and not str(arn).endswith(
+                        short
+                    ):
+                        continue
+                    result = {
+                        "task": {
+                            "taskArn": str(arn),
+                            "lastStatus": "STOPPED",
+                            "desiredStatus": "STOPPED",
+                            "stoppedReason": reason
+                            or getattr(task, "stopped_reason", "")
+                            or "Task stopped by user",
+                            "clusterArn": getattr(task, "cluster_arn", "") or "",
+                            "taskDefinitionArn": getattr(
+                                task, "task_definition_arn", ""
                             )
-        except Exception:
-            LOG.debug("StopTask moto finalize failed for %s", task_arn, exc_info=True)
+                            or "",
+                        }
+                    }
+                    return result
+        raise call_error
 
     return result
 
@@ -1101,23 +1166,95 @@ def _task_cluster_name(task) -> str:
     return "default"
 
 
+def _release_instance_resources_tolerant(container_instance, task_resources) -> None:
+    """Return CPU/memory/PORTS held by a task without raising on missing ports.
+
+    Moto's ``update_container_instance_resources(..., removing=True)`` does
+    ``PORTS.remove(port)`` and raises ``ValueError`` when a port was already
+    dropped mid-``stop_task``. That leaves remaining ports reserved while we
+    force STOPPED — so placement stays blocked (#716). Skip ports that are
+    already absent; still return CPU/MEMORY and clear any leftover ports.
+    """
+    if not task_resources:
+        return
+    for resource in getattr(container_instance, "remaining_resources", []) or []:
+        name = resource.get("name")
+        if name == "CPU":
+            resource["integerValue"] = int(resource.get("integerValue") or 0) + int(
+                task_resources.get("CPU") or 0
+            )
+        elif name == "MEMORY":
+            resource["integerValue"] = int(resource.get("integerValue") or 0) + int(
+                task_resources.get("MEMORY") or 0
+            )
+        elif name == "PORTS":
+            held = resource.get("stringSetValue")
+            if not isinstance(held, list):
+                continue
+            for port in task_resources.get("PORTS") or []:
+                sp = str(port)
+                if sp in held:
+                    held.remove(sp)
+        elif name == "PORTS_UDP":
+            held = resource.get("stringSetValue")
+            if not isinstance(held, list):
+                continue
+            for port in task_resources.get("PORTS_UDP") or []:
+                sp = str(port)
+                if sp in held:
+                    held.remove(sp)
+    count = int(getattr(container_instance, "running_tasks_count", 0) or 0)
+    if count > 0:
+        container_instance.running_tasks_count = count - 1
+
+
 def _force_stop_missing_task(backend, task, reason: str = _MISSING_CONTAINER_REASON) -> None:
     """Mark a ghost task STOPPED and release container-instance resources (#716).
 
     Prefer moto ``stop_task`` (releases CPU/memory/PORTS). If that fails
     mid-transition (e.g. DEACTIVATING with a partial PORTS set), fall back
-    to a best-effort resource release and force ``last_status=STOPPED`` so
+    to a port-tolerant resource release and force ``last_status=STOPPED`` so
     the task never blocks placement indefinitely.
     """
     status = (getattr(task, "_status", None) or getattr(task, "last_status", "") or "").upper()
     if status == "STOPPED":
+        # Still clear any ports left behind by a partial stop_task.
+        ci_arn = getattr(task, "container_instance_arn", None)
+        reqs = getattr(task, "resource_requirements", None)
+        if ci_arn and reqs:
+            try:
+                cluster_name = _task_cluster_name(task)
+                ci_id = str(ci_arn).split("/")[-1]
+                cis = (getattr(backend, "container_instances", {}) or {}).get(
+                    cluster_name
+                ) or {}
+                ci = cis.get(ci_id)
+                if ci is not None:
+                    for resource in getattr(ci, "remaining_resources", []) or []:
+                        if resource.get("name") not in ("PORTS", "PORTS_UDP"):
+                            continue
+                        held = resource.get("stringSetValue")
+                        if not isinstance(held, list):
+                            continue
+                        key = "PORTS" if resource.get("name") == "PORTS" else "PORTS_UDP"
+                        for port in reqs.get(key) or []:
+                            sp = str(port)
+                            if sp in held:
+                                held.remove(sp)
+            except Exception:
+                LOG.debug(
+                    "ECS reconcile port sweep failed for already-STOPPED task",
+                    exc_info=True,
+                )
         return
     cluster_name = _task_cluster_name(task)
     task_arn = getattr(task, "task_arn", None) or ""
+    stop_exc: Exception | None = None
     try:
         backend.stop_task(cluster_name, task_arn, reason)
         return
     except Exception as exc:
+        stop_exc = exc
         LOG.warning(
             "ECS reconcile stop_task failed for %s: %s — forcing STOPPED",
             task_arn, exc,
@@ -1130,7 +1267,30 @@ def _force_stop_missing_task(backend, task, reason: str = _MISSING_CONTAINER_REA
             cis = (getattr(backend, "container_instances", {}) or {}).get(cluster_name) or {}
             ci = cis.get(ci_id)
             if ci is not None:
-                backend.update_container_instance_resources(ci, reqs, removing=True)
+                # PORTS .remove ValueError means CPU/MEMORY were already
+                # returned — only sweep leftover ports. Other failures need
+                # a full tolerant release.
+                ports_partial = isinstance(stop_exc, ValueError) and (
+                    "not in list" in str(stop_exc)
+                )
+                if ports_partial:
+                    for resource in getattr(ci, "remaining_resources", []) or []:
+                        if resource.get("name") not in ("PORTS", "PORTS_UDP"):
+                            continue
+                        held = resource.get("stringSetValue")
+                        if not isinstance(held, list):
+                            continue
+                        key = (
+                            "PORTS"
+                            if resource.get("name") == "PORTS"
+                            else "PORTS_UDP"
+                        )
+                        for port in reqs.get(key) or []:
+                            sp = str(port)
+                            if sp in held:
+                                held.remove(sp)
+                else:
+                    _release_instance_resources_tolerant(ci, reqs)
         except Exception:
             LOG.debug(
                 "ECS reconcile resource release fallback failed for %s",
