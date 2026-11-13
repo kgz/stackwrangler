@@ -441,6 +441,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./smokes/lambda/lambda-smoke.sh           # happy
 ./smokes/lambda/lambda-authz-smoke.sh     # sad/authz
+./smokes/lambda/lambda-secure-transport-smoke.sh  # https endpoint + DenyNonSSL (#696)
 ./smokes/security/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
 ./smokes/security/resource-policy-cross-account-smoke.sh # A role vs B secret/key/bucket policies
 ./smokes/transfer/transfer-key-smoke.sh
