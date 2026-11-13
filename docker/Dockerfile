@@ -10,6 +10,7 @@ COPY docker/compose.release.yml /opt/stackwrangler/docker/compose.release.yml
 COPY bin/stackwrangler-env.sh /opt/stackwrangler/bin/stackwrangler-env.sh
 COPY bin/stackwrangler-profile /opt/stackwrangler/bin/stackwrangler-profile
 COPY bin/stackwrangler-wait-healthy.sh /opt/stackwrangler/bin/stackwrangler-wait-healthy.sh
+COPY bin/stackwrangler-dev-apply-hook.sh /opt/stackwrangler/bin/stackwrangler-dev-apply-hook.sh
 COPY docker/bin/stackwrangler-image /usr/local/bin/stackwrangler
 RUN chmod +x /usr/local/bin/stackwrangler /opt/stackwrangler/bin/stackwrangler-profile
 
