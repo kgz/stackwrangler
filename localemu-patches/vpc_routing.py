@@ -1100,13 +1100,22 @@ def _sh(container: str, script: str) -> None:
 
 
 _RT_IMAGE = "localemu/awsbox-rt:latest"
-_RT_DOCKERFILE = """\
-FROM alpine:3.19
-RUN apk add --no-cache iptables iproute2 \\
-    && rm -rf /var/cache/apk/*
-LABEL org.localemu.image-role="awsbox-route-sidecar"
-"""
+# Single source of truth: docker/Dockerfile.awsbox-rt (#289) — no inline drift.
+_RT_DOCKERFILE_PATHS = (
+    os.environ.get("AWSBOX_RT_DOCKERFILE", "").strip(),
+    "/opt/awsbox/docker/Dockerfile.awsbox-rt",
+)
 _rt_image_lock = threading.Lock()
+
+
+def _rt_dockerfile_path() -> str:
+    for path in _RT_DOCKERFILE_PATHS:
+        if path and os.path.isfile(path):
+            return path
+    raise FileNotFoundError(
+        "awsbox-rt Dockerfile missing (#289). Expected "
+        "/opt/awsbox/docker/Dockerfile.awsbox-rt (compose mount or image COPY)."
+    )
 
 
 def _ensure_rt_image() -> str:
@@ -1127,19 +1136,26 @@ def _ensure_rt_image() -> str:
         import tempfile
 
         try:
+            src = _rt_dockerfile_path()
             with tempfile.TemporaryDirectory(prefix="awsbox-rt-img-") as ctx:
                 path = os.path.join(ctx, "Dockerfile")
+                with open(src, encoding="utf-8") as fh:
+                    body = fh.read()
                 with open(path, "w", encoding="utf-8") as fh:
-                    fh.write(_RT_DOCKERFILE)
+                    fh.write(body)
                 DOCKER_CLIENT.build_image(
                     dockerfile_path=path,
                     image_name=_RT_IMAGE,
                     context_path=ctx,
                 )
             return _RT_IMAGE
-        except Exception:
-            LOG.warning("awsbox-rt image build failed; using alpine + apk", exc_info=True)
-            return "alpine:3.19"
+        except Exception as exc:
+            # Never fall back to alpine + runtime apk (#289): private VPC
+            # nets have no package mirrors; bake iptables into the image.
+            raise RuntimeError(
+                f"Failed to build {_RT_IMAGE} (required for SG/route netns "
+                f"sidecar; no runtime apk). Build error: {exc}"
+            ) from exc
 
 
 def _sh_netns(container: str, script: str) -> bool:
@@ -1178,12 +1194,9 @@ def _run_netns(container: str, script: str):
     from localemu.utils.docker_utils import DOCKER_CLIENT
 
     image = _ensure_rt_image()
-    full = script
-    if image == "alpine:3.19":
-        full = "apk add --no-cache iptables iproute2 >/dev/null 2>&1; " + script
     return DOCKER_CLIENT.run_container(
         image,
-        command=["sh", "-c", full],
+        command=["sh", "-c", script],
         additional_flags=f"--network container:{container}",
         privileged=True,
         remove=True,

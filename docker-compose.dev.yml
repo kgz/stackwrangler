@@ -6,6 +6,8 @@
 # survive LocalEmu recreate; wiped by `./bin/stackwrangler reset`.
 services:
   localstack:
+    # ON_SHUTDOWN dill save needs more than compose's ~10s default (#289).
+    stop_grace_period: 90s
     environment:
       PERSISTENCE: "1"
     volumes:

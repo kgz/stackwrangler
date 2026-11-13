@@ -258,15 +258,36 @@ free_sftp_host_port() {
 	return 1
 }
 
+# Workload containers that survive ``down`` / ``up --dev`` (#289).
+warm_preserve_container() {
+	local name="${1:-}"
+	case "$name" in
+		localemu-ec2-* | localemu-ecs-* | localemu-rds-*) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
 # Drop leftover localemu-vpc-* / localemu-pcx-* bridges after compose down (#479).
 # Shared Docker hosts may have other worktrees: only force-remove containers that
 # belong to this compose project (or LocalEmu-owned sidecars), then delete networks
 # that have no remaining endpoints.
+#
+# ``--dev`` warm restart (#289): do not ``docker rm`` EC2/ECS/RDS workload
+# containers — LocalEmu persistence resumes them with ``docker start``. Pass
+# ``--force`` from ``reset`` (and test-mode defaults) to reclaim everything.
 cleanup_localemu_vpc_networks() {
 	local project net id name force_prefix
+	local force=0 preserve=0
 	local -a nets=() ids=()
+	if [[ "${1:-}" == "--force" ]]; then
+		force=1
+		shift
+	fi
 	if ! command -v docker >/dev/null 2>&1; then
 		return 0
+	fi
+	if [[ "$force" -eq 0 && "$(read_mode)" == "dev" ]]; then
+		preserve=1
 	fi
 	project="$(compose_project_name 2>/dev/null || true)"
 	force_prefix=""
@@ -277,10 +298,22 @@ cleanup_localemu_vpc_networks() {
 	[[ ${#nets[@]} -eq 0 ]] && return 0
 	for net in "${nets[@]}"; do
 		[[ -n "$net" ]] || continue
-		mapfile -t ids < <(docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null || true)
+		# network inspect Containers = running only. Include stopped via
+		# ``ps -aq --filter network=`` so --dev warm restart keeps bridges
+		# that still have stopped EC2/ECS/RDS endpoints (#289).
+		mapfile -t ids < <(
+			{
+				docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null || true
+				docker ps -aq --filter "network=$net" 2>/dev/null || true
+			} | awk 'NF && !seen[$0]++'
+		)
 		for id in "${ids[@]}"; do
 			[[ -n "$id" ]] || continue
 			name="$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##')" || name=""
+			if [[ "$preserve" -eq 1 ]] && warm_preserve_container "$name"; then
+				# Leave stopped/running for docker start on next boot.
+				continue
+			fi
 			if [[ -n "$force_prefix" && "$name" == "$force_prefix"* ]]; then
 				docker rm -f "$id" >/dev/null 2>&1 || true
 				continue
@@ -289,10 +322,33 @@ cleanup_localemu_vpc_networks() {
 				docker rm -f "$id" >/dev/null 2>&1 || true
 			fi
 		done
-		if [[ -z "$(docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null | awk 'NF{print; exit}')" ]]; then
+		if [[ -z "$(docker ps -aq --filter "network=$net" 2>/dev/null | awk 'NF{print; exit}')" ]]; then
 			docker network rm "$net" >/dev/null 2>&1 || true
 		fi
 	done
+}
+
+# Prebuilt images for private-net workloads (#289). Idempotent; builds only if missing.
+# Dockerfiles: docker/Dockerfile.ec2-base + docker/Dockerfile.awsbox-rt (shared with LocalEmu).
+ensure_warm_images() {
+	if ! command -v docker >/dev/null 2>&1; then
+		return 0
+	fi
+	local ec2_df rt_df
+	ec2_df="$ROOT/docker/Dockerfile.ec2-base"
+	rt_df="$ROOT/docker/Dockerfile.awsbox-rt"
+	if [[ ! -f "$ec2_df" || ! -f "$rt_df" ]]; then
+		echo "error: warm-restart Dockerfiles missing (#289): $ec2_df / $rt_df" >&2
+		return 1
+	fi
+	if ! docker image inspect localemu/ec2-base:v4 >/dev/null 2>&1; then
+		echo "Building localemu/ec2-base:v4 from docker/Dockerfile.ec2-base…"
+		docker build -t localemu/ec2-base:v4 -f "$ec2_df" "$ROOT/docker"
+	fi
+	if ! docker image inspect localemu/awsbox-rt:latest >/dev/null 2>&1; then
+		echo "Building localemu/awsbox-rt:latest from docker/Dockerfile.awsbox-rt…"
+		docker build -t localemu/awsbox-rt:latest -f "$rt_df" "$ROOT/docker"
+	fi
 }
 
 cmd_up() {
@@ -353,7 +409,10 @@ cmd_up() {
 	refresh_compose "$mode"
 
 	free_sftp_host_port
+	# Prebuilt EC2 base + route sidecar before workloads (private net / #289).
+	ensure_warm_images
 	# Orphans with no endpoints (and this project's leftover lambda containers).
+	# --dev preserves stopped EC2/ECS/RDS containers for warm restart (#289).
 	cleanup_localemu_vpc_networks
 	"${COMPOSE[@]}" up -d
 	wait_healthy
@@ -397,6 +456,7 @@ cmd_up() {
 
 cmd_down() {
 	local remove_profile=0
+	local project ls_name stop_t
 	if [[ "${1:-}" == "--remove-profile" ]]; then
 		remove_profile=1
 		shift
@@ -405,6 +465,21 @@ cmd_down() {
 	if [[ -f "$CONSOLE_PID_FILE" ]]; then
 		kill "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null || true
 		rm -f "$CONSOLE_PID_FILE"
+	fi
+	# --dev warm restart (#289): LocalEmu persists ON_SHUTDOWN. Compose's default
+	# ~10s stop often kills before the dill save finishes, so the next up loads
+	# stale API state and never docker-starts preserved EC2/ECS containers.
+	if [[ "$(read_mode)" == "dev" ]]; then
+		project="$(compose_project_name 2>/dev/null || true)"
+		ls_name=""
+		if [[ -n "$project" ]]; then
+			ls_name="${project}-localstack-1"
+		fi
+		stop_t="${STACKWRANGLER_LOCALEMU_STOP_TIMEOUT:-${AWSBOX_LOCALEMU_STOP_TIMEOUT:-90}}"
+		if [[ -n "$ls_name" ]] && docker inspect "$ls_name" >/dev/null 2>&1; then
+			echo "dev: graceful LocalEmu stop (${stop_t}s) so ON_SHUTDOWN persist can finish…"
+			docker stop -t "$stop_t" "$ls_name" >/dev/null 2>&1 || true
+		fi
 	fi
 	# No -v: named volumes + .awsbox/dev survive for --dev warm restart.
 	"${COMPOSE[@]}" down "$@"
@@ -454,7 +529,8 @@ cmd_reset() {
 		rm -f "$CONSOLE_PID_FILE"
 	fi
 	"${COMPOSE[@]}" down --remove-orphans 2>/dev/null || true
-	cleanup_localemu_vpc_networks
+	# Wipe workload containers + orphan VPC bridges even if mode was --dev.
+	cleanup_localemu_vpc_networks --force
 
 	echo "reset: wiping .awsbox/dev (LocalEmu state + ECR registry blobs)…"
 	# LocalEmu runs as root (docker.sock); TLS cache under .awsbox/dev can be root-owned.
