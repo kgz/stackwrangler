@@ -475,6 +475,8 @@ def _handle_run_task(
             task["stoppedReason"] = f"CannotStartContainerError: {e}"
             task["stoppedAt"] = time.time()
 
+        _omit_empty_network_configuration(task)
+
     return result
 
 
@@ -729,6 +731,7 @@ def _handle_describe_tasks(
         _apply_awsvpc_eni_ip(
             task, task_info, context.account_id, context.region,
         )
+        _omit_empty_network_configuration(task)
 
     return result
 
@@ -837,12 +840,28 @@ _service_tasks: dict[str, list[str]] = {}
 _service_tasks_lock = threading.Lock()
 
 
+def _omit_empty_network_configuration(obj: dict | None) -> None:
+    """Drop empty / non-awsvpc ``networkConfiguration`` (AWS omits; #708)."""
+    if not isinstance(obj, dict):
+        return
+    net = obj.get("networkConfiguration")
+    if not isinstance(net, dict) or "awsvpcConfiguration" not in net:
+        obj.pop("networkConfiguration", None)
+    for dep in obj.get("deployments") or []:
+        if not isinstance(dep, dict):
+            continue
+        dnet = dep.get("networkConfiguration")
+        if not isinstance(dnet, dict) or "awsvpcConfiguration" not in dnet:
+            dep.pop("networkConfiguration", None)
+
+
 def _handle_create_service(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
     """CreateService: Moto record, then EC2 scheduling / target registration (#207)."""
     result = call_moto(context)
     service_data = result.get("service")
+    _omit_empty_network_configuration(service_data)
     if not service_data or not _init_task_manager():
         return result
     from localemu.services.ecs.ec2_services import on_create_service
@@ -857,11 +876,22 @@ def _handle_update_service(
     """UpdateService: scale, or replace tasks when the task definition changes."""
     result = call_moto(context)
     service_data = result.get("service")
+    _omit_empty_network_configuration(service_data)
     if not service_data or not _init_task_manager():
         return result
     from localemu.services.ecs.ec2_services import on_update_service
 
     on_update_service(context, request, service_data)
+    return result
+
+
+def _handle_describe_services(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    """DescribeServices: omit empty networkConfiguration (#708)."""
+    result = call_moto(context)
+    for service in result.get("services") or []:
+        _omit_empty_network_configuration(service)
     return result
 
 
@@ -874,6 +904,7 @@ def _handle_delete_service(
     service_name = request.get("service", "")
 
     result = call_moto(context)
+    _omit_empty_network_configuration(result.get("service"))
 
     from localemu.services.ecs.ec2_services import on_delete_service
 
@@ -1031,6 +1062,7 @@ _INTERCEPTED_OPS = {
     "DeregisterTaskDefinition": _handle_deregister_task_definition,
     "CreateService": _handle_create_service,
     "UpdateService": _handle_update_service,
+    "DescribeServices": _handle_describe_services,
     "DeleteService": _handle_delete_service,
     "ListServices": _handle_list_services,
 }
