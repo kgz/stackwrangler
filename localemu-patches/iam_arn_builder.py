@@ -30,6 +30,11 @@ def build_resource_arn(
     if service == "scheduler":
         return _scheduler_arn(operation, params, region, account_id)
 
+    # ECR: repository-scoped actions need repository/<name>; GetAuthorizationToken
+    # stays account:* (#709). JSON protocol uses camelCase param keys.
+    if service == "ecr":
+        return _ecr_arn(operation, params, region, account_id)
+
     builder = _SERVICE_ARN_BUILDERS.get(service)
     if builder:
         return builder(params, region, account_id)
@@ -70,6 +75,43 @@ def _scheduler_arn(operation: str, params: dict, region: str, account_id: str) -
     if not isinstance(group, str):
         group = "default"
     return f"arn:aws:scheduler:{region}:{account_id}:schedule/{group}/{name}"
+
+
+def _ecr_param(params: dict, *keys: str) -> str | None:
+    for key in keys:
+        val = params.get(key)
+        if isinstance(val, str) and val:
+            return val
+    return None
+
+
+def _ecr_arn(operation: str, params: dict, region: str, account_id: str) -> str:
+    """ECR ARNs: ``repository/<name>`` for repo ops; GetAuthorizationToken → ``*``.
+
+    AWS authorises BatchGetImage / PutImage / DescribeImages / … on
+    ``arn:aws:ecr:<region>:<account>:repository/<repositoryName>``. ``registryId``
+    (when present) is the account segment. Without a repository name the
+    evaluation target is the account wildcard — including GetAuthorizationToken.
+    """
+    if operation == "GetAuthorizationToken":
+        return f"arn:aws:ecr:{region}:{account_id}:*"
+
+    repo = _ecr_param(params, "repositoryName", "RepositoryName")
+    if not repo:
+        names = params.get("repositoryNames") or params.get("RepositoryNames")
+        if isinstance(names, list):
+            for name in names:
+                if isinstance(name, str) and name:
+                    repo = name
+                    break
+        elif isinstance(names, str) and names:
+            repo = names
+    if not repo:
+        return f"arn:aws:ecr:{region}:{account_id}:*"
+
+    registry = _ecr_param(params, "registryId", "RegistryId")
+    acct = registry if registry else account_id
+    return f"arn:aws:ecr:{region}:{acct}:repository/{repo}"
 
 
 def _s3_arn(params: dict, region: str, account_id: str) -> str:
