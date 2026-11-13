@@ -56,7 +56,7 @@ Upgrade / teardown / ports / known limits (host Docker, sock mounts, dual S3): [
 
 Optional thin CLI (GitHub Release asset `stackwrangler`): same `up` / `down` / `status` commands without typing `docker run`.
 
-Contributor clone path: `./bin/stackwrangler up` copies `.env.example` → `.env` on first run. Defaults: access key `stackwrangler`, secret `stackwranglerstackwrangler`, profile `local`. Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop the profile).
+Contributor clone path: `./bin/stackwrangler up` copies `.env.example` → `.env` on first run. Defaults: access key `stackwrangler`, secret `stackwranglerstackwrangler`, profile `local`. Tear down with `./bin/stackwrangler down` (add `--remove-profile` to drop the profile). Modes: `up --test` (default, ephemeral) or `up --dev` (persistent); `reset` wipes deliberately — [docs/dev-mode.md](docs/dev-mode.md).
 
 | What | Where |
 |------|--------|
@@ -65,6 +65,7 @@ Contributor clone path: `./bin/stackwrangler up` copies `.env.example` → `.env
 | Transfer SFTP (native) | `127.0.0.1:2222` ([docs/transfer.md](docs/transfer.md)) |
 | Console | `http://127.0.0.1:3000` |
 | Profile | `local` |
+| Mode | `test` (default) / `dev` — `status` · [dev-mode.md](docs/dev-mode.md) |
 | Config / data | `~/.stackwrangler` |
 
 Images publish to GHCR on product tags (`vX.Y.Z`). Until a tag has been cut, build locally from a contributor checkout with `./bin/build-release-images.sh` (see docker-install docs) — **running** the stack still does not require keeping the clone.

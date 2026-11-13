@@ -18,6 +18,7 @@ Honest limits of this shape:
 - **Socket mount** — the orchestrator (and LocalEmu) can manage containers on your daemon. Treat it like any privileged local-dev tool.
 - **Published ports bind `127.0.0.1`** — fine on Linux; Docker Desktop / non-Linux networking may need docs from sibling Public OSS cards.
 - **Dual S3** still applies: console buckets → SeaweedFS `:8333`; many IaC/Lambda paths → LocalEmu S3 `:4566` ([s3-backends.md](s3-backends.md)).
+- **Test vs dev mode** — contributor CLI: `./bin/stackwrangler up --test` (default, ephemeral) or `up --dev` (persistent); `reset` wipes · [dev-mode.md](dev-mode.md). Public image path persistence knobs stay on [#200](https://github.com/kgz/stackwrangler/issues/200).
 - Console image bakes default credentials (`stackwrangler` / `stackwranglerstackwrangler`). Changing keys in `~/.stackwrangler/.env` updates profile `local` but not the baked SPA until a custom console image rebuild (contributor `Dockerfile.console` build args).
 - **Linux docker CLI inside LocalEmu** — contributor `docker-compose.yml` bind-mounts `${STACKWRANGLER_DOCKER_CLI:-/usr/bin/docker}` at `/usr/bin/docker` so LocalEmu can create VPC bridges and install ECS task-role DNAT. On Linux that default path is usually correct. Docker Desktop (macOS/Windows) ships a host-OS CLI that will **not** run inside the Linux LocalEmu container — download a static Linux `docker` binary for your CPU, point `STACKWRANGLER_DOCKER_CLI` at it, and recreate LocalEmu.
 

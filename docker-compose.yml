@@ -9,7 +9,8 @@ services:
     ports:
       - "127.0.0.1:${STACKWRANGLER_S3_HOST_PORT:-${AWSBOX_S3_HOST_PORT:-8333}}:8333"
     volumes:
-      - seaweed-data:/data
+      # --test uses seaweed-data; --dev uses seaweed-data-dev (docs/dev-mode.md).
+      - ${STACKWRANGLER_SEAWEED_VOLUME:-seaweed-data}:/data
     healthcheck:
       # any HTTP response (incl. 403) means S3 is listening
       test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:8333/ 2>&1 | grep -q 'HTTP/'"]
@@ -47,7 +48,8 @@ services:
       # Expire messages past MessageRetentionPeriod (AWS default behaviour; off in upstream LocalEmu).
       SQS_ENABLE_MESSAGE_RETENTION_PERIOD: "1"
       DEBUG: "0"
-      PERSISTENCE: "0"
+      # test (default): 0. --dev sets STACKWRANGLER_PERSISTENCE=1 + docker-compose.dev.yml mount.
+      PERSISTENCE: "${STACKWRANGLER_PERSISTENCE:-0}"
       GATEWAY_LISTEN: 0.0.0.0:4566
       AWS_DEFAULT_REGION: ${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}
       # Key→account map (listed keys are root there; per-key wins); default account in ARNs.
@@ -200,3 +202,4 @@ services:
 
 volumes:
   seaweed-data:
+  seaweed-data-dev:

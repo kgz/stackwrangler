@@ -21,6 +21,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | Area | Status | Notes |
 |------|--------|--------|
 | `./bin/stackwrangler up` + profile `local` | **Working** | Compose + managed AWS profile |
+| Test / dev mode (`up --test` \| `--dev`, `reset`) | **Partial** | Mode recorded; `status` shows it; `--dev` → `PERSISTENCE=1` + `.awsbox/dev` + separate Seaweed volume; `down` keeps state; `reset` wipes · [dev-mode.md](dev-mode.md) · deep RDS/ECR/workload matrix → [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Console shell (grey rose) | **Working** | Chrome from `design/stackwrangler-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
 | Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [labels.md](labels.md) · `./smokes/account/labels-smoke.sh` |
 | Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [s3-backends.md](s3-backends.md) · smoke `./smokes/s3/s3-dual-endpoint-smoke.sh` |

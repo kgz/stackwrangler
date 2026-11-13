@@ -10,6 +10,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Surface | Happy | Sad (authz / deny) | Sad (other) | Console e2e | Script |
 |---------|-------|--------------------|-------------|-------------|--------|
 | Public Docker image install (#487) | yes (alt ports via `install/stackwrangler`) | — | up without docker.sock refused | baked console HTTP | `docker-image-install-smoke.sh` |
+| Test/dev mode CLI (#288) | yes (usage, `status` mode, `reset` wipe, compose `--dev` config) | — | — | — | `mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | S3 SeaweedFS | yes | no (parity gaps) | dual-split | yes | `s3-parity.sh`, `s3-dual-endpoint-smoke.sh` |
 | IAM AccessDenied lab | — | **yes** (deny user) | — | yes | `iam-access-denied.sh` |
 | API call log ECS/CLI workloads (#602) | yes (ECS `ecs-task-*` + CLI `user/*` GetSecretValue) | — (Lambda deny covered by #194) | needs [#194](https://github.com/kgz/stackwrangler/issues/194) hooks | — | `api-call-log-ecs-cli-smoke.sh` |
