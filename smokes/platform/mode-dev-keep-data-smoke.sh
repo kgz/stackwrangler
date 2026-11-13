@@ -34,6 +34,9 @@ aws_emu() {
 
 cleanup() {
 	"$ROOT/bin/stackwrangler" down >/dev/null 2>&1 || true
+	# Mid-fail before reset leaves mode=dev sticky for the next smoke; force test.
+	mkdir -p "$ROOT/.awsbox"
+	echo test >"$ROOT/.awsbox/mode"
 }
 trap cleanup EXIT
 

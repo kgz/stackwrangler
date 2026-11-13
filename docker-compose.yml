@@ -2,7 +2,9 @@
 services:
   s3:
     image: chrislusf/seaweedfs:4.48
-    command: mini -dir=/data
+    # volume.max=0 (mini default) auto-sizes from free disk; on a nearly-full
+    # host that becomes 0 free volumes → PutObject InternalError. Pin a floor.
+    command: mini -dir=/data -volume.max=8
     environment:
       AWS_ACCESS_KEY_ID: ${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}
       AWS_SECRET_ACCESS_KEY: ${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}
