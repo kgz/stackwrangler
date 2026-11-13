@@ -62,13 +62,19 @@ echo "== persistence override (volume ${VOL}) =="
 "${COMPOSE[@]}" -f "$OVERRIDE" up -d --force-recreate --no-deps localstack >/dev/null
 
 wait_ready() {
-	local code=""
+	# Prefer /_localemu/health (any HTTP on / can race mid-recreate).
+	local body=""
 	for _ in $(seq 1 90); do
-		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$EMU/" || true)"
-		[[ "$code" =~ ^[12345][0-9][0-9]$ ]] && return 0
+		body="$(curl -sf --max-time 2 "$EMU/_localemu/health" 2>/dev/null || true)"
+		if [[ "$body" == *'"services"'* ]]; then
+			# Signed call must also succeed — health alone can precede IAM.
+			if aws_emu iam list-roles --max-items 1 >/dev/null 2>&1; then
+				return 0
+			fi
+		fi
 		sleep 2
 	done
-	echo "FAIL: LocalEmu not ready (${code:-none})" >&2
+	echo "FAIL: LocalEmu not ready (health/IAM)" >&2
 	return 1
 }
 wait_ready
@@ -133,7 +139,15 @@ else
 fi
 UUID=""
 
-# Function may be missing after recreate (#713); recreate so we can prove mapping create.
+# IAM/SQS/Lambda may be missing after recreate; restore fixtures before remap.
+if ! aws_emu iam get-role --role-name "$ROLE" >/dev/null 2>&1; then
+	echo "role missing after recreate — recreating"
+	aws_emu iam create-role --role-name "$ROLE" --assume-role-policy-document "file://$TMP/trust.json" >/dev/null
+fi
+aws_emu iam attach-role-policy --role-name "$ROLE" \
+	--policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole >/dev/null 2>&1 || true
+ROLE_ARN="$(aws_emu iam get-role --role-name "$ROLE" --query 'Role.Arn' --output text)"
+
 if ! aws_emu lambda get-function --function-name "$FN" >/dev/null 2>&1; then
 	echo "function missing after recreate — recreating"
 	aws_emu lambda create-function \
@@ -150,7 +164,6 @@ if ! aws_emu lambda get-function --function-name "$FN" >/dev/null 2>&1; then
 	done
 fi
 
-# Queue ARN may change if SQS was not persisted; resolve current.
 if ! aws_emu sqs get-queue-url --queue-name "$QNAME" >/dev/null 2>&1; then
 	QURL="$(aws_emu sqs create-queue --queue-name "$QNAME" --query 'QueueUrl' --output text)"
 fi
