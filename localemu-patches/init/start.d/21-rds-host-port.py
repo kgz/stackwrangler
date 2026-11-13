@@ -19,11 +19,18 @@ import contextvars
 import json
 import logging
 import os
+import threading
 from pathlib import Path
 
 LOG = logging.getLogger("localemu.awsbox.rds_host_port")
 
 _RDS_META_DIRNAME = "rds-host-port"
+
+# Create may run on a worker thread; ContextVar alone does not cross that
+# boundary. Pending pins are keyed by DB instance id (set in the API handler,
+# consumed in _do_create on the worker).
+_PENDING_HOST_PORTS: dict[str, int] = {}
+_PENDING_LOCK = threading.Lock()
 
 _PREFERRED_HOST_PORT: contextvars.ContextVar[int | None] = contextvars.ContextVar(
     "awsbox_rds_preferred_host_port",
@@ -122,6 +129,21 @@ def _resolve_preferred_host_port(request) -> int | None:
     if port is not None:
         return port
     return _tag_host_port(request)
+
+
+def _set_pending_host_port(db_id: object, port: int | None) -> None:
+    if not isinstance(db_id, str) or not db_id:
+        return
+    with _PENDING_LOCK:
+        if port is None:
+            _PENDING_HOST_PORTS.pop(db_id, None)
+        else:
+            _PENDING_HOST_PORTS[db_id] = int(port)
+
+
+def _take_pending_host_port(db_id: str) -> int | None:
+    with _PENDING_LOCK:
+        return _PENDING_HOST_PORTS.pop(db_id, None)
 
 
 def _host_port_free(port: int, *, exclude_db_id: str | None = None) -> bool:
@@ -291,21 +313,27 @@ def _install() -> None:
         return orig_get_free(blocklist)
 
     def _do_create(self, db_instance_id, engine, *args, **kwargs):
-        # Positional layout matches DockerDbManager._do_create_db_instance:
-        # engine_version, master_username, master_password, db_name,
-        # allocated_storage, db_instance_class, port, vpc_id, subnet_id=…
-        port = kwargs.get("port") if "port" in kwargs else None
-        if port is None and len(args) >= 7:
-            port = args[6]
-        preferred = _parse_port(port)
+        # Host pin: pending map / ContextVar (explicit --port / tag / restore).
+        # Upstream ``port`` from CreateDBInstance request Port is also a pin
+        # when there is no cluster_id. CreateDBCluster passes moto's engine
+        # Port (3306/5432) with cluster_id set — that must stay listen-only.
+        preferred = _take_pending_host_port(db_instance_id)
         if preferred is None:
             preferred = _PREFERRED_HOST_PORT.get()
+        if preferred is None:
+            port = kwargs.get("port") if "port" in kwargs else None
+            if port is None and len(args) >= 7:
+                port = args[6]
+            cluster_id = kwargs.get("cluster_id")
+            if port is not None and not cluster_id:
+                preferred = _parse_port(port)
         if preferred is not None:
             _ensure_host_port_free(preferred)
 
+        # Re-bind ContextVar on this worker thread so get_free_tcp_port sees it.
         token = _PREFERRED_HOST_PORT.set(preferred)
         try:
-            # Force engine-default container listen port; Port means host.
+            # Force engine-default container listen port.
             if "port" in kwargs:
                 kwargs = dict(kwargs)
                 kwargs["port"] = None
@@ -323,24 +351,35 @@ def _install() -> None:
     def _handle_create_db_instance(context, request):
         err_token = _PORT_ALLOC_ERROR.set(None)
         preferred = _resolve_preferred_host_port(request)
+        db_id = _request_get(request, "DBInstanceIdentifier")
+        if preferred is not None:
+            _set_pending_host_port(db_id, preferred)
+        pref_token = _PREFERRED_HOST_PORT.set(preferred)
         try:
             if preferred is not None:
                 try:
                     _ensure_host_port_free(preferred)
                 except HostPortInUse as exc:
+                    _set_pending_host_port(db_id, None)
                     _raise_port_in_use(exc.port)
                 _apply_preferred_to_request(request, preferred)
             result = orig_create_instance(context, request)
             _raise_if_port_alloc_failed(preferred)
             return result
         except HostPortInUse as exc:
+            _set_pending_host_port(db_id, None)
             _raise_port_in_use(exc.port)
         finally:
+            _PREFERRED_HOST_PORT.reset(pref_token)
             _PORT_ALLOC_ERROR.reset(err_token)
 
     def _handle_create_db_cluster(context, request):
         err_token = _PORT_ALLOC_ERROR.set(None)
         preferred = _resolve_preferred_host_port(request)
+        # Cluster member creates may inherit moto engine Port (3306) — that
+        # must stay engine-listen only. Explicit cluster --port / tag still
+        # pins via ContextVar for members created on this call stack.
+        pref_token = _PREFERRED_HOST_PORT.set(preferred)
         try:
             if preferred is not None:
                 try:
@@ -354,6 +393,7 @@ def _install() -> None:
         except HostPortInUse as exc:
             _raise_port_in_use(exc.port)
         finally:
+            _PREFERRED_HOST_PORT.reset(pref_token)
             _PORT_ALLOC_ERROR.reset(err_token)
 
     def _recreate_from_meta(mgr, db_id: str, moto_db, region: str, held, meta) -> str:
@@ -396,6 +436,8 @@ def _install() -> None:
                 vpc_id = vid
         if not master_pass or preferred is None:
             return "failed"
+        _set_pending_host_port(db_id, preferred)
+        pref_token = _PREFERRED_HOST_PORT.set(preferred)
         try:
             _ensure_host_port_free(preferred, exclude_db_id=db_id)
             info = mgr.create_db_instance(
@@ -407,7 +449,7 @@ def _install() -> None:
                 db_name=db_name,
                 allocated_storage=getattr(moto_db, "allocated_storage", 20) or 20,
                 db_instance_class=db_instance_class,
-                port=preferred,
+                port=None,
                 vpc_id=vpc_id,
             )
             provider._patch_moto_endpoint(moto_db, region, info.host_port)
@@ -422,6 +464,8 @@ def _install() -> None:
         except Exception:
             LOG.warning("Stable-port recreate failed for RDS %s", db_id, exc_info=True)
             return "failed"
+        finally:
+            _PREFERRED_HOST_PORT.reset(pref_token)
 
     def _restore_one(mgr, db_id: str, moto_db, region: str) -> str:
         from localemu.utils.docker_utils import DOCKER_CLIENT
@@ -457,7 +501,13 @@ def _install() -> None:
             use = _parse_port(port)
             if use is None:
                 use = saved
-            return orig_create(*args, port=use, **kwargs)
+            _set_pending_host_port(db_id, use)
+            pref_token = _PREFERRED_HOST_PORT.set(use)
+            try:
+                # Engine listen stays default; host pin via pending/ContextVar.
+                return orig_create(*args, port=None, **kwargs)
+            finally:
+                _PREFERRED_HOST_PORT.reset(pref_token)
 
         mgr.create_db_instance = create_db_instance_wrapped
         try:
@@ -471,6 +521,27 @@ def _install() -> None:
         table["CreateDBCluster"] = _handle_create_db_cluster
         return table
 
+    def _rebind_live_dispatch() -> None:
+        # PERSISTENCE loads RDS before start.d, freezing the Skeleton table with
+        # upstream handlers. Re-point Create* so --port / tags still apply.
+        try:
+            from localemu.services.plugins import SERVICE_PLUGINS
+
+            svc = SERVICE_PLUGINS.get_service("rds")
+            skeleton = getattr(svc, "skeleton", None) if svc is not None else None
+            table = getattr(skeleton, "dispatch_table", None)
+            if not isinstance(table, dict):
+                return
+            for op, handler in (
+                ("CreateDBInstance", _handle_create_db_instance),
+                ("CreateDBCluster", _handle_create_db_cluster),
+            ):
+                if op in table:
+                    table[op] = handler
+            LOG.info("rds host-port rebound live CreateDBInstance/CreateDBCluster dispatch")
+        except Exception:
+            LOG.debug("rds host-port dispatch rebind skipped", exc_info=True)
+
     db_manager_mod.get_free_tcp_port = _patched_get_free_tcp_port
     DockerDbManager._do_create_db_instance = _do_create
     DockerDbManager.create_db_instance = create_db_instance
@@ -482,14 +553,23 @@ def _install() -> None:
     provider._INTERCEPTED_OPS["CreateDBInstance"] = _handle_create_db_instance
     provider._INTERCEPTED_OPS["CreateDBCluster"] = _handle_create_db_cluster
     provider.RdsDispatcher = RdsDispatcher
+    _rebind_live_dispatch()
     LOG.info("awsbox rds stable host-port patch applied")
 
-    # Persistence reconcile runs before start.d. Re-run now so volume recreate
-    # can use the stable-port + meta-file path.
-    try:
-        provider._rds_on_after_state_load()
-    except Exception:
-        LOG.warning("rds host-port post-patch reconcile failed", exc_info=True)
+    # Persistence reconcile runs before start.d (and may mark volume-only
+    # instances incompatible). Re-run with our restore path — in a daemon
+    # thread so we do not block Ready while leftover DBs are recreated.
+    def _reconcile_after_patch() -> None:
+        try:
+            provider._rds_on_after_state_load()
+        except Exception:
+            LOG.warning("rds host-port post-patch reconcile failed", exc_info=True)
+
+    threading.Thread(
+        target=_reconcile_after_patch,
+        name="rds-host-port-reconcile",
+        daemon=True,
+    ).start()
 
 
 _install()

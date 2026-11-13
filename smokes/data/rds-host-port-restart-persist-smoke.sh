@@ -2,7 +2,7 @@
 # #705: LocalEmu restart + PERSISTENCE=1 recreate keep the published host port.
 #
 # Requires an already-up stackwrangler compose project for this worktree.
-# Recreates only the localstack service with PERSISTENCE=1 and a state volume.
+# Recreates only the localstack service with PERSISTENCE=1 and a unique state volume.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -22,8 +22,10 @@ DB="awsbox"
 HOST_PORT=$((15000 + (TS % 1000)))
 KEEP="${STACKWRANGLER_RDS_KEEP:-${AWSBOX_RDS_KEEP:-0}}"
 OVERRIDE="${TMPDIR:-/tmp}/awsbox-rds-persist-override-${TS}.yml"
+STATE_VOL="awsl-rds-persist-${TS}"
 PROJECT="$(basename "$ROOT")"
 COMPOSE=(docker compose -p "$PROJECT" -f "$ROOT/docker-compose.yml" -f "$OVERRIDE")
+BASE_COMPOSE=(docker compose -p "$PROJECT" -f "$ROOT/docker-compose.yml")
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
@@ -32,29 +34,6 @@ export AWS_DEFAULT_REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 aws() {
 	command aws --endpoint-url "$EP" "$@"
 }
-
-cleanup() {
-	[[ "$KEEP" == "1" ]] && return 0
-	aws rds delete-db-instance --db-instance-identifier "$ID" --skip-final-snapshot >/dev/null 2>&1 || true
-	rm -f "$OVERRIDE"
-}
-trap cleanup EXIT
-
-command -v psql >/dev/null || {
-	echo "FAIL: psql required" >&2
-	exit 1
-}
-
-cat >"$OVERRIDE" <<'YAML'
-services:
-  localstack:
-    environment:
-      PERSISTENCE: "1"
-    volumes:
-      - localemu-rds-persist-state:/var/lib/localemu
-volumes:
-  localemu-rds-persist-state:
-YAML
 
 wait_localemu() {
 	local code=""
@@ -66,6 +45,41 @@ wait_localemu() {
 	echo "FAIL: LocalEmu not ready (http ${code:-none})" >&2
 	return 1
 }
+
+restore_default_localstack() {
+	# Drop PERSISTENCE=1 / state-volume override so the shared stack is left
+	# as compose defaults (PERSISTENCE=0).
+	rm -f "$OVERRIDE"
+	"${BASE_COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	wait_localemu >/dev/null 2>&1 || true
+	docker volume rm "$STATE_VOL" >/dev/null 2>&1 || true
+}
+
+cleanup() {
+	[[ "$KEEP" == "1" ]] && return 0
+	aws rds delete-db-instance --db-instance-identifier "$ID" --skip-final-snapshot >/dev/null 2>&1 || true
+	docker rm -f "localemu-rds-${ID}" >/dev/null 2>&1 || true
+	restore_default_localstack
+}
+trap cleanup EXIT
+
+command -v psql >/dev/null || {
+	echo "FAIL: psql required" >&2
+	exit 1
+}
+
+# Unique volume name so prior smoke/debug state cannot stall Ready on resume.
+cat >"$OVERRIDE" <<YAML
+services:
+  localstack:
+    environment:
+      PERSISTENCE: "1"
+    volumes:
+      - ${STATE_VOL}:/var/lib/localemu
+volumes:
+  ${STATE_VOL}:
+    name: ${STATE_VOL}
+YAML
 
 wait_endpoint_port() {
 	local id="$1" want="$2"
@@ -95,22 +109,38 @@ wait_psql() {
 	return 1
 }
 
-recreate_localstack() {
-	echo "recreate localstack (PERSISTENCE=1)"
-	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null
+start_localstack_persist() {
+	echo "start localstack (PERSISTENCE=1)"
+	"${COMPOSE[@]}" up -d --no-deps localstack >/dev/null
 	wait_localemu
-	# state load + RDS resume/recreate can lag health
 	sleep 3
 }
 
-LS_ID="$("${COMPOSE[@]}" ps -q localstack 2>/dev/null || true)"
+restart_localstack_persist() {
+	# Graceful stop so PERSISTENCE flushes moto state + stops (keeps) RDS containers.
+	echo "restart localstack (PERSISTENCE=1, graceful)"
+	"${COMPOSE[@]}" stop localstack >/dev/null
+	"${COMPOSE[@]}" up -d --no-deps localstack >/dev/null
+	wait_localemu
+	sleep 3
+}
+
+recreate_localstack_persist() {
+	echo "recreate localstack (PERSISTENCE=1, force)"
+	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null
+	wait_localemu
+	sleep 5
+}
+
+LS_ID="$("${BASE_COMPOSE[@]}" ps -q localstack 2>/dev/null || true)"
 [[ -n "$LS_ID" ]] || {
 	echo "FAIL: localstack not up — run ./bin/stackwrangler up first" >&2
 	exit 1
 }
 
-echo "== enable PERSISTENCE=1 + state volume =="
-recreate_localstack
+echo "== enable PERSISTENCE=1 + unique state volume ${STATE_VOL} =="
+"${BASE_COMPOSE[@]}" stop localstack >/dev/null 2>&1 || true
+start_localstack_persist
 
 echo "== create with --port ${HOST_PORT} =="
 aws rds create-db-instance \
@@ -130,7 +160,7 @@ PGPASSWORD="$PASS" psql -h 127.0.0.1 -p "$HOST_PORT" -U "$USER" -d "$DB" -v ON_E
 	-c "CREATE TABLE IF NOT EXISTS persist_smoke (id int PRIMARY KEY, note text); INSERT INTO persist_smoke VALUES (1, 'keep-port') ON CONFLICT (id) DO UPDATE SET note = EXCLUDED.note;"
 
 echo "== LocalEmu restart keeps host port =="
-recreate_localstack
+restart_localstack_persist
 GOT="$(wait_endpoint_port "$ID" "$HOST_PORT")"
 [[ "$GOT" == "$HOST_PORT" ]] || {
 	echo "FAIL: after LocalEmu restart Port=${GOT} want ${HOST_PORT}" >&2
@@ -145,13 +175,9 @@ NOTE="$(PGPASSWORD="$PASS" psql -h 127.0.0.1 -p "$HOST_PORT" -U "$USER" -d "$DB"
 echo "OK: LocalEmu restart kept ${HOST_PORT}"
 
 echo "== PERSISTENCE recreate keeps host port (container removed, volume + meta kept) =="
-# Cold recreate: drop the RDS container, force-recreate LocalEmu. Moto state,
-# named data volume, and rds-host-port meta (under PERSISTENCE) must bring the
-# instance back on the same published host port.
 docker volume inspect "localemu-rds-${ID}-data" >/dev/null
 docker rm -f "localemu-rds-${ID}" >/dev/null
-recreate_localstack
-# Wait for container recreate (describe Port alone can be stale moto metadata).
+recreate_localstack_persist
 for _ in $(seq 1 90); do
 	if docker inspect "localemu-rds-${ID}" >/dev/null 2>&1; then
 		break
