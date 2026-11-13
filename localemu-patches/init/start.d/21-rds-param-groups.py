@@ -80,20 +80,32 @@ def _rds_backend(account_id: str, region: str):
     return moto_backends.get_backend("rds")[account_id][region]
 
 
+def _is_formula_value(value: str) -> bool:
+    # RDS formula placeholders e.g. {DBInstanceClassMemory*3/4} — not valid CMD flags.
+    return "{" in value or "}" in value
+
+
 def _user_parameters(group) -> dict[str, str]:
     out: dict[str, str] = {}
     raw = getattr(group, "parameters", None) or {}
     for name, meta in raw.items():
         if not isinstance(name, str) or not name:
             continue
-        if name.lower() in _SKIP_NAMES:
+        lower = name.lower()
+        if lower in _SKIP_NAMES:
+            continue
+        # RDS-managed / Aurora-only names are not mysqld/postgres GUC flags.
+        if lower.startswith("rds."):
             continue
         if not isinstance(meta, dict) or "ParameterValue" not in meta:
             continue
         val = meta.get("ParameterValue")
         if val is None:
             continue
-        out[name] = str(val)
+        text = str(val)
+        if _is_formula_value(text):
+            continue
+        out[name] = text
     return out
 
 
@@ -217,7 +229,11 @@ def _resolve_create_params(context, request, *, cluster: bool) -> dict[str, str]
 
 
 def _mysql_cli_args(params: dict[str, str]) -> list[str]:
-    return [f"--{name.replace('_', '-')}={value}" for name, value in params.items()]
+    # --loose-*: unknown / Aurora-only options warn instead of aborting mysqld.
+    return [
+        f"--loose-{name.replace('_', '-')}={value}"
+        for name, value in params.items()
+    ]
 
 
 def _postgres_cli_args(params: dict[str, str]) -> list[str]:

@@ -20,7 +20,7 @@ Needs host `psql` (Postgres smoke) or `mysql` (MySQL smoke).
 - Further `create-db-instance --db-cluster-identifier` adds a **reader**. Its endpoint is the instance host port (read-only). The cluster `ReaderEndpoint` hostname is the same style as the writer (`localhost`); the published port is on the reader instance
 - `ManageMasterUserPassword` stores `{"username","password"}` in Secrets Manager (`rds!…`). The container uses that password
 - SQL via `psql` or `mysql`
-- DB / cluster parameter groups: user-set parameters are passed into the Docker CMD (`--name=value` MySQL, `-c name=value` Postgres). `modify-*-parameter-group` + `reboot-db-instance` re-applies via `SET GLOBAL` / `ALTER SYSTEM` + reload ([#703](https://github.com/kgz/stackwrangler/issues/703))
+- DB / cluster parameter groups: user-set parameters go into the Docker CMD (`--loose-name=value` MySQL, `-c name=value` Postgres). Skips `rds.*` names and `{…}` formula values. MySQL `reboot-db-instance` re-applies via `SET GLOBAL`; Postgres recreates the container so `-c` flags refresh ([#703](https://github.com/kgz/stackwrangler/issues/703))
 
 Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.py` (mounted with the other init scripts). `SERVICES` already includes `rds` and `secretsmanager`.
 
