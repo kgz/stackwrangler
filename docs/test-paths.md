@@ -417,6 +417,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Transfer connector retrieve / AS2 | happy | missing | [#314](https://github.com/kgz/awsl/issues/314) |
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./smokes/data/rds-smoke.sh` |
+| RDS stable host port (`--port` / tag, reboot keep, conflict; CreateDBCluster unpinned ≠ 3306/5432 + pinned writer) | happy+sad | covered | `./smokes/data/rds-stable-host-port-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| RDS host port survives LocalEmu restart + PERSISTENCE recreate | happy | covered | `./smokes/data/rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./smokes/data/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
@@ -459,6 +461,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./smokes/transfer/transfer-dataplane-smoke.sh
 ./smokes/transfer/transfer-connector-smoke.sh
 ./smokes/data/rds-smoke.sh              # needs psql
+./smokes/data/rds-stable-host-port-smoke.sh  # needs psql · #705
+./smokes/data/rds-host-port-restart-persist-smoke.sh  # PERSISTENCE=1 restart+recreate · #705
 ./smokes/data/rds-mysql-smoke.sh        # needs mysql
 ./smokes/data/rds-engine-version-smoke.sh  # pinned images + unknown reject
 ./bin/check-rds-engine-map.sh           # map vs testdata (no stack)
