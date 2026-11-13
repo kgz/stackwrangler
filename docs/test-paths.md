@@ -127,6 +127,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | EC2 instance containers get same https `AWS_ENDPOINT_URL` + CA as ECS/Lambda | happy | covered | wiring in `localemu-patches/init/start.d/20-ec2-imds.py` · [#696](https://github.com/kgz/stackwrangler/issues/696) (no dedicated EC2 DenyNonSSL smoke; Lambda smoke covers SecureTransport path) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
+| ECS task-def `user` (`1000:1000`) → docker Config.User / process uid | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#711) |
 | ECR create-repository + `get-login-password` + docker login/push/pull `repositoryUri` hostname + `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#218](https://github.com/kgz/awsl/issues/218) |
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
 | ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |

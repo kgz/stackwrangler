@@ -2,6 +2,12 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.0.7 — Dev persistence / local fidelity (unreleased)
+
+### Compute / ECR / ECS
+
+- ECS applies `containerDefinitions.user` as docker `Config.User` (`uid` / `uid:gid` / name) ([#711](https://github.com/kgz/stackwrangler/issues/711)); also maps `privileged`, `ulimits`, `dockerLabels`, `workingDirectory`. `readonlyRootFilesystem` and other unmapped task-def Docker fields are listed under ECS in [docs/status.md](https://github.com/kgz/stackwrangler/blob/main/docs/status.md).
+
 ## v0.0.6 — Maturity / testing (2026-11-11)
 
 Close high-impact fidelity gaps on the core hosting path (ECR, ECS, CFN, Route 53, security groups) so local behaviour matches AWS on the smokes we ship, and grow dual-side cheap parity for the ones that stay under cents.
