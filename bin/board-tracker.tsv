@@ -200,7 +200,7 @@
 282	backlog	Debt: SG iptables install needs egress (from #271)
 285	done	Debt: ESM post-create role revoke stops polling (from #266)
 288	in-review	v1: Mode selection test/dev (up --dev|--test, reset)
-200	backlog	Persistence across recreate (dev mode only)
+200	in-review	Persistence across recreate (dev mode only)
 294	done	API Gateway usage plans
 295	done	Transfer connectors
 296	done	DynamoDB depth

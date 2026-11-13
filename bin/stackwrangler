@@ -414,14 +414,14 @@ cmd_down() {
 	fi
 }
 
-# Deliberate wipe of persisted local state (dev + shared test volumes).
-# Deep RDS engine-volume matrix / workload reconcile stays on #200.
+# Deliberate wipe of persisted local state (dev + shared test volumes + RDS).
+# Matrix: LocalEmu/.awsbox/dev + ECR bind + Seaweed named vols + localemu-rds-* (#200).
 cmd_reset() {
 	if ! command -v docker >/dev/null 2>&1; then
 		echo "error: Docker is required (not found on PATH)" >&2
 		exit 1
 	fi
-	local mode project vol
+	local mode project vol name
 	mode="$(read_mode)"
 	refresh_compose "$mode"
 	echo "reset: stopping stack (mode=${mode})…"
@@ -461,9 +461,22 @@ cmd_reset() {
 		done < <(docker volume ls -q --filter "name=${project}_" 2>/dev/null || true)
 	fi
 
-	# RDS Docker backends keep data in engine containers/volumes today without a
-	# stable project-scoped volume name — leave full wipe matrix to #200.
-	echo "reset: done (RDS engine volume matrix deferred → #200; docs/dev-mode.md)"
+	# RDS Docker backends: containers localemu-rds-<id>, data volumes localemu-rds-<id>-data (#705/#200).
+	echo "reset: removing LocalEmu RDS containers + data volumes…"
+	while IFS= read -r name; do
+		[[ -n "$name" ]] || continue
+		case "$name" in
+			localemu-rds-*) docker rm -f "$name" 2>/dev/null || true ;;
+		esac
+	done < <(docker ps -aq --format '{{.Names}}' 2>/dev/null || true)
+	while IFS= read -r vol; do
+		[[ -n "$vol" ]] || continue
+		case "$vol" in
+			localemu-rds-*-data) docker volume rm "$vol" 2>/dev/null || true ;;
+		esac
+	done < <(docker volume ls -q 2>/dev/null || true)
+
+	echo "reset: done (LocalEmu + Seaweed + ECR + RDS; docs/dev-mode.md)"
 	write_mode test
 	refresh_compose test
 }

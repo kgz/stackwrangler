@@ -28,24 +28,43 @@ Env the CLI sets (prefer `STACKWRANGLER_*`; `AWSBOX_*` still accepted as fallbac
 
 Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`.
 
-## What `reset` wipes today
+Do not set `STACKWRANGLER_PERSISTENCE=1` alone in `.env` for day-to-day use — without the `--dev` bind mounts, LocalEmu still writes into the container filesystem and a recreate loses it. Use `up --dev` (or a compose override that mounts `/var/lib/localemu` the same way).
 
-- `.awsbox/dev/` (LocalEmu state dir + ECR registry data)
-- Seaweed named volumes `seaweed-data` and `seaweed-data-dev` (and this compose project’s prefixed copies)
-- Best-effort other volumes named for this compose project
+## What `reset` wipes
 
-## Deferred to [#200](https://github.com/kgz/stackwrangler/issues/200)
+| Store | Path / name | Wiped? |
+|-------|-------------|--------|
+| LocalEmu API state + S3 spool | `.awsbox/dev/localemu` | yes |
+| ECR registry blobs | `.awsbox/dev/ecr` | yes |
+| SeaweedFS (test + dev) | `seaweed-data`, `seaweed-data-dev` (+ project-prefixed) | yes |
+| Compose project volumes | `<project>_*` | yes (best-effort) |
+| RDS engine containers | `localemu-rds-<id>` | yes |
+| RDS data volumes | `localemu-rds-<id>-data` | yes |
 
-Full persistence productization beyond mode selection:
+Mode is set back to `test` after reset.
 
-- Per-engine RDS Docker volumes (survive LocalEmu recreate; define `delete-db-instance` vs volume)
-- Workload reconcile (ECS/Lambda/EC2 containers vs persisted API state)
-- VPC network / iptables re-apply after recreate
-- LocalEmu S3 (IaC backend) vs Seaweed dual-store matrix
-- Public image / `compose.release.yml` persistence knobs
+## Per-service persistence table (#200)
 
-This ticket (#288) lands the mode CLI and the compose wiring that exists today; #200 owns the deep volume matrix and round-trip smoke table.
+What survives a LocalEmu **container recreate** when `--dev` / `PERSISTENCE=1` + the state volume are in place:
+
+| Service / store | Across recreate | Across `down`/`up --dev` | Lost / notes |
+|-----------------|-----------------|--------------------------|--------------|
+| LocalEmu S3 (IaC / `:4566`) | **Persisted** (metadata + `s3_bodies`) | same | Separate from Seaweed — [s3-backends.md](s3-backends.md) |
+| SeaweedFS S3 (`:8333`) | N/A (own container) | **Persisted** (`seaweed-data-dev`) | Wiped by `reset` |
+| IAM / STS | **Persisted** | same | |
+| Secrets Manager | **Persisted** | same | |
+| SSM Parameter Store | **Persisted** | same | |
+| DynamoDB | **Persisted** | same | |
+| Lambda (metadata + code bodies) | **Persisted** when `s3_bodies` intact; invoke works after recreate | same | If code blobs wiped → `Failed` until `UpdateFunctionCode` ([#713](https://github.com/kgz/stackwrangler/issues/713)) |
+| SQS event source mappings | **Persisted**; orphans deletable ([#717](https://github.com/kgz/stackwrangler/issues/717)) | same | |
+| ECR images (registry:2) | **Persisted** (`.awsbox/dev/ecr`) | same | Moto ECR catalog resyncs from registry ([#684](https://github.com/kgz/stackwrangler/issues/684)) |
+| RDS (Postgres / MySQL / Aurora) | **Persisted** — Docker volume `localemu-rds-<id>-data`; host port + creds restored from LocalEmu state ([#705](https://github.com/kgz/stackwrangler/issues/705)) | same (containers may stop on `down`; volume kept) | `delete-db-instance` removes the volume; `reset` removes all `localemu-rds-*` |
+| ECS tasks | API state persisted; containers **reconciled** on load ([#716](https://github.com/kgz/stackwrangler/issues/716)) | stopped containers may resume | Missing container → STOPPED |
+| EC2 / VPC networks | API state persisted; Docker networks **re-created** lazily | same | iptables / SG rules re-applied by patches |
+| Console labels | file outside compose | kept if on disk | gitignored `labels.yaml` |
+
+Prove multi-service recreate: `./smokes/platform/persist-recreate-smoke.sh`. Dev keep-data + reset: `./smokes/platform/mode-dev-keep-data-smoke.sh`. RDS host port: `./smokes/data/rds-host-port-restart-persist-smoke.sh`.
 
 ## Related
 
-- Epic: dev mode (#291) · warm restart (#289) · IaC re-apply on up (#290) · persistence (#200)
+- Epic: dev mode (#291) · warm restart (#289) · IaC re-apply on up (#290) · mode CLI (#288) · persistence productization (#200)
