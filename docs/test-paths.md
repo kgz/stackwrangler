@@ -32,6 +32,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Public path: `aws --profile local` sts + s3 ls after image up | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: orchestrator `up` without `/var/run/docker.sock` | sad/other | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./smokes/s3/s3-parity.sh` |
+| LocalEmu S3 `PERSISTENCE=1` recreate: GetObject + PutObject on restored bucket | happy | covered | `./smokes/s3/s3-persist-recreate-smoke.sh` · [#712](https://github.com/kgz/stackwrangler/issues/712) · [s3-backends.md](s3-backends.md) |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./smokes/security/iam-access-denied.sh` + IAM console lab |
 | IAM SimulateCustomPolicy / SimulatePrincipalPolicy (allow, implicitDeny, explicitDeny, ContextEntries) | happy/authz | covered | `./smokes/security/iam-simulate-policy-smoke.sh` · matches enforcer, not real AWS simulator quirks |

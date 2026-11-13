@@ -6,6 +6,8 @@ FROM localemu/localemu@${LOCALEMU_DIGEST}
 USER root
 
 COPY localemu-patches/s3control_provider.py /opt/code/localemu/src/localemu/services/s3control/provider.py
+COPY localemu-patches/s3_storage_ephemeral.py /opt/code/localemu/src/localemu/services/s3/storage/ephemeral.py
+COPY localemu-patches/state_persistence.py /opt/code/localemu/src/localemu/state/persistence.py
 COPY localemu-patches/init/boot.d /etc/localemu/init/boot.d
 COPY localemu-patches/init/start.d /etc/localemu/init/start.d
 COPY localemu-patches/wheels /opt/awsbox/wheels
