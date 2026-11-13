@@ -416,6 +416,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **Aurora MySQL reader rejects writes** | sad/other | covered | `./smokes/data/rds-mysql-smoke.sh` |
+| RDS EngineVersion → pinned Docker image (`mysql:8.0.37`, Aurora 3.05.2 → `mysql:8.0.32`) | happy | covered | `./smokes/data/rds-engine-version-smoke.sh` · [rds.md](rds.md) · [#704](https://github.com/kgz/stackwrangler/issues/704) |
+| **RDS unknown EngineVersion → InvalidParameterCombination** | sad/other | covered | `./smokes/data/rds-engine-version-smoke.sh` |
+| RDS engine map vs `describe-db-engine-versions` testdata | happy | covered | `./bin/check-rds-engine-map.sh` |
 | Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
@@ -448,6 +451,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./smokes/transfer/transfer-connector-smoke.sh
 ./smokes/data/rds-smoke.sh              # needs psql
 ./smokes/data/rds-mysql-smoke.sh        # needs mysql
+./smokes/data/rds-engine-version-smoke.sh  # pinned images + unknown reject
+./bin/check-rds-engine-map.sh           # map vs testdata (no stack)
 # …add others as you touch a surface
 ```
 

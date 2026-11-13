@@ -7,7 +7,7 @@ import { createDbInstance } from '../lib/rds'
 type Engine = 'postgres' | 'mysql'
 
 const ENGINE_VERSIONS: Record<Engine, string[]> = {
-  postgres: ['16.3', '15.7'],
+  postgres: ['16.3', '15.8'],
   mysql: ['8.0', '8.0.39'],
 }
 

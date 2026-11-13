@@ -1,6 +1,6 @@
 # RDS Create database → SQL
 
-Console **Create database** (`/rds/create`) calls `CreateDBInstance` for Postgres or MySQL. With `RDS_DOCKER_BACKEND=1`, LocalEmu starts a real engine container; `psql` / `mysql` reach it on the published host port.
+Console **Create database** (`/rds/create`) calls `CreateDBInstance` for Postgres or MySQL. With `RDS_DOCKER_BACKEND=1`, LocalEmu starts a real engine container; `psql` / `mysql` reach it on the published host port. `EngineVersion` maps to a pinned Docker tag (unknown versions → `InvalidParameterCombination`); see [rds.md](https://github.com/kgz/stackwrangler/blob/main/docs/rds.md).
 
 **Status:** shipped
 
@@ -27,6 +27,8 @@ sequenceDiagram
 ```bash
 ./smokes/data/rds-smoke.sh
 ./smokes/data/rds-mysql-smoke.sh
+./smokes/data/rds-engine-version-smoke.sh
+./bin/check-rds-engine-map.sh
 # console Create path
 cd console && yarn playwright test e2e/rds-create.spec.ts
 ```

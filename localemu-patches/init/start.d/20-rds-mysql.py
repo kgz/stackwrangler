@@ -275,13 +275,37 @@ def _publish_managed_secret(context, resource: dict, username: str, password: st
     LOG.info("rds managed secret updated %s", arn)
 
 
+def _require_mapped_engine(request) -> None:
+    """Reject unknown EngineVersion before Moto/Docker (AWS InvalidParameterCombination)."""
+    from localemu.aws.api import CommonServiceException
+    from localemu.services.rds.docker.engine_mapping import (
+        UnknownEngineVersionError,
+        resolve_engine_image,
+    )
+
+    engine = _request_flag(request, "Engine")
+    version = _request_flag(request, "EngineVersion")
+    if not isinstance(engine, str) or not engine:
+        return
+    # Cluster members often omit EngineVersion; Docker inherits from the cluster.
+    if version is None or version == "":
+        return
+    if not isinstance(version, str):
+        return
+    try:
+        resolve_engine_image(engine, version)
+    except UnknownEngineVersionError as exc:
+        raise CommonServiceException(
+            "InvalidParameterCombination",
+            str(exc),
+            status_code=400,
+        ) from exc
+
+
 def _install() -> None:
     from localemu.services.rds.docker import cluster_init
     from localemu.services.rds.docker.db_manager import DockerDbManager
-    from localemu.services.rds.docker.engine_mapping import ENGINE_IMAGE_MAP
     from localemu.services.rds import provider
-
-    ENGINE_IMAGE_MAP.setdefault("aurora-mysql", {})["8.0"] = "mysql:8.0"
 
     if getattr(cluster_init.is_postgres_engine, "_awsbox_mysql", False):
         return
@@ -389,6 +413,7 @@ def _install() -> None:
         return managed
 
     def _handle_create_db_cluster(context, request):
+        _require_mapped_engine(request)
         managed = _arm_managed_password(request)
         result = orig_create_cluster(context, request)
         cluster = (result or {}).get("DBCluster")
@@ -405,6 +430,7 @@ def _install() -> None:
         return result
 
     def _handle_create_db_instance(context, request):
+        _require_mapped_engine(request)
         managed = _arm_managed_password(request)
         result = orig_create_instance(context, request)
         inst = (result or {}).get("DBInstance")
