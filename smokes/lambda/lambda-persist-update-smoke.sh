@@ -38,8 +38,9 @@ cleanup() {
 	aws_emu lambda delete-function --function-name "$FN" >/dev/null 2>&1 || true
 	aws_emu iam delete-role --role-name "$ROLE_NAME" >/dev/null 2>&1 || true
 	rm -f "$ZIP1" "$ZIP2" "$OUT"
-	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	# Drop override first so recreate does not keep the named persist volume.
 	rm -f "$OVERRIDE"
+	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
 	docker volume rm -f "$VOL" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -99,16 +100,22 @@ wait_state() {
 # Lambda API state so recreate hits the unrestored / no-manager path (#713).
 wipe_persisted_s3_bodies() {
 	# Reuse the LocalEmu image (already pulled) as a scratch fs tool.
-	local img
+	local img left
 	img="$("${COMPOSE[@]}" config --images 2>/dev/null | awk '/localemu/{print; exit}')"
 	[[ -n "$img" ]] || img="localemu/localemu:latest"
 	docker run --rm --entrypoint sh -v "${VOL}:/var/lib/localemu" "$img" -c '
 		set -e
-		find /var/lib/localemu -type d -name s3_bodies -print | while read -r d; do
-			rm -rf "$d"
-		done
-		find /var/lib/localemu -type f -name s3_bodies.state -delete
+		find /var/lib/localemu -type d -name s3_bodies -exec rm -rf {} + 2>/dev/null || true
+		find /var/lib/localemu -type f -name s3_bodies.state -delete 2>/dev/null || true
+		# Recreate empty dirs so persistence layout stays familiar.
+		mkdir -p /var/lib/localemu/state/state/assets/s3_bodies
 	' >/dev/null
+	left="$(docker run --rm --entrypoint sh -v "${VOL}:/var/lib/localemu" "$img" -c \
+		'find /var/lib/localemu -type f -path "*/s3_bodies/*" 2>/dev/null | wc -l')"
+	[[ "${left// /}" == "0" ]] || {
+		echo "FAIL: s3_bodies wipe left ${left} file(s)" >&2
+		return 1
+	}
 }
 
 recreate_localemu() {
