@@ -59,7 +59,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 | Area | Depth |
 |------|--------|
 | `./bin/stackwrangler up` + profile `local` | **Working** |
-| Test / dev mode + opt-in persistence | **Working** · [dev-mode.md](https://github.com/kgz/stackwrangler/blob/main/docs/dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| Test / dev mode + opt-in persistence | **Working** · [dev-mode.md](https://github.com/kgz/stackwrangler/blob/main/docs/dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) · Debt [#742](https://github.com/kgz/stackwrangler/issues/742) / [#743](https://github.com/kgz/stackwrangler/issues/743) |
 | Console shell (grey rose) | **Working** |
 | Console labels (`STACKWRANGLER_LABELS`) | **Working** |
 | Custom resource IDs + account in ARNs | **Working** |

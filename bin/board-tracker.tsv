@@ -377,3 +377,5 @@
 716	in-review	Persistence: restored ECS tasks stay RUNNING/DEACTIVATING with no container
 717	in-review	Persistence: restored SQS event source mappings can't be deleted and block re-creating their stack
 713	in-review	Lambda UpdateFunctionCode after PERSISTENCE recreate
+742	backlog	Debt: Terraform S3+DDB empty plan after LocalEmu recreate (from #200)
+743	backlog	Debt: RDS MySQL/Aurora SQL persist after LocalEmu recreate (from #200)

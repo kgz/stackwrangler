@@ -58,13 +58,15 @@ What survives a LocalEmu **container recreate** when `--dev` / `PERSISTENCE=1` +
 | Lambda (metadata + code bodies) | **Persisted** when `s3_bodies` intact; invoke works after recreate | same | If code blobs wiped → `Failed` until `UpdateFunctionCode` ([#713](https://github.com/kgz/stackwrangler/issues/713)) |
 | SQS event source mappings | **Persisted**; orphans deletable ([#717](https://github.com/kgz/stackwrangler/issues/717)) | same | |
 | ECR images (registry:2) | **Persisted** (`.awsbox/dev/ecr`) | same | Moto ECR catalog resyncs from registry ([#684](https://github.com/kgz/stackwrangler/issues/684)) |
-| RDS (Postgres / MySQL / Aurora) | **Persisted** — Docker volume `localemu-rds-<id>-data`; host port + creds restored from LocalEmu state ([#705](https://github.com/kgz/stackwrangler/issues/705)) | same (containers may stop on `down`; volume kept) | `delete-db-instance` removes the volume; `reset` removes all `localemu-rds-*` |
+| RDS Postgres | **Persisted** (smoked) — volume `localemu-rds-<id>-data`; host port + SQL row survive restart/recreate ([#705](https://github.com/kgz/stackwrangler/issues/705)) | same (containers may stop on `down`; volume kept) | `delete-db-instance` removes the volume; `reset` removes all `localemu-rds-*` |
+| RDS MySQL / Aurora MySQL | Volume + API restore wiring same as Postgres; **SQL-after-recreate not smoked yet** ([#743](https://github.com/kgz/stackwrangler/issues/743)) | same | Do not assume writer/reader SQL parity until #743 |
 | ECS tasks | API state persisted; containers **reconciled** on load ([#716](https://github.com/kgz/stackwrangler/issues/716)) | stopped containers may resume | Missing container → STOPPED |
 | EC2 / VPC networks | API state persisted; Docker networks **re-created** lazily | same | iptables / SG rules re-applied by patches |
 | Console labels | file outside compose | kept if on disk | gitignored `labels.yaml` |
 
-Prove multi-service recreate: `./smokes/platform/persist-recreate-smoke.sh`. Dev keep-data + reset: `./smokes/platform/mode-dev-keep-data-smoke.sh`. RDS host port: `./smokes/data/rds-host-port-restart-persist-smoke.sh`.
+Prove multi-service recreate: `./smokes/platform/persist-recreate-smoke.sh`. Dev keep-data + reset: `./smokes/platform/mode-dev-keep-data-smoke.sh`. Reset RDS wipe (containers/volumes): `./smokes/platform/mode-reset-rds-wipe-smoke.sh`. RDS Postgres host port + SQL: `./smokes/data/rds-host-port-restart-persist-smoke.sh`. Terraform empty-plan-after-recreate: [#742](https://github.com/kgz/stackwrangler/issues/742). MySQL/Aurora SQL-after-recreate: [#743](https://github.com/kgz/stackwrangler/issues/743).
 
 ## Related
 
 - Epic: dev mode (#291) · warm restart (#289) · IaC re-apply on up (#290) · mode CLI (#288) · persistence productization (#200)
+- Debt: TF empty plan ([#742](https://github.com/kgz/stackwrangler/issues/742)) · MySQL/Aurora SQL persist ([#743](https://github.com/kgz/stackwrangler/issues/743))
