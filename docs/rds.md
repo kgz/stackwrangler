@@ -7,6 +7,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./smokes/data/rds-smoke.sh          # Postgres
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
 ./smokes/data/rds-parameter-group-smoke.sh  # param group Source + TF converge
+./smokes/data/rds-param-groups-smoke.sh # DB / cluster parameter groups → container
 ```
 
 Keep resources: `STACKWRANGLER_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
@@ -21,6 +22,7 @@ Needs host `psql` (Postgres smoke) or `mysql` (MySQL smoke).
 - Further `create-db-instance --db-cluster-identifier` adds a **reader**. Readers get their **own** stable host port (pin with `--port` / tag on that instance). The cluster `ReaderEndpoint` hostname matches the writer style (`localhost`); clients that need the reader must use the **reader instance** `Endpoint.Address` + `Endpoint.Port` from `describe-db-instances` — there is no second port field on the cluster.
 - `ManageMasterUserPassword` stores `{"username","password"}` in Secrets Manager (`rds!…`). The container uses that password
 - SQL via `psql` or `mysql`
+- DB / cluster parameter groups: user-set parameters go into the Docker CMD (`--loose-name=value` MySQL, `-c name=value` Postgres). Skips `rds.*` names and `{…}` formula values. MySQL `reboot-db-instance` re-applies via `SET GLOBAL`; Postgres recreates the container so `-c` flags refresh ([#703](https://github.com/kgz/stackwrangler/issues/703))
 
 Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.py` (mounted with the other init scripts). `SERVICES` already includes `rds` and `secretsmanager`.
 
@@ -57,7 +59,7 @@ Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/r
 | Security groups / VPC | Enforced on the VPC address when a DB subnet group is set ([docs/sg-enforcement.md](sg-enforcement.md)); published host port is separate |
 | Private DNS from workloads | [#206](https://github.com/kgz/awsl/issues/206) |
 | Console create | Wired for Postgres/MySQL `CreateDBInstance` (`/rds/create`). Aurora engine choice disabled — use `./smokes/data/rds-mysql-smoke.sh` |
-| Parameter groups (API / Terraform) | `DescribeDBParameters` / cluster variant return `Source=user` for modified params so `aws_db_parameter_group` converges ([#710](https://github.com/kgz/stackwrangler/issues/710)). Applying those settings into the Docker DB is [#703](https://github.com/kgz/stackwrangler/issues/703) |
+| Parameter groups | `DescribeDBParameters` / cluster variant return `Source=user` for modified params so Terraform converges ([#710](https://github.com/kgz/stackwrangler/issues/710)). User overrides apply to the container CMD at create; MySQL `reboot-db-instance` re-applies via `SET GLOBAL`; Postgres recreates the container so `-c` flags refresh ([#703](https://github.com/kgz/stackwrangler/issues/703)). Engine-default groups stay at image defaults. |
 
 ## Aurora scope
 
