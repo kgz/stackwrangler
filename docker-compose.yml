@@ -205,12 +205,16 @@ services:
   # without retag and without binding host :443 (#218).
   ecr-hostname:
     build:
-      context: ./tools/ecr-hostname-proxy
+      context: ./tools
+      dockerfile: ecr-hostname-proxy/Dockerfile
     depends_on:
       - ecr-registry
     environment:
       ECR_REGISTRY_URL: http://ecr-registry:5000
       ECR_HOSTNAME_CERT_DIR: /certs
+      AWS_REDIRECT_CERT_DIR: /certs
+      LOCALEMU_URL: http://ecr-registry:5000
+
     volumes:
       - ./.awsbox/ecr-hostname:/certs
     networks:

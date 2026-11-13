@@ -4,6 +4,9 @@ TLS edge so `docker login` / `push` / `pull` work against the ECR
 `repositoryUri` hostname (`<account>.dkr.ecr.<region>.amazonaws.com`) without
 retagging to `127.0.0.1:5000` (#218).
 
+TLS implementation is **shared**: `../aws-endpoint-redirect/tls_proxy.py`
+(entrypoint maps `ECR_REGISTRY_URL` → `LOCALEMU_URL`). Do not fork that file.
+
 Compose service `ecr-hostname` listens on **container** `:443` with a fixed
 bridge IP (default `172.31.218.10`) so host `:443` can stay occupied. Dynamic
 SNI leafs are signed by `.awsbox/ecr-hostname/ca.crt`.
