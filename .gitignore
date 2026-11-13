@@ -29,3 +29,5 @@ localemu-patches/oidc/test-key.pem
 localemu-patches/oidc/jwks.json
 # Local display names — keep outside the repo (docs/labels.md)
 labels.yaml
+# Maintainer private notes — never commit
+local-only-notes/
