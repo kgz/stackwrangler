@@ -5,7 +5,8 @@ name: stackwrangler
 services:
   s3:
     image: chrislusf/seaweedfs:4.48
-    command: mini -dir=/data
+    # Pin volume.max — mini default auto=0 free volumes on nearly-full disks.
+    command: mini -dir=/data -volume.max=8
     environment:
       AWS_ACCESS_KEY_ID: ${STACKWRANGLER_ACCESS_KEY:-stackwrangler}
       AWS_SECRET_ACCESS_KEY: ${STACKWRANGLER_SECRET_KEY:-stackwranglerstackwrangler}

@@ -1,0 +1,13 @@
+# Loaded only by `./bin/stackwrangler up --dev` (with docker-compose.yml).
+# LocalEmu API state + ECR registry blobs survive `down` / `up --dev`.
+# Seaweed volume name is set by the CLI (STACKWRANGLER_SEAWEED_VOLUME=seaweed-data-dev).
+# Deeper RDS volume matrix / workload reconcile → #200.
+services:
+  localstack:
+    environment:
+      PERSISTENCE: "1"
+    volumes:
+      - ./.awsbox/dev/localemu:/var/lib/localemu
+  ecr-registry:
+    volumes:
+      - ./.awsbox/dev/ecr:/var/lib/registry

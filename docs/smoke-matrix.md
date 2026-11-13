@@ -10,6 +10,8 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Surface | Happy | Sad (authz / deny) | Sad (other) | Console e2e | Script |
 |---------|-------|--------------------|-------------|-------------|--------|
 | Public Docker image install (#487) | yes (alt ports via `install/stackwrangler`) | — | up without docker.sock refused | baked console HTTP | `docker-image-install-smoke.sh` |
+| Test/dev mode CLI (#288) | yes (usage, `status` mode, wipe-path markers, compose test/dev; leftover `.awsbox/dev` ignored in test) | — | — | — | `mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) |
+| Dev mode keep-data (#288) | yes (`up --dev` → seed → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties) | — | — | — | `mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | S3 SeaweedFS | yes | no (parity gaps) | dual-split | yes | `s3-parity.sh`, `s3-dual-endpoint-smoke.sh` |
 | LocalEmu S3 persistence recreate (#712) | yes (`PERSISTENCE=1` + volume: GetObject + PutObject after recreate) | — | — | no | `s3-persist-recreate-smoke.sh` |
 | IAM AccessDenied lab | — | **yes** (deny user) | — | yes | `iam-access-denied.sh` |
