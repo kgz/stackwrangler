@@ -21,6 +21,8 @@ OVERRIDE="$(mktemp "${TMPDIR:-/tmp}/sw-persist-s3-XXXXXX.yml")"
 
 cleanup() {
 	aws --endpoint-url "$EMU" --region "$REGION" s3 rb "s3://${BUCKET}" --force >/dev/null 2>&1 || true
+	# Drop the persist override so the volume can be removed (and leave hermetic PERSISTENCE=0).
+	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
 	rm -f "$OVERRIDE"
 	docker volume rm -f "$VOL" >/dev/null 2>&1 || true
 }
@@ -32,7 +34,10 @@ services:
     environment:
       PERSISTENCE: "1"
     volumes:
-      - ${VOL}:/var/lib/localemu
+      - persist_localemu:/var/lib/localemu
+volumes:
+  persist_localemu:
+    name: ${VOL}
 EOF
 
 echo "== persistence override (volume ${VOL}) =="
