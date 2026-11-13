@@ -30,6 +30,20 @@ Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`
 
 Do not set `STACKWRANGLER_PERSISTENCE=1` alone in `.env` for day-to-day use — without the `--dev` bind mounts, LocalEmu still writes into the container filesystem and a recreate loses it. Use `up --dev` (or a compose override that mounts `/var/lib/localemu` the same way).
 
+## Warm restart ([#289](https://github.com/kgz/stackwrangler/issues/289))
+
+Goal: `down` then `up --dev` reuses prebuilt images and stopped workload containers instead of rebuilding/recreating everything.
+
+| Piece | Behaviour |
+|-------|-----------|
+| **Prebuilt images** | `up` ensures `localemu/ec2-base:v4` (sshd + iptables) and `localemu/awsbox-rt:latest` (SG/route netns sidecar). No `apk`/`apt` into workload containers on private VPC nets. |
+| **SG iptables** | Probe-only in the workload; missing iptables → alpine sidecar (never package-install at task start). |
+| **VPC cleanup** | In `--dev`, `localemu-ec2-*` / `localemu-ecs-*` / `localemu-rds-*` are left for `docker start`. Empty orphan `localemu-vpc-*` bridges are still removed. `reset` force-reclaims. |
+| **ECS reconcile** | Persisted RUNNING tasks: resume stopped containers or mark STOPPED when missing ([#716](https://github.com/kgz/stackwrangler/issues/716)). |
+| **EC2 reconcile** | LocalEmu `on_after_state_load` resumes stopped `localemu-ec2-*` from recorded state. |
+
+Smoke: `./smokes/platform/warm-restart-smoke.sh` (offline Docker checks always; live LocalEmu when reachable, or `AWSBOX_WARM_RESTART_SKIP_LIVE=1`). Timed multi-workload restart SLA stays on [#200](https://github.com/kgz/stackwrangler/issues/200).
+
 ## What `reset` wipes
 
 | Store | Path / name | Wiped? |
@@ -41,7 +55,7 @@ Do not set `STACKWRANGLER_PERSISTENCE=1` alone in `.env` for day-to-day use — 
 | RDS engine containers | `localemu-rds-<id>` | yes |
 | RDS data volumes | `localemu-rds-<id>-data` | yes |
 
-Mode is set back to `test` after reset.
+Mode is set back to `test` after reset. Force cleanup also removes preserved workload containers + orphan VPC bridges.
 
 ## Per-service persistence table (#200)
 
@@ -61,10 +75,10 @@ What survives a LocalEmu **container recreate** when `--dev` / `PERSISTENCE=1` +
 | RDS Postgres | **Persisted** (smoked) — volume `localemu-rds-<id>-data`; host port + SQL row survive restart/recreate ([#705](https://github.com/kgz/stackwrangler/issues/705)) | same (containers may stop on `down`; volume kept) | `delete-db-instance` removes the volume; `reset` removes all `localemu-rds-*` |
 | RDS MySQL / Aurora MySQL | Volume + API restore wiring same as Postgres; **SQL-after-recreate not smoked yet** ([#743](https://github.com/kgz/stackwrangler/issues/743)) | same | Do not assume writer/reader SQL parity until #743 |
 | ECS tasks | API state persisted; containers **reconciled** on load ([#716](https://github.com/kgz/stackwrangler/issues/716)) | stopped containers may resume | Missing container → STOPPED |
-| EC2 / VPC networks | API state persisted; Docker networks **re-created** lazily | same | iptables / SG rules re-applied by patches |
+| EC2 / VPC networks | API state persisted; Docker networks **re-created** lazily; `--dev` keeps stopped EC2 containers for warm restart ([#289](https://github.com/kgz/stackwrangler/issues/289)) | same | iptables / SG rules re-applied by patches |
 | Console labels | file outside compose | kept if on disk | gitignored `labels.yaml` |
 
-Prove multi-service recreate: `./smokes/platform/persist-recreate-smoke.sh`. Dev keep-data + reset: `./smokes/platform/mode-dev-keep-data-smoke.sh`. Reset RDS wipe (containers/volumes): `./smokes/platform/mode-reset-rds-wipe-smoke.sh`. RDS Postgres host port + SQL: `./smokes/data/rds-host-port-restart-persist-smoke.sh`. Terraform empty-plan-after-recreate: [#742](https://github.com/kgz/stackwrangler/issues/742). MySQL/Aurora SQL-after-recreate: [#743](https://github.com/kgz/stackwrangler/issues/743).
+Prove multi-service recreate: `./smokes/platform/persist-recreate-smoke.sh`. Dev keep-data + reset: `./smokes/platform/mode-dev-keep-data-smoke.sh`. Reset RDS wipe (containers/volumes): `./smokes/platform/mode-reset-rds-wipe-smoke.sh`. RDS Postgres host port + SQL: `./smokes/data/rds-host-port-restart-persist-smoke.sh`. Warm restart images/preserve: `./smokes/platform/warm-restart-smoke.sh` ([#289](https://github.com/kgz/stackwrangler/issues/289); timed SLA on [#200](https://github.com/kgz/stackwrangler/issues/200)). Terraform empty-plan-after-recreate: [#742](https://github.com/kgz/stackwrangler/issues/742). MySQL/Aurora SQL-after-recreate: [#743](https://github.com/kgz/stackwrangler/issues/743).
 
 ## Related
 

@@ -16,6 +16,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Persist recreate multi-service (#200) | yes (`PERSISTENCE=1` volume: S3+IAM+Secrets+SSM+DDB+Lambda invoke after recreate) | — | — | — | `persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | TF S3+DDB empty plan after recreate (#200) | debt [#742](https://github.com/kgz/stackwrangler/issues/742) | — | — | — | — |
 | RDS MySQL/Aurora SQL after recreate (#200) | debt [#743](https://github.com/kgz/stackwrangler/issues/743) (Postgres: `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705)) | — | — | — | — |
+| Warm restart (#289) | yes (preserve stopped EC2/ECS/RDS on `--dev` cleanup; prebuilt `ec2-base` + `awsbox-rt`; probe-only SG iptables) | — | force reclaim empties orphans | — | `warm-restart-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | S3 SeaweedFS | yes | no (parity gaps) | dual-split | yes | `s3-parity.sh`, `s3-dual-endpoint-smoke.sh` |
 | LocalEmu S3 persistence recreate (#712) | yes (`PERSISTENCE=1` + volume: GetObject + PutObject after recreate) | — | — | no | `s3-persist-recreate-smoke.sh` |
 | IAM AccessDenied lab | — | **yes** (deny user) | — | yes | `iam-access-denied.sh` |

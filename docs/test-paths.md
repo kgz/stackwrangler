@@ -33,6 +33,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Terraform S3+DDB empty plan after LocalEmu recreate | happy | debt | [#742](https://github.com/kgz/stackwrangler/issues/742) (from #200) |
 | RDS MySQL/Aurora SQL persist after LocalEmu recreate | happy | debt | [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200); Postgres covered by `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| Warm restart: `--dev` cleanup preserves EC2/ECS/RDS containers; prebuilt ec2-base + awsbox-rt; probe-only iptables | happy | covered | `./smokes/platform/warm-restart-smoke.sh` · [dev-mode.md](dev-mode.md) · [#289](https://github.com/kgz/stackwrangler/issues/289) |
+| Warm restart: `reset --force` reclaim removes preserved workloads + orphan `localemu-vpc-*` | sad/other | covered | `./smokes/platform/warm-restart-smoke.sh` · [#289](https://github.com/kgz/stackwrangler/issues/289) |
 | Public path: cold dir + copied `install/stackwrangler up` (no monorepo compose) | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` · [docker-install.md](docker-install.md) |
 | Public path: console HTTP on release nginx image | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: `aws --profile local` sts + s3 ls after image up | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |

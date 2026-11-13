@@ -1137,9 +1137,13 @@ def _ensure_rt_image() -> str:
                     context_path=ctx,
                 )
             return _RT_IMAGE
-        except Exception:
-            LOG.warning("awsbox-rt image build failed; using alpine + apk", exc_info=True)
-            return "alpine:3.19"
+        except Exception as exc:
+            # Never fall back to alpine + runtime apk (#289): private VPC
+            # nets have no package mirrors; bake iptables into the image.
+            raise RuntimeError(
+                f"Failed to build {_RT_IMAGE} (required for SG/route netns "
+                f"sidecar; no runtime apk). Build error: {exc}"
+            ) from exc
 
 
 def _sh_netns(container: str, script: str) -> bool:
@@ -1178,12 +1182,9 @@ def _run_netns(container: str, script: str):
     from localemu.utils.docker_utils import DOCKER_CLIENT
 
     image = _ensure_rt_image()
-    full = script
-    if image == "alpine:3.19":
-        full = "apk add --no-cache iptables iproute2 >/dev/null 2>&1; " + script
     return DOCKER_CLIENT.run_container(
         image,
-        command=["sh", "-c", full],
+        command=["sh", "-c", script],
         additional_flags=f"--network container:{container}",
         privileged=True,
         remove=True,
