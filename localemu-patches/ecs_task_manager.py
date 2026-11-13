@@ -899,9 +899,9 @@ class DockerTaskManager:
                     )
                     if dns_ip:
                         additional_flags_parts.append(f"--dns {dns_ip}")
-                # #711: readonlyRootFilesystem → docker --read-only
-                if cdef.get("readonlyRootFilesystem"):
-                    additional_flags_parts.append("--read-only")
+                # #711: readonlyRootFilesystem is not mapped — LocalEmu
+                # parse_additional_flags rejects --read-only, and
+                # ContainerConfiguration has no rootfs read_only field.
                 additional_flags = " ".join(additional_flags_parts) if additional_flags_parts else None
 
                 # #711: containerDefinitions.user (uid / uid:gid / name / name:group)

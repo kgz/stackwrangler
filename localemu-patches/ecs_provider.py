@@ -482,7 +482,6 @@ _CONTAINER_DEF_PASSTHROUGH = (
     "privileged",
     "ulimits",
     "dockerLabels",
-    "readonlyRootFilesystem",
     "workingDirectory",
 )
 
@@ -513,7 +512,6 @@ def _copy_container_def_fields(src: dict) -> dict:
         "privileged",
         "ulimits",
         "dockerLabels",
-        "readonlyRootFilesystem",
         "workingDirectory",
     ):
         if src.get(key) is not None:
@@ -575,7 +573,6 @@ def _resolve_task_definition(context: RequestContext, task_def_arn: str) -> list
                     # Snake_case aliases Moto may use for #711 fields
                     for snake, camel in (
                         ("docker_labels", "dockerLabels"),
-                        ("readonly_root_filesystem", "readonlyRootFilesystem"),
                         ("working_directory", "workingDirectory"),
                     ):
                         if camel not in d:

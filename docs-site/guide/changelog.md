@@ -6,7 +6,7 @@ Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/k
 
 ### Compute / ECR / ECS
 
-- ECS applies `containerDefinitions.user` as docker `Config.User` (`uid` / `uid:gid` / name) ([#711](https://github.com/kgz/stackwrangler/issues/711)); also maps `privileged`, `ulimits`, `dockerLabels`, `readonlyRootFilesystem`, `workingDirectory`. Unsupported task-def Docker fields listed under ECS in [docs/status.md](https://github.com/kgz/stackwrangler/blob/main/docs/status.md).
+- ECS applies `containerDefinitions.user` as docker `Config.User` (`uid` / `uid:gid` / name) ([#711](https://github.com/kgz/stackwrangler/issues/711)); also maps `privileged`, `ulimits`, `dockerLabels`, `workingDirectory`. `readonlyRootFilesystem` and other unmapped task-def Docker fields are listed under ECS in [docs/status.md](https://github.com/kgz/stackwrangler/blob/main/docs/status.md).
 
 ## v0.0.6 — Maturity / testing (2026-11-11)
 
