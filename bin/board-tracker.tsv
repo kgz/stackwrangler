@@ -368,3 +368,4 @@
 696	in-review	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
 684	in-review	ecr: restart catalog resync when registry keeps blobs
 709	in-review	IAM ECR repository actions use repository ARN
+714	in-review	sls: do not recreate LocalEmu via aws-redirect (#714)
