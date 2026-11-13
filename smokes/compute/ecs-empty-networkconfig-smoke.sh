@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# #708: host/bridge CreateService + DescribeServices must omit networkConfiguration
-# (moto used to return {}). Empty {} crashes Terraform AWS provider flatten.
+# #708: host/bridge CreateService/DescribeServices and RunTask/DescribeTasks must
+# omit networkConfiguration (moto used to return {}). Empty {} crashes Terraform.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -18,6 +18,7 @@ CLUSTER="awsbox-ecs-netcfg-${TS}"
 FAMILY="awsbox-ecs-netcfg-${TS}"
 SVC="host-${TS}"
 KEEP="${AWSBOX_AUTHZ_KEEP:-0}"
+TASK_ARN=""
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
@@ -34,6 +35,7 @@ fail() {
 
 cleanup() {
 	[[ "$KEEP" == "1" ]] && return 0
+	[[ -n "$TASK_ARN" ]] && aws ecs stop-task --cluster "$CLUSTER" --task "$TASK_ARN" >/dev/null 2>&1 || true
 	aws ecs update-service --cluster "$CLUSTER" --service "$SVC" --desired-count 0 >/dev/null 2>&1 || true
 	aws ecs delete-service --cluster "$CLUSTER" --service "$SVC" --force >/dev/null 2>&1 || true
 	aws ecs delete-cluster --cluster "$CLUSTER" >/dev/null 2>&1 || true
@@ -75,4 +77,14 @@ DESC_JSON="$(aws ecs describe-services --cluster "$CLUSTER" --services "$SVC" \
 	--query 'services[0]' --output json)"
 assert_net_omitted "DescribeServices" "$DESC_JSON"
 
-echo "OK: host/bridge ECS omits networkConfiguration on CreateService/DescribeServices"
+RUN_JSON="$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$TD" \
+	--launch-type EC2 --count 1 --query 'tasks[0]' --output json)"
+assert_net_omitted "RunTask" "$RUN_JSON"
+TASK_ARN="$(echo "$RUN_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["taskArn"])')"
+[[ -n "$TASK_ARN" && "$TASK_ARN" != "None" ]] || fail "RunTask did not return taskArn"
+
+DESC_TASK="$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK_ARN" \
+	--query 'tasks[0]' --output json)"
+assert_net_omitted "DescribeTasks" "$DESC_TASK"
+
+echo "OK: host/bridge ECS omits networkConfiguration (service + task)"

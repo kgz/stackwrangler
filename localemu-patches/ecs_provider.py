@@ -310,6 +310,8 @@ def _handle_run_task(
         result = call_moto(context)
 
     if not mgr:
+        for task in result.get("tasks") or []:
+            _omit_empty_network_configuration(task)
         return result
 
     tasks = result.get("tasks", [])
@@ -673,6 +675,8 @@ def _handle_describe_tasks(
 
     mgr = _init_task_manager()
     if not mgr:
+        for task in result.get("tasks") or []:
+            _omit_empty_network_configuration(task)
         return result
 
     for task in result.get("tasks", []):
@@ -689,48 +693,48 @@ def _handle_describe_tasks(
                 if full_td.get("memory") and "memory" not in task:
                     task["memory"] = str(full_td["memory"])
 
-        if not task_info:
-            continue
+        if task_info:
+            task["lastStatus"] = task_info.status
+            # Add timing fields from task info
+            if task_info.created_at:
+                task["createdAt"] = task_info.created_at
+            if task_info.started_at:
+                task["startedAt"] = task_info.started_at
+            if task_info.stopped_at:
+                task["stoppedAt"] = task_info.stopped_at
+            if task_info.stopped_reason:
+                task["stoppedReason"] = task_info.stopped_reason
+            if task_info.status == "STOPPED":
+                task["desiredStatus"] = "STOPPED"
 
-        task["lastStatus"] = task_info.status
-        # Add timing fields from task info
-        if task_info.created_at:
-            task["createdAt"] = task_info.created_at
-        if task_info.started_at:
-            task["startedAt"] = task_info.started_at
-        if task_info.stopped_at:
-            task["stoppedAt"] = task_info.stopped_at
-        if task_info.stopped_reason:
-            task["stoppedReason"] = task_info.stopped_reason
-        if task_info.status == "STOPPED":
-            task["desiredStatus"] = "STOPPED"
+            for mc in task.get("containers", []):
+                for ci in task_info.containers:
+                    if ci.container_name == mc.get("name"):
+                        mc["lastStatus"] = ci.status
+                        if ci.exit_code is not None:
+                            mc["exitCode"] = ci.exit_code
+                        # Populate networkBindings on every
+                        # DescribeTasks call. Moto's Container model does not
+                        # carry port bindings, so without this re-projection
+                        # the field is dropped on the second call (real AWS
+                        # always returns it for tasks with portMappings).
+                        if ci.host_ports:
+                            mc["networkBindings"] = [
+                                {
+                                    "bindIP": "0.0.0.0",
+                                    "containerPort": c_port,
+                                    "hostPort": h_port,
+                                    "protocol": "tcp",
+                                }
+                                for c_port, h_port in ci.host_ports.items()
+                            ]
+                        break
 
-        for mc in task.get("containers", []):
-            for ci in task_info.containers:
-                if ci.container_name == mc.get("name"):
-                    mc["lastStatus"] = ci.status
-                    if ci.exit_code is not None:
-                        mc["exitCode"] = ci.exit_code
-                    # Populate networkBindings on every
-                    # DescribeTasks call. Moto's Container model does not
-                    # carry port bindings, so without this re-projection
-                    # the field is dropped on the second call (real AWS
-                    # always returns it for tasks with portMappings).
-                    if ci.host_ports:
-                        mc["networkBindings"] = [
-                            {
-                                "bindIP": "0.0.0.0",
-                                "containerPort": c_port,
-                                "hostPort": h_port,
-                                "protocol": "tcp",
-                            }
-                            for c_port, h_port in ci.host_ports.items()
-                        ]
-                    break
+            _apply_awsvpc_eni_ip(
+                task, task_info, context.account_id, context.region,
+            )
 
-        _apply_awsvpc_eni_ip(
-            task, task_info, context.account_id, context.region,
-        )
+        # Always (#708): omit even when Docker status is missing
         _omit_empty_network_configuration(task)
 
     return result
