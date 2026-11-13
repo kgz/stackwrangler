@@ -32,7 +32,8 @@ export AWS_SECRET_ACCESS_KEY="$SECRET"
 export AWS_DEFAULT_REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 
 aws() {
-	command aws --endpoint-url "$EP" "$@"
+	# CreateDBCluster can exceed the default read timeout while the writer image starts.
+	command aws --endpoint-url "$EP" --cli-read-timeout 300 --cli-connect-timeout 10 "$@"
 }
 
 cleanup() {
