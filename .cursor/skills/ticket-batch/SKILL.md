@@ -81,6 +81,8 @@ Repo rules to follow (from AGENTS.md and the board docs):
 
 No writes to a real AWS account. Local emulators only. At most one LocalEmu stack machine-wide; always tear down when done.
 
+Never touch the parent/primary checkout. Never `git clean -fdx` / `git clean -x` (wipes `.git/info/exclude` paths such as maintainer `local-only-notes/`). Do not add private folders to the public `.gitignore`.
+
 Return: branch, PR URL, commands you ran and their results, files touched, gap-check result, anything you did not finish.
 ```
 
@@ -149,16 +151,39 @@ After the user says they are happy with the batch (or named tickets) **and** exp
 
 Invoking this skill for implement/review does **not** approve §8.
 
-## 9. Merge + branch cleanup (only when the user asks to merge)
+## 9. Cleanup (orchestrator owns this)
 
-When the user asks to merge ticket PRs and/or the batch into the default branch:
+Do **not** leave worktrees, LocalEmu stacks, or merged heads lying around. Prefer the script:
+
+```bash
+./bin/batch-cleanup.sh stacks
+./bin/batch-cleanup.sh worktrees --force   # keeps primary + architecture-map / *graph* / *experimental*
+./bin/batch-cleanup.sh branches            # merged feature/batch only (add --force for abandoned leftovers)
+./bin/batch-cleanup.sh check-primary       # primary clean; local excludes intact
+# or: ./bin/batch-cleanup.sh all --force
+```
+
+### After each Docker-using ticket
+`./bin/stackwrangler down` in that worktree (already in the worker prompt). Orchestrator may also `./bin/batch-cleanup.sh stacks`.
+
+### After the wave (even if not merging yet)
+If the user is not continuing the same worktrees next turn: remove finished ticket worktrees (`./bin/batch-cleanup.sh worktrees --force`). Do not grow a pile of `../<repo>-wt-<n>` directories across days.
+
+### Merge + branch cleanup (only when the user asks to merge)
 
 1. Merge with branch delete: `gh pr merge <pr> --merge --delete-branch` (or equivalent after squash/merge).
 2. If the remote head remains: `git push origin --delete <branch>`.
-3. Delete local branch + remove any `../<repo>-wt-<issue>` worktree for that branch.
+3. `./bin/batch-cleanup.sh worktrees --force` + delete local ticket branches (or `./bin/batch-cleanup.sh all --force`).
 4. After the batch is on default: delete remote/local `batch/<name>` and every ticket `feature/<n>-*` that has no open PR and is fully merged.
-5. `git fetch --prune`. Report what was deleted.
+5. `git fetch --prune`. `./bin/batch-cleanup.sh check-primary`. Report what was deleted.
 
-Abandoned tickets (failed review / user drops): close the PR (`gh pr close <pr> --delete-branch` when supported, else close + `git push origin --delete`), remove the worktree, delete the local branch. Do not leave closed-PR heads on origin.
+Abandoned tickets (failed review / user drops): close the PR (`gh pr close <pr> --delete-branch` when supported, else close + `git push origin --delete`), then the same cleanup script. Do not leave closed-PR heads on origin.
 
-Do **not** accumulate merged feature/batch branches across batches — that is how we get ~100 dead remotes.
+### Primary checkout hygiene (required)
+
+- Never run `git clean -fdx` / `git clean -x` on the primary (or anywhere). `-x` deletes ignored **and** `.git/info/exclude` paths — that nearly wiped maintainer `local-only-notes/`.
+- Never add private maintainer folders to the **public** `.gitignore`. Exclude them only in **`.git/info/exclude`** (local, not committed) or keep them outside the repo.
+- Before any `git clean` / hard reset on primary: read `.git/info/exclude` and refuse if the command would remove those paths. Prefer `./bin/batch-cleanup.sh check-primary`.
+- Workers: do not touch the parent checkout; do not `git clean` the primary.
+
+Do **not** accumulate merged feature/batch branches or stale worktrees across batches — that is how we get ~100 dead remotes and a dirty detached primary.

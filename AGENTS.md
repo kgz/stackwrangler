@@ -26,7 +26,7 @@ git checkout -b feature/<issue>-<short-slug>   # or feature/<short-slug>
 - PR body: `Closes #<n>` when applicable
 - No `Co-authored-by` / agent attribution
 - No secrets or real AWS credentials in commits
-- After merge (or abandon): delete the head branch on origin + locally, remove the worktree, `git fetch --prune`. Prefer `gh pr merge … --delete-branch`. Do not leave merged `feature/*` / `batch/*` branches on the remote.
+- After merge (or abandon): delete the head branch on origin + locally, remove the worktree, `git fetch --prune`. Prefer `gh pr merge … --delete-branch`. Do not leave merged `feature/*` / `batch/*` branches on the remote. Batch waves: `./bin/batch-cleanup.sh all --force` (keeps architecture-map / experimental graph worktrees). Never `git clean -fdx` — it deletes `.git/info/exclude` paths (e.g. maintainer `local-only-notes/`); private dirs stay in **local** exclude only, not public `.gitignore`.
 
 ## Versioning (pillars + release label + scores)
 

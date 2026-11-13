@@ -51,7 +51,7 @@ Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 
 - No `Co-authored-by` / Cursor attribution
 - PR body: `Closes #<n>`
-- After merge or abandon: delete remote + local head branch, remove worktree, `git fetch --prune`. Prefer `gh pr merge … --delete-branch`. No leftover merged `feature/*` / `batch/*` on origin.
+- After merge or abandon: delete remote + local head branch, remove worktree, `git fetch --prune`. Prefer `gh pr merge … --delete-branch`. No leftover merged `feature/*` / `batch/*` on origin. Orchestrator: `./bin/batch-cleanup.sh all --force`. Never `git clean -fdx` (wipes `.git/info/exclude`); private notes → local exclude only, not public `.gitignore`.
 
 ## Gap check before merge (required)
 
