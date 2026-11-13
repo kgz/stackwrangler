@@ -139,11 +139,18 @@ class DockerTaskManager:
         self._recover_orphaned_containers()
 
     def _recover_orphaned_containers(self) -> None:
-        """Scan for labeled ECS containers left from a previous run (equivalent)."""
+        """Scan for labeled ECS containers left from a previous run.
+
+        Include stopped containers (``all=True``): with ``PERSISTENCE=1``
+        shutdown stops containers without removing them, and the post-load
+        reconciler ``docker start``s them. Running-only scans miss those
+        and leave moto tasks holding CPU/memory/ports with nothing behind
+        them (#716).
+        """
         try:
             containers = DOCKER_CLIENT.list_containers(
                 filter=["label=localemu.service=ecs"],
-                all=False,
+                all=True,
             )
             recovered = 0
             for container in containers:
@@ -155,11 +162,16 @@ class DockerTaskManager:
                 docker_name = container.get("name", "")
                 cluster = labels.get("localemu.cluster", "default")
                 task_id = task_arn.split("/")[-1] if "/" in task_arn else task_arn[:12]
+                state = container.get("state") or container.get("State") or ""
+                if isinstance(state, dict):
+                    running = bool(state.get("Running"))
+                else:
+                    running = str(state).lower() in ("running", "up")
                 ci = EcsContainerInfo(
                     container_name=c_name,
                     docker_name=docker_name,
                     image=container.get("image", ""),
-                    status="RUNNING",
+                    status="RUNNING" if running else "STOPPED",
                 )
                 if task_arn not in self._tasks:
                     self._tasks[task_arn] = EcsTaskInfo(
@@ -167,6 +179,7 @@ class DockerTaskManager:
                         task_id=task_id,
                         cluster_name=cluster,
                         task_definition_arn="",
+                        status="RUNNING" if running else "STOPPED",
                     )
                 self._tasks[task_arn].containers.append(ci)
                 recovered += 1
