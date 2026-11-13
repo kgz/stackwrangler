@@ -100,6 +100,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | `stackwrangler up` SFTP host port (beta leftover) | yes (port free, or this project's `atmoz/sftp` container removed) | — | other project or other holder named; `up` stops before the emulator is left Created | — | `transfer-sftp-port-smoke.sh` |
 | RDS SQL | yes | **yes** (wrong password) | missing psql | list/detail + Create | `rds-smoke.sh`, `rds-authz-smoke.sh` |
 | RDS MySQL / Aurora MySQL | yes | **yes** (wrong password) | reader read-only | list/detail + Create (MySQL instance); Aurora cluster CLI-only | `rds-mysql-smoke.sh` |
+| RDS parameter groups (TF) | yes (Source=user + empty second plan) | — | engine defaults catalog / apply-to-container [#703](https://github.com/kgz/stackwrangler/issues/703) | — | `rds-parameter-group-smoke.sh` |
 | SQS | yes | **yes** (deny SendMessage; MessageRetentionPeriod > 14d) | — | create/detail/send/delete [#548](https://github.com/kgz/awsl/issues/548) · `console/e2e/sqs-queues.spec.ts` | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |
 | SQS | yes | **yes** (deny SendMessage; MessageRetentionPeriod > 14d) | — | create/detail/send/receive/purge/delete [#548](https://github.com/kgz/awsl/issues/548)/[#627](https://github.com/kgz/awsl/issues/627) · `console/e2e/sqs-queues.spec.ts` | `sqs-smoke.sh`, `sqs-authz-smoke.sh` |
 | Lambda SendMessage via CreateQueue QueueUrl | yes (SDK v3 + `sqs.<region>.localhost`) | — | ENOTFOUND without host inject | — | `sqs-lambda-queueurl-smoke.sh` · [#459](https://github.com/kgz/awsl/issues/459) |
