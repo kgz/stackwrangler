@@ -1,0 +1,26 @@
+# TLS edge for ECR repositoryUri hostnames (#218).
+FROM python:3.12-slim-bookworm
+
+RUN apt-get update \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+		openssl \
+		ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
+
+COPY tools/ecr-hostname-proxy/requirements.txt /opt/ecr-hostname/requirements.txt
+RUN pip install --no-cache-dir -r /opt/ecr-hostname/requirements.txt
+
+COPY tools/ecr-hostname-proxy/tls_proxy.py \
+	tools/ecr-hostname-proxy/entrypoint.sh \
+	tools/ecr-hostname-proxy/healthcheck.sh \
+	/opt/ecr-hostname/
+RUN chmod +x /opt/ecr-hostname/entrypoint.sh /opt/ecr-hostname/tls_proxy.py /opt/ecr-hostname/healthcheck.sh
+
+ENV ECR_HOSTNAME_CERT_DIR=/certs \
+	ECR_REGISTRY_URL=http://ecr-registry:5000 \
+	ECR_HOSTNAME_TLS_PID=/var/run/ecr-hostname-tls.pid
+
+EXPOSE 443/tcp
+VOLUME ["/certs"]
+
+ENTRYPOINT ["/opt/ecr-hostname/entrypoint.sh"]

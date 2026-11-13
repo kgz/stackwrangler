@@ -6,6 +6,8 @@ storage:
     rootdirectory: /var/lib/registry
 http:
   addr: :5000
+  # Absolute Location: http://<Host>/… makes docker follow :80 after TLS login (#218).
+  relativeurls: true
 notifications:
   endpoints:
     - name: awsbox-ecr

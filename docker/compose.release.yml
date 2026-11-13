@@ -76,10 +76,32 @@ services:
     depends_on:
       localstack:
         condition: service_healthy
+    networks:
+      - default
+      - ecr-host
     ports:
       - "127.0.0.1:${STACKWRANGLER_ECR_HOST_PORT:-5000}:5000"
     volumes:
       - ecr-data:/var/lib/registry
+
+  ecr-hostname:
+    image: ${STACKWRANGLER_ECR_HOSTNAME_IMAGE:-ghcr.io/kgz/stackwrangler-ecr-hostname:latest}
+    depends_on:
+      - ecr-registry
+    environment:
+      ECR_REGISTRY_URL: http://ecr-registry:5000
+      ECR_HOSTNAME_CERT_DIR: /certs
+    volumes:
+      - ecr-hostname-certs:/certs
+    networks:
+      ecr-host:
+        ipv4_address: ${STACKWRANGLER_ECR_HOSTNAME_IP:-172.31.218.10}
+    healthcheck:
+      test: ["CMD", "/opt/ecr-hostname/healthcheck.sh"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 8s
 
   console:
     image: ${STACKWRANGLER_CONSOLE_IMAGE:-ghcr.io/kgz/stackwrangler-console:latest}
@@ -95,3 +117,12 @@ volumes:
   seaweed-data:
   stackwrangler-state:
   ecr-data:
+  ecr-hostname-certs:
+
+networks:
+  ecr-host:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${STACKWRANGLER_ECR_HOSTNAME_SUBNET:-172.31.218.0/24}
+

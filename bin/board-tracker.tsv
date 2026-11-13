@@ -171,7 +171,7 @@
 215	done	v1: Console labels for local display names
 216	done	v1: mirror real account fixture (scaffold)
 217	backlog	Debt: ECR console (from #211)
-218	backlog	Debt: docker push via repositoryUri hostname (from #211)
+218	in-progress	Debt: docker push via repositoryUri hostname (from #211)
 219	in-review	Debt: Lambda image pull ECR authz (from #211)
 220	backlog	Debt: real-account mirror read path (from #216)
 223	in-review	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
