@@ -128,7 +128,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
 | ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
 | ECR `delete-repository` + `create-repository` adopts tags still in the local registry | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
-| ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
+| ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` on that repository ARN | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#709](https://github.com/kgz/stackwrangler/issues/709) |
+| **ECS execution role scoped to one repository ARN → denied pull of another repo** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` · [#709](https://github.com/kgz/stackwrangler/issues/709) |
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
 | `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull with `ecr:BatchGetImage` | happy | covered | `./smokes/lambda/lambda-ecr-smoke.sh` |
