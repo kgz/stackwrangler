@@ -57,26 +57,41 @@ PY
 }
 
 wait_ready() {
-	local code=""
+	# Prefer /_localemu/health — any HTTP on / races mid --force-recreate
+	# (dying gateway still answers; create then lands on a wiped process →
+	# get-function empty State for the whole wait_state loop).
+	local body=""
 	for _ in $(seq 1 90); do
-		code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$EMU/" || true)"
-		[[ "$code" =~ ^[12345][0-9][0-9]$ ]] && return 0
+		body="$(curl -sf --max-time 2 "$EMU/_localemu/health" 2>/dev/null || true)"
+		if [[ "$body" == *'"services"'* ]]; then
+			if aws_emu iam list-roles --max-items 1 >/dev/null 2>&1 \
+				&& aws_emu lambda list-functions --max-items 1 >/dev/null 2>&1; then
+				return 0
+			fi
+		fi
 		sleep 2
 	done
-	echo "FAIL: LocalEmu not ready (${code:-none})" >&2
+	echo "FAIL: LocalEmu not ready (health/IAM/Lambda)" >&2
 	return 1
 }
 
 wait_state() {
 	local want="$1"
 	local st=""
+	local err=""
+	local out=""
 	for _ in $(seq 1 90); do
-		st="$(aws_emu lambda get-function --function-name "$FN" \
-			--query 'Configuration.State' --output text 2>/dev/null || true)"
-		[[ "$st" == "$want" ]] && return 0
+		if out="$(aws_emu lambda get-function --function-name "$FN" \
+			--query 'Configuration.State' --output text 2>&1)"; then
+			st="$out"
+			[[ "$st" == "$want" ]] && return 0
+		else
+			err="$out"
+			st=""
+		fi
 		sleep 2
 	done
-	echo "FAIL: State=${st:-empty} want=${want}" >&2
+	echo "FAIL: State=${st:-empty} want=${want} last=${err:-none}" >&2
 	return 1
 }
 

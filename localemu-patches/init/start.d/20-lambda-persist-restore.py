@@ -162,6 +162,12 @@ def _mark_pending_failed(pending_pairs, lambda_service) -> int:
         live = fn.versions.get(fn_version.id.qualifier) or fn_version
         if live.config.state.state != State.Pending:
             continue
+        # Fresh create-function keeps zip in the spool while Pending; only
+        # unrestored / wiped-code leftovers should flip to Failed. Otherwise the
+        # late sweep (short smoke wait_s + 35s) races cold docker starts and
+        # kills Active transitions (#713 flake: State empty/Failed after create).
+        if _code_in_spool(live):
+            continue
         LOG.warning(
             "Marking unrestored Lambda version Failed: %s",
             live.id.qualified_arn(),
