@@ -73,6 +73,47 @@ wait_status() {
 	return 1
 }
 
+# After ghost/stop paths with no running tasks, remaining CPU/MEMORY must
+# match registered capacity (no double-return above capacity — #716).
+assert_instance_capacity_restored() {
+	local label="$1"
+	local cis remaining
+	cis="$(aws ecs list-container-instances --cluster "$CLUSTER" --query 'containerInstanceArns[]' --output text 2>/dev/null || true)"
+	[[ -n "$cis" && "$cis" != "None" ]] || {
+		echo "FAIL: ${label}: no container instances" >&2
+		exit 1
+	}
+	remaining="$(
+		aws ecs describe-container-instances --cluster "$CLUSTER" --container-instances $cis --output json \
+			| python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+for ci in data.get("containerInstances") or []:
+    reg = {r["name"]: int(r.get("integerValue") or 0) for r in ci.get("registeredResources") or [] if r.get("name") in ("CPU", "MEMORY")}
+    rem = {r["name"]: int(r.get("integerValue") or 0) for r in ci.get("remainingResources") or [] if r.get("name") in ("CPU", "MEMORY")}
+    for name in ("CPU", "MEMORY"):
+        if name not in reg or name not in rem:
+            print(f"missing {name}")
+            sys.exit(2)
+        if rem[name] > reg[name]:
+            print(f"{name} remaining {rem[name]} > registered {reg[name]}")
+            sys.exit(3)
+        if rem[name] != reg[name]:
+            # Allow briefly-held tasks; caller uses this only when cluster
+            # should be idle of RUNNING tasks.
+            print(f"{name} remaining {rem[name]} != registered {reg[name]}")
+            sys.exit(4)
+print("ok")
+'
+	)"
+	if [[ "$remaining" != "ok" ]]; then
+		echo "FAIL: ${label}: instance capacity not restored (${remaining})" >&2
+		aws ecs describe-container-instances --cluster "$CLUSTER" --container-instances $cis >&2 || true
+		exit 1
+	fi
+	echo "OK: ${label}: remaining CPU/MEMORY match capacity"
+}
+
 enable_persistence() {
 	mkdir -p "$STATE_DIR"
 	cat >"$OVERRIDE" <<EOF
@@ -184,6 +225,7 @@ if [[ "$REASON1" != *"Task container not restored"* ]]; then
 	exit 1
 fi
 echo "OK: ghost task STOPPED (${REASON1})"
+assert_instance_capacity_restored "after ghost reconcile"
 
 TASK2="$(run_one)"
 TASK_ARNS+=("$TASK2")
@@ -243,6 +285,7 @@ if ! wait_status "$TASK2" STOPPED >/dev/null; then
 	echo "FAIL: task2 not STOPPED after stop-task" >&2
 	exit 1
 fi
+assert_instance_capacity_restored "after stop-task task2"
 
 TASK3="$(run_one)"
 TASK_ARNS+=("$TASK3")
@@ -263,6 +306,7 @@ if [[ "$STOP_STATUS" != "STOPPED" ]]; then
 	echo "$STOP_JSON" >&2
 	exit 1
 fi
+assert_instance_capacity_restored "after ghost stop-task"
 
 TASK4="$(run_one)"
 TASK_ARNS+=("$TASK4")

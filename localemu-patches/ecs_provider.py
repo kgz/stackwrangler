@@ -626,11 +626,19 @@ def _lookup_task_definition_details(
     return None
 
 
-def _finalize_stopped_task_backends(task_arn: str, reason: str) -> None:
+def _finalize_stopped_task_backends(
+    task_arn: str,
+    reason: str,
+    prior_stop_error: Exception | None = None,
+) -> None:
     """Force every matching moto task record to STOPPED and release resources.
 
     Runs even when moto ``stop_task`` raised mid-update (e.g. PORTS
     ``.remove`` ValueError) so a ghost task cannot keep host ports (#716).
+
+    When ``prior_stop_error`` is set, ``call_moto`` already ran moto
+    ``stop_task`` (possibly partially). Do **not** call it again — that
+    would double-return CPU/MEMORY after a mid-PORTS failure.
     """
     if not task_arn:
         return
@@ -651,8 +659,13 @@ def _finalize_stopped_task_backends(task_arn: str, reason: str) -> None:
                         or getattr(task, "last_status", "")
                         or ""
                     ).upper()
-                    if raw != "STOPPED":
-                        _force_stop_missing_task(backend, task, reason)
+                    if raw != "STOPPED" or prior_stop_error is not None:
+                        _force_stop_missing_task(
+                            backend,
+                            task,
+                            reason,
+                            prior_stop_error=prior_stop_error,
+                        )
     except Exception:
         LOG.debug("StopTask moto finalize failed for %s", task_arn, exc_info=True)
 
@@ -708,7 +721,9 @@ def _handle_stop_task(
         # Always finish STOPPED on the moto record — even when call_moto
         # raised before returning. Ghost / DEACTIVATING tasks with no
         # container must not linger holding host ports (#716).
-        _finalize_stopped_task_backends(task_arn, reason)
+        _finalize_stopped_task_backends(
+            task_arn, reason, prior_stop_error=call_error
+        )
 
     if result is None:
         result = {}
@@ -1166,136 +1181,190 @@ def _task_cluster_name(task) -> str:
     return "default"
 
 
+def _registered_resource_map(container_instance) -> dict:
+    out: dict = {}
+    for resource in getattr(container_instance, "registered_resources", []) or []:
+        name = resource.get("name")
+        if name:
+            out[name] = resource
+    return out
+
+
+def _clamp_remaining_to_registered(container_instance) -> None:
+    """Ensure remaining CPU/MEMORY never exceed registered capacity (#716)."""
+    registered = _registered_resource_map(container_instance)
+    for resource in getattr(container_instance, "remaining_resources", []) or []:
+        name = resource.get("name")
+        if name not in ("CPU", "MEMORY"):
+            continue
+        cap = registered.get(name)
+        if cap is None:
+            continue
+        rem = int(resource.get("integerValue") or 0)
+        top = int(cap.get("integerValue") or 0)
+        if rem > top:
+            resource["integerValue"] = top
+
+
+def _sweep_task_ports(container_instance, task_resources) -> None:
+    """Drop leftover host ports for a task; ignore ports already absent."""
+    if not task_resources:
+        return
+    for resource in getattr(container_instance, "remaining_resources", []) or []:
+        name = resource.get("name")
+        if name not in ("PORTS", "PORTS_UDP"):
+            continue
+        held = resource.get("stringSetValue")
+        if not isinstance(held, list):
+            continue
+        key = "PORTS" if name == "PORTS" else "PORTS_UDP"
+        for port in task_resources.get(key) or []:
+            sp = str(port)
+            if sp in held:
+                held.remove(sp)
+
+
 def _release_instance_resources_tolerant(container_instance, task_resources) -> None:
     """Return CPU/memory/PORTS held by a task without raising on missing ports.
 
     Moto's ``update_container_instance_resources(..., removing=True)`` does
     ``PORTS.remove(port)`` and raises ``ValueError`` when a port was already
-    dropped mid-``stop_task``. That leaves remaining ports reserved while we
-    force STOPPED — so placement stays blocked (#716). Skip ports that are
-    already absent; still return CPU/MEMORY and clear any leftover ports.
+    dropped mid-``stop_task``. Skip ports that are already absent. Cap
+    remaining CPU/MEMORY at registered capacity so a partial prior release
+    cannot push remaining above capacity (#716).
     """
     if not task_resources:
         return
+    registered = _registered_resource_map(container_instance)
     for resource in getattr(container_instance, "remaining_resources", []) or []:
         name = resource.get("name")
         if name == "CPU":
-            resource["integerValue"] = int(resource.get("integerValue") or 0) + int(
+            rem = int(resource.get("integerValue") or 0) + int(
                 task_resources.get("CPU") or 0
             )
+            cap = registered.get("CPU")
+            if cap is not None:
+                rem = min(rem, int(cap.get("integerValue") or 0))
+            resource["integerValue"] = rem
         elif name == "MEMORY":
-            resource["integerValue"] = int(resource.get("integerValue") or 0) + int(
+            rem = int(resource.get("integerValue") or 0) + int(
                 task_resources.get("MEMORY") or 0
             )
-        elif name == "PORTS":
+            cap = registered.get("MEMORY")
+            if cap is not None:
+                rem = min(rem, int(cap.get("integerValue") or 0))
+            resource["integerValue"] = rem
+        elif name in ("PORTS", "PORTS_UDP"):
             held = resource.get("stringSetValue")
             if not isinstance(held, list):
                 continue
-            for port in task_resources.get("PORTS") or []:
-                sp = str(port)
-                if sp in held:
-                    held.remove(sp)
-        elif name == "PORTS_UDP":
-            held = resource.get("stringSetValue")
-            if not isinstance(held, list):
-                continue
-            for port in task_resources.get("PORTS_UDP") or []:
+            key = "PORTS" if name == "PORTS" else "PORTS_UDP"
+            for port in task_resources.get(key) or []:
                 sp = str(port)
                 if sp in held:
                     held.remove(sp)
     count = int(getattr(container_instance, "running_tasks_count", 0) or 0)
     if count > 0:
         container_instance.running_tasks_count = count - 1
+    _clamp_remaining_to_registered(container_instance)
 
 
-def _force_stop_missing_task(backend, task, reason: str = _MISSING_CONTAINER_REASON) -> None:
+def _recover_after_failed_stop(container_instance, task_resources, stop_exc) -> None:
+    """Release leftovers after a failed/partial moto ``stop_task`` (#716).
+
+    Mid-PORTS ``ValueError`` means CPU/MEMORY were already returned — only
+    sweep leftover ports and fix ``running_tasks_count``. Other failures
+    get a full tolerant release. Always clamp remaining ≤ registered.
+    """
+    ports_partial = isinstance(stop_exc, ValueError) and (
+        "not in list" in str(stop_exc)
+    )
+    if ports_partial:
+        _sweep_task_ports(container_instance, task_resources)
+        count = int(getattr(container_instance, "running_tasks_count", 0) or 0)
+        if count > 0:
+            # moto decrements running_tasks_count after the resource loop,
+            # so a mid-PORTS raise left the count high.
+            container_instance.running_tasks_count = count - 1
+        _clamp_remaining_to_registered(container_instance)
+        return
+    _release_instance_resources_tolerant(container_instance, task_resources)
+
+
+def _force_stop_missing_task(
+    backend,
+    task,
+    reason: str = _MISSING_CONTAINER_REASON,
+    prior_stop_error: Exception | None = None,
+) -> None:
     """Mark a ghost task STOPPED and release container-instance resources (#716).
 
-    Prefer moto ``stop_task`` (releases CPU/memory/PORTS). If that fails
-    mid-transition (e.g. DEACTIVATING with a partial PORTS set), fall back
-    to a port-tolerant resource release and force ``last_status=STOPPED`` so
-    the task never blocks placement indefinitely.
+    Prefer moto ``stop_task`` once. If that fails mid-PORTS (CPU/MEMORY
+    already returned), do **not** call it again — recover with a
+    ports-only / capacity-clamped fallback so remainingResources never
+    exceed registered capacity.
     """
-    status = (getattr(task, "_status", None) or getattr(task, "last_status", "") or "").upper()
-    if status == "STOPPED":
+    status = (
+        getattr(task, "_status", None) or getattr(task, "last_status", "") or ""
+    ).upper()
+    cluster_name = _task_cluster_name(task)
+    task_arn = getattr(task, "task_arn", None) or ""
+    ci_arn = getattr(task, "container_instance_arn", None)
+    reqs = getattr(task, "resource_requirements", None)
+
+    def _ci():
+        if not ci_arn:
+            return None
+        ci_id = str(ci_arn).split("/")[-1]
+        cis = (getattr(backend, "container_instances", {}) or {}).get(cluster_name) or {}
+        return cis.get(ci_id)
+
+    if status == "STOPPED" and prior_stop_error is None:
         # Still clear any ports left behind by a partial stop_task.
-        ci_arn = getattr(task, "container_instance_arn", None)
-        reqs = getattr(task, "resource_requirements", None)
-        if ci_arn and reqs:
+        ci = _ci()
+        if ci is not None and reqs:
             try:
-                cluster_name = _task_cluster_name(task)
-                ci_id = str(ci_arn).split("/")[-1]
-                cis = (getattr(backend, "container_instances", {}) or {}).get(
-                    cluster_name
-                ) or {}
-                ci = cis.get(ci_id)
-                if ci is not None:
-                    for resource in getattr(ci, "remaining_resources", []) or []:
-                        if resource.get("name") not in ("PORTS", "PORTS_UDP"):
-                            continue
-                        held = resource.get("stringSetValue")
-                        if not isinstance(held, list):
-                            continue
-                        key = "PORTS" if resource.get("name") == "PORTS" else "PORTS_UDP"
-                        for port in reqs.get(key) or []:
-                            sp = str(port)
-                            if sp in held:
-                                held.remove(sp)
+                _sweep_task_ports(ci, reqs)
+                _clamp_remaining_to_registered(ci)
             except Exception:
                 LOG.debug(
                     "ECS reconcile port sweep failed for already-STOPPED task",
                     exc_info=True,
                 )
         return
-    cluster_name = _task_cluster_name(task)
-    task_arn = getattr(task, "task_arn", None) or ""
-    stop_exc: Exception | None = None
-    try:
-        backend.stop_task(cluster_name, task_arn, reason)
-        return
-    except Exception as exc:
-        stop_exc = exc
-        LOG.warning(
-            "ECS reconcile stop_task failed for %s: %s — forcing STOPPED",
-            task_arn, exc,
-        )
-    ci_arn = getattr(task, "container_instance_arn", None)
-    reqs = getattr(task, "resource_requirements", None)
-    if ci_arn and reqs:
+
+    stop_exc = prior_stop_error
+    if prior_stop_error is None and status != "STOPPED":
         try:
-            ci_id = str(ci_arn).split("/")[-1]
-            cis = (getattr(backend, "container_instances", {}) or {}).get(cluster_name) or {}
-            ci = cis.get(ci_id)
-            if ci is not None:
-                # PORTS .remove ValueError means CPU/MEMORY were already
-                # returned — only sweep leftover ports. Other failures need
-                # a full tolerant release.
-                ports_partial = isinstance(stop_exc, ValueError) and (
-                    "not in list" in str(stop_exc)
-                )
-                if ports_partial:
-                    for resource in getattr(ci, "remaining_resources", []) or []:
-                        if resource.get("name") not in ("PORTS", "PORTS_UDP"):
-                            continue
-                        held = resource.get("stringSetValue")
-                        if not isinstance(held, list):
-                            continue
-                        key = (
-                            "PORTS"
-                            if resource.get("name") == "PORTS"
-                            else "PORTS_UDP"
-                        )
-                        for port in reqs.get(key) or []:
-                            sp = str(port)
-                            if sp in held:
-                                held.remove(sp)
-                else:
-                    _release_instance_resources_tolerant(ci, reqs)
+            backend.stop_task(cluster_name, task_arn, reason)
+            return
+        except Exception as exc:
+            stop_exc = exc
+            LOG.warning(
+                "ECS reconcile stop_task failed for %s: %s — forcing STOPPED",
+                task_arn, exc,
+            )
+
+    ci = _ci()
+    if ci is not None and reqs and stop_exc is not None:
+        try:
+            _recover_after_failed_stop(ci, reqs, stop_exc)
         except Exception:
             LOG.debug(
                 "ECS reconcile resource release fallback failed for %s",
                 task_arn, exc_info=True,
             )
+    elif ci is not None and reqs and status != "STOPPED":
+        # prior_stop_error path with no exception object shouldn't happen,
+        # but still free resources without a second moto stop_task.
+        try:
+            _release_instance_resources_tolerant(ci, reqs)
+        except Exception:
+            LOG.debug(
+                "ECS reconcile resource release fallback failed for %s",
+                task_arn, exc_info=True,
+            )
+
     task.last_status = "STOPPED"
     task.desired_status = "STOPPED"
     task.stopped_reason = reason
