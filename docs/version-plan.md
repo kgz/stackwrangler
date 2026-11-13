@@ -99,9 +99,13 @@ Dependabot + lockfile hygiene on shipped surfaces; IAM ARN/condition-key fidelit
 
 Make shipped behaviour **provable**: grow dual-side cheap parity, close high-impact fidelity gaps on ECR/ECS/CFN/R53/SG, stable gateway CA for ECS HTTPS. Gate: Impact ≥ 3 for core-stack smoke/parity/proof gaps; Impact ≥ 2 OK for CI/docs that unlock that proof.
 
-### v0.1.0 — Org path *(active — `CURRENT_RELEASE`)*
+### v0.0.7 — Dev persistence / local fidelity *(active — `CURRENT_RELEASE`)*
 
-Transfer→…→RDS learning/staging path honest end-to-end; path-critical only.
+Persistent/dev-mode LocalEmu (restore, warm restart, mode selection) plus core ECS/RDS/IAM fidelity blockers that break real local stacks. Gate: Impact ≥ 4 (`high-focus`). Prefer restore/data-plane hard blocks and false-confidence authz/runtime mismatches over catalogue stubs.
+
+### v0.1.0 — Org path *(next)*
+
+Transfer→…→RDS learning/staging path honest end-to-end; path-critical only. Open after v0.0.7 ships.
 
 ### Unlabelled backlog
 
@@ -130,6 +134,7 @@ Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche 
 | **v0.0.4** | `label:v0.0.4` | Impact ↓, Effort ↑ |
 | **v0.0.5** | `label:v0.0.5` | Impact ↓, Effort ↑ |
 | **v0.0.6** | `label:v0.0.6` | Impact ↓, Effort ↑ |
+| **v0.0.7** | `label:v0.0.7` | Impact ↓, Effort ↑ |
 | **v0.1.0** | `label:v0.1.0` | Impact ↓, Effort ↑ |
 | **High Impact** | Impact ≥ 4 (or `label:high-focus` until scored) | Impact ↓, Effort ↑ |
 | **Unscored** | Impact empty | Updated ↓ |
