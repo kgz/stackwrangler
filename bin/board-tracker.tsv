@@ -369,3 +369,4 @@
 684	in-review	ecr: restart catalog resync when registry keeps blobs
 709	in-review	IAM ECR repository actions use repository ARN
 714	in-review	sls: do not recreate LocalEmu via aws-redirect (#714)
+710	in-review	rds: param group Source=user for TF converge

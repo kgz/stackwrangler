@@ -6,6 +6,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./bin/stackwrangler up --force
 ./smokes/data/rds-smoke.sh          # Postgres
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
+./smokes/data/rds-parameter-group-smoke.sh  # param group Source + TF converge
 ```
 
 Keep resources: `STACKWRANGLER_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
@@ -54,6 +55,7 @@ Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/r
 | Security groups / VPC | Enforced on the VPC address when a DB subnet group is set ([docs/sg-enforcement.md](sg-enforcement.md)); published host port is separate |
 | Private DNS from workloads | [#206](https://github.com/kgz/awsl/issues/206) |
 | Console create | Wired for Postgres/MySQL `CreateDBInstance` (`/rds/create`). Aurora engine choice disabled — use `./smokes/data/rds-mysql-smoke.sh` |
+| Parameter groups (API / Terraform) | `DescribeDBParameters` / cluster variant return `Source=user` for modified params so `aws_db_parameter_group` converges ([#710](https://github.com/kgz/stackwrangler/issues/710)). Applying those settings into the Docker DB is [#703](https://github.com/kgz/stackwrangler/issues/703) |
 
 ## Aurora scope
 
