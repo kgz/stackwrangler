@@ -329,49 +329,25 @@ cleanup_localemu_vpc_networks() {
 }
 
 # Prebuilt images for private-net workloads (#289). Idempotent; builds only if missing.
+# Dockerfiles: docker/Dockerfile.ec2-base + docker/Dockerfile.awsbox-rt (shared with LocalEmu).
 ensure_warm_images() {
 	if ! command -v docker >/dev/null 2>&1; then
 		return 0
 	fi
-	local tag ctx
+	local ec2_df rt_df
+	ec2_df="$ROOT/docker/Dockerfile.ec2-base"
+	rt_df="$ROOT/docker/Dockerfile.awsbox-rt"
+	if [[ ! -f "$ec2_df" || ! -f "$rt_df" ]]; then
+		echo "error: warm-restart Dockerfiles missing (#289): $ec2_df / $rt_df" >&2
+		return 1
+	fi
 	if ! docker image inspect localemu/ec2-base:v4 >/dev/null 2>&1; then
-		echo "Building localemu/ec2-base:v4 (one-time, iptables/sshd baked in)…"
-		ctx="$(mktemp -d /tmp/sw-ec2-base.XXXXXX)"
-		cat >"$ctx/Dockerfile" <<'EOF'
-FROM ubuntu:22.04
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -qq \
-    && apt-get install -y -qq --no-install-recommends \
-        openssh-server sudo iptables iproute2 iputils-ping curl ca-certificates \
-        netcat-openbsd procps net-tools dnsutils bind9-host \
-        postgresql-client mysql-client python3-pip \
-    && pip3 install --no-cache-dir 'awscli>=1.32' \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* ~/.cache/pip \
-    && useradd -m -s /bin/bash -u 1000 ubuntu \
-    && usermod -aG sudo ubuntu \
-    && echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-cloud-init-users \
-    && chmod 0440 /etc/sudoers.d/90-cloud-init-users \
-    && mkdir -p /run/sshd /home/ubuntu/.ssh /root/.ssh \
-    && chown -R ubuntu:ubuntu /home/ubuntu/.ssh \
-    && chmod 700 /home/ubuntu/.ssh /root/.ssh \
-    && ssh-keygen -A
-LABEL org.localemu.image-role="ec2-base"
-EOF
-		docker build -t localemu/ec2-base:v4 "$ctx"
-		rm -rf "$ctx"
+		echo "Building localemu/ec2-base:v4 from docker/Dockerfile.ec2-base…"
+		docker build -t localemu/ec2-base:v4 -f "$ec2_df" "$ROOT/docker"
 	fi
 	if ! docker image inspect localemu/awsbox-rt:latest >/dev/null 2>&1; then
-		echo "Building localemu/awsbox-rt:latest (iptables sidecar)…"
-		ctx="$(mktemp -d /tmp/sw-awsbox-rt.XXXXXX)"
-		cat >"$ctx/Dockerfile" <<'EOF'
-FROM alpine:3.19
-RUN apk add --no-cache iptables iproute2 \
-    && rm -rf /var/cache/apk/*
-LABEL org.localemu.image-role="awsbox-route-sidecar"
-EOF
-		docker build -t localemu/awsbox-rt:latest "$ctx"
-		rm -rf "$ctx"
+		echo "Building localemu/awsbox-rt:latest from docker/Dockerfile.awsbox-rt…"
+		docker build -t localemu/awsbox-rt:latest -f "$rt_df" "$ROOT/docker"
 	fi
 }
 
@@ -480,6 +456,7 @@ cmd_up() {
 
 cmd_down() {
 	local remove_profile=0
+	local project ls_name stop_t
 	if [[ "${1:-}" == "--remove-profile" ]]; then
 		remove_profile=1
 		shift
@@ -488,6 +465,21 @@ cmd_down() {
 	if [[ -f "$CONSOLE_PID_FILE" ]]; then
 		kill "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null || true
 		rm -f "$CONSOLE_PID_FILE"
+	fi
+	# --dev warm restart (#289): LocalEmu persists ON_SHUTDOWN. Compose's default
+	# ~10s stop often kills before the dill save finishes, so the next up loads
+	# stale API state and never docker-starts preserved EC2/ECS containers.
+	if [[ "$(read_mode)" == "dev" ]]; then
+		project="$(compose_project_name 2>/dev/null || true)"
+		ls_name=""
+		if [[ -n "$project" ]]; then
+			ls_name="${project}-localstack-1"
+		fi
+		stop_t="${STACKWRANGLER_LOCALEMU_STOP_TIMEOUT:-${AWSBOX_LOCALEMU_STOP_TIMEOUT:-90}}"
+		if [[ -n "$ls_name" ]] && docker inspect "$ls_name" >/dev/null 2>&1; then
+			echo "dev: graceful LocalEmu stop (${stop_t}s) so ON_SHUTDOWN persist can finish…"
+			docker stop -t "$stop_t" "$ls_name" >/dev/null 2>&1 || true
+		fi
 	fi
 	# No -v: named volumes + .awsbox/dev survive for --dev warm restart.
 	"${COMPOSE[@]}" down "$@"

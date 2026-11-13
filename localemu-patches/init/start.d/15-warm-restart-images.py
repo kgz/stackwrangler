@@ -4,11 +4,13 @@
   Callers without iptables use the alpine netns sidecar (``localemu/awsbox-rt``).
 - Ensure ``localemu/ec2-base:v4`` and ``localemu/awsbox-rt:latest`` exist early
   so private VPC networks never need outbound package mirrors.
+- Fail hard if required images cannot be ensured (do not boot without prebuilts).
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 
 LOG = logging.getLogger("localemu.awsbox.warm_restart_images")
 
@@ -37,28 +39,29 @@ def _patch_ensure_iptables_probe_only() -> None:
 
 
 def _ensure_ec2_base() -> None:
-    try:
-        from localemu.services.ec2.docker.base_image import (
-            BASE_IMAGE_TAG,
-            ensure_base_image,
-        )
+    from localemu.services.ec2.docker.base_image import (
+        BASE_IMAGE_TAG,
+        ensure_base_image,
+    )
 
-        ensure_base_image()
-        LOG.info("EC2 base image ready: %s", BASE_IMAGE_TAG)
-    except Exception:
-        LOG.warning("EC2 base image ensure failed (#289)", exc_info=True)
+    ensure_base_image()
+    LOG.info("EC2 base image ready: %s", BASE_IMAGE_TAG)
 
 
 def _ensure_rt_sidecar() -> None:
-    try:
-        from localemu.services.ec2.docker.vpc_routing import _ensure_rt_image
+    from localemu.services.ec2.docker.vpc_routing import _ensure_rt_image
 
-        tag = _ensure_rt_image()
-        LOG.info("Route/SG sidecar image ready: %s", tag)
-    except Exception:
-        LOG.warning("awsbox-rt sidecar ensure failed (#289)", exc_info=True)
+    tag = _ensure_rt_image()
+    LOG.info("Route/SG sidecar image ready: %s", tag)
 
 
 _patch_ensure_iptables_probe_only()
-_ensure_ec2_base()
-_ensure_rt_sidecar()
+try:
+    _ensure_ec2_base()
+    _ensure_rt_sidecar()
+except Exception:
+    LOG.exception(
+        "Warm-restart prebuilt images required (#289); refusing to continue "
+        "without localemu/ec2-base:v4 and localemu/awsbox-rt:latest"
+    )
+    sys.exit(1)

@@ -132,6 +132,10 @@ services:
       - ./localemu-patches/cfn_deploy_credentials.py:/opt/code/localemu/src/localemu/services/cloudformation/cfn_deploy_credentials.py:ro
       # VPC route tables (#204): private subnets, peering, NAT
       - ./localemu-patches/vpc_routing.py:/opt/code/localemu/src/localemu/services/ec2/docker/vpc_routing.py:ro
+      # #289: single-source Dockerfiles for ec2-base + awsbox-rt (ensure_base_image / _ensure_rt_image).
+      - ./localemu-patches/base_image.py:/opt/code/localemu/src/localemu/services/ec2/docker/base_image.py:ro
+      - ./docker/Dockerfile.ec2-base:/opt/awsbox/docker/Dockerfile.ec2-base:ro
+      - ./docker/Dockerfile.awsbox-rt:/opt/awsbox/docker/Dockerfile.awsbox-rt:ro
       # Security groups (#205): ECS awsvpc + RDS + prefix lists on top of EC2 sg_iptables
       - ./localemu-patches/sg_enforcement.py:/opt/code/localemu/src/localemu/services/ec2/docker/sg_enforcement.py:ro
       # Interface VPCE private DNS (#258): resolver + proxy forward to gateway IP

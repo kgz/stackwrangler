@@ -36,9 +36,10 @@ Goal: `down` then `up --dev` reuses prebuilt images and stopped workload contain
 
 | Piece | Behaviour |
 |-------|-----------|
-| **Prebuilt images** | `up` ensures `localemu/ec2-base:v4` (sshd + iptables) and `localemu/awsbox-rt:latest` (SG/route netns sidecar). No `apk`/`apt` into workload containers on private VPC nets. |
+| **Prebuilt images** | `up` ensures `localemu/ec2-base:v4` (sshd + iptables) and `localemu/awsbox-rt:latest` (SG/route netns sidecar) from `docker/Dockerfile.ec2-base` + `docker/Dockerfile.awsbox-rt` (same files LocalEmu builds from). No `apk`/`apt` into workload containers on private VPC nets. |
 | **SG iptables** | Probe-only in the workload; missing iptables → alpine sidecar (never package-install at task start). |
 | **VPC cleanup** | In `--dev`, `localemu-ec2-*` / `localemu-ecs-*` / `localemu-rds-*` are left for `docker start`. Empty orphan `localemu-vpc-*` bridges are still removed. `reset` force-reclaims. |
+| **Graceful down** | `down` in `--dev` stops LocalEmu with a long grace window (`stop_grace_period` / `STACKWRANGLER_LOCALEMU_STOP_TIMEOUT`, default 90s) so `ON_SHUTDOWN` persistence finishes before compose removes the container. |
 | **ECS reconcile** | Persisted RUNNING tasks: resume stopped containers or mark STOPPED when missing ([#716](https://github.com/kgz/stackwrangler/issues/716)). |
 | **EC2 reconcile** | LocalEmu `on_after_state_load` resumes stopped `localemu-ec2-*` from recorded state. |
 

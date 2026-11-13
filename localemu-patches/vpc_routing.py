@@ -1100,13 +1100,22 @@ def _sh(container: str, script: str) -> None:
 
 
 _RT_IMAGE = "localemu/awsbox-rt:latest"
-_RT_DOCKERFILE = """\
-FROM alpine:3.19
-RUN apk add --no-cache iptables iproute2 \\
-    && rm -rf /var/cache/apk/*
-LABEL org.localemu.image-role="awsbox-route-sidecar"
-"""
+# Single source of truth: docker/Dockerfile.awsbox-rt (#289) — no inline drift.
+_RT_DOCKERFILE_PATHS = (
+    os.environ.get("AWSBOX_RT_DOCKERFILE", "").strip(),
+    "/opt/awsbox/docker/Dockerfile.awsbox-rt",
+)
 _rt_image_lock = threading.Lock()
+
+
+def _rt_dockerfile_path() -> str:
+    for path in _RT_DOCKERFILE_PATHS:
+        if path and os.path.isfile(path):
+            return path
+    raise FileNotFoundError(
+        "awsbox-rt Dockerfile missing (#289). Expected "
+        "/opt/awsbox/docker/Dockerfile.awsbox-rt (compose mount or image COPY)."
+    )
 
 
 def _ensure_rt_image() -> str:
@@ -1127,10 +1136,13 @@ def _ensure_rt_image() -> str:
         import tempfile
 
         try:
+            src = _rt_dockerfile_path()
             with tempfile.TemporaryDirectory(prefix="awsbox-rt-img-") as ctx:
                 path = os.path.join(ctx, "Dockerfile")
+                with open(src, encoding="utf-8") as fh:
+                    body = fh.read()
                 with open(path, "w", encoding="utf-8") as fh:
-                    fh.write(_RT_DOCKERFILE)
+                    fh.write(body)
                 DOCKER_CLIENT.build_image(
                     dockerfile_path=path,
                     image_name=_RT_IMAGE,
