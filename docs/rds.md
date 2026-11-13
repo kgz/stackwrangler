@@ -22,6 +22,26 @@ Needs host `psql` (Postgres smoke) or `mysql` (MySQL smoke).
 
 Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.py` (mounted with the other init scripts). `SERVICES` already includes `rds` and `secretsmanager`.
 
+## Engine versions (pinned images)
+
+`localemu-patches/rds_engine_mapping.py` maps every supported `Engine` / `EngineVersion` to an **exact** Docker tag. Unknown versions raise `InvalidParameterCombination` (`Cannot find version …`) — they never silently fall back to floating tags like `mysql:8.0`.
+
+| Engine | Example `EngineVersion` | Docker image |
+|--------|-------------------------|--------------|
+| `mysql` | `8.0.37` | `mysql:8.0.37` |
+| `mysql` | `8.0` (series) | `mysql:8.0.39` |
+| `postgres` | `16.3` | `postgres:16.3` |
+| `postgres` | `16` (series) | `postgres:16.6` |
+| `mariadb` | `11.4.4` | `mariadb:11.4.4` |
+| `aurora-mysql` | `8.0.mysql_aurora.3.05.2` or `3.05.2` | `mysql:8.0.32` |
+| `aurora-mysql` | `8.0.mysql_aurora.3.07.1` | `mysql:8.0.36` |
+| `aurora-mysql` | `8.0.mysql_aurora.3.08.0` | `mysql:8.0.39` |
+| `aurora-postgresql` | `16.4` | `postgres:16.4` |
+
+Aurora MySQL 3.x pins follow AWS community compatibility (3.05 → 8.0.32, 3.06 → 8.0.34, 3.07 → 8.0.36, 3.08 → 8.0.39). Defaults are pinned too (`mysql` → `mysql:8.0.39`, `postgres` → `postgres:16.6`).
+
+Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/rds/describe-db-engine-versions.json`. Smoke: `./smokes/data/rds-engine-version-smoke.sh`.
+
 ## Limits
 
 | Area | Behaviour |
