@@ -71,7 +71,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./smokes/parity/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./smokes/lambda/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./smokes/lambda/lambda-deploy-smoke.sh` |
-| Lambda UpdateFunctionCode after PERSISTENCE recreate | happy | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` · [#713](https://github.com/kgz/stackwrangler/issues/713) |
+| Lambda UpdateFunctionCode after PERSISTENCE recreate (code missing → Failed) | happy | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` · [#713](https://github.com/kgz/stackwrangler/issues/713) |
+| Lambda delete-function after PERSISTENCE recreate with no version manager | sad/other | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` (wipe `s3_bodies` → Failed → delete) · [#713](https://github.com/kgz/stackwrangler/issues/713) |
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./smokes/lambda/lambda-authz-smoke.sh` |
 | Lambda role trust `aws:SourceAccount` = function account → CreateFunction ok; other account → refused; plain trust ok | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-condition-smoke.sh` |
 | Lambda role trust `aws:SourceArn` = function ARN → CreateFunction ok; other ARN → refused | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-sourcearn-smoke.sh` |

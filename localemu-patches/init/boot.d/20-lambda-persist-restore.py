@@ -12,12 +12,26 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import os
 import time
 from io import BytesIO
 
 LOG = logging.getLogger("localemu.awsbox.lambda_persist_restore")
 
-_CODE_WAIT_S = 45.0
+# Smokes can shrink the wait (e.g. AWSBOX_LAMBDA_PERSIST_CODE_WAIT_S=2) after
+# deliberately wiping persisted s3_bodies so Failed marking is prompt.
+def _code_wait_s() -> float:
+    raw = (
+        os.environ.get("STACKWRANGLER_LAMBDA_PERSIST_CODE_WAIT_S")
+        or os.environ.get("AWSBOX_LAMBDA_PERSIST_CODE_WAIT_S")
+        or "45"
+    )
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return 45.0
+
+
 _CODE_POLL_S = 0.5
 _MISSING_CODE_REASON = (
     "Function code is unavailable after LocalEmu restart; "
@@ -62,7 +76,8 @@ def _pending_versions(pending_functions):
 
 
 def _wait_for_code_spool(pending_functions) -> None:
-    deadline = time.monotonic() + _CODE_WAIT_S
+    wait_s = _code_wait_s()
+    deadline = time.monotonic() + wait_s
     while time.monotonic() < deadline:
         pending = _pending_versions(pending_functions)
         if not pending:
@@ -77,7 +92,7 @@ def _wait_for_code_spool(pending_functions) -> None:
     LOG.warning(
         "Lambda persistence restore: code spool still incomplete after %.0fs "
         "(UpdateFunctionCode can replace Failed versions)",
-        _CODE_WAIT_S,
+        wait_s,
     )
 
 
