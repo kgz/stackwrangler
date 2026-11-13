@@ -1341,11 +1341,51 @@ def _patch_moto_resource_requirements_none_safe() -> None:
     _m._localemu_resource_req_patched = True
 
 
+def _patch_moto_ec2_memory_reservation_register() -> None:
+    """Accept EC2 container defs that set only memoryReservation (#707 / #715).
+
+    Moto's EC2-only branch of ``_validate_container_defs`` requires ``memory``
+    (or task-level memory) and ignores ``memoryReservation``. AWS accepts soft
+    reservation alone for EC2. The general check already allows it — drop the
+    stricter EC2-only gate.
+    """
+    try:
+        import moto.ecs.models as _m
+        from moto.ecs.exceptions import TaskDefinitionMemoryError
+        from moto.ecs.exceptions import TaskDefinitionMissingPropertyError
+    except Exception:
+        return
+    if getattr(_m, "_localemu_ec2_memres_register_patched", False):
+        return
+
+    def _validate_container_defs(memory, container_definitions, requires_compatibilities):
+        del requires_compatibilities  # EC2 soft-reservation path matches general rules
+        for cd in container_definitions:
+            if "name" not in cd and "Name" not in cd:
+                raise TaskDefinitionMissingPropertyError("name")
+            if "image" not in cd and "Image" not in cd:
+                raise TaskDefinitionMissingPropertyError("image")
+            if (
+                "memory" not in cd
+                and "Memory" not in cd
+                and "memoryReservation" not in cd
+                and "MemoryReservation" not in cd
+                and not memory
+            ):
+                raise TaskDefinitionMemoryError(cd.get("name") or cd.get("Name") or "?")
+
+    _m.EC2ContainerServiceBackend._validate_container_defs = staticmethod(
+        _validate_container_defs
+    )
+    _m._localemu_ec2_memres_register_patched = True
+
+
 def create_ecs_service() -> Service:
     """Create the ECS service with Docker-aware dispatch table."""
     from localemu.aws.spec import load_service
 
     _patch_moto_resource_requirements_none_safe()
+    _patch_moto_ec2_memory_reservation_register()
     _patch_moto_eni_private_dns_name()
     from localemu.services.ecs.ec2_services import install
 

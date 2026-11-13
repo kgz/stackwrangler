@@ -117,6 +117,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS `networkMode: host` + portMappings listens on host | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS `networkMode: host` task role: creds on host 127.0.0.1 (`AWS_CONTAINER_CREDENTIALS_FULL_URI`), endpoint on loopback, no DNAT | happy | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
 | ECS host task without a role gets no credentials env; another task id → 404 | sad/authz | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
+| ECS EC2 task with only `memoryReservation` bursts above reservation without OOM (#715) | happy | covered | `./smokes/compute/ecs-soft-memory-smoke.sh` |
+| ECS task with hard `memory` + soft `memoryReservation` sets both Docker HostConfig fields (#715) | sad | covered | `./smokes/compute/ecs-soft-memory-smoke.sh` |
 | ECS awsvpc task gets `https://localemu.awsbox:4566` + CA env; DenyNonSSL bucket allows task GetObject | happy | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
 | ECS task role over plain `http://` GetObject denied by bucket `aws:SecureTransport=false` Deny | sad/authz | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
 | ECS private awsvpc + tight egress SG + VPCEs: task-role creds + `AWS_ENDPOINT_URL` / S3 GetObject | happy | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |

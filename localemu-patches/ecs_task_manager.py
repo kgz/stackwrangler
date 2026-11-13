@@ -50,6 +50,43 @@ _image_pull_locks: dict[str, threading.Lock] = {}
 _image_pull_locks_lock = threading.Lock()
 
 
+def _apply_docker_mem_reservation(docker_name: str, mem_reservation: str) -> None:
+    """Apply ECS memoryReservation as Docker's soft MemoryReservation (#715).
+
+    ContainerConfiguration has no mem_reservation field; set it after create
+    via the SDK (preferred) or ``docker update`` fallback.
+    """
+    try:
+        client_factory = getattr(DOCKER_CLIENT, "client", None)
+        if callable(client_factory):
+            client_factory().containers.get(docker_name).update(
+                mem_reservation=mem_reservation
+            )
+            return
+    except Exception:
+        LOG.debug(
+            "SDK mem_reservation update failed for %s", docker_name, exc_info=True
+        )
+    try:
+        import subprocess
+
+        subprocess.run(
+            [
+                "docker",
+                "update",
+                f"--memory-reservation={mem_reservation}",
+                docker_name,
+            ],
+            check=False,
+            capture_output=True,
+            timeout=30,
+        )
+    except Exception:
+        LOG.debug(
+            "CLI mem_reservation update failed for %s", docker_name, exc_info=True
+        )
+
+
 @dataclass
 class EcsContainerInfo:
     """Tracks a single running container within an ECS task."""
@@ -793,21 +830,31 @@ class DockerTaskManager:
                     if not docker_network:
                         docker_network = "none"
 
-                # Extract CPU/memory limits from container definition
+                # Extract CPU/memory limits from container definition.
+                # AWS: memory = hard Docker mem_limit; memoryReservation = soft
+                # mem_reservation (placement + cgroup soft). Do not promote soft
+                # to hard — that OOM-kills bursts that survive on real ECS (#715).
                 cpu_shares = None
                 mem_limit = None
+                mem_reservation = None
                 container_cpu = cdef.get("cpu")
-                container_memory = cdef.get("memory") or cdef.get("memoryReservation")
+                hard_memory = cdef.get("memory")
+                soft_memory = cdef.get("memoryReservation")
                 if container_cpu:
                     # ECS cpu units map to Docker cpu_shares (1024 = 1 vCPU)
                     try:
                         cpu_shares = int(container_cpu)
                     except (ValueError, TypeError):
                         pass
-                if container_memory:
-                    # ECS memory is in MiB
+                # ECS memory values are MiB
+                if hard_memory:
                     try:
-                        mem_limit = f"{int(container_memory)}m"
+                        mem_limit = f"{int(hard_memory)}m"
+                    except (ValueError, TypeError):
+                        pass
+                if soft_memory:
+                    try:
+                        mem_reservation = f"{int(soft_memory)}m"
                     except (ValueError, TypeError):
                         pass
 
@@ -940,6 +987,8 @@ class DockerTaskManager:
 
                 try:
                     DOCKER_CLIENT.create_container_from_config(container_config)
+                    if mem_reservation:
+                        _apply_docker_mem_reservation(docker_name, mem_reservation)
                     try:
                         DOCKER_CLIENT.start_container(docker_name)
                     except Exception as start_err:
