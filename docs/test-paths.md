@@ -127,14 +127,13 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | EC2 instance containers get same https `AWS_ENDPOINT_URL` + CA as ECS/Lambda | happy | covered | wiring in `localemu-patches/init/start.d/20-ec2-imds.py` · [#696](https://github.com/kgz/stackwrangler/issues/696) (no dedicated EC2 DenyNonSSL smoke; Lambda smoke covers SecureTransport path) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
-| ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
+| ECR create-repository + `get-login-password` + docker login/push/pull `repositoryUri` hostname + `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#218](https://github.com/kgz/awsl/issues/218) |
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
 | ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
 | ECR `delete-repository` + `create-repository` adopts tags still in the local registry | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
 | ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` on that repository ARN | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#709](https://github.com/kgz/stackwrangler/issues/709) |
 | **ECS execution role scoped to one repository ARN → denied pull of another repo** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` · [#709](https://github.com/kgz/stackwrangler/issues/709) |
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
-| `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull with `ecr:BatchGetImage` | happy | covered | `./smokes/lambda/lambda-ecr-smoke.sh` |
 | **Lambda image role without `ecr:BatchGetImage` → cold start fails** | sad/authz | covered | `./smokes/lambda/lambda-ecr-smoke.sh` |
 | ECS in-container SDK via 169.254 creds URI (`AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` → DNAT → LocalEmu; empty task role PutObject AccessDenied; no host-side cred fetch) | sad/authz | covered | `./smokes/compute/ecs-authz-smoke.sh` |

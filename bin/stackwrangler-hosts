@@ -1,21 +1,71 @@
 #!/usr/bin/env bash
-# Ensure / document hosts for S3 Control virtual-host form (Prowler / boto3).
+# Ensure / document hosts for S3 Control virtual-host form (Prowler / boto3)
+# and ECR repositoryUri hostname → ecr-hostname TLS edge (#218).
 # Usage:
-#   ./bin/stackwrangler-hosts check   # exit 0 if names resolve (AF_INET)
-#   ./bin/stackwrangler-hosts print   # print /etc/hosts lines
-#   ./bin/stackwrangler-hosts apply   # append lines via sudo if missing (optional)
+#   ./bin/stackwrangler-hosts check        # prowler hosts resolve (AF_INET)
+#   ./bin/stackwrangler-hosts print        # print /etc/hosts lines (prowler)
+#   ./bin/stackwrangler-hosts apply        # append prowler lines via sudo
+#   ./bin/stackwrangler-hosts ecr-check    # URI host → ecr-hostname IP + docker CA
+#   ./bin/stackwrangler-hosts ecr-print    # print hosts + certs.d paths
+#   ./bin/stackwrangler-hosts ecr-apply    # sudo hosts + /etc/docker/certs.d CA
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck disable=SC1091
 [[ -f "$ROOT/.env" ]] && set -a && source "$ROOT/.env" && set +a
 
-ACCOUNT_ID="${AWSBOX_ACCOUNT_ID:-000000000000}"
+ACCOUNT_ID="${STACKWRANGLER_ACCOUNT_ID:-${AWSBOX_ACCOUNT_ID:-000000000000}}"
+# Empty STACKWRANGLER_ACCOUNT_ID means default moto account.
+[[ -n "$ACCOUNT_ID" ]] || ACCOUNT_ID="000000000000"
+REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 HOST="${AWSBOX_PROWLER_HOST:-awsbox.localhost}"
 MARKER="# awsbox-managed (prowler / s3control)"
+ECR_MARKER="# stackwrangler-managed (ecr repositoryUri #218)"
+ECR_URI_HOST="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
+ECR_FIXED_IP="${STACKWRANGLER_ECR_HOSTNAME_IP:-${AWSBOX_ECR_HOSTNAME_IP:-172.31.218.10}}"
+ECR_CA_HOST="${ROOT}/.awsbox/ecr-hostname/ca.crt"
+ECR_CERTSD="/etc/docker/certs.d/${ECR_URI_HOST}"
 
 hosts_line() {
 	echo "127.0.0.1 ${HOST} ${ACCOUNT_ID}.${HOST} ${MARKER}"
+}
+
+ecr_hosts_line() {
+	local ip
+	ip="$(ecr_hostname_ip)"
+	echo "${ip} ${ECR_URI_HOST} ${ECR_MARKER}"
+}
+
+compose_project() {
+	# Match bin/stackwrangler compose_project_name: directory basename.
+	basename "$ROOT"
+}
+
+ecr_hostname_ip() {
+	local project cid ip
+	project="$(compose_project)"
+	cid="$(docker ps -q -f "name=${project}-ecr-hostname" 2>/dev/null | head -1 || true)"
+	if [[ -z "$cid" ]]; then
+		cid="$(docker ps -q -f "name=ecr-hostname" 2>/dev/null | head -1 || true)"
+	fi
+	if [[ -n "$cid" ]]; then
+		ip="$(
+			docker inspect -f '{{range $name, $net := .NetworkSettings.Networks}}{{if eq $name "ecr-host"}}{{.IPAddress}}{{end}}{{end}}' "$cid" 2>/dev/null \
+				|| true
+		)"
+		# Compose prefixes network as <project>_ecr-host
+		if [[ -z "$ip" ]]; then
+			ip="$(
+				docker inspect -f '{{range $name, $net := .NetworkSettings.Networks}}{{println $name $net.IPAddress}}{{end}}' "$cid" 2>/dev/null \
+					| awk '/ecr-host/ {print $2; exit}'
+			)"
+		fi
+		if [[ -n "$ip" ]]; then
+			echo "$ip"
+			return 0
+		fi
+	fi
+	echo "$ECR_FIXED_IP"
 }
 
 resolve_ok() {
@@ -31,6 +81,29 @@ for name in (host, f"{account}.{host}"):
         sys.exit(1)
 sys.exit(0)
 PY
+}
+
+ecr_resolve_ok() {
+	local expect
+	expect="$(ecr_hostname_ip)"
+	ECR_CHECK_HOST="$ECR_URI_HOST" ECR_CHECK_IP="$expect" python3 - <<'PY'
+import os, socket, sys
+
+host = os.environ["ECR_CHECK_HOST"]
+expect = os.environ["ECR_CHECK_IP"]
+try:
+    infos = socket.getaddrinfo(host, 443, socket.AF_INET)
+except OSError:
+    sys.exit(1)
+addrs = {i[4][0] for i in infos}
+sys.exit(0 if expect in addrs else 1)
+PY
+}
+
+ecr_certs_ok() {
+	[[ -f "${ECR_CERTSD}/ca.crt" ]] || return 1
+	[[ -f "$ECR_CA_HOST" ]] || return 0
+	cmp -s "$ECR_CA_HOST" "${ECR_CERTSD}/ca.crt"
 }
 
 cmd_check() {
@@ -79,12 +152,95 @@ cmd_apply() {
 	exit 1
 }
 
+cmd_ecr_print() {
+	echo "# /etc/hosts"
+	ecr_hosts_line
+	echo "# docker CA (no daemon restart)"
+	echo "${ECR_CERTSD}/ca.crt  <=  ${ECR_CA_HOST}"
+}
+
+cmd_ecr_check() {
+	local ok=0
+	if ecr_resolve_ok; then
+		echo "ok: ${ECR_URI_HOST} → $(ecr_hostname_ip)"
+	else
+		echo "missing: ${ECR_URI_HOST} does not resolve to ecr-hostname IP $(ecr_hostname_ip)" >&2
+		ecr_hosts_line >&2
+		ok=1
+	fi
+	if ecr_certs_ok; then
+		echo "ok: docker trusts ${ECR_CERTSD}/ca.crt"
+	else
+		echo "missing: ${ECR_CERTSD}/ca.crt (copy from ${ECR_CA_HOST})" >&2
+		ok=1
+	fi
+	return "$ok"
+}
+
+ensure_ecr_ca_host() {
+	if [[ -f "$ECR_CA_HOST" ]]; then
+		return 0
+	fi
+	local project cid
+	project="$(compose_project)"
+	cid="$(docker ps -q -f "name=${project}-ecr-hostname" 2>/dev/null | head -1 || true)"
+	[[ -n "$cid" ]] || cid="$(docker ps -q -f "name=ecr-hostname" 2>/dev/null | head -1 || true)"
+	[[ -n "$cid" ]] || {
+		echo "error: ecr-hostname container not running; start the stack first" >&2
+		return 1
+	}
+	mkdir -p "$(dirname "$ECR_CA_HOST")"
+	docker cp "${cid}:/certs/ca.crt" "$ECR_CA_HOST"
+}
+
+cmd_ecr_apply() {
+	local line ip
+	ip="$(ecr_hostname_ip)"
+	line="$(ecr_hosts_line)"
+
+	if ! ecr_resolve_ok; then
+		if grep -qF "$ECR_MARKER" /etc/hosts 2>/dev/null; then
+			echo "updating existing ${ECR_MARKER} line in /etc/hosts (needs sudo)"
+			sudo sed -i "\\|${ECR_MARKER}|d" /etc/hosts
+		fi
+		echo "appending to /etc/hosts (needs sudo):"
+		echo "  ${line}"
+		if ! printf '%s\n' "$line" | sudo tee -a /etc/hosts >/dev/null; then
+			echo "error: could not write /etc/hosts" >&2
+			exit 1
+		fi
+	else
+		echo "ok: ${ECR_URI_HOST} already → ${ip}"
+	fi
+
+	ensure_ecr_ca_host || exit 1
+	if ! ecr_certs_ok; then
+		echo "installing docker registry CA (needs sudo): ${ECR_CERTSD}/ca.crt"
+		sudo mkdir -p "$ECR_CERTSD"
+		sudo cp "$ECR_CA_HOST" "${ECR_CERTSD}/ca.crt"
+		sudo chmod 644 "${ECR_CERTSD}/ca.crt"
+	else
+		echo "ok: docker CA already installed"
+	fi
+
+	if cmd_ecr_check >/dev/null; then
+		echo "ok: ecr hostname ready (${ECR_URI_HOST} → ${ip})"
+		return 0
+	fi
+	cmd_ecr_check || true
+	echo "error: ecr hostname still not ready" >&2
+	exit 1
+}
+
 case "${1:-}" in
 	check) cmd_check ;;
 	print) cmd_print ;;
 	apply) cmd_apply ;;
+	ecr-check) cmd_ecr_check ;;
+	ecr-print) cmd_ecr_print ;;
+	ecr-apply) cmd_ecr_apply ;;
 	*)
-		echo "Usage: $0 check | print | apply" >&2
+		echo "Usage: $0 check | print | apply | ecr-check | ecr-print | ecr-apply" >&2
 		exit 1
 		;;
 esac

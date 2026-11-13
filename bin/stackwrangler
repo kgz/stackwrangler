@@ -276,6 +276,14 @@ cmd_up() {
 		echo "  ./bin/stackwrangler-hosts apply   # sudo append to /etc/hosts"
 		echo "  docs/prowler.md            # hosts / localhost notes (incl. Windows via WSL)"
 	fi
+	# ECR repositoryUri docker push needs hosts + docker certs.d (#218).
+	if ! "$ROOT/bin/stackwrangler-hosts" ecr-check >/dev/null 2>&1; then
+		echo
+		echo "ECR hostname: repositoryUri host not wired for docker push (#218)."
+		echo "  ./bin/stackwrangler-hosts ecr-print   # hosts + certs.d paths"
+		echo "  ./bin/stackwrangler-hosts ecr-apply   # sudo /etc/hosts + /etc/docker/certs.d"
+		echo "  tools/ecr-hostname-proxy/README.md"
+	fi
 }
 
 cmd_down() {

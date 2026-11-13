@@ -31,6 +31,7 @@ export STACKWRANGLER_LOCAL_IMAGES=1
 export STACKWRANGLER_LOCALEMU_IMAGE="stackwrangler-localemu:${TAG}"
 export STACKWRANGLER_CONSOLE_IMAGE="stackwrangler-console:${TAG}"
 export STACKWRANGLER_ECR_IMAGE="stackwrangler-ecr:${TAG}"
+export STACKWRANGLER_ECR_HOSTNAME_IMAGE="stackwrangler-ecr-hostname:${TAG}"
 export STACKWRANGLER_HOME="$HOME_DIR"
 export AWS_SHARED_CREDENTIALS_FILE="${AWS_DIR}/credentials"
 export AWS_CONFIG_FILE="${AWS_DIR}/config"

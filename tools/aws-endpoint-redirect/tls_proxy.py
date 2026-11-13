@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""TLS edge for aws-redirect: dynamic SNI leafs → LocalEmu HTTP, Host preserved."""
+"""Shared TLS SNI edge: dynamic leafs → HTTP upstream, Host preserved.
+
+Used by aws-redirect (LocalEmu) and ecr-hostname (#218, registry). Env:
+``AWS_REDIRECT_CERT_DIR``, ``LOCALEMU_URL`` (upstream), listen/pid vars.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -16,7 +20,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
-LOG = logging.getLogger("aws-redirect.tls")
+LOG = logging.getLogger("tls-sni-proxy")
 
 HOSTNAME_RE = re.compile(r"^[A-Za-z0-9._*-]+$")
 CERT_DIR = Path(os.environ.get("AWS_REDIRECT_CERT_DIR", "/certs"))

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# #211: ECR repository + local registry push/pull + ECS task from the ECR URI.
-#   1) get-login-password, docker push, docker pull, describe-images
-#   2) execution role scoped to one repository ARN → task RUNNING (#709)
-#   3) same role pulling a different repository → STOPPED (#709)
-#   4) execution role without ecr:BatchGetImage → STOPPED
+# #211 / #218 / #709: ECR repositoryUri hostname push/pull + scoped ARN ECS pull.
+#   1) get-login-password, docker login/push/pull via repositoryUri host (#218)
+#   2) plain 127.0.0.1:5000 still works; describe-images
+#   3) execution role scoped to one repository ARN → task RUNNING (#709)
+#   4) same role pulling a different repository → STOPPED (#709)
+#   5) execution role without ecr:BatchGetImage → STOPPED
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -16,7 +17,7 @@ EP="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 REGION="${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}"
 KEY="${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}"
 SECRET="${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}"
-REGISTRY="${AWSBOX_ECR_REGISTRY:-127.0.0.1:5000}"
+REGISTRY="${AWSBOX_ECR_REGISTRY:-127.0.0.1:${STACKWRANGLER_ECR_HOST_PORT:-${AWSBOX_ECR_HOST_PORT:-5000}}}"
 TS="$(date +%s)"
 KEEP="${AWSBOX_AUTHZ_KEEP:-0}"
 
@@ -56,6 +57,7 @@ cleanup() {
 	aws ecr delete-repository --repository-name "$REPO_OTHER" --force >/dev/null 2>&1 || true
 	docker rmi "${REGISTRY}/${REPO}:latest" >/dev/null 2>&1 || true
 	docker rmi "${REGISTRY}/${REPO_OTHER}:latest" >/dev/null 2>&1 || true
+	[[ -n "${URI:-}" ]] && docker rmi "${URI}:latest" >/dev/null 2>&1 || true
 	rm -rf "$BUILD"
 	if [[ "${DOCKER_CONFIG:-}" == /tmp/* ]]; then
 		rm -rf "$DOCKER_CONFIG"
@@ -80,24 +82,31 @@ if ! echo "$URI" | grep -qE '^[0-9]+\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/'; th
 	echo "FAIL: repositoryUri is not an ECR hostname: ${URI}" >&2
 	exit 1
 fi
+URI_HOST="${URI%%/*}"
 
 PASS="$(aws ecr get-login-password)"
 if [[ -z "$PASS" ]]; then
 	echo "FAIL: get-login-password empty" >&2
 	exit 1
 fi
-echo "$PASS" | docker login --username AWS --password-stdin "$REGISTRY" >/dev/null 2>&1
 
+# #218: hosts + docker certs.d for the repositoryUri hostname (TLS on ecr-hostname).
+"$ROOT/bin/stackwrangler-hosts" ecr-apply
+echo "$PASS" | docker login --username AWS --password-stdin "$URI_HOST" >/dev/null
 echo "$TOKEN" > "${BUILD}/index.html"
 cat > "${BUILD}/Dockerfile" <<'EOF'
 FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/index.html
 EOF
-docker build -t "${REGISTRY}/${REPO}:latest" "$BUILD" >/dev/null 2>&1
-docker push "${REGISTRY}/${REPO}:latest" >/dev/null
-docker rmi "${REGISTRY}/${REPO}:latest" >/dev/null
+docker build -t "${URI}:latest" "$BUILD" >/dev/null 2>&1
+docker push "${URI}:latest" >/dev/null
+docker rmi "${URI}:latest" >/dev/null
+docker pull "${URI}:latest" >/dev/null
+echo "OK: docker login/push/pull ${URI}:latest (#218)"
+
+# Same blobs via loopback HTTP (ECS rewrite target).
 docker pull "${REGISTRY}/${REPO}:latest" >/dev/null
-echo "OK: docker push/pull ${REGISTRY}/${REPO}:latest"
+echo "OK: docker pull ${REGISTRY}/${REPO}:latest"
 
 DESCRIBED=""
 for _ in $(seq 1 30); do

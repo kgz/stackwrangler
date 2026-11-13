@@ -94,6 +94,8 @@ On first `up`, the orchestrator copies defaults into `$STACKWRANGLER_HOME/.env` 
 | `STACKWRANGLER_LOCALEMU_HOST_PORT` | `4566` | LocalEmu gateway |
 | `STACKWRANGLER_CONSOLE_HOST_PORT` | `3000` | nginx console |
 | `STACKWRANGLER_ECR_HOST_PORT` | `5000` | distribution registry |
+| `STACKWRANGLER_ECR_HOSTNAME_IMAGE` | `ghcr.io/kgz/stackwrangler-ecr-hostname:latest` | TLS edge for `repositoryUri` docker push (#218) |
+| `STACKWRANGLER_ECR_HOSTNAME_IP` | `172.31.218.10` | fixed bridge IP for that edge (avoid host `:443`) |
 | `STACKWRANGLER_SFTP_HOST_PORT` | `2222` | Transfer native SFTP |
 | `STACKWRANGLER_ACCESS_KEY` / `SECRET_KEY` | product defaults | also written into profile `local` |
 
@@ -132,6 +134,7 @@ Or the same args via `docker run … ghcr.io/kgz/stackwrangler:latest down -v`.
 | `ghcr.io/kgz/stackwrangler-localemu` | LocalEmu + baked patches |
 | `ghcr.io/kgz/stackwrangler-console` | Static Vite build + nginx `/aws-iam` proxy |
 | `ghcr.io/kgz/stackwrangler-ecr` | `registry:2` + ECR notify config |
+| `ghcr.io/kgz/stackwrangler-ecr-hostname` | TLS `:443` → registry for `repositoryUri` hostnames (#218) |
 
 Published by [`.github/workflows/publish-images.yml`](../.github/workflows/publish-images.yml) on `v*.*.*` tags (and `workflow_dispatch`).
 
