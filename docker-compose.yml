@@ -135,7 +135,7 @@ services:
       - ./localemu-patches/esm_common.py:/opt/awsbox/esm/awsbox_esm_common.py:ro
       # Shared ECR BatchGetImage + local-registry rewrite (#211 / #219)
       - ./localemu-patches/ecr_pull.py:/opt/awsbox/ecr/awsbox_ecr_pull.py:ro
-      # Gateway HTTPS CA + leaf for ECS AWS_ENDPOINT_URL (#687)
+      # Gateway HTTPS CA + leaf for ECS/Lambda/EC2 AWS_ENDPOINT_URL (#687/#696)
       - ./localemu-patches/gateway_tls.py:/opt/awsbox/tls/awsbox_gateway_tls.py:ro
 
       # Private hosted zones (#206): answered by the same process as VPCE DNS (vpce_private_dns serve)

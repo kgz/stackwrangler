@@ -4,15 +4,20 @@ The image binds IMDS to 127.0.0.1 and points the per-VPC sidecar at
 host.docker.internal. On Linux that address is the bridge gateway, not
 the emulator container, so IMDSv2 returns 502. EC2 containers also
 cannot open the published gateway port when it is bound to 127.0.0.1
-on the host. Point both the sidecar and AWS_ENDPOINT_URL at this
-container's docker-network IP, and bind IMDS on 0.0.0.0.
+on the host. Point the sidecar at this container's docker-network IP,
+bind IMDS on 0.0.0.0, and give EC2 instances the same https
+``AWS_ENDPOINT_URL`` + gateway CA as ECS/Lambda (#696).
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 
 LOG = logging.getLogger("localemu.awsbox.ec2_imds")
+
+if "/opt/awsbox/tls" not in sys.path:
+    sys.path.insert(0, "/opt/awsbox/tls")
 
 _api_ip: str | None = None
 _api_net: str | None = None
@@ -47,8 +52,10 @@ def _self_api() -> tuple[str | None, str | None]:
 
 
 def _patch_container_wiring() -> None:
+    import awsbox_gateway_tls as gateway_tls
     from localemu import config as le_config
     from localemu.services.ec2.docker import imds_sidecar as sidecar
+    from localemu.utils.container_utils.container_client import VolumeMappings
     from localemu.utils.docker_utils import DOCKER_CLIENT
 
     port = le_config.GATEWAY_LISTEN[0].port
@@ -66,7 +73,27 @@ def _patch_container_wiring() -> None:
                 cfg.network = net
         elif ip and name.startswith("localemu-ec2-"):
             cfg.env_vars = dict(cfg.env_vars or {})
-            cfg.env_vars["AWS_ENDPOINT_URL"] = f"http://{ip}:{port}"
+            gateway_tls.apply_https_endpoint(cfg.env_vars, port=port)
+            gateway_tls.append_no_proxy(cfg.env_vars, ip)
+            volumes = cfg.volumes
+            if volumes is None:
+                volumes = VolumeMappings()
+                cfg.volumes = volumes
+            try:
+                gateway_tls.inject_task_tls_trust(cfg.env_vars, volumes)
+            except Exception:
+                LOG.warning(
+                    "ec2-imds: could not inject gateway CA into %s",
+                    name,
+                    exc_info=True,
+                )
+            flags = (cfg.additional_flags or "").strip()
+            host_flag = f"--add-host {gateway_tls.EMU_DNS_NAME}:{ip}"
+            if (
+                f"--add-host={gateway_tls.EMU_DNS_NAME}:" not in flags
+                and f"--add-host {gateway_tls.EMU_DNS_NAME}:" not in flags
+            ):
+                cfg.additional_flags = f"{flags} {host_flag}".strip()
         return orig_create(cfg)
 
     def start_container(container_name_or_id, *args, **kwargs):
