@@ -373,3 +373,4 @@
 712	in-review	LocalEmu S3 spool + body restore across recreate
 705	in-review	rds: stable selectable host port per DB instance
 716	in-review	Persistence: restored ECS tasks stay RUNNING/DEACTIVATING with no container
+717	in-review	Persistence: restored SQS event source mappings can't be deleted and block re-creating their stack
