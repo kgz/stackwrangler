@@ -149,6 +149,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Private names from an unassociated VPC | sad/other | covered | `./smokes/networking/r53-private-smoke.sh` |
 | **`route53:ListHostedZones` explicit deny** | sad/authz | covered | `./smokes/networking/r53-private-smoke.sh` |
 | Lambda `VpcConfig` private DNS | happy | missing | [#245](https://github.com/kgz/awsl/issues/245) |
+| ECS host/bridge service+task omit empty `networkConfiguration` | happy | covered | `./smokes/compute/ecs-empty-networkconfig-smoke.sh` · [#708](https://github.com/kgz/stackwrangler/issues/708) |
 | ECS EC2 bridge service behind an internal NLB (2 tasks) | happy | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
 | ECS task killed → replaced and re-registered in the target group | happy | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
 | ECS container instance from an ASG + launch template | happy | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
