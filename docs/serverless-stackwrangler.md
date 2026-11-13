@@ -105,7 +105,7 @@ aws ssm put-parameter --name /demo/sls4/dev/app-name --type String --value my-ap
 ./bin/stackwrangler sls --cwd examples/serverless-v4-sns-sqs/consumer -- deploy --stage local
 ```
 
-`sls` / `ensure_aws_redirect` bring up **only** the `aws-redirect` container (`--no-deps`). They fail if LocalEmu is not already running, so a user compose override (e.g. `PERSISTENCE=1`, state volume) is not stripped mid-deploy ([#714](https://github.com/kgz/awsl/issues/714)). Longer term: wire `STACKWRANGLER_COMPOSE_OVERRIDE` into `COMPOSE` ([#288](https://github.com/kgz/awsl/issues/288) / [#291](https://github.com/kgz/awsl/issues/291)).
+`sls` / `ensure_aws_redirect` bring up **only** the `aws-redirect` container (`--no-deps`). They fail if LocalEmu is not already running, so a user compose override (e.g. `PERSISTENCE=1`, state volume) is not stripped mid-deploy ([#714](https://github.com/kgz/awsl/issues/714)). Smoke: `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh`. Longer term: wire `STACKWRANGLER_COMPOSE_OVERRIDE` into `COMPOSE` ([#288](https://github.com/kgz/awsl/issues/288) / [#291](https://github.com/kgz/awsl/issues/291)).
 
 Manual compose (optional): `docker compose --profile aws-redirect up -d --no-deps aws-redirect`.
 

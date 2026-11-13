@@ -258,8 +258,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN resource providers evaluate caller IAM (LogGroup DescribeLogGroups in stack events) | sad/authz | missing | [#524](https://github.com/kgz/awsl/issues/524) (from #522) |
 | aws-redirect DNS: AWS suffixes (A + dualstack AAAA) resolve only to the proxy — no public A/AAAA | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
 | aws-redirect TLS edge down → connection error (not real AWS auth) | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
-| `sls` / `ensure_aws_redirect` does not recreate LocalEmu (user compose override `PERSISTENCE` / volume kept) | happy | covered | `bin/stackwrangler` `--no-deps` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#714](https://github.com/kgz/awsl/issues/714) |
-| `ensure_aws_redirect` fails clearly when localstack is not running (does not start it) | sad/other | covered | `bin/stackwrangler` · [#714](https://github.com/kgz/awsl/issues/714) |
+| `sls` / `ensure_aws_redirect` does not recreate LocalEmu (user compose override `PERSISTENCE` / volume kept) | happy | covered | `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#714](https://github.com/kgz/awsl/issues/714) |
+| `ensure_aws_redirect` fails clearly when localstack is not running (does not start it) | sad/other | covered | `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh` · [#714](https://github.com/kgz/awsl/issues/714) |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
 | Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./smokes/iac/cfn-lifecycle-smoke.sh` |
