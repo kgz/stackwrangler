@@ -430,6 +430,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Terraform bootstrap state bucket + DynamoDB lock, then remote-state apply | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
 | Terraform second plan no-change with S3 backend on LocalEmu | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
 | Terraform backend smoke canary: real AWS STS succeeds → abort | sad/other | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
+| `up` runs `STACKWRANGLER_DEV_APPLY_HOOK` / `.awsbox/dev-apply-hook` after healthy | happy | covered | `./smokes/iac/dev-apply-hook-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
+| Failing / missing dev apply hook makes apply exit non-zero | sad/other | covered | `./smokes/iac/dev-apply-hook-smoke.sh` |
 
 ---
 
