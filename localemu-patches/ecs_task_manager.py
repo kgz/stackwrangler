@@ -25,6 +25,7 @@ from localemu.utils.container_utils.container_client import (
     BindMount,
     ContainerConfiguration,
     PortMappings,
+    Ulimit,
     VolumeMappings,
 )
 from localemu.utils.docker_utils import DOCKER_CLIENT
@@ -48,6 +49,43 @@ ECS_CONTAINER_LABEL = "localemu.service=ecs"
 _IMAGE_PULL_LOCKS_MAXSIZE = 64
 _image_pull_locks: dict[str, threading.Lock] = {}
 _image_pull_locks_lock = threading.Lock()
+
+
+def _apply_docker_mem_reservation(docker_name: str, mem_reservation: str) -> None:
+    """Apply ECS memoryReservation as Docker's soft MemoryReservation (#715).
+
+    ContainerConfiguration has no mem_reservation field; set it after create
+    via the SDK (preferred) or ``docker update`` fallback.
+    """
+    try:
+        client_factory = getattr(DOCKER_CLIENT, "client", None)
+        if callable(client_factory):
+            client_factory().containers.get(docker_name).update(
+                mem_reservation=mem_reservation
+            )
+            return
+    except Exception:
+        LOG.debug(
+            "SDK mem_reservation update failed for %s", docker_name, exc_info=True
+        )
+    try:
+        import subprocess
+
+        subprocess.run(
+            [
+                "docker",
+                "update",
+                f"--memory-reservation={mem_reservation}",
+                docker_name,
+            ],
+            check=False,
+            capture_output=True,
+            timeout=30,
+        )
+    except Exception:
+        LOG.debug(
+            "CLI mem_reservation update failed for %s", docker_name, exc_info=True
+        )
 
 
 @dataclass
@@ -101,11 +139,18 @@ class DockerTaskManager:
         self._recover_orphaned_containers()
 
     def _recover_orphaned_containers(self) -> None:
-        """Scan for labeled ECS containers left from a previous run (equivalent)."""
+        """Scan for labeled ECS containers left from a previous run.
+
+        Include stopped containers (``all=True``): with ``PERSISTENCE=1``
+        shutdown stops containers without removing them, and the post-load
+        reconciler ``docker start``s them. Running-only scans miss those
+        and leave moto tasks holding CPU/memory/ports with nothing behind
+        them (#716).
+        """
         try:
             containers = DOCKER_CLIENT.list_containers(
                 filter=["label=localemu.service=ecs"],
-                all=False,
+                all=True,
             )
             recovered = 0
             for container in containers:
@@ -117,11 +162,16 @@ class DockerTaskManager:
                 docker_name = container.get("name", "")
                 cluster = labels.get("localemu.cluster", "default")
                 task_id = task_arn.split("/")[-1] if "/" in task_arn else task_arn[:12]
+                state = container.get("state") or container.get("State") or ""
+                if isinstance(state, dict):
+                    running = bool(state.get("Running"))
+                else:
+                    running = str(state).lower() in ("running", "up")
                 ci = EcsContainerInfo(
                     container_name=c_name,
                     docker_name=docker_name,
                     image=container.get("image", ""),
-                    status="RUNNING",
+                    status="RUNNING" if running else "STOPPED",
                 )
                 if task_arn not in self._tasks:
                     self._tasks[task_arn] = EcsTaskInfo(
@@ -129,6 +179,7 @@ class DockerTaskManager:
                         task_id=task_id,
                         cluster_name=cluster,
                         task_definition_arn="",
+                        status="RUNNING" if running else "STOPPED",
                     )
                 self._tasks[task_arn].containers.append(ci)
                 recovered += 1
@@ -793,21 +844,31 @@ class DockerTaskManager:
                     if not docker_network:
                         docker_network = "none"
 
-                # Extract CPU/memory limits from container definition
+                # Extract CPU/memory limits from container definition.
+                # AWS: memory = hard Docker mem_limit; memoryReservation = soft
+                # mem_reservation (placement + cgroup soft). Do not promote soft
+                # to hard — that OOM-kills bursts that survive on real ECS (#715).
                 cpu_shares = None
                 mem_limit = None
+                mem_reservation = None
                 container_cpu = cdef.get("cpu")
-                container_memory = cdef.get("memory") or cdef.get("memoryReservation")
+                hard_memory = cdef.get("memory")
+                soft_memory = cdef.get("memoryReservation")
                 if container_cpu:
                     # ECS cpu units map to Docker cpu_shares (1024 = 1 vCPU)
                     try:
                         cpu_shares = int(container_cpu)
                     except (ValueError, TypeError):
                         pass
-                if container_memory:
-                    # ECS memory is in MiB
+                # ECS memory values are MiB
+                if hard_memory:
                     try:
-                        mem_limit = f"{int(container_memory)}m"
+                        mem_limit = f"{int(hard_memory)}m"
+                    except (ValueError, TypeError):
+                        pass
+                if soft_memory:
+                    try:
+                        mem_reservation = f"{int(soft_memory)}m"
                     except (ValueError, TypeError):
                         pass
 
@@ -898,7 +959,64 @@ class DockerTaskManager:
                     )
                     if dns_ip:
                         additional_flags_parts.append(f"--dns {dns_ip}")
+                # #711: readonlyRootFilesystem is not mapped — LocalEmu
+                # parse_additional_flags rejects --read-only, and
+                # ContainerConfiguration has no rootfs read_only field.
                 additional_flags = " ".join(additional_flags_parts) if additional_flags_parts else None
+
+                # #711: containerDefinitions.user (uid / uid:gid / name / name:group)
+                container_user = cdef.get("user")
+                if container_user is not None:
+                    container_user = str(container_user).strip() or None
+
+                container_ulimits: list[Ulimit] | None = None
+                raw_ulimits = cdef.get("ulimits")
+                if isinstance(raw_ulimits, list) and raw_ulimits:
+                    parsed_ulimits: list[Ulimit] = []
+                    for u in raw_ulimits:
+                        if not isinstance(u, dict):
+                            continue
+                        name = u.get("name")
+                        soft = u.get("softLimit", u.get("soft"))
+                        hard = u.get("hardLimit", u.get("hard"))
+                        if name is None or soft is None:
+                            continue
+                        try:
+                            soft_i = int(soft)
+                            hard_i = int(hard) if hard is not None else None
+                        except (TypeError, ValueError):
+                            continue
+                        parsed_ulimits.append(
+                            Ulimit(
+                                name=str(name),
+                                soft_limit=soft_i,
+                                hard_limit=hard_i,
+                            )
+                        )
+                    if parsed_ulimits:
+                        container_ulimits = parsed_ulimits
+
+                # User dockerLabels first; reserved localemu.* always win
+                # so task-role reminting (#79) and filters stay intact.
+                container_labels: dict[str, str] = {}
+                docker_labels = cdef.get("dockerLabels")
+                if isinstance(docker_labels, dict):
+                    for dk, dv in docker_labels.items():
+                        container_labels[str(dk)] = str(dv)
+                container_labels.update({
+                    "localemu.service": "ecs",
+                    "localemu.cluster": cluster_name,
+                    "localemu.task-arn": effective_arn,
+                    "localemu.container-name": c_name,
+                    "localemu.network-mode": network_mode,
+                    # #79: task-role is persisted on the container so
+                    # the on-load reconciler can re-mint creds.
+                    "localemu.task-role-arn": task_role_arn or "",
+                })
+
+                workdir = cdef.get("workingDirectory") or None
+                if workdir is not None:
+                    workdir = str(workdir).strip() or None
 
                 # Container config
                 container_config = ContainerConfiguration(
@@ -916,21 +1034,16 @@ class DockerTaskManager:
                     cpu_shares=cpu_shares,
                     mem_limit=mem_limit,
                     additional_flags=additional_flags,
+                    user=container_user,
+                    privileged=bool(cdef.get("privileged")),
+                    ulimits=container_ulimits,
+                    workdir=workdir,
                     # #79/#154: NET_ADMIN for in-netns DNAT when the image
                     # has iptables; otherwise vpc_routing's alpine sidecar
                     # programs the same rule. SDKs require 169.254.170.2
                     # (not host.docker.internal) for the creds URI.
                     cap_add=["NET_ADMIN"],
-                    labels={
-                        "localemu.service": "ecs",
-                        "localemu.cluster": cluster_name,
-                        "localemu.task-arn": effective_arn,
-                        "localemu.container-name": c_name,
-                        "localemu.network-mode": network_mode,
-                        # #79: task-role is persisted on the container so
-                        # the on-load reconciler can re-mint creds.
-                        "localemu.task-role-arn": task_role_arn or "",
-                    },
+                    labels=container_labels,
                 )
 
                 LOG.info(
@@ -940,6 +1053,8 @@ class DockerTaskManager:
 
                 try:
                     DOCKER_CLIENT.create_container_from_config(container_config)
+                    if mem_reservation:
+                        _apply_docker_mem_reservation(docker_name, mem_reservation)
                     try:
                         DOCKER_CLIENT.start_container(docker_name)
                     except Exception as start_err:

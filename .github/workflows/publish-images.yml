@@ -75,6 +75,17 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-ecr:latest
           provenance: false
 
+      - name: Build and push ecr-hostname
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.ecr-hostname
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-ecr-hostname:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/stackwrangler-ecr-hostname:latest
+          provenance: false
+
       - name: Build and push console
         uses: docker/build-push-action@v6
         with:
@@ -141,7 +152,7 @@ jobs:
             echo ""
             echo "Tag: \`${{ steps.meta.outputs.tag }}\`"
             echo ""
-            for name in stackwrangler stackwrangler-localemu stackwrangler-console stackwrangler-ecr; do
+            for name in stackwrangler stackwrangler-localemu stackwrangler-console stackwrangler-ecr stackwrangler-ecr-hostname; do
               echo "### ${name}"
               docker buildx imagetools inspect "${{ env.REGISTRY }}/${{ env.OWNER }}/${name}:${{ steps.meta.outputs.tag }}" || true
               echo ""

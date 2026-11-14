@@ -1,0 +1,17 @@
+# Loaded only by `./bin/stackwrangler up --dev` (with docker-compose.yml).
+# Sets STACKWRANGLER_PERSISTENCE=1 via the CLI; mounts LocalEmu + ECR so state
+# survives `down` / `up --dev` and LocalEmu container recreate (#200 / #288).
+# Seaweed volume name is set by the CLI (STACKWRANGLER_SEAWEED_VOLUME=seaweed-data-dev).
+# RDS engine data lives in Docker volumes localemu-rds-<id>-data (not compose) —
+# survive LocalEmu recreate; wiped by `./bin/stackwrangler reset`.
+services:
+  localstack:
+    # ON_SHUTDOWN dill save needs more than compose's ~10s default (#289).
+    stop_grace_period: 90s
+    environment:
+      PERSISTENCE: "1"
+    volumes:
+      - ./.awsbox/dev/localemu:/var/lib/localemu
+  ecr-registry:
+    volumes:
+      - ./.awsbox/dev/ecr:/var/lib/registry

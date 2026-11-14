@@ -2,6 +2,58 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.0.7 — Dev persistence / local fidelity (2026-11-14)
+
+Persistent / always-on local env alongside hermetic test mode: opt-in LocalEmu restore, warm restart, mode CLI, plus ECS/RDS/IAM/ECR fidelity fixes that unblock real Terraform and Serverless stacks.
+
+### Dev mode / persistence
+
+- Opt-in persistence across LocalEmu recreate (`PERSISTENCE=1` / `up --dev`) ([#200](https://github.com/kgz/stackwrangler/issues/200))
+- Mode selection: `up --test` / `up --dev`, `reset`, keep-data smokes ([#288](https://github.com/kgz/stackwrangler/issues/288))
+- Warm restart: prebuilt images, preserve stopped EC2/ECS/RDS across `down`→`up --dev` ([#289](https://github.com/kgz/stackwrangler/issues/289))
+- Dev mode re-applies IaC on up (apply hook) ([#290](https://github.com/kgz/stackwrangler/issues/290))
+- Persist Seaweed/LocalEmu S3 storage across recreate ([#712](https://github.com/kgz/stackwrangler/issues/712))
+- Restored Lambda: UpdateFunctionCode / delete after Failed restore ([#713](https://github.com/kgz/stackwrangler/issues/713))
+- Stop ghost ECS tasks on persist restore ([#716](https://github.com/kgz/stackwrangler/issues/716))
+- Drop unrestored SQS ESMs so delete/recreate works after persist ([#717](https://github.com/kgz/stackwrangler/issues/717))
+- `sls` / aws-redirect no longer recreates LocalEmu without the user’s compose override ([#714](https://github.com/kgz/stackwrangler/issues/714))
+
+### Compute / ECR / ECS
+
+- ECR IAM checks repository ARN (not account `*`) ([#709](https://github.com/kgz/stackwrangler/issues/709))
+- Docker push/pull via `repositoryUri` hostname ([#218](https://github.com/kgz/stackwrangler/issues/218))
+- Omit empty `networkConfiguration` for host/bridge ([#708](https://github.com/kgz/stackwrangler/issues/708))
+- `memoryReservation` as soft Docker limit; EC2 task defs accept reservation-only ([#715](https://github.com/kgz/stackwrangler/issues/715), [#707](https://github.com/kgz/stackwrangler/issues/707))
+- Honor `containerDefinitions.user` (+ privileged / ulimits / dockerLabels / workingDirectory) ([#711](https://github.com/kgz/stackwrangler/issues/711))
+- Lambda and EC2 get `https://` `AWS_ENDPOINT_URL` + gateway CA ([#696](https://github.com/kgz/stackwrangler/issues/696))
+
+### RDS / data
+
+- Pin engine versions to exact Docker tags; reject unknowns ([#704](https://github.com/kgz/stackwrangler/issues/704))
+- Stable, selectable host port per DB instance ([#705](https://github.com/kgz/stackwrangler/issues/705))
+- Parameter groups: `Source=user` for Terraform converge ([#710](https://github.com/kgz/stackwrangler/issues/710))
+- Apply DB / cluster parameter groups to Docker containers ([#703](https://github.com/kgz/stackwrangler/issues/703))
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS S3, ECR registry, AWS profile `local` (CLI), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.0.7
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.7 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
+
+`./bin/stackwrangler up --dev` keeps LocalEmu/Seaweed state across `down`; `./bin/stackwrangler reset` wipes it. Docs: [dev-mode.md](https://github.com/kgz/stackwrangler/blob/main/docs/dev-mode.md).
+
+Optional thin host CLI: [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.7/stackwrangler).
+
 ## v0.0.6 — Maturity / testing (2026-11-11)
 
 Close high-impact fidelity gaps on the core hosting path (ECR, ECS, CFN, Route 53, security groups) so local behaviour matches AWS on the smokes we ship, and grow dual-side cheap parity for the ones that stay under cents.

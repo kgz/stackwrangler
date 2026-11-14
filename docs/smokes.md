@@ -38,7 +38,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/transfer/` | `transfer-*` |
 | `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `iam-role-path-arn-smoke.sh`, `iam-policy-arn-condition-smoke.sh`, `lambda-esm-mapping-arn-smoke.sh`, `lambda-esm-function-arn-smoke.sh`, `iam-alarm-sns-sub-arn-smoke.sh`, `scheduler-iam-arns-smoke.sh`, `ec2-vpc-condition-keys-smoke.sh`, `api-call-log-*.sh` |
 | `smokes/s3/` | `s3-*` (including `s3-parity.sh`) |
-| `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `iac-smoke.sh` |
+| `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `dev-apply-hook-smoke.sh`, `iac-smoke.sh` |
 | `smokes/account/` | `mirror-*`, `custom-id-*`, `labels-*` |
 | `smokes/parity/` | `aws-parity-*` (legacy); dual-target `checks/*` + `catalog.yaml` via [`bin/parity`](../bin/parity) — [parity-suites.md](parity-suites.md) |
 | `smokes/logs/` | `logs-*` (CloudWatch Logs catalogue) |

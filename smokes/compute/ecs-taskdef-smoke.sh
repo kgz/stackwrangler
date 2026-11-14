@@ -5,6 +5,7 @@
 #   3) host networkMode + portMappings starts and listens on host port
 #   4) failed container create → STOPPED + stoppedReason
 # #685: entryPoint overrides image ENTRYPOINT (docker --entrypoint)
+# #711: containerDefinitions.user → docker Config.User (not image default)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -361,4 +362,85 @@ if [[ "$EP_INSPECT" != *'sh'* ]]; then
 fi
 echo "OK: entryPoint overrides image ENTRYPOINT (${EP_INSPECT})"
 
-echo "OK: ecs taskdef smoke (secrets / deny / host / failed-start / entryPoint)"
+# --- 6) containerDefinitions.user → docker Config.User (#711) ---
+FAMILY_USER="awsbox-ecs-user-${TS}"
+CDEFS_USER=$(cat <<EOF
+[{
+  "name": "probe",
+  "image": "alpine:3.20",
+  "essential": true,
+  "memory": 64,
+  "user": "1000:1000",
+  "command": ["sh", "-c", "id; sleep 60"]
+}]
+EOF
+)
+
+aws ecs register-task-definition \
+	--family "$FAMILY_USER" \
+	--requires-compatibilities EC2 \
+	--network-mode host \
+	--container-definitions "$CDEFS_USER" \
+	>/dev/null
+
+USER_STORED="$(
+	aws ecs describe-task-definition --task-definition "$FAMILY_USER" \
+		--query 'taskDefinition.containerDefinitions[0].user' --output text
+)"
+if [[ "$USER_STORED" != "1000:1000" ]]; then
+	echo "FAIL: describe-task-definition user mismatch, got: ${USER_STORED}" >&2
+	exit 1
+fi
+
+USER_TASK="$(
+	aws ecs run-task \
+		--cluster "$CLUSTER" \
+		--task-definition "$FAMILY_USER" \
+		--launch-type EC2 \
+		--query 'tasks[0].taskArn' --output text
+)"
+TASK_ARNS+=("$USER_TASK")
+
+USER_STATUS=""
+for _ in $(seq 1 60); do
+	USER_STATUS="$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$USER_TASK" --query 'tasks[0].lastStatus' --output text)"
+	[[ "$USER_STATUS" == "RUNNING" || "$USER_STATUS" == "STOPPED" ]] && break
+	sleep 1
+done
+if [[ "$USER_STATUS" != "RUNNING" ]]; then
+	aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$USER_TASK" >&2
+	echo "FAIL: user task not RUNNING (status=${USER_STATUS})" >&2
+	exit 1
+fi
+
+USER_DOCKER="$(
+	docker ps --filter "label=localemu.task-arn=${USER_TASK}" --filter "label=localemu.container-name=probe" \
+		--format '{{.ID}}' | head -1
+)"
+if [[ -z "$USER_DOCKER" ]]; then
+	USER_DOCKER="$(docker ps --filter "label=localemu.container-name=probe" --format '{{.ID}} {{.Labels}}' \
+		| awk -v arn="$USER_TASK" '$0 ~ arn {print $1; exit}')"
+fi
+if [[ -z "$USER_DOCKER" ]]; then
+	echo "FAIL: could not find docker container for user task ${USER_TASK}" >&2
+	exit 1
+fi
+
+USER_CFG="$(docker inspect -f '{{.Config.User}}' "$USER_DOCKER")"
+if [[ "$USER_CFG" != "1000:1000" ]]; then
+	echo "FAIL: expected Config.User=1000:1000, got: '${USER_CFG}'" >&2
+	exit 1
+fi
+
+USER_LOGS="$(docker logs "$USER_DOCKER" 2>&1 || true)"
+if ! echo "$USER_LOGS" | grep -q 'uid=1000'; then
+	echo "FAIL: container did not run as uid=1000; logs: ${USER_LOGS}" >&2
+	exit 1
+fi
+if ! echo "$USER_LOGS" | grep -q 'gid=1000'; then
+	echo "FAIL: container did not run as gid=1000; logs: ${USER_LOGS}" >&2
+	exit 1
+fi
+echo "OK: containerDefinitions.user → Config.User=${USER_CFG} (uid=1000 gid=1000)"
+
+echo "OK: ecs taskdef smoke (secrets / deny / host / failed-start / entryPoint / user)"

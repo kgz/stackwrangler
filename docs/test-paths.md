@@ -27,11 +27,21 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
+| Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| Dev keep-data: `up --dev` → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties | happy | covered | `./smokes/platform/mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
+| Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
+| Terraform S3+DDB empty plan after LocalEmu recreate | happy | debt | [#742](https://github.com/kgz/stackwrangler/issues/742) (from #200) |
+| RDS MySQL/Aurora SQL persist after LocalEmu recreate | happy | debt | [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200); Postgres covered by `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| Warm restart: `--dev` cleanup preserves EC2/ECS/RDS containers; prebuilt ec2-base + awsbox-rt; probe-only iptables | happy | covered | `./smokes/platform/warm-restart-smoke.sh` · [dev-mode.md](dev-mode.md) · [#289](https://github.com/kgz/stackwrangler/issues/289) |
+| Warm restart: `down` → `up --dev` keeps same EC2/ECS Docker container IDs | happy | covered | `./smokes/platform/warm-restart-smoke.sh` (live) · [#289](https://github.com/kgz/stackwrangler/issues/289); timed SLA → [#200](https://github.com/kgz/stackwrangler/issues/200) |
+| Warm restart: `reset --force` reclaim removes preserved workloads + orphan `localemu-vpc-*` | sad/other | covered | `./smokes/platform/warm-restart-smoke.sh` · [#289](https://github.com/kgz/stackwrangler/issues/289) |
 | Public path: cold dir + copied `install/stackwrangler up` (no monorepo compose) | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` · [docker-install.md](docker-install.md) |
 | Public path: console HTTP on release nginx image | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: `aws --profile local` sts + s3 ls after image up | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: orchestrator `up` without `/var/run/docker.sock` | sad/other | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./smokes/s3/s3-parity.sh` |
+| LocalEmu S3 `PERSISTENCE=1` recreate: GetObject + PutObject on restored bucket | happy | covered | `./smokes/s3/s3-persist-recreate-smoke.sh` · [#712](https://github.com/kgz/stackwrangler/issues/712) · [s3-backends.md](s3-backends.md) |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
 | IAM user + deny `s3:ListAllMyBuckets` → AccessDenied | sad/authz | covered | `./smokes/security/iam-access-denied.sh` + IAM console lab |
 | IAM SimulateCustomPolicy / SimulatePrincipalPolicy (allow, implicitDeny, explicitDeny, ContextEntries) | happy/authz | covered | `./smokes/security/iam-simulate-policy-smoke.sh` · matches enforcer, not real AWS simulator quirks |
@@ -71,6 +81,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./smokes/parity/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
 | Lambda invoke hello (basic role) | happy | covered | `./smokes/lambda/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./smokes/lambda/lambda-deploy-smoke.sh` |
+| Lambda UpdateFunctionCode after PERSISTENCE recreate (code missing → Failed) | happy | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` · [#713](https://github.com/kgz/stackwrangler/issues/713) |
+| Lambda delete-function after PERSISTENCE recreate with no version manager | sad/other | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` (wipe `s3_bodies` → Failed → delete) · [#713](https://github.com/kgz/stackwrangler/issues/713) |
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./smokes/lambda/lambda-authz-smoke.sh` |
 | Lambda role trust `aws:SourceAccount` = function account → CreateFunction ok; other account → refused; plain trust ok | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-condition-smoke.sh` |
 | Lambda role trust `aws:SourceArn` = function ARN → CreateFunction ok; other ARN → refused | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-sourcearn-smoke.sh` |
@@ -117,20 +129,26 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS `networkMode: host` + portMappings listens on host | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS `networkMode: host` task role: creds on host 127.0.0.1 (`AWS_CONTAINER_CREDENTIALS_FULL_URI`), endpoint on loopback, no DNAT | happy | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
 | ECS host task without a role gets no credentials env; another task id → 404 | sad/authz | covered | `./smokes/compute/ecs-host-creds-smoke.sh` |
+| ECS EC2 task with only `memoryReservation` bursts above reservation without OOM (#715) | happy | covered | `./smokes/compute/ecs-soft-memory-smoke.sh` |
+| ECS task with hard `memory` + soft `memoryReservation` sets both Docker HostConfig fields (#715) | sad | covered | `./smokes/compute/ecs-soft-memory-smoke.sh` |
 | ECS awsvpc task gets `https://localemu.awsbox:4566` + CA env; DenyNonSSL bucket allows task GetObject | happy | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
 | ECS task role over plain `http://` GetObject denied by bucket `aws:SecureTransport=false` Deny | sad/authz | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
 | ECS private awsvpc + tight egress SG + VPCEs: task-role creds + `AWS_ENDPOINT_URL` / S3 GetObject | happy | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
 | ECS tight egress SG without VPCEs: creds still work; `AWS_ENDPOINT_URL` times out | sad/other | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
-| Lambda (and EC2) `https` `AWS_ENDPOINT_URL` + CA for SecureTransport | happy | missing | [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
+| Lambda `https://localemu.awsbox:4566` + CA env/mount; DenyNonSSL bucket allows role GetObject | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
+| EC2 instance containers get same https `AWS_ENDPOINT_URL` + CA as ECS/Lambda | happy | covered | wiring in `localemu-patches/init/start.d/20-ec2-imds.py` · [#696](https://github.com/kgz/stackwrangler/issues/696) (no dedicated EC2 DenyNonSSL smoke; Lambda smoke covers SecureTransport path) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
-| ECR create-repository + `get-login-password` + docker push/pull `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
+| ECS task-def `user` (`1000:1000`) → docker Config.User / process uid | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#711) |
+| ECS persist reconcile: missing container → STOPPED + resources freed; stopped container resumed | happy | covered | `./smokes/compute/ecs-persist-reconcile-smoke.sh` · [#716](https://github.com/kgz/stackwrangler/issues/716) |
+| ECS ghost stop-task finishes STOPPED (not stuck DEACTIVATING) and new host-mode task places | sad/other | covered | `./smokes/compute/ecs-persist-reconcile-smoke.sh` · [#716](https://github.com/kgz/stackwrangler/issues/716) |
+| ECR create-repository + `get-login-password` + docker login/push/pull `repositoryUri` hostname + `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#218](https://github.com/kgz/awsl/issues/218) |
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
 | ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
 | ECR `delete-repository` + `create-repository` adopts tags still in the local registry | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
-| ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` | happy | covered | `./smokes/compute/ecr-smoke.sh` |
+| ECS task image `<account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>` with `ecr:BatchGetImage` on that repository ARN | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#709](https://github.com/kgz/stackwrangler/issues/709) |
+| **ECS execution role scoped to one repository ARN → denied pull of another repo** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` · [#709](https://github.com/kgz/stackwrangler/issues/709) |
 | **ECS execution role without `ecr:BatchGetImage` → task STOPPED** | sad/authz | covered | `./smokes/compute/ecr-smoke.sh` |
-| `docker push` of the ECR repositoryUri hostname | happy | missing | [#218](https://github.com/kgz/awsl/issues/218) |
 | Lambda `PackageType=Image` ECR pull with `ecr:BatchGetImage` | happy | covered | `./smokes/lambda/lambda-ecr-smoke.sh` |
 | **Lambda image role without `ecr:BatchGetImage` → cold start fails** | sad/authz | covered | `./smokes/lambda/lambda-ecr-smoke.sh` |
 | ECS in-container SDK via 169.254 creds URI (`AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` → DNAT → LocalEmu; empty task role PutObject AccessDenied; no host-side cred fetch) | sad/authz | covered | `./smokes/compute/ecs-authz-smoke.sh` |
@@ -147,6 +165,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Private names from an unassociated VPC | sad/other | covered | `./smokes/networking/r53-private-smoke.sh` |
 | **`route53:ListHostedZones` explicit deny** | sad/authz | covered | `./smokes/networking/r53-private-smoke.sh` |
 | Lambda `VpcConfig` private DNS | happy | missing | [#245](https://github.com/kgz/awsl/issues/245) |
+| ECS host/bridge service+task omit empty `networkConfiguration` | happy | covered | `./smokes/compute/ecs-empty-networkconfig-smoke.sh` · [#708](https://github.com/kgz/stackwrangler/issues/708) |
 | ECS EC2 bridge service behind an internal NLB (2 tasks) | happy | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
 | ECS task killed → replaced and re-registered in the target group | happy | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
 | ECS container instance from an ASG + launch template | happy | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
@@ -258,6 +277,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN resource providers evaluate caller IAM (LogGroup DescribeLogGroups in stack events) | sad/authz | missing | [#524](https://github.com/kgz/awsl/issues/524) (from #522) |
 | aws-redirect DNS: AWS suffixes (A + dualstack AAAA) resolve only to the proxy — no public A/AAAA | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
 | aws-redirect TLS edge down → connection error (not real AWS auth) | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-awsbox.md](serverless-awsbox.md) · [#464](https://github.com/kgz/awsl/issues/464) |
+| `sls` / `ensure_aws_redirect` does not recreate LocalEmu (user compose override `PERSISTENCE` / volume kept) | happy | covered | `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#714](https://github.com/kgz/awsl/issues/714) |
+| `ensure_aws_redirect` fails clearly when localstack is not running (does not start it) | sad/other | covered | `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh` · [#714](https://github.com/kgz/awsl/issues/714) |
 | Serverless v3 http-event REQUEST authorizer | happy | missing | [#328](https://github.com/kgz/awsl/issues/328) |
 | Serverless v3 smoke deliberate failure | sad/other | missing | [#330](https://github.com/kgz/awsl/issues/330) |
 | CFN failed create → `ROLLBACK_COMPLETE`, created resources removed, delete + recreate | sad/other | covered | `./smokes/iac/cfn-lifecycle-smoke.sh` |
@@ -298,6 +319,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | SQS → Lambda unknown itemIdentifier fails whole batch → DLQ | sad/other | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda without ReportBatchItemFailures ignores response body | sad/other | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./smokes/lambda/sqs-lambda-esm-enable-smoke.sh` |
+| LocalEmu SQS ESM `PERSISTENCE=1` recreate: orphan mapping deletable / re-creatable | happy | covered | `./smokes/lambda/sqs-esm-persist-recreate-smoke.sh` · [#717](https://github.com/kgz/stackwrangler/issues/717) |
 | SQS → Lambda ESM keeps delivering past STS session expiry (short `AWSBOX_STS_ASSUME_ROLE_DURATION`) | happy | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | SQS → Lambda ESM role deleted after create → `LastProcessingResult` PROBLEM (not stuck `None`) | sad/other | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | Kinesis / DynamoDB stream → Lambda ESM keeps delivering past STS session expiry | happy | covered | `./smokes/lambda/stream-lambda-esm-cred-refresh-smoke.sh` · [#477](https://github.com/kgz/awsl/issues/477) |
@@ -409,12 +431,19 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Transfer connector retrieve / AS2 | happy | missing | [#314](https://github.com/kgz/awsl/issues/314) |
 | Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./smokes/data/rds-smoke.sh` |
+| RDS stable host port (`--port` / tag, reboot keep, conflict; CreateDBCluster unpinned ≠ 3306/5432 + pinned writer) | happy+sad | covered | `./smokes/data/rds-stable-host-port-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| RDS host port survives LocalEmu restart + PERSISTENCE recreate | happy | covered | `./smokes/data/rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
 | **RDS wrong password → auth denied** | sad/authz | covered | `./smokes/data/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **Aurora MySQL reader rejects writes** | sad/other | covered | `./smokes/data/rds-mysql-smoke.sh` |
+| RDS EngineVersion → pinned Docker image (`mysql:8.0.37`, Aurora 3.05.2 → `mysql:8.0.32`) | happy | covered | `./smokes/data/rds-engine-version-smoke.sh` · [rds.md](rds.md) · [#704](https://github.com/kgz/stackwrangler/issues/704) |
+| **RDS unknown EngineVersion → InvalidParameterCombination** | sad/other | covered | `./smokes/data/rds-engine-version-smoke.sh` |
+| RDS engine map vs `describe-db-engine-versions` testdata | happy | covered | `./bin/check-rds-engine-map.sh` |
+| RDS parameter group Terraform converge (`Source=user`) | happy | covered | `./smokes/data/rds-parameter-group-smoke.sh` · [#710](https://github.com/kgz/stackwrangler/issues/710) |
+| RDS DB / cluster parameter groups → container | happy | covered | `./smokes/data/rds-param-groups-smoke.sh` · [#703](https://github.com/kgz/stackwrangler/issues/703) |
 | Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
@@ -430,6 +459,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Terraform bootstrap state bucket + DynamoDB lock, then remote-state apply | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
 | Terraform second plan no-change with S3 backend on LocalEmu | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
 | Terraform backend smoke canary: real AWS STS succeeds → abort | sad/other | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
+| `up` runs `STACKWRANGLER_DEV_APPLY_HOOK` / `.awsbox/dev-apply-hook` after healthy | happy | covered | `./smokes/iac/dev-apply-hook-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
+| Failing / missing dev apply hook makes apply exit non-zero | sad/other | covered | `./smokes/iac/dev-apply-hook-smoke.sh` |
 
 ---
 
@@ -440,13 +471,20 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./smokes/lambda/lambda-smoke.sh           # happy
 ./smokes/lambda/lambda-authz-smoke.sh     # sad/authz
+./smokes/lambda/lambda-secure-transport-smoke.sh  # https endpoint + DenyNonSSL (#696)
 ./smokes/security/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
 ./smokes/security/resource-policy-cross-account-smoke.sh # A role vs B secret/key/bucket policies
 ./smokes/transfer/transfer-key-smoke.sh
 ./smokes/transfer/transfer-dataplane-smoke.sh
 ./smokes/transfer/transfer-connector-smoke.sh
 ./smokes/data/rds-smoke.sh              # needs psql
+./smokes/data/rds-stable-host-port-smoke.sh  # needs psql · #705
+./smokes/data/rds-host-port-restart-persist-smoke.sh  # PERSISTENCE=1 restart+recreate · #705
 ./smokes/data/rds-mysql-smoke.sh        # needs mysql
+./smokes/data/rds-engine-version-smoke.sh  # pinned images + unknown reject
+./bin/check-rds-engine-map.sh           # map vs testdata (no stack)
+./smokes/data/rds-parameter-group-smoke.sh  # TF converge (#710)
+./smokes/data/rds-param-groups-smoke.sh # needs mysql + psql (#703)
 # …add others as you touch a surface
 ```
 

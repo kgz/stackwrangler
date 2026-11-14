@@ -6,6 +6,10 @@ FROM localemu/localemu@${LOCALEMU_DIGEST}
 USER root
 
 COPY localemu-patches/s3control_provider.py /opt/code/localemu/src/localemu/services/s3control/provider.py
+COPY localemu-patches/rds_engine_mapping.py /opt/code/localemu/src/localemu/services/rds/docker/engine_mapping.py
+COPY localemu-patches/s3_storage_ephemeral.py /opt/code/localemu/src/localemu/services/s3/storage/ephemeral.py
+COPY localemu-patches/state_persistence.py /opt/code/localemu/src/localemu/state/persistence.py
+COPY localemu-patches/lambda_service.py /opt/code/localemu/src/localemu/services/lambda_/invocation/lambda_service.py
 COPY localemu-patches/init/boot.d /etc/localemu/init/boot.d
 COPY localemu-patches/init/start.d /etc/localemu/init/start.d
 COPY localemu-patches/wheels /opt/awsbox/wheels
@@ -23,6 +27,9 @@ COPY localemu-patches/cfn_v2_provider.py /opt/code/localemu/src/localemu/service
 COPY localemu-patches/cfn_change_set_model_executor.py /opt/code/localemu/src/localemu/services/cloudformation/engine/v2/change_set_model_executor.py
 COPY localemu-patches/cfn_deploy_credentials.py /opt/code/localemu/src/localemu/services/cloudformation/cfn_deploy_credentials.py
 COPY localemu-patches/vpc_routing.py /opt/code/localemu/src/localemu/services/ec2/docker/vpc_routing.py
+COPY localemu-patches/base_image.py /opt/code/localemu/src/localemu/services/ec2/docker/base_image.py
+COPY docker/Dockerfile.ec2-base /opt/awsbox/docker/Dockerfile.ec2-base
+COPY docker/Dockerfile.awsbox-rt /opt/awsbox/docker/Dockerfile.awsbox-rt
 COPY localemu-patches/sg_enforcement.py /opt/code/localemu/src/localemu/services/ec2/docker/sg_enforcement.py
 COPY localemu-patches/vpce_private_dns.py /opt/code/localemu/src/localemu/services/ec2/docker/vpce_private_dns.py
 COPY localemu-patches/vpc_endpoint.py /opt/code/localemu/src/localemu/services/ec2/docker/vpc_endpoint.py

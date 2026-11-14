@@ -134,6 +134,8 @@ export_image_defaults() {
 
 # shellcheck disable=SC1091
 source "$OPT_ROOT/bin/stackwrangler-wait-healthy.sh"
+# shellcheck disable=SC1091
+source "$OPT_ROOT/bin/stackwrangler-dev-apply-hook.sh"
 
 write_profile() {
 	# Reuse checkout profile helper with ROOT=DATA so it reads DATA/.env
@@ -150,6 +152,8 @@ cmd_up() {
 	export_image_defaults
 	"${COMPOSE[@]}" up -d
 	wait_healthy
+	# Optional IaC re-apply after healthy (#290). Prefer STACKWRANGLER_DEV_APPLY_HOOK.
+	STACKWRANGLER_DEV_APPLY_HOOK_ROOT="$DATA" run_dev_apply_hook
 	write_profile "$@"
 	local ep iam cu
 	ep="$(endpoint_url)"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # stackwrangler — local AWS stack lifecycle (SeaweedFS S3 + LocalEmu + console).
-# Usage: stackwrangler up | down | status | console | hosts | mirror | apply …
+# Usage: stackwrangler up [--test|--dev] [--force] | down | reset | status | …
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -10,11 +10,59 @@ COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
 ENDPOINT_DEFAULT="http://127.0.0.1:8333"
 IAM_ENDPOINT_DEFAULT="http://127.0.0.1:4566"
 CONSOLE_PID_FILE="$ROOT/.awsbox/console.pid"
+MODE_FILE="$ROOT/.awsbox/mode"
+DEV_STATE_DIR="$ROOT/.awsbox/dev"
 
 
 STACKWRANGLER_ENV_DEFER=1
 # shellcheck disable=SC1091
 source "$ROOT/bin/stackwrangler-env.sh"
+
+# Recorded mode (test|dev). Default test — smokes stay hermetic.
+read_mode() {
+	local m=""
+	if [[ -f "$MODE_FILE" ]]; then
+		m="$(tr -d '[:space:]' <"$MODE_FILE" || true)"
+	fi
+	case "$m" in
+		dev | test) printf '%s\n' "$m" ;;
+		*) printf '%s\n' test ;;
+	esac
+}
+
+write_mode() {
+	mkdir -p "$(dirname "$MODE_FILE")"
+	printf '%s\n' "$1" >"$MODE_FILE"
+}
+
+# Rebuild COMPOSE + persistence env from recorded (or pending) mode.
+refresh_compose() {
+	local mode="${1:-}"
+	if [[ -z "$mode" ]]; then
+		mode="$(read_mode)"
+	fi
+	COMPOSE=(docker compose -f "$ROOT/docker-compose.yml")
+	export STACKWRANGLER_MODE="$mode"
+	# Legacy fallback used by some patches / docs.
+	export AWSBOX_MODE="$mode"
+	if [[ "$mode" == "dev" ]]; then
+		COMPOSE+=(-f "$ROOT/docker-compose.dev.yml")
+		export STACKWRANGLER_PERSISTENCE=1
+		export AWSBOX_PERSISTENCE=1
+		export STACKWRANGLER_SEAWEED_VOLUME=seaweed-data-dev
+		mkdir -p "$DEV_STATE_DIR/localemu" "$DEV_STATE_DIR/ecr"
+	else
+		export STACKWRANGLER_PERSISTENCE=0
+		export AWSBOX_PERSISTENCE=0
+		export STACKWRANGLER_SEAWEED_VOLUME=seaweed-data
+	fi
+}
+
+stack_containers_running() {
+	local ids
+	ids="$("${COMPOSE[@]}" ps -q 2>/dev/null || true)"
+	[[ -n "${ids//[$'\t\r\n']/}" ]]
+}
 
 load_root_env() {
 	if [[ -f "$ROOT/.env" ]]; then
@@ -58,6 +106,8 @@ iam_endpoint_url() {
 
 # shellcheck disable=SC1091
 source "$ROOT/bin/stackwrangler-wait-healthy.sh"
+# shellcheck disable=SC1091
+source "$ROOT/bin/stackwrangler-dev-apply-hook.sh"
 
 sftp_host_port() {
 	local from_file
@@ -208,15 +258,36 @@ free_sftp_host_port() {
 	return 1
 }
 
+# Workload containers that survive ``down`` / ``up --dev`` (#289).
+warm_preserve_container() {
+	local name="${1:-}"
+	case "$name" in
+		localemu-ec2-* | localemu-ecs-* | localemu-rds-*) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
 # Drop leftover localemu-vpc-* / localemu-pcx-* bridges after compose down (#479).
 # Shared Docker hosts may have other worktrees: only force-remove containers that
 # belong to this compose project (or LocalEmu-owned sidecars), then delete networks
 # that have no remaining endpoints.
+#
+# ``--dev`` warm restart (#289): do not ``docker rm`` EC2/ECS/RDS workload
+# containers — LocalEmu persistence resumes them with ``docker start``. Pass
+# ``--force`` from ``reset`` (and test-mode defaults) to reclaim everything.
 cleanup_localemu_vpc_networks() {
 	local project net id name force_prefix
+	local force=0 preserve=0
 	local -a nets=() ids=()
+	if [[ "${1:-}" == "--force" ]]; then
+		force=1
+		shift
+	fi
 	if ! command -v docker >/dev/null 2>&1; then
 		return 0
+	fi
+	if [[ "$force" -eq 0 && "$(read_mode)" == "dev" ]]; then
+		preserve=1
 	fi
 	project="$(compose_project_name 2>/dev/null || true)"
 	force_prefix=""
@@ -227,10 +298,22 @@ cleanup_localemu_vpc_networks() {
 	[[ ${#nets[@]} -eq 0 ]] && return 0
 	for net in "${nets[@]}"; do
 		[[ -n "$net" ]] || continue
-		mapfile -t ids < <(docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null || true)
+		# network inspect Containers = running only. Include stopped via
+		# ``ps -aq --filter network=`` so --dev warm restart keeps bridges
+		# that still have stopped EC2/ECS/RDS endpoints (#289).
+		mapfile -t ids < <(
+			{
+				docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null || true
+				docker ps -aq --filter "network=$net" 2>/dev/null || true
+			} | awk 'NF && !seen[$0]++'
+		)
 		for id in "${ids[@]}"; do
 			[[ -n "$id" ]] || continue
 			name="$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##')" || name=""
+			if [[ "$preserve" -eq 1 ]] && warm_preserve_container "$name"; then
+				# Leave stopped/running for docker start on next boot.
+				continue
+			fi
 			if [[ -n "$force_prefix" && "$name" == "$force_prefix"* ]]; then
 				docker rm -f "$id" >/dev/null 2>&1 || true
 				continue
@@ -239,10 +322,33 @@ cleanup_localemu_vpc_networks() {
 				docker rm -f "$id" >/dev/null 2>&1 || true
 			fi
 		done
-		if [[ -z "$(docker network inspect "$net" --format '{{range $id, $c := .Containers}}{{println $id}}{{end}}' 2>/dev/null | awk 'NF{print; exit}')" ]]; then
+		if [[ -z "$(docker ps -aq --filter "network=$net" 2>/dev/null | awk 'NF{print; exit}')" ]]; then
 			docker network rm "$net" >/dev/null 2>&1 || true
 		fi
 	done
+}
+
+# Prebuilt images for private-net workloads (#289). Idempotent; builds only if missing.
+# Dockerfiles: docker/Dockerfile.ec2-base + docker/Dockerfile.awsbox-rt (shared with LocalEmu).
+ensure_warm_images() {
+	if ! command -v docker >/dev/null 2>&1; then
+		return 0
+	fi
+	local ec2_df rt_df
+	ec2_df="$ROOT/docker/Dockerfile.ec2-base"
+	rt_df="$ROOT/docker/Dockerfile.awsbox-rt"
+	if [[ ! -f "$ec2_df" || ! -f "$rt_df" ]]; then
+		echo "error: warm-restart Dockerfiles missing (#289): $ec2_df / $rt_df" >&2
+		return 1
+	fi
+	if ! docker image inspect localemu/ec2-base:v4 >/dev/null 2>&1; then
+		echo "Building localemu/ec2-base:v4 from docker/Dockerfile.ec2-base…"
+		docker build -t localemu/ec2-base:v4 -f "$ec2_df" "$ROOT/docker"
+	fi
+	if ! docker image inspect localemu/awsbox-rt:latest >/dev/null 2>&1; then
+		echo "Building localemu/awsbox-rt:latest from docker/Dockerfile.awsbox-rt…"
+		docker build -t localemu/awsbox-rt:latest -f "$rt_df" "$ROOT/docker"
+	fi
 }
 
 cmd_up() {
@@ -250,24 +356,86 @@ cmd_up() {
 		echo "error: Docker is required (not found on PATH)" >&2
 		exit 1
 	fi
+	local mode=test
+	local -a profile_args=()
+	local prev
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			--test)
+				mode=test
+				shift
+				;;
+			--dev)
+				mode=dev
+				shift
+				;;
+			--force)
+				profile_args+=(--force)
+				shift
+				;;
+			-h | --help)
+				echo "Usage: $0 up [--test|--dev] [--force]" >&2
+				echo "  --test  ephemeral (default); smokes use this" >&2
+				echo "  --dev   persistent LocalEmu/Seaweed/ECR state (docs/dev-mode.md)" >&2
+				return 0
+				;;
+			*)
+				echo "error: unknown up argument: $1 (expected --test|--dev|--force)" >&2
+				exit 1
+				;;
+		esac
+	done
+
 	ensure_env
 	# Host-owned so LocalEmu (uid 1000) can write elbv2.hosts; Docker root-creates if missing.
 	mkdir -p "$ROOT/.awsbox"
+
+	prev=""
+	if [[ -f "$MODE_FILE" ]]; then
+		prev="$(tr -d '[:space:]' <"$MODE_FILE" || true)"
+	fi
+	if [[ -n "$prev" && "$prev" != "$mode" ]]; then
+		# Refresh against previous mode so we see the running stack.
+		refresh_compose "$prev"
+		if stack_containers_running; then
+			echo "error: stack is up in ${prev} mode; run ./bin/stackwrangler down before switching to ${mode}" >&2
+			echo "  Modes keep separate state dirs/volumes — switching never silently carries data." >&2
+			exit 1
+		fi
+		echo "mode: ${prev} → ${mode} (separate state; no silent carry)"
+	fi
+
+	write_mode "$mode"
+	refresh_compose "$mode"
+
 	free_sftp_host_port
+	# Prebuilt EC2 base + route sidecar before workloads (private net / #289).
+	ensure_warm_images
 	# Orphans with no endpoints (and this project's leftover lambda containers).
+	# --dev preserves stopped EC2/ECS/RDS containers for warm restart (#289).
 	cleanup_localemu_vpc_networks
 	"${COMPOSE[@]}" up -d
 	wait_healthy
-	"$ROOT/bin/stackwrangler-profile" write "$@"
+	# Optional IaC re-apply after healthy (#290).
+	load_root_env
+	run_dev_apply_hook
+	"$ROOT/bin/stackwrangler-profile" write "${profile_args[@]+"${profile_args[@]}"}"
 	sync_console_env
 	local ep iam
 	ep="$(endpoint_url)"
 	iam="$(iam_endpoint_url)"
 	echo
+	echo "mode:     ${mode}"
 	echo "S3 API:   ${ep}"
 	echo "IAM/Lambda: ${iam}"
 	echo "Profile:  local  (aws --profile local s3 ls | lambda list-functions)"
 	echo "Console:  ./bin/stackwrangler console   → http://127.0.0.1:3000"
+	if [[ "$mode" == "dev" ]]; then
+		echo "persist:  on (LocalEmu → .awsbox/dev/localemu; Seaweed volume seaweed-data-dev)"
+		echo "          ./bin/stackwrangler down keeps state; ./bin/stackwrangler reset wipes it"
+	else
+		echo "persist:  off (test / hermetic)"
+	fi
 	# Prowler / S3 Control need awsbox.localhost (RFC 6761 often missing on minimal Linux).
 	if ! "$ROOT/bin/stackwrangler-hosts" check >/dev/null 2>&1; then
 		echo
@@ -276,18 +444,44 @@ cmd_up() {
 		echo "  ./bin/stackwrangler-hosts apply   # sudo append to /etc/hosts"
 		echo "  docs/prowler.md            # hosts / localhost notes (incl. Windows via WSL)"
 	fi
+	# ECR repositoryUri docker push needs hosts + docker certs.d (#218).
+	if ! "$ROOT/bin/stackwrangler-hosts" ecr-check >/dev/null 2>&1; then
+		echo
+		echo "ECR hostname: repositoryUri host not wired for docker push (#218)."
+		echo "  ./bin/stackwrangler-hosts ecr-print   # hosts + certs.d paths"
+		echo "  ./bin/stackwrangler-hosts ecr-apply   # sudo /etc/hosts + /etc/docker/certs.d"
+		echo "  tools/ecr-hostname-proxy/README.md"
+	fi
 }
 
 cmd_down() {
 	local remove_profile=0
+	local project ls_name stop_t
 	if [[ "${1:-}" == "--remove-profile" ]]; then
 		remove_profile=1
 		shift
 	fi
+	refresh_compose
 	if [[ -f "$CONSOLE_PID_FILE" ]]; then
 		kill "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null || true
 		rm -f "$CONSOLE_PID_FILE"
 	fi
+	# --dev warm restart (#289): LocalEmu persists ON_SHUTDOWN. Compose's default
+	# ~10s stop often kills before the dill save finishes, so the next up loads
+	# stale API state and never docker-starts preserved EC2/ECS containers.
+	if [[ "$(read_mode)" == "dev" ]]; then
+		project="$(compose_project_name 2>/dev/null || true)"
+		ls_name=""
+		if [[ -n "$project" ]]; then
+			ls_name="${project}-localstack-1"
+		fi
+		stop_t="${STACKWRANGLER_LOCALEMU_STOP_TIMEOUT:-${AWSBOX_LOCALEMU_STOP_TIMEOUT:-90}}"
+		if [[ -n "$ls_name" ]] && docker inspect "$ls_name" >/dev/null 2>&1; then
+			echo "dev: graceful LocalEmu stop (${stop_t}s) so ON_SHUTDOWN persist can finish…"
+			docker stop -t "$stop_t" "$ls_name" >/dev/null 2>&1 || true
+		fi
+	fi
+	# No -v: named volumes + .awsbox/dev survive for --dev warm restart.
 	"${COMPOSE[@]}" down "$@"
 	cleanup_localemu_vpc_networks
 	if [[ "$remove_profile" -eq 1 ]]; then
@@ -295,9 +489,97 @@ cmd_down() {
 	fi
 }
 
+# Deliberate wipe of persisted local state (dev + shared test volumes + RDS).
+# RDS Docker backends: containers localemu-rds-<id>, data volumes localemu-rds-<id>-data (#705/#200).
+wipe_localemu_rds_backends() {
+	local name vol
+	echo "reset: removing LocalEmu RDS containers + data volumes…"
+	while IFS= read -r name; do
+		[[ -n "$name" ]] || continue
+		case "$name" in
+			localemu-rds-*) docker rm -f "$name" 2>/dev/null || true ;;
+		esac
+	done < <(docker ps -a --format '{{.Names}}' 2>/dev/null || true)
+	while IFS= read -r vol; do
+		[[ -n "$vol" ]] || continue
+		case "$vol" in
+			localemu-rds-*-data) docker volume rm "$vol" 2>/dev/null || true ;;
+		esac
+	done < <(docker volume ls -q 2>/dev/null || true)
+}
+
+# Matrix: LocalEmu/.awsbox/dev + ECR bind + Seaweed named vols + localemu-rds-* (#200).
+# STACKWRANGLER_RESET_RDS_ONLY=1 — hermetic smoke path (no compose down / Seaweed wipe).
+cmd_reset() {
+	if ! command -v docker >/dev/null 2>&1; then
+		echo "error: Docker is required (not found on PATH)" >&2
+		exit 1
+	fi
+	if [[ "${STACKWRANGLER_RESET_RDS_ONLY:-}" == "1" ]]; then
+		wipe_localemu_rds_backends
+		echo "reset: done (RDS backends only; STACKWRANGLER_RESET_RDS_ONLY=1)"
+		return 0
+	fi
+	local mode project vol name
+	mode="$(read_mode)"
+	refresh_compose "$mode"
+	echo "reset: stopping stack (mode=${mode})…"
+	if [[ -f "$CONSOLE_PID_FILE" ]]; then
+		kill "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null || true
+		rm -f "$CONSOLE_PID_FILE"
+	fi
+	"${COMPOSE[@]}" down --remove-orphans 2>/dev/null || true
+	# Wipe workload containers + orphan VPC bridges even if mode was --dev.
+	cleanup_localemu_vpc_networks --force
+
+	echo "reset: wiping .awsbox/dev (LocalEmu state + ECR registry blobs)…"
+	# LocalEmu runs as root (docker.sock); TLS cache under .awsbox/dev can be root-owned.
+	if [[ -e "$DEV_STATE_DIR" ]] && ! rm -rf "$DEV_STATE_DIR" 2>/dev/null; then
+		docker run --rm \
+			-v "$ROOT/.awsbox:/awsbox" \
+			--entrypoint rm \
+			alpine:3.20 \
+			-rf /awsbox/dev
+	fi
+	rm -rf "$DEV_STATE_DIR" 2>/dev/null || true
+	mkdir -p "$ROOT/.awsbox"
+
+	echo "reset: removing Seaweed named volumes (test + dev)…"
+	for vol in seaweed-data seaweed-data-dev; do
+		docker volume rm "$vol" 2>/dev/null || true
+		# Compose prefixes project name: <project>_seaweed-data
+		project="$(compose_project_name 2>/dev/null || true)"
+		if [[ -n "$project" ]]; then
+			docker volume rm "${project}_${vol}" 2>/dev/null || true
+		fi
+	done
+	# Best-effort: any leftover project volumes (ECR named volumes if present).
+	if project="$(compose_project_name 2>/dev/null || true)" && [[ -n "$project" ]]; then
+		while IFS= read -r vol; do
+			[[ -n "$vol" ]] || continue
+			docker volume rm "$vol" 2>/dev/null || true
+		done < <(docker volume ls -q --filter "name=${project}_" 2>/dev/null || true)
+	fi
+
+	wipe_localemu_rds_backends
+
+	echo "reset: done (LocalEmu + Seaweed + ECR + RDS; docs/dev-mode.md)"
+	write_mode test
+	refresh_compose test
+}
+
 cmd_status() {
 	ensure_env
 	load_root_env
+	refresh_compose
+	local mode
+	mode="$(read_mode)"
+	echo "mode:     ${mode}"
+	if [[ "$mode" == "dev" ]]; then
+		echo "persist:  on (PERSISTENCE=1 · .awsbox/dev · seaweed-data-dev)"
+	else
+		echo "persist:  off (test)"
+	fi
 	"${COMPOSE[@]}" ps
 	local ep code iam labels
 	ep="$(endpoint_url)"
@@ -391,10 +673,26 @@ aws_redirect_tls_ready() {
 
 # Ensure aws-redirect (DNS + TLS edge) is up; print only its IPv4 on stdout.
 # Does not treat DNS-only as ready — TLS can be down while dnsmasq still answers.
+# Never starts or reconciles localstack: compose without a user override would
+# recreate LocalEmu and drop PERSISTENCE / volumes / restart policy (#714).
 ensure_aws_redirect() {
 	load_root_env
+	refresh_compose
 	mkdir -p "$ROOT/.awsbox/aws-redirect"
-	"${COMPOSE[@]}" --profile aws-redirect up -d --build aws-redirect >&2
+	local ls_id ls_running
+	ls_id="$("${COMPOSE[@]}" ps -q localstack 2>/dev/null | head -1 || true)"
+	ls_running=""
+	if [[ -n "$ls_id" ]]; then
+		ls_running="$(docker inspect -f '{{.State.Running}}' "$ls_id" 2>/dev/null || true)"
+	fi
+	if [[ "$ls_running" != "true" ]]; then
+		echo "error: localstack is not running; start the stack first (./bin/stackwrangler up)" >&2
+		echo "  aws-redirect will not start or recreate LocalEmu (preserves compose overrides; #714)" >&2
+		return 1
+	fi
+	# --no-deps: aws-redirect depends_on localstack; without this, compose
+	# reconciles localstack against the base file and recreates it.
+	"${COMPOSE[@]}" --profile aws-redirect up -d --build --no-deps aws-redirect >&2
 	local i id ip health
 	for i in $(seq 1 90); do
 		id="$("${COMPOSE[@]}" --profile aws-redirect ps -q aws-redirect 2>/dev/null | head -1 || true)"
@@ -769,6 +1067,9 @@ case "${1:-}" in
 		shift
 		cmd_down "$@"
 		;;
+	reset)
+		cmd_reset
+		;;
 	status)
 		cmd_status
 		;;
@@ -791,7 +1092,7 @@ case "${1:-}" in
 		exec "$ROOT/bin/awsl-mirror.sh" "$@"
 		;;
 	*)
-		echo "Usage: $0 up [--force] | down [--remove-profile] | status | console | calls […] | sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] -- … | hosts … | mirror … | apply <fixture>" >&2
+		echo "Usage: $0 up [--test|--dev] [--force] | down [--remove-profile] | reset | status | console | calls […] | sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] -- … | hosts … | mirror … | apply <fixture>" >&2
 		exit 1
 		;;
 esac

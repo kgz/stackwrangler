@@ -36,6 +36,9 @@ docker build \
 echo "building stackwrangler-ecr:${TAG}"
 docker build -f docker/Dockerfile.ecr -t "stackwrangler-ecr:${TAG}" .
 
+echo "building stackwrangler-ecr-hostname:${TAG}"
+docker build -f docker/Dockerfile.ecr-hostname -t "stackwrangler-ecr-hostname:${TAG}" .
+
 echo "building stackwrangler-console:${TAG}"
 docker build -f docker/Dockerfile.console -t "stackwrangler-console:${TAG}" .
 
@@ -53,6 +56,7 @@ Built:
   stackwrangler-localemu:${TAG}
   stackwrangler-console:${TAG}
   stackwrangler-ecr:${TAG}
+  stackwrangler-ecr-hostname:${TAG}
 
 Smoke (example — alternate ECR port if :5000 is busy):
   export STACKWRANGLER_IMAGE=stackwrangler:${TAG}
@@ -60,6 +64,7 @@ Smoke (example — alternate ECR port if :5000 is busy):
   export STACKWRANGLER_LOCALEMU_IMAGE=stackwrangler-localemu:${TAG}
   export STACKWRANGLER_CONSOLE_IMAGE=stackwrangler-console:${TAG}
   export STACKWRANGLER_ECR_IMAGE=stackwrangler-ecr:${TAG}
+  export STACKWRANGLER_ECR_HOSTNAME_IMAGE=stackwrangler-ecr-hostname:${TAG}
   export STACKWRANGLER_ECR_HOST_PORT=5050
   export COMPOSE_PROJECT_NAME=stackwrangler-local
   ./install/stackwrangler up

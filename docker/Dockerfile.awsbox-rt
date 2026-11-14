@@ -1,0 +1,6 @@
+# Single source of truth for localemu/awsbox-rt:latest (#289).
+# Built by bin/stackwrangler ensure_warm_images and LocalEmu _ensure_rt_image.
+FROM alpine:3.19
+RUN apk add --no-cache iptables iproute2 \
+    && rm -rf /var/cache/apk/*
+LABEL org.localemu.image-role="awsbox-route-sidecar"

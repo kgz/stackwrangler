@@ -18,6 +18,7 @@ Honest limits of this shape:
 - **Socket mount** — the orchestrator (and LocalEmu) can manage containers on your daemon. Treat it like any privileged local-dev tool.
 - **Published ports bind `127.0.0.1`** — fine on Linux; Docker Desktop / non-Linux networking may need docs from sibling Public OSS cards.
 - **Dual S3** still applies: console buckets → SeaweedFS `:8333`; many IaC/Lambda paths → LocalEmu S3 `:4566` ([s3-backends.md](s3-backends.md)).
+- **Test vs dev mode** — contributor CLI: `./bin/stackwrangler up --test` (default, ephemeral) or `up --dev` (persistent); `reset` wipes · [dev-mode.md](dev-mode.md). Public image path persistence knobs stay on [#200](https://github.com/kgz/stackwrangler/issues/200).
 - Console image bakes default credentials (`stackwrangler` / `stackwranglerstackwrangler`). Changing keys in `~/.stackwrangler/.env` updates profile `local` but not the baked SPA until a custom console image rebuild (contributor `Dockerfile.console` build args).
 - **Linux docker CLI inside LocalEmu** — contributor `docker-compose.yml` bind-mounts `${STACKWRANGLER_DOCKER_CLI:-/usr/bin/docker}` at `/usr/bin/docker` so LocalEmu can create VPC bridges and install ECS task-role DNAT. On Linux that default path is usually correct. Docker Desktop (macOS/Windows) ships a host-OS CLI that will **not** run inside the Linux LocalEmu container — download a static Linux `docker` binary for your CPU, point `STACKWRANGLER_DOCKER_CLI` at it, and recreate LocalEmu.
 
@@ -94,6 +95,8 @@ On first `up`, the orchestrator copies defaults into `$STACKWRANGLER_HOME/.env` 
 | `STACKWRANGLER_LOCALEMU_HOST_PORT` | `4566` | LocalEmu gateway |
 | `STACKWRANGLER_CONSOLE_HOST_PORT` | `3000` | nginx console |
 | `STACKWRANGLER_ECR_HOST_PORT` | `5000` | distribution registry |
+| `STACKWRANGLER_ECR_HOSTNAME_IMAGE` | `ghcr.io/kgz/stackwrangler-ecr-hostname:latest` | TLS edge for `repositoryUri` docker push (#218) |
+| `STACKWRANGLER_ECR_HOSTNAME_IP` | `172.31.218.10` | fixed bridge IP for that edge (avoid host `:443`) |
 | `STACKWRANGLER_SFTP_HOST_PORT` | `2222` | Transfer native SFTP |
 | `STACKWRANGLER_ACCESS_KEY` / `SECRET_KEY` | product defaults | also written into profile `local` |
 
@@ -132,6 +135,7 @@ Or the same args via `docker run … ghcr.io/kgz/stackwrangler:latest down -v`.
 | `ghcr.io/kgz/stackwrangler-localemu` | LocalEmu + baked patches |
 | `ghcr.io/kgz/stackwrangler-console` | Static Vite build + nginx `/aws-iam` proxy |
 | `ghcr.io/kgz/stackwrangler-ecr` | `registry:2` + ECR notify config |
+| `ghcr.io/kgz/stackwrangler-ecr-hostname` | TLS `:443` → registry for `repositoryUri` hostnames (#218) |
 
 Published by [`.github/workflows/publish-images.yml`](../.github/workflows/publish-images.yml) on `v*.*.*` tags (and `workflow_dispatch`).
 

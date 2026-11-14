@@ -2,14 +2,17 @@
 services:
   s3:
     image: chrislusf/seaweedfs:4.48
-    command: mini -dir=/data
+    # volume.max=0 (mini default) auto-sizes from free disk; on a nearly-full
+    # host that becomes 0 free volumes → PutObject InternalError. Pin a floor.
+    command: mini -dir=/data -volume.max=8
     environment:
       AWS_ACCESS_KEY_ID: ${STACKWRANGLER_ACCESS_KEY:-${AWSBOX_ACCESS_KEY:-stackwrangler}}
       AWS_SECRET_ACCESS_KEY: ${STACKWRANGLER_SECRET_KEY:-${AWSBOX_SECRET_KEY:-stackwranglerstackwrangler}}
     ports:
       - "127.0.0.1:${STACKWRANGLER_S3_HOST_PORT:-${AWSBOX_S3_HOST_PORT:-8333}}:8333"
     volumes:
-      - seaweed-data:/data
+      # --test uses seaweed-data; --dev uses seaweed-data-dev (docs/dev-mode.md).
+      - ${STACKWRANGLER_SEAWEED_VOLUME:-seaweed-data}:/data
     healthcheck:
       # any HTTP response (incl. 403) means S3 is listening
       test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:8333/ 2>&1 | grep -q 'HTTP/'"]
@@ -47,7 +50,8 @@ services:
       # Expire messages past MessageRetentionPeriod (AWS default behaviour; off in upstream LocalEmu).
       SQS_ENABLE_MESSAGE_RETENTION_PERIOD: "1"
       DEBUG: "0"
-      PERSISTENCE: "0"
+      # test (default): 0. --dev sets STACKWRANGLER_PERSISTENCE=1 + docker-compose.dev.yml mount.
+      PERSISTENCE: "${STACKWRANGLER_PERSISTENCE:-0}"
       GATEWAY_LISTEN: 0.0.0.0:4566
       AWS_DEFAULT_REGION: ${STACKWRANGLER_REGION:-${AWSBOX_REGION:-us-east-1}}
       # Key→account map (listed keys are root there; per-key wins); default account in ARNs.
@@ -88,8 +92,16 @@ services:
       # Multi-account (#213): localemu-patches/init/start.d/21-multi-account.py
       # Custom resource ids (#214): localemu-patches/init/start.d/20-custom-ids.py
       - ./localemu-patches/s3control_provider.py:/opt/code/localemu/src/localemu/services/s3control/provider.py:ro
+      # #712: LocalEmu S3 spool under /var/lib/localemu/s3 when PERSISTENCE=1;
+      # restore object bodies after S3 provider starts; mkdir restored bucket dirs.
+      - ./localemu-patches/s3_storage_ephemeral.py:/opt/code/localemu/src/localemu/services/s3/storage/ephemeral.py:ro
+      - ./localemu-patches/state_persistence.py:/opt/code/localemu/src/localemu/state/persistence.py:ro
+      # Persistence recreate: UpdateFunctionCode / delete without a running version (#713).
+      - ./localemu-patches/lambda_service.py:/opt/code/localemu/src/localemu/services/lambda_/invocation/lambda_service.py:ro
       - ./localemu-patches/init/boot.d:/etc/localemu/init/boot.d:ro
       - ./localemu-patches/init/start.d:/etc/localemu/init/start.d:ro
+      # RDS engine version → pinned Docker tags (#704)
+      - ./localemu-patches/rds_engine_mapping.py:/opt/code/localemu/src/localemu/services/rds/docker/engine_mapping.py:ro
       # SFTP client for Transfer connectors + inbound SFTP (#315) — no pip/PyPI at boot.
       - ./localemu-patches/wheels:/opt/awsbox/wheels:ro
       - ./localemu-patches/paramiko_vendor.py:/opt/awsbox/paramiko_vendor.py:ro
@@ -120,6 +132,10 @@ services:
       - ./localemu-patches/cfn_deploy_credentials.py:/opt/code/localemu/src/localemu/services/cloudformation/cfn_deploy_credentials.py:ro
       # VPC route tables (#204): private subnets, peering, NAT
       - ./localemu-patches/vpc_routing.py:/opt/code/localemu/src/localemu/services/ec2/docker/vpc_routing.py:ro
+      # #289: single-source Dockerfiles for ec2-base + awsbox-rt (ensure_base_image / _ensure_rt_image).
+      - ./localemu-patches/base_image.py:/opt/code/localemu/src/localemu/services/ec2/docker/base_image.py:ro
+      - ./docker/Dockerfile.ec2-base:/opt/awsbox/docker/Dockerfile.ec2-base:ro
+      - ./docker/Dockerfile.awsbox-rt:/opt/awsbox/docker/Dockerfile.awsbox-rt:ro
       # Security groups (#205): ECS awsvpc + RDS + prefix lists on top of EC2 sg_iptables
       - ./localemu-patches/sg_enforcement.py:/opt/code/localemu/src/localemu/services/ec2/docker/sg_enforcement.py:ro
       # Interface VPCE private DNS (#258): resolver + proxy forward to gateway IP
@@ -135,7 +151,7 @@ services:
       - ./localemu-patches/esm_common.py:/opt/awsbox/esm/awsbox_esm_common.py:ro
       # Shared ECR BatchGetImage + local-registry rewrite (#211 / #219)
       - ./localemu-patches/ecr_pull.py:/opt/awsbox/ecr/awsbox_ecr_pull.py:ro
-      # Gateway HTTPS CA + leaf for ECS AWS_ENDPOINT_URL (#687)
+      # Gateway HTTPS CA + leaf for ECS/Lambda/EC2 AWS_ENDPOINT_URL (#687/#696)
       - ./localemu-patches/gateway_tls.py:/opt/awsbox/tls/awsbox_gateway_tls.py:ro
 
       # Private hosted zones (#206): answered by the same process as VPCE DNS (vpce_private_dns serve)
@@ -187,16 +203,53 @@ services:
       start_period: 10s
 
   # Docker distribution registry. Push/pull 127.0.0.1:5000/<repo>:<tag>.
-  # ECS/Lambda amazonaws.com ECR URIs are rewritten to this address (#211, #218).
+  # ECS/Lambda amazonaws.com ECR URIs are rewritten to this address (#211).
   ecr-registry:
     image: registry:2
     depends_on:
       localstack:
         condition: service_healthy
+    networks:
+      - default
+      - ecr-host
     ports:
       - "127.0.0.1:${STACKWRANGLER_ECR_HOST_PORT:-${AWSBOX_ECR_HOST_PORT:-5000}}:5000"
     volumes:
       - ./localemu-patches/ecr-registry.yml:/etc/docker/registry/config.yml:ro
 
+  # TLS :443 on a fixed bridge IP so docker login/push of repositoryUri works
+  # without retag and without binding host :443 (#218).
+  ecr-hostname:
+    build:
+      context: ./tools
+      dockerfile: ecr-hostname-proxy/Dockerfile
+    depends_on:
+      - ecr-registry
+    environment:
+      ECR_REGISTRY_URL: http://ecr-registry:5000
+      ECR_HOSTNAME_CERT_DIR: /certs
+      AWS_REDIRECT_CERT_DIR: /certs
+      LOCALEMU_URL: http://ecr-registry:5000
+
+    volumes:
+      - ./.awsbox/ecr-hostname:/certs
+    networks:
+      ecr-host:
+        ipv4_address: ${STACKWRANGLER_ECR_HOSTNAME_IP:-${AWSBOX_ECR_HOSTNAME_IP:-172.31.218.10}}
+    healthcheck:
+      test: ["CMD", "/opt/ecr-hostname/healthcheck.sh"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 8s
+
 volumes:
   seaweed-data:
+  seaweed-data-dev:
+
+networks:
+  ecr-host:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${STACKWRANGLER_ECR_HOSTNAME_SUBNET:-${AWSBOX_ECR_HOSTNAME_SUBNET:-172.31.218.0/24}}

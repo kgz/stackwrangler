@@ -171,7 +171,7 @@
 215	done	v1: Console labels for local display names
 216	done	v1: mirror real account fixture (scaffold)
 217	backlog	Debt: ECR console (from #211)
-218	backlog	Debt: docker push via repositoryUri hostname (from #211)
+218	in-review	Debt: docker push via repositoryUri hostname (from #211)
 219	in-review	Debt: Lambda image pull ECR authz (from #211)
 220	backlog	Debt: real-account mirror read path (from #216)
 223	in-review	Debt: kms:ViaService / aws:SourceArn conditions (from #209)
@@ -199,6 +199,8 @@
 271	done	v1: awsvpc not on default docker bridge
 282	backlog	Debt: SG iptables install needs egress (from #271)
 285	done	Debt: ESM post-create role revoke stops polling (from #266)
+288	in-review	v1: Mode selection test/dev (up --dev|--test, reset)
+200	in-review	Persistence across recreate (dev mode only)
 294	done	API Gateway usage plans
 295	done	Transfer connectors
 296	done	DynamoDB depth
@@ -365,5 +367,16 @@
 685	in-review	ecs: container entryPoint from task definition ignored
 686	in-review	ECS SG exempt task-creds + AWS_ENDPOINT_URL VPCE stand-in
 687	in-review	ECS https AWS_ENDPOINT_URL + CA for SecureTransport
-696	backlog	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
+696	in-review	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
 684	in-review	ecr: restart catalog resync when registry keeps blobs
+709	in-review	IAM ECR repository actions use repository ARN
+714	in-review	sls: do not recreate LocalEmu via aws-redirect (#714)
+710	in-review	rds: param group Source=user for TF converge
+712	in-review	LocalEmu S3 spool + body restore across recreate
+705	in-review	rds: stable selectable host port per DB instance
+716	in-review	Persistence: restored ECS tasks stay RUNNING/DEACTIVATING with no container
+717	in-review	Persistence: restored SQS event source mappings can't be deleted and block re-creating their stack
+713	in-review	Lambda UpdateFunctionCode after PERSISTENCE recreate
+742	backlog	Debt: Terraform S3+DDB empty plan after LocalEmu recreate (from #200)
+743	backlog	Debt: RDS MySQL/Aurora SQL persist after LocalEmu recreate (from #200)
+289	in-review	warm restart prebuilt images + preserve stopped containers

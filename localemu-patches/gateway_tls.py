@@ -1,8 +1,8 @@
-"""LocalEmu gateway TLS material for ECS (and other) workloads (#687).
+"""LocalEmu gateway TLS material for ECS / Lambda / EC2 workloads (#687, #696).
 
 LocalEmu already multiplexes HTTPS on :4566, but the default self-signed
-leaf only lists localhost / 127.0.0.1. Tasks dial the compose-network IP
-(or ``localemu.awsbox`` via ``--add-host``), so verification fails and
+leaf only lists localhost / 127.0.0.1. Workloads dial the compose-network
+IP (or ``localemu.awsbox`` via ``--add-host``), so verification fails and
 IAM correctly sets ``aws:SecureTransport=false`` for plain ``http://``
 ``AWS_ENDPOINT_URL``.
 
@@ -11,7 +11,7 @@ This module:
   * installs the leaf into LocalEmu's ``server.test.pem`` *before*
     gateway SSL init (boot.d) so ``create_ssl_cert`` keeps our files
   * publishes the CA under ``/var/lib/awsbox/tls`` (compose ``./.awsbox``)
-    so ECS can bind-mount it and set ``AWS_CA_BUNDLE`` /
+    so ECS / Lambda / EC2 can bind-mount it and set ``AWS_CA_BUNDLE`` /
     ``NODE_EXTRA_CA_CERTS`` / ``SSL_CERT_FILE``
 
 Reminting the CA on every start breaks verification: tasks mount the new
@@ -112,6 +112,96 @@ def task_ca_host_paths() -> tuple[str | None, str | None]:
     return ca, bundle
 
 
+def container_ca_paths() -> tuple[str, str]:
+    """In-container paths for the CA cert and CA bundle."""
+    return f"{TASK_CA_DIR}/{CA_CERT_NAME}", f"{TASK_CA_DIR}/{CA_BUNDLE_NAME}"
+
+
+def apply_ca_env(env_vars: dict) -> None:
+    """Set SDK / runtime CA trust env vars to the in-container mount paths."""
+    ca_ctr, bundle_ctr = container_ca_paths()
+    env_vars["AWS_CA_BUNDLE"] = bundle_ctr
+    env_vars["SSL_CERT_FILE"] = bundle_ctr
+    env_vars["NODE_EXTRA_CA_CERTS"] = ca_ctr
+    env_vars["REQUESTS_CA_BUNDLE"] = bundle_ctr
+    env_vars["CURL_CA_BUNDLE"] = bundle_ctr
+
+
+def append_no_proxy(env_vars: dict, host: str) -> None:
+    """Ensure ``host`` is listed in NO_PROXY / no_proxy."""
+    if not host:
+        return
+    for key in ("NO_PROXY", "no_proxy"):
+        cur = env_vars.get(key) or ""
+        parts = [p.strip() for p in cur.split(",") if p.strip()]
+        if host not in parts:
+            parts.append(host)
+        env_vars[key] = ",".join(parts)
+
+
+def apply_https_endpoint(env_vars: dict, *, port: int) -> str:
+    """Set ``AWS_ENDPOINT_URL`` to ``https://localemu.awsbox:<port>`` (#687/#696)."""
+    env_vars["AWS_ENDPOINT_URL"] = f"https://{EMU_DNS_NAME}:{port}"
+    append_no_proxy(env_vars, EMU_DNS_NAME)
+    return EMU_DNS_NAME
+
+
+def _ensure_flag_token(flags: str, needle: str, extra: str) -> str:
+    if needle in flags:
+        return flags
+    return f"{flags} {extra}".strip() if flags else extra
+
+
+def inject_lambda_tls_trust(env_vars: dict, existing_flags: str, gw_ip: str) -> str:
+    """Lambda ``additional_flags`` path: ``--add-host`` + ``-v`` CA, then CA env.
+
+    Same guard as ``inject_task_tls_trust``: set ``AWS_CA_BUNDLE`` /
+    ``NODE_EXTRA_CA_CERTS`` / ``SSL_CERT_FILE`` only after CA mounts can succeed.
+    Missing CA or unresolved host bind still gets ``--add-host`` so the https
+    endpoint hostname resolves.
+    """
+    flags = (existing_flags or "").strip()
+    if not gw_ip:
+        return flags
+    if (
+        f"--add-host={EMU_DNS_NAME}:" not in flags
+        and f"--add-host {EMU_DNS_NAME}:" not in flags
+    ):
+        flags = _ensure_flag_token(
+            flags,
+            f"--add-host={EMU_DNS_NAME}:",
+            f"--add-host={EMU_DNS_NAME}:{gw_ip}",
+        )
+
+    ca_ctr_src = TLS_DIR / CA_CERT_NAME
+    bundle_ctr_src = TLS_DIR / CA_BUNDLE_NAME
+    if not ca_ctr_src.is_file() or not bundle_ctr_src.is_file():
+        LOG.warning(
+            "gateway CA files missing (%s); skip CA mount/env (#696)", ca_ctr_src
+        )
+        return flags
+    ca_host, bundle_host = task_ca_host_paths()
+    if not ca_host or not bundle_host:
+        LOG.warning(
+            "gateway CA host path unresolved; skip CA mount/env (#696)"
+        )
+        return flags
+
+    ca_ctr, bundle_ctr = container_ca_paths()
+    flags = _ensure_flag_token(
+        flags,
+        f"{ca_ctr}:",
+        f"-v {ca_host}:{ca_ctr}:ro",
+    )
+    flags = _ensure_flag_token(
+        flags,
+        f"{bundle_ctr}:",
+        f"-v {bundle_host}:{bundle_ctr}:ro",
+    )
+    apply_ca_env(env_vars)
+    return flags
+
+
 def inject_task_tls_trust(env_vars: dict, volumes) -> None:
     """Bind-mount gateway CA into the task and set SDK trust env vars."""
     ca_ctr_src = TLS_DIR / CA_CERT_NAME
@@ -130,15 +220,10 @@ def inject_task_tls_trust(env_vars: dict, volumes) -> None:
 
     from localemu.utils.container_utils.container_client import BindMount
 
-    ca_ctr = f"{TASK_CA_DIR}/{CA_CERT_NAME}"
-    bundle_ctr = f"{TASK_CA_DIR}/{CA_BUNDLE_NAME}"
+    ca_ctr, bundle_ctr = container_ca_paths()
     volumes.append(BindMount(ca_host, ca_ctr, read_only=True))
     volumes.append(BindMount(bundle_host, bundle_ctr, read_only=True))
-    env_vars["AWS_CA_BUNDLE"] = bundle_ctr
-    env_vars["SSL_CERT_FILE"] = bundle_ctr
-    env_vars["NODE_EXTRA_CA_CERTS"] = ca_ctr
-    env_vars["REQUESTS_CA_BUNDLE"] = bundle_ctr
-    env_vars["CURL_CA_BUNDLE"] = bundle_ctr
+    apply_ca_env(env_vars)
 
 
 def _san_lists() -> tuple[list[str], list[str]]:
