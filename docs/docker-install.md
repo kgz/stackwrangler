@@ -43,6 +43,8 @@ docker run --rm --network host \
 
 That single `up` brings APIs **and** the baked console web app (nginx image) — open <http://127.0.0.1:3000>. Also: S3 `:8333` · LocalEmu `:4566`. Profile `local` is written for the AWS CLI.
 
+The container runs as root, but files it writes into `~/.aws` and `~/.stackwrangler` are given to the owner of those folders, and `~/.aws/credentials` is kept `0600` (#746). Installs before this fix may have left them owned by root: `sudo chown -R "$USER": ~/.aws ~/.stackwrangler && chmod 600 ~/.aws/credentials`.
+
 Pin a product cut with a version tag (sibling LocalEmu/console/ECR images use the same tag):
 
 ```bash

@@ -11,6 +11,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 |---------|-------|--------------------|-------------|-------------|--------|
 | Public Docker image install (#487) | yes (alt ports via `install/stackwrangler`) | — | up without docker.sock refused | baked console HTTP | `docker-image-install-smoke.sh` |
 | Test/dev mode CLI (#288) | yes (usage, `status` mode, wipe-path markers, compose test/dev; leftover `.awsbox/dev` ignored in test) | — | — | — | `mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) |
+| Docker install file owner (#746) | yes (root-run profile write keeps user-owned `~/.aws` files, new files go to the dir owner, other profiles kept, credentials 0600) | — | — | — | `profile-file-owner-smoke.sh` |
 | Dev mode keep-data (#288) | yes (`up --dev` → seed → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties) | — | — | — | `mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Reset RDS wipe (#200) | yes (dummy `localemu-rds-*` container + `*-data` volume gone after `reset`) | — | — | — | `mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Persist recreate multi-service (#200) | yes (`PERSISTENCE=1` volume: S3+IAM+Secrets+SSM+DDB+Lambda invoke after recreate) | — | — | — | `persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) |
