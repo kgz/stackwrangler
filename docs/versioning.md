@@ -86,7 +86,7 @@ A defect is behaviour that is wrong in shipped or merged code. That's different 
 | `escaped` | Found after it shipped in a release tag (users, a later ticket, a local stack on that tag). |
 | `caught` | Found before release: PR review, gap check, batch-branch testing, CI. Add it once the label exists; until then, leave it off. |
 | `needs attention` | New `escaped` defects, until someone has triaged them (scored, placed, cause traced). Remove it at triage. |
-| `vX.Y.Z+1` | An `escaped` defect from release `vX.Y.Z` gets that release's next patch label (create the label if it's missing). This is the one exception to "never auto-label". The fix ships as a patch, not inside the open cut. |
+| `vX.Y.Z+1` | Only for a **high-priority, breaking** escaped defect (Impact ≥ 4: a documented workflow fails, or state is lost, on release `vX.Y.Z`). It gets that release's next patch label, e.g. `v0.0.8` for `v0.0.7` (create the label if it's missing, description "Patch for vX.Y.Z"). This is the one exception to "never auto-label". The fix ships as a patch release, not inside the open cut. Other escaped defects are placed like any ticket (cut gate or unlabelled). Don't use `vX.Y.Z-patch`: semver sorts a pre-release *before* `vX.Y.Z`. |
 
 A bug found inside the PR that introduced it is fixed in that PR. No ticket is needed. File `caught` only when the fix can't go in the same PR.
 

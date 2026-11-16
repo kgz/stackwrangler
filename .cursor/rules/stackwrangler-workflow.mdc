@@ -20,7 +20,7 @@ git checkout -b feature/<issue>-<short-slug>
 - **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.0.5` Security/deps, `v0.0.6` Maturity/testing, `v0.1.0` Org path) only if theme + Impact gate match; else **no version label**.
 - New / Debt: pillar + `./bin/issue-score.sh`; **do not** auto-add `$(cat docs/CURRENT_RELEASE)`.
 - Absorb small gaps in-parent (`docs/gap-check.md`); Debt is evaluate-and-place.
-- Defects (wrong shipped/merged behaviour): labels `defect` + `escaped` (found after a release tag; + that release's next patch label + `needs attention`) or `caught` (found before release), and a `## Caused by` section (commit link + why it escaped). See `docs/versioning.md#defects`.
+- Defects (wrong shipped/merged behaviour): labels `defect` + `escaped` (found after a release tag; + `needs attention`; + that release's next patch label, e.g. `v0.0.8`, only if high-priority/breaking) or `caught` (found before release), and a `## Caused by` section (commit link + why it escaped). See `docs/versioning.md#defects`.
 - Cut a release: `./bin/release-tag.sh vX.Y.Z --next vA.B.C` — only when asked; then `./bin/check-current-release.sh`. Details: `docs/versioning.md`.
 
 ## Product north star

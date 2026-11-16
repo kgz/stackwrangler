@@ -19,7 +19,7 @@ If **no** → file Debt, then **evaluate-and-place** (score + pillar; release la
 
 **Anti-debt-loop:** After a console create/detail MVP, leftover stubs (delete, receive, put-targets, tags, Actions, …) are usually **unlabelled backlog**, not automatic members of the open cut. Reserve the release label for behaviour mismatch, false-confidence authz, missing smoke for shipped behaviour, or other cut-gate Impact hits — not every next chrome surface. See [versioning.md](versioning.md) demote guidance (~15 labelled issues).
 
-**Defect, not Debt:** if the check finds behaviour that is *wrong* in code that already shipped in a release tag, file it as a defect (`defect` + `escaped` + patch label + `needs attention`, with `## Caused by`), not as `Debt:`. See [versioning.md](versioning.md#defects). Wrong behaviour in this PR's own diff: fix it here.
+**Defect, not Debt:** if the check finds behaviour that is *wrong* in code that already shipped in a release tag, file it as a defect (`defect` + `escaped` + `needs attention`, patch label only if high-priority/breaking, with `## Caused by`), not as `Debt:`. See [versioning.md](versioning.md#defects). Wrong behaviour in this PR's own diff: fix it here.
 
 ## Rubric (agent must answer)
 

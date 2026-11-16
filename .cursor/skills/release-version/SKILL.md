@@ -54,7 +54,7 @@ That tags `origin/main` (or `--sha`), creates the GitHub Release, ensures labels
 
 5. **Align Release body** with the docs changelog (same install one-liner + highlights). Prefer `gh api` PATCH of the release if `gh release edit` is unavailable.
 6. Confirm GHCR publish + Release asset `install/stackwrangler` (re-upload / `workflow_dispatch` publish-images if the tag-push job skipped the CLI asset).
-7. Create the shipped cut's patch label (`vX.Y.Z+1`) for escaped defects (`docs/versioning.md#defects`). Mark the shipped cut in `docs/version-plan.md`; strip leftover `label:<shipped>` from open issues; commit the `CURRENT_RELEASE` / plan bump. `./bin/check-current-release.sh` must pass.
+7. Mark the shipped cut in `docs/version-plan.md`; strip leftover `label:<shipped>` from open issues; commit the `CURRENT_RELEASE` / plan bump. `./bin/check-current-release.sh` must pass.
 
 Do not cut **Public** while open Impact ≥ 5 core trust bugs are unwaived.
 
@@ -81,7 +81,7 @@ Soft WIP: if a cut grows past ~15 open labelled issues, deliberate demote pass �
 
 Do **not** default to `$(cat docs/CURRENT_RELEASE)`.
 
-Defects: `defect` + `escaped` (after a release tag) or `caught` (before release). An escaped defect from `vX.Y.Z` gets the patch label `vX.Y.Z+1` (create it if missing) and `needs attention` until triaged, plus a `## Caused by` section. See `docs/versioning.md#defects`.
+Defects: `defect` + `escaped` (after a release tag) or `caught` (before release). An escaped defect gets `needs attention` until triaged. Only a high-priority, breaking one (Impact ≥ 4) from `vX.Y.Z` also gets the patch label `vX.Y.Z+1` (create it if missing; never `vX.Y.Z-patch`, which semver sorts before `vX.Y.Z`), plus a `## Caused by` section. See `docs/versioning.md#defects`.
 
 Debt: absorb small gaps in-parent (`docs/gap-check.md`); else evaluate-and-place with scores + pillar; label only if gate matches.
 
