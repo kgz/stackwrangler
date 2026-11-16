@@ -31,6 +31,29 @@ from localemu.services.plugins import Service, ServiceLifecycleHook
 
 LOG = logging.getLogger(__name__)
 
+
+def _freeze_task_state_progression() -> None:
+    """Keep ECS tasks in the status we set (RUNNING until StopTask) (#747).
+
+    moto's default ``ecs::task`` transition is ``manual``/``times=1`` and its
+    ``describe_tasks`` calls ``task.advance()``, so every DescribeTasks walks a
+    task RUNNING → DEACTIVATING → STOPPING → DEPROVISIONING → STOPPED while
+    ``desiredStatus`` stays RUNNING. The Docker overlay hides that in responses,
+    but persisted state then restores the task as stopped-yet-listed, holding
+    its ports. Real tasks only stop when stopped; StopTask sets STOPPED itself.
+    """
+    try:
+        from moto.moto_api import state_manager
+
+        state_manager.set_transition(
+            "ecs::task", {"progression": "manual", "times": 2**62},
+        )
+    except Exception:  # pragma: no cover — moto always installed
+        LOG.warning("could not freeze ecs::task state progression", exc_info=True)
+
+
+_freeze_task_state_progression()
+
 # Module-level task_manager singleton (double-checked locking)
 _task_manager = None
 _task_manager_lock = threading.Lock()

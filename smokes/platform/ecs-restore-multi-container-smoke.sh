@@ -77,6 +77,12 @@ wait_running "$PAIR_ARN" 2
 wait_running "$SOLO_ARN" 1
 echo "OK: pair (2 containers) + solo running"
 
+# Polling (aws ecs wait, Terraform, scripts) must not walk the task toward STOPPED:
+# moto's DescribeTasks used to advance its state one step per call.
+for _ in 1 2 3 4 5; do
+	aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$SOLO_ARN" >/dev/null
+done
+
 "$ROOT/bin/stackwrangler" down
 "$ROOT/bin/stackwrangler" up --dev
 wait_running "$PAIR_ARN" 2
