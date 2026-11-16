@@ -11,6 +11,7 @@ from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from datetime import datetime
 from hashlib import sha256
 from pathlib import PurePosixPath, PureWindowsPath
+import threading
 from threading import RLock
 from typing import TYPE_CHECKING
 
@@ -74,6 +75,31 @@ LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 # Timeout in seconds when waiting for all shutdown futures during service stop.
 SERVICE_SHUTDOWN_TIMEOUT_SECONDS = 5
+
+
+def _gateway_wait_s() -> float:
+    raw = os.environ.get("STACKWRANGLER_LAMBDA_RESTORE_GATEWAY_WAIT_S") or "180"
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return 180.0
+
+
+def _wait_for_gateway(qualified_arn: str) -> None:
+    """Persistence restore starts versions on a worker as soon as the S3 plugin
+    is RUNNING, but their code download goes over ``localhost:4566``, which only
+    listens once state load finishes (a slow RDS reconcile can take 60s+). The
+    caller then gives each version 30s, so the first ones restored fail with
+    EndpointConnectionError (#751). Wait for the gateway here, before that
+    budget starts. No-op once ready; never blocks the main (startup) thread.
+    """
+    from localemu.runtime import events
+
+    if events.infra_ready.is_set() or threading.current_thread() is threading.main_thread():
+        return
+    LOG.info("Lambda %s: waiting for the gateway before starting (#751)", qualified_arn)
+    if not events.infra_ready.wait(_gateway_wait_s()):
+        LOG.warning("Lambda %s: gateway not ready after %ss, starting anyway", qualified_arn, _gateway_wait_s())
 
 
 class LambdaService:
@@ -210,6 +236,7 @@ class LambdaService:
 
         :param function_version: Function Version to create
         """
+        _wait_for_gateway(function_version.qualified_arn)
         with self.lambda_version_manager_lock:
             qualified_arn = function_version.id.qualified_arn()
             version_manager = self.lambda_starting_versions.get(qualified_arn)
