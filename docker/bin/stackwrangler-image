@@ -72,6 +72,7 @@ ensure_env() {
 		echo "created $DATA/.env from defaults"
 	fi
 	printf '# managed by stackwrangler image — see docs/docker-install.md\n' >"$DATA/README.txt"
+	own_like_dir "$DATA" "$DATA/.env" "$DATA/README.txt"
 }
 
 # Load $DATA/.env without clobbering vars already set (docker run -e / install script).
@@ -136,6 +137,20 @@ export_image_defaults() {
 source "$OPT_ROOT/bin/stackwrangler-wait-healthy.sh"
 # shellcheck disable=SC1091
 source "$OPT_ROOT/bin/stackwrangler-dev-apply-hook.sh"
+
+# This CLI runs as root in the container. Give what it creates in the mounted
+# ~/.stackwrangler to whoever owns that dir on the host (#746; ~/.aws: stackwrangler-profile).
+own_like_dir() { # dir file...
+	local dir="$1" owner f
+	shift
+	[[ "$(id -u)" == "0" && -d "$dir" ]] || return 0
+	owner="$(stat -c '%u:%g' "$dir")"
+	[[ "$owner" != "0:0" ]] || return 0
+	for f in "$@"; do
+		[[ -e "$f" ]] && chown "$owner" "$f"
+	done
+	return 0
+}
 
 write_profile() {
 	# Reuse checkout profile helper with ROOT=DATA so it reads DATA/.env
