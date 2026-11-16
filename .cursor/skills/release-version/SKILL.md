@@ -81,6 +81,8 @@ Soft WIP: if a cut grows past ~15 open labelled issues, deliberate demote pass â
 
 Do **not** default to `$(cat docs/CURRENT_RELEASE)`.
 
+Defects: `defect` + `escaped` (after a release tag) or `caught` (before release). An escaped defect gets `needs attention` until triaged. Only a high-priority, breaking one (Impact â‰¥ 4) from `vX.Y.Z` also gets the patch label `vX.Y.Z+1` (create it if missing; never `vX.Y.Z-patch`, which semver sorts before `vX.Y.Z`), plus a `## Caused by` section. See `docs/versioning.md#defects`.
+
 Debt: absorb small gaps in-parent (`docs/gap-check.md`); else evaluate-and-place with scores + pillar; label only if gate matches.
 
 ## Cuts (active)

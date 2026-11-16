@@ -34,6 +34,7 @@ git checkout -b feature/<issue>-<short-slug>   # or feature/<short-slug>
 - **Label** = product cut (`v0.0.2` Public, `v0.0.3` Trust, `v0.0.4` Accuracy, `v0.0.5` Security/deps, `v0.0.6` Maturity/testing, `v0.1.0` Org path). Only if theme + Impact gate match — otherwise **no version label**.
 - New tickets: pillar + `./bin/issue-score.sh <n> --impact=N --effort=N`. Do **not** auto-label `CURRENT_RELEASE`. Freeze: every new issue needs pillar + scores; version label only if cut gate matches.
 - Debt: absorb small gaps in-parent ([docs/gap-check.md](docs/gap-check.md)); else evaluate-and-place.
+- Defects (wrong shipped/merged behaviour): labels `defect` + `escaped` (found after a release tag; + `needs attention`; + that release's next patch label, e.g. `v0.0.8`, only if high-priority/breaking) or `caught` (found before release), and a `## Caused by` section (commit link + why it escaped). See [docs/versioning.md](docs/versioning.md#defects).
 - Cut a release: `./bin/release-tag.sh vX.Y.Z --next vA.B.C` — only when asked; then `./bin/check-current-release.sh`. See [docs/versioning.md](docs/versioning.md).
 
 ## Product north star

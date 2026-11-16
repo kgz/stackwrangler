@@ -66,7 +66,7 @@ Agents must not create unlabelled-for-pillar or unscored tickets. Unlabelled-for
 | `v0.0.7` | (shipped) Dev persistence / local fidelity; Impact ≥ 4. |
 | `v0.1.0` | Org-path critical; path-critical only. |
 
-**Do not** default new / Debt tickets to `$(cat docs/CURRENT_RELEASE)`.
+**Do not** default new / Debt tickets to `$(cat docs/CURRENT_RELEASE)`. Exception: an escaped defect gets the patch label of the release it escaped from ([Defects](#defects)).
 
 **Evaluate and place** — score, pick the matching cut (or none), stop. Do **not** bump other tickets out of a cut when filing Debt.
 
@@ -75,6 +75,32 @@ Agents must not create unlabelled-for-pillar or unscored tickets. Unlabelled-for
 ## Debt / gap follow-ups
 
 See [gap-check.md](gap-check.md). Prefer absorbing small additive gaps into the parent PR. If filing Debt: score + pillar always; release label only if the gate matches.
+
+## Defects
+
+A defect is behaviour that is wrong in shipped or merged code. That's different from Debt, which is a known gap you chose to leave. Label every defect ticket so we can graph how many there are, where they were found and what caused them.
+
+| Label | When |
+|-------|------|
+| `defect` | Always, on any defect ticket. |
+| `escaped` | Found after it shipped in a release tag (users, a later ticket, a local stack on that tag). |
+| `caught` | Found before release: PR review, gap check, batch-branch testing, CI. Add it once the label exists; until then, leave it off. |
+| `needs attention` | New `escaped` defects, until someone has triaged them (scored, placed, cause traced). Remove it at triage. |
+| `vX.Y.Z+1` | Only for a **high-priority, breaking** escaped defect (Impact ≥ 4: a documented workflow fails, or state is lost, on release `vX.Y.Z`). It gets that release's next patch label, e.g. `v0.0.8` for `v0.0.7` (create the label if it's missing, description "Patch for vX.Y.Z"). This is the one exception to "never auto-label". The fix ships as a patch release, not inside the open cut. Other escaped defects are placed like any ticket (cut gate or unlabelled). Don't use `vX.Y.Z-patch`: semver sorts a pre-release *before* `vX.Y.Z`. |
+
+A bug found inside the PR that introduced it is fixed in that PR. No ticket is needed. File `caught` only when the fix can't go in the same PR.
+
+Every defect body ends with:
+
+```markdown
+## Caused by
+- <commit or PR link> (#<issue>): what it changed that introduced the defect
+- **Why it escaped:** which check should have caught it and didn't (smoke, review, gap check, CI)
+```
+
+Find the commit with `git log -S '<code>' -- <file>` or `git blame`. If you can't trace it yet, write "Not traced yet" and keep `needs attention`. Pillar milestone + `./bin/issue-score.sh` still apply ([Freeze](#freeze-required-for-every-new-ticket)).
+
+Reporting: `gh issue list --label defect --state all --json number,labels,body` (split by `escaped` / `caught`; group by the `Caused by` links).
 
 ## Soft WIP
 
