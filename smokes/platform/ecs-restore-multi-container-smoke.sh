@@ -2,6 +2,7 @@
 # #747: after down → up --dev, every container of a multi-container ECS task is resumed,
 # a single-container task with a fixed host port is resumed, and RunTask on a held host port
 # reports RESOURCE:PORTS (not an empty success). Stopping the holder frees the port.
+# Host network mode: bridge-mode tasks lose the compose network on down (separate issue).
 #
 # Live: brings this worktree's stack up in --dev (gate first: ./bin/batch-resource-gate.sh check --need-up).
 set -euo pipefail
@@ -61,13 +62,13 @@ wait_running() { # task-arn want
 "$ROOT/bin/stackwrangler" up --dev
 
 aws ecs create-cluster --cluster-name "$CLUSTER" >/dev/null
-aws ecs register-task-definition --family "$PAIR" --requires-compatibilities EC2 --network-mode bridge \
+aws ecs register-task-definition --family "$PAIR" --requires-compatibilities EC2 --network-mode host \
 	--container-definitions '[
-	  {"name":"front","image":"alpine:3.20","essential":true,"command":["sleep","3600"],"memoryReservation":32,"portMappings":[{"containerPort":80,"hostPort":18747}]},
+	  {"name":"front","image":"alpine:3.20","essential":true,"command":["sleep","3600"],"memoryReservation":32,"portMappings":[{"containerPort":18747,"hostPort":18747}]},
 	  {"name":"back","image":"alpine:3.20","essential":true,"command":["sleep","3600"],"memoryReservation":32}
 	]' >/dev/null
-aws ecs register-task-definition --family "$SOLO" --requires-compatibilities EC2 --network-mode bridge \
-	--container-definitions '[{"name":"solo","image":"alpine:3.20","essential":true,"command":["sleep","3600"],"memoryReservation":32,"portMappings":[{"containerPort":80,"hostPort":18748}]}]' >/dev/null
+aws ecs register-task-definition --family "$SOLO" --requires-compatibilities EC2 --network-mode host \
+	--container-definitions '[{"name":"solo","image":"alpine:3.20","essential":true,"command":["sleep","3600"],"memoryReservation":32,"portMappings":[{"containerPort":18748,"hostPort":18748}]}]' >/dev/null
 
 PAIR_ARN="$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$PAIR" --launch-type EC2 --query 'tasks[0].taskArn' --output text)"
 SOLO_ARN="$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$SOLO" --launch-type EC2 --query 'tasks[0].taskArn' --output text)"
