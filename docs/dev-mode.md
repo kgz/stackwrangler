@@ -28,6 +28,8 @@ Env the CLI sets (prefer `STACKWRANGLER_*`; `AWSBOX_*` still accepted as fallbac
 
 Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`.
 
+Your own overrides (restart policy, extra mounts, …): list them in `STACKWRANGLER_COMPOSE_EXTRA` (colon-separated paths, `~` allowed) in `.env` or the environment. They are added after the built-in files on every `up`, `down` and `reset`, in both modes (#748). Don't wrap `bin/stackwrangler` and set `COMPOSE` yourself — it is rebuilt on each command.
+
 Do not set `STACKWRANGLER_PERSISTENCE=1` alone in `.env` for day-to-day use — without the `--dev` bind mounts, LocalEmu still writes into the container filesystem and a recreate loses it. Use `up --dev` (or a compose override that mounts `/var/lib/localemu` the same way).
 
 ## Warm restart ([#289](https://github.com/kgz/stackwrangler/issues/289))

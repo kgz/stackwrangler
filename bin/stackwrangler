@@ -56,6 +56,18 @@ refresh_compose() {
 		export AWSBOX_PERSISTENCE=0
 		export STACKWRANGLER_SEAWEED_VOLUME=seaweed-data
 	fi
+	# Your own compose overrides (restart policy, mounts, …), kept on every
+	# up/down/reset instead of being dropped by this rebuild (#748).
+	local extra f
+	load_root_env
+	extra="$(sw_env STACKWRANGLER_COMPOSE_EXTRA AWSBOX_COMPOSE_EXTRA "")"
+	local IFS=:
+	for f in $extra; do
+		[[ -n "$f" ]] || continue
+		f="${f/#\~/$HOME}"
+		[[ -f "$f" ]] || { echo "error: STACKWRANGLER_COMPOSE_EXTRA file not found: $f" >&2; exit 1; }
+		COMPOSE+=(-f "$f")
+	done
 }
 
 stack_containers_running() {
