@@ -96,7 +96,7 @@ services:
       - ecr-hostname-certs:/certs
     networks:
       ecr-host:
-        ipv4_address: ${STACKWRANGLER_ECR_HOSTNAME_IP:-172.31.218.10}
+        ipv4_address: ${STACKWRANGLER_ECR_HOSTNAME_IP:-10.254.218.10}
     healthcheck:
       test: ["CMD", "/opt/ecr-hostname/healthcheck.sh"]
       interval: 3s
@@ -125,5 +125,5 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: ${STACKWRANGLER_ECR_HOSTNAME_SUBNET:-172.31.218.0/24}
+        - subnet: ${STACKWRANGLER_ECR_HOSTNAME_SUBNET:-10.254.218.0/24}
 

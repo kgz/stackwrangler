@@ -414,6 +414,8 @@ cmd_up() {
 	# Orphans with no endpoints (and this project's leftover lambda containers).
 	# --dev preserves stopped EC2/ECS/RDS containers for warm restart (#289).
 	cleanup_localemu_vpc_networks
+	load_root_env # .env may set the ECR edge subnet (#750)
+	sw_ecr_edge_check || exit 1
 	"${COMPOSE[@]}" up -d
 	wait_healthy
 	# Optional IaC re-apply after healthy (#290).

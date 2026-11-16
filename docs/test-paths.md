@@ -28,6 +28,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
 | Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| ECR edge network: default `10.254.218.0/24`, IP derived from subnet, overlap with another Docker network fails `up` early (offline, stub `docker`) | happy + sad | covered | `./smokes/platform/ecr-edge-subnet-smoke.sh` · [#750](https://github.com/kgz/stackwrangler/issues/750) |
 | Dev keep-data: `up --dev` → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties | happy | covered | `./smokes/platform/mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |

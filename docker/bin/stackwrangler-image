@@ -150,6 +150,7 @@ cmd_up() {
 	ensure_env
 	load_data_env
 	export_image_defaults
+	sw_ecr_edge_check || exit 1
 	"${COMPOSE[@]}" up -d
 	wait_healthy
 	# Optional IaC re-apply after healthy (#290). Prefer STACKWRANGLER_DEV_APPLY_HOOK.
