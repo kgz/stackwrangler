@@ -29,7 +29,8 @@ EOF
 chmod +x "$tmp/aws"
 
 probe() { # env assignments… → runs wait_s3_writable in a clean subshell, prints its stderr
-	env -i PATH="$tmp:$PATH" HOME="$tmp" "$@" bash -c '
+	# SKIP_DOTENV: apply product defaults without sourcing repo .env (env -i must win).
+	env -i PATH="$tmp:$PATH" HOME="$tmp" STACKWRANGLER_ENV_SKIP_DOTENV=1 "$@" bash -c '
 		set -euo pipefail
 		source "$0/bin/stackwrangler-env.sh"
 		COMPOSE=(true)
