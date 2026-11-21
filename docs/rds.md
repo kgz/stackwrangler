@@ -8,6 +8,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
 ./smokes/data/rds-parameter-group-smoke.sh  # param group Source + TF converge
 ./smokes/data/rds-param-groups-smoke.sh # DB / cluster parameter groups → container
+./smokes/data/rds-mysql-tls-smoke.sh # MySQL TLS VERIFY_IDENTITY + rds-ca.pem (#765)
 ```
 
 Keep resources: `STACKWRANGLER_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
@@ -22,6 +23,7 @@ Needs host `psql` (Postgres smoke) or `mysql` (MySQL smoke).
 - Further `create-db-instance --db-cluster-identifier` adds a **reader**. Readers get their **own** stable host port (pin with `--port` / tag on that instance). The cluster `ReaderEndpoint` hostname matches the writer style (`localhost`); clients that need the reader must use the **reader instance** `Endpoint.Address` + `Endpoint.Port` from `describe-db-instances` — there is no second port field on the cluster.
 - `ManageMasterUserPassword` stores `{"username","password"}` in Secrets Manager (`rds!…`). The container uses that password
 - SQL via `psql` or `mysql`
+- **MySQL TLS with name verify** ([#765](https://github.com/kgz/stackwrangler/issues/765)): instances present a leaf with SANs for the endpoint hostname plus `localhost` / `127.0.0.1`, signed by `.awsbox/tls/rds-ca.pem` (alongside the gateway CA under `.awsbox/tls/`). Point the app RDS-bundle path at that file (PHP `ATTR_SSL_CA`, mysql `--ssl-ca`, etc.)
 - DB / cluster parameter groups: user-set parameters go into the Docker CMD (`--loose-name=value` MySQL, `-c name=value` Postgres). Skips `rds.*` names and `{…}` formula values. MySQL `reboot-db-instance` re-applies via `SET GLOBAL`; Postgres recreates the container so `-c` flags refresh ([#703](https://github.com/kgz/stackwrangler/issues/703))
 
 Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.py` (mounted with the other init scripts). `SERVICES` already includes `rds` and `secretsmanager`.
