@@ -135,7 +135,8 @@ VITE_AWS_SECRET_ACCESS_KEY=$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY s
 VITE_AWS_REGION=$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)
 VITE_AWS_ACCOUNT_ID=$(sw_env STACKWRANGLER_ACCOUNT_ID AWSBOX_ACCOUNT_ID 000000000000)
 VITE_AWS_REGION_LABEL=$(sw_env STACKWRANGLER_REGION_LABEL AWSBOX_REGION_LABEL "US East (N. Virginia)")
-VITE_S3_ENDPOINT=$(sw_env STACKWRANGLER_ENDPOINT AWSBOX_ENDPOINT "$ENDPOINT_DEFAULT")
+# Org-path S3 = LocalEmu via same-origin /aws-iam proxy (not SeaweedFS) (#162).
+VITE_S3_ENDPOINT=/aws-iam
 VITE_IAM_ENDPOINT=/aws-iam
 VITE_IAM_PROXY_TARGET=$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT "$IAM_ENDPOINT_DEFAULT")
 EOF
@@ -477,7 +478,8 @@ cmd_up() {
 	iam="$(iam_endpoint_url)"
 	echo
 	echo "mode:     ${mode}"
-	echo "S3 API:   ${ep}"
+	echo "S3 (org path): ${iam}  (profile local + console + IaC/Transfer/Lambda)"
+	echo "SeaweedFS (optional parity): ${ep}"
 	echo "IAM/Lambda: ${iam}"
 	echo "Profile:  local  (aws --profile local s3 ls | lambda list-functions)"
 	echo "Console:  ./bin/stackwrangler console   → http://127.0.0.1:3000"
@@ -640,20 +642,20 @@ cmd_status() {
 	fi
 	"${COMPOSE[@]}" ps
 	local ep code iam labels
-	ep="$(endpoint_url)"
-	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
-	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
-		echo "s3:       ${ep} (live, http ${code})"
-	else
-		echo "s3:       ${ep} (not reachable)"
-	fi
 	iam="$(iam_endpoint_url)"
 	if curl -sf --max-time 1 "${iam}/_localstack/health" >/dev/null 2>&1 \
 		|| curl -sf --max-time 1 "${iam}/_localemu/health" >/dev/null 2>&1 \
 		|| [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${iam}/" || true)" =~ ^[12345][0-9][0-9]$ ]]; then
-		echo "iam:      ${iam} (live)"
+		echo "s3/iam:   ${iam} (org-path brain, live)"
 	else
-		echo "iam:      ${iam} (not reachable)"
+		echo "s3/iam:   ${iam} (org-path brain, not reachable)"
+	fi
+	ep="$(endpoint_url)"
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
+	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "seaweed:  ${ep} (optional parity, live, http ${code})"
+	else
+		echo "seaweed:  ${ep} (optional parity, not reachable)"
 	fi
 	if [[ -f "$CONSOLE_PID_FILE" ]] && kill -0 "$(cat "$CONSOLE_PID_FILE")" 2>/dev/null; then
 		echo "console:  http://127.0.0.1:3000 (pid $(cat "$CONSOLE_PID_FILE"))"

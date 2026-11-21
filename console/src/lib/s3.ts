@@ -24,7 +24,7 @@ export const s3 = new S3Client({
     accessKeyId: config.accessKeyId,
     secretAccessKey: config.secretAccessKey,
   },
-  // SeaweedFS / local S3 often reject flexible checksum headers
+  // Local / path-style S3 often reject flexible checksum headers
   requestChecksumCalculation: 'WHEN_REQUIRED',
   responseChecksumValidation: 'WHEN_REQUIRED',
 })

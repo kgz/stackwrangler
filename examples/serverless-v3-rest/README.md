@@ -19,12 +19,12 @@ Dummy [Serverless Framework v3](https://www.serverless.com/) project that mimics
 ./bin/awsbox up
 ./bin/stackwrangler-profile write --force   # credentials for profile local
 
-# All Serverless AWS calls (including S3 artifacts) must hit LocalEmu, not SeaweedFS.
-# Profile `local` sends S3 to :8333 — override with AWS_ENDPOINT_URL.
+# All Serverless AWS calls (including S3 artifacts) hit LocalEmu (org-path brain).
+# Profile `local` already points S3 at :4566; AWS_ENDPOINT_URL is still fine for SDKs.
 export AWS_ENDPOINT_URL="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 export AWS_ACCESS_KEY_ID=awsbox AWS_SECRET_ACCESS_KEY=awsboxawsbox
 export AWS_DEFAULT_REGION=us-east-1
-# Optional: --aws-profile local for keys; still set AWS_ENDPOINT_URL so S3 hits LocalEmu (:4566), not SeaweedFS (:8333).
+# Optional: --aws-profile local for keys (S3 already LocalEmu); set AWS_ENDPOINT_URL for SDK clients if needed.
 
 aws s3 mb "s3://awsbox-sls-deploy" --endpoint-url "$AWS_ENDPOINT_URL"
 aws ssm put-parameter --name /demo/rest/dev/app-name --type String --value my-app --overwrite \

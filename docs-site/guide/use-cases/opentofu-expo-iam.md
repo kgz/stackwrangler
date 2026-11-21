@@ -73,7 +73,7 @@ Linux-first: ports bind on the Docker host. Adjust compose publish only when a p
 ## Honesty
 
 - EC2 here is **container-backed**, not a full VM
-- Dual S3 (console SeaweedFS vs LocalEmu IaC) — [Dual S3](../interactions/dual-s3)
+- Org-path S3 (LocalEmu for console + IaC) — [Org-path S3](../interactions/dual-s3)
 - “Parity-checked” means paths we smoke / parity-test — not every AWS knob
 
 Not affiliated with Amazon Web Services.

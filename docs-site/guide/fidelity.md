@@ -29,7 +29,7 @@ v1 may still use bridges and sidecars. Fidelity tickets track when the bridge **
 |-----|----------------|--------|
 | Private subnet routes (no default, peering, NAT, GW endpoints) | Workload cannot reach public host / S3 until a route says so | Covered · `vpc-routing-smoke` / `vpc-egress-smoke` |
 | VPC Lambda security groups | Function traffic follows its groups (netns iptables) | Covered · `sg-enforcement-smoke` |
-| Dual S3 brains | Wrong endpoint “succeeds” | Documented · [Dual S3](./interactions/dual-s3) |
+| Dual S3 brains | Wrong endpoint “succeeds” | Unified org path · [Org-path S3](./interactions/dual-s3) |
 | NLB preserves client IP for target SG | Target must see caller, not balancer | Debt · track in networking |
 | ECS same-host hairpin via VIP/NAT | Works across AZs, fails same host on real AWS | Debt · networking fidelity |
 | ECS task-role via 169.254 under compose | In-container SDK credential path | Tracked · see repo issues |

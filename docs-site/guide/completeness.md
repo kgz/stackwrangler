@@ -69,7 +69,7 @@ What you can actually exercise after `./bin/stackwrangler up` (happy path). Cave
 
 | Area | Depth |
 |------|--------|
-| S3 general purpose (SeaweedFS UI + LocalEmu for IaC/events) | **Working** UI · **Partial** dual-brain |
+| S3 general purpose (LocalEmu org-path brain) | **Working** |
 | Lambda (Docker invoke, console Create/detail) | **Working** |
 | DynamoDB / SQS / SNS / EventBridge / Step Functions / Kinesis | **Working** (CLI smokes; SFN list+create+detail [#175](https://github.com/kgz/awsl/issues/175)/[#533](https://github.com/kgz/awsl/issues/533); Start [#610](https://github.com/kgz/awsl/issues/610); others often console Debt) |
 | CloudWatch Logs (basic) | **Working** · create/detail [#352](https://github.com/kgz/stackwrangler/issues/352) |
@@ -108,7 +108,7 @@ Open work that blocks calling the vision “done”. Prefer Debt tickets over si
 
 | Gap | Why it matters | Track |
 |-----|----------------|--------|
-| Dual S3 (SeaweedFS `:8333` vs LocalEmu `:4566`) | Easy to point CLI/console/Lambda at different brains | [Concepts](./concepts) · unify later |
+| Org-path S3 unified on LocalEmu `:4566` | SeaweedFS remains optional parity only | [Concepts](./concepts) · [#162](https://github.com/kgz/stackwrangler/issues/162) |
 | Org-path **one E2E smoke** (Transfer → Lambda → S3 → ECS → RDS) | Vision demo path still not one script | [#90](https://github.com/kgz/stackwrangler/issues/90) / [#91](https://github.com/kgz/stackwrangler/issues/91) |
 | IAM / workload-role **depth** | Authz must match AWS beyond the S3 deny lab | [#144](https://github.com/kgz/stackwrangler/issues/144) · resource-policy smokes exist |
 | Transfer console / LOGICAL / IdP / AS2 | SFTP bytes Partial; console & fidelity incomplete | [#321](https://github.com/kgz/stackwrangler/issues/321) · [#322](https://github.com/kgz/stackwrangler/issues/322) · [#314](https://github.com/kgz/stackwrangler/issues/314) |

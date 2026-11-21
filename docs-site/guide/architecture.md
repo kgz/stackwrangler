@@ -57,12 +57,12 @@ We keep the API surface on LocalEmu (and moto inside it for many backends), then
 
 That is why an OpenTofu path with IAM + VPC + messaging behaves more like the org account you will deploy to — and why we disagree with “emulators are never enough for enterprise IAM/VPC.” The bar is **account behaviour we smoke**, not a commercial badge.
 
-## Dual S3 (intentional)
+## Org-path S3 (single brain)
 
-Console / `profile local` S3 → SeaweedFS `:8333`.  
-IaC / Lambda / events / IAM labs → LocalEmu S3 `:4566`.
+Console / `profile local` / IaC / Lambda / Transfer / events → **LocalEmu S3** `:4566`.  
+SeaweedFS `:8333` is optional parity only.
 
-Documented split — [Concepts](./concepts), [Dual S3](./interactions/dual-s3). Not a hidden bug.
+Contract — [Concepts](./concepts), [Org-path S3](./interactions/dual-s3).
 
 ## Related
 

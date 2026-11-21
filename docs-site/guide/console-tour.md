@@ -6,7 +6,7 @@ Assets live in shared [`docs/assets/console/`](https://github.com/kgz/stackwrang
 
 ## Home — S3 buckets
 
-General purpose buckets UI talks to **SeaweedFS** on `:8333`.
+General purpose buckets UI talks to **LocalEmu S3** (same org-path brain as `aws --profile local`).
 
 ![S3 buckets](/assets/console/home-s3-buckets.png)
 

@@ -462,7 +462,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
-| **Seaweed vs LocalEmu S3 are separate stores** | sad/other | covered | `./smokes/s3/s3-dual-endpoint-smoke.sh` · [s3-backends.md](s3-backends.md) |
+| **Org-path S3 = LocalEmu; profile local sees put; Seaweed does not** | happy + sad | covered | `./smokes/s3/s3-org-path-brain-smoke.sh` · [s3-backends.md](s3-backends.md) |
 | `awsl apply` synthetic VPC/subnet/SG ids + CIDRs | happy | covered | `./smokes/account/mirror-smoke.sh` · [mirror.md](mirror.md) |
 | `awsl apply` fixture tags (Name, CDK subnet, Tier=private RT) + TF data sources | happy | covered | `./smokes/account/mirror-tags-smoke.sh` · [mirror.md](mirror.md) |
 | `awsl mirror --out` inside the repo (not gitignored) | sad/other | covered | `./smokes/account/mirror-smoke.sh` |

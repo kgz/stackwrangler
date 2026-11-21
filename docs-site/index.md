@@ -80,7 +80,7 @@ Screenshots from a **local** stack after `./bin/stackwrangler up` (not the AWS M
 <div class="sw-shot-strip">
   <figure>
     <img src="/assets/console/home-s3-buckets.png" alt="S3 buckets in the local console" />
-    <figcaption>S3 — SeaweedFS buckets UI</figcaption>
+    <figcaption>S3 — LocalEmu org-path buckets UI</figcaption>
   </figure>
   <figure>
     <img src="/assets/console/lambda-functions.png" alt="Lambda functions list" />

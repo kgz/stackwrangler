@@ -32,7 +32,7 @@
 
 - **“Just a wrapper / same validation limits”** — false. Defaults, patches, and parity smokes change fidelity.
 - **“Loopback means prefer LocalEmu for Expo”** — host ports publish as `127.0.0.1` on purpose (laptop safety). Phone → laptop is a host-reachability problem either way; simulators often need no bind change (`127.0.0.1` / Android `10.0.2.2`). See the [OpenTofu → Expo use case](../use-cases/opentofu-expo-iam).
-- **Dual S3** — console buckets use SeaweedFS (`:8333`); IaC / Lambda / events use LocalEmu S3 (`:4566`). Intentional for now — [Concepts](../concepts), [Dual S3](../interactions/dual-s3).
+- **Org-path S3** — console, `profile local`, and IaC / Lambda / events share LocalEmu S3 (`:4566`). SeaweedFS is optional parity — [Concepts](../concepts), [Org-path S3](../interactions/dual-s3).
 
 ## Spine
 
