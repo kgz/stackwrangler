@@ -26,10 +26,11 @@ export const e2eCreds = {
     'stackwranglerstackwrangler',
   ),
   region: swEnv('STACKWRANGLER_REGION', 'AWSBOX_REGION', 'us-east-1'),
+  /** Org-path S3 = LocalEmu (same as iamEndpoint). Seaweed is optional parity only. */
   endpoint: swEnv(
-    'STACKWRANGLER_ENDPOINT',
-    'AWSBOX_ENDPOINT',
-    'http://127.0.0.1:8333',
+    'STACKWRANGLER_IAM_ENDPOINT',
+    'AWSBOX_IAM_ENDPOINT',
+    'http://127.0.0.1:4566',
   ),
   iamEndpoint: swEnv(
     'STACKWRANGLER_IAM_ENDPOINT',

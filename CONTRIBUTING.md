@@ -21,7 +21,7 @@ cp .env.example .env   # first time; `up` also does this
 aws --profile local s3 ls
 ```
 
-SeaweedFS S3 is `:8333`; LocalEmu (IAM, Lambda, CFN, …) is `:4566`. Public image users get a baked nginx console instead of Vite — [docs/docker-install.md](docs/docker-install.md).
+Org-path S3 + LocalEmu (IAM, Lambda, CFN, …) is `:4566`; SeaweedFS `:8333` is optional parity only ([docs/s3-backends.md](docs/s3-backends.md)). Public image users get a baked nginx console instead of Vite — [docs/docker-install.md](docs/docker-install.md).
 
 ```bash
 ./bin/stackwrangler down                 # keep profile

@@ -14,7 +14,7 @@ When you redistribute stackwrangler **together with** third-party bits (for exam
 |-----------|------|----------|------------------------|
 | **LocalEmu** | Apache-2.0 | [localemu/localemu](https://github.com/localemu/localemu) · image `localemu/localemu` | Primary AWS API emulator (`:4566`) — IAM, Lambda, CFN, Transfer, RDS control plane, LocalEmu S3 for IaC/events, etc. |
 | **moto** | Apache-2.0 | [getmoto/moto](https://github.com/getmoto/moto) | Used inside LocalEmu for many service backends (not a separate compose service here). |
-| **SeaweedFS** | Apache-2.0 | [seaweedfs/seaweedfs](https://github.com/seaweedfs/seaweedfs) · image `chrislusf/seaweedfs` | Object store for console general-purpose buckets UI (`:8333`). |
+| **SeaweedFS** | Apache-2.0 | [seaweedfs/seaweedfs](https://github.com/seaweedfs/seaweedfs) · image `chrislusf/seaweedfs` | Optional S3 parity sidecar (`:8333`); org-path S3 is LocalEmu (`:4566`). |
 | **distribution/registry** | Apache-2.0 | [distribution/distribution](https://github.com/distribution/distribution) · image `registry:2` | Local OCI registry used for ECR-shaped push/pull (`ecr-registry` service). |
 | **atmoz/sftp** | MIT | [atmoz/sftp](https://github.com/atmoz/sftp) · image `atmoz/sftp` | SFTP sidecar used with Transfer Family local dataplane. |
 

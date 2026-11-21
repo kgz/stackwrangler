@@ -32,7 +32,7 @@ SLS_TIMEOUT_SECS="${AWSBOX_SLS_TIMEOUT_SECS:-120}"
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
 export AWS_DEFAULT_REGION="$REGION"
-# Force every SDK call (incl. S3 artifacts) onto LocalEmu — not SeaweedFS via profile local.
+# Force every SDK call (incl. S3 artifacts) onto LocalEmu (org-path brain).
 export AWS_ENDPOINT_URL="$EP"
 export AWSBOX_SLSE_DEPLOY_BUCKET="$DEPLOY_BUCKET"
 export AWSBOX_SLSE_SUFFIX="$SUFFIX"

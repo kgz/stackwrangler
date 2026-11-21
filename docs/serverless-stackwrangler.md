@@ -35,7 +35,7 @@ For **host** AWS CLI / SDK v3 calls against LocalEmu:
 export AWS_ENDPOINT_URL="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 ```
 
-`AWS_ENDPOINT_URL` must point at LocalEmu for those clients (including deployment-bucket prep). Profile `local` alone sends S3 to SeaweedFS (`:8333`).
+`AWS_ENDPOINT_URL` should point at LocalEmu for those clients (including deployment-bucket prep). Profile `local` already sends S3 to LocalEmu (`:4566`) — same org-path brain as console ([s3-backends.md](s3-backends.md)).
 
 Optional S3-specific endpoint (virtual-hosted style clients):
 

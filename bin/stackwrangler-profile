@@ -43,7 +43,8 @@ load_env() {
 	ACCESS_KEY="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
 	SECRET_KEY="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
 	REGION="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
-	ENDPOINT="$(sw_env STACKWRANGLER_ENDPOINT AWSBOX_ENDPOINT http://127.0.0.1:8333)"
+	# Org-path S3 brain is LocalEmu (same as IAM/Transfer/Lambda). SeaweedFS
+	# (STACKWRANGLER_ENDPOINT :8333) stays optional for parity smokes only (#162).
 	IAM_ENDPOINT="$(sw_env STACKWRANGLER_IAM_ENDPOINT AWSBOX_IAM_ENDPOINT http://127.0.0.1:4566)"
 }
 
@@ -120,7 +121,7 @@ cmd_write() {
 		echo "[services ${SERVICES_NAME}]"
 		echo "$MARKER"
 		echo "s3 ="
-		echo "    endpoint_url = ${ENDPOINT}"
+		echo "    endpoint_url = ${IAM_ENDPOINT}"
 		echo "    addressing_style = path"
 		echo "    signature_version = s3v4"
 		echo "iam ="
@@ -174,7 +175,7 @@ cmd_write() {
 	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true
 	sed -i '1{/^$/d}' "$CONFIG_FILE" 2>/dev/null || true
 
-	echo "wrote profile '${PROFILE_NAME}' → s3 ${ENDPOINT}, LocalEmu services (incl. waf/nfw/fms/batch/asg/beanstalk/apprunner) ${IAM_ENDPOINT} (region ${REGION})"
+	echo "wrote profile '${PROFILE_NAME}' → s3 + LocalEmu services ${IAM_ENDPOINT} (org-path brain; region ${REGION})"
 }
 
 cmd_remove() {

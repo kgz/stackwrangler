@@ -34,7 +34,7 @@ Smoke pattern for each hop: happy path **and** at least one deliberate authz fai
 
 ### Already real (keep raising the bar)
 
-- **S3** — objects (SeaweedFS UI + LocalEmu for IaC/events)
+- **S3** — objects (LocalEmu org-path brain; SeaweedFS optional parity)
 - **Lambda** — Docker invokes that write/read
 - **ECS / EC2** — container-backed tasks/instances
 - **IAM / STS** — enforcement on; lab proves one path (`./smokes/security/iam-access-denied.sh`); every service smoke should cover authz under its real principal
@@ -59,10 +59,10 @@ aws --profile local …   # same resources
 
 | Surface | Backend today |
 |---------|----------------|
-| Console **General purpose buckets** UI | SeaweedFS `:8333` |
-| IAM / Lambda / Logs / API GW / CFN / Transfer / **IaC S3** | LocalEmu `:4566` |
+| Console **General purpose buckets** UI | LocalEmu `:4566` (via `/aws-iam` proxy) |
+| `aws --profile local` S3 + IAM / Lambda / Logs / API GW / CFN / Transfer / **IaC S3** | LocalEmu `:4566` |
 
-S3 ↔ Lambda “actually do things” must use **one** S3 backend → **LocalEmu S3**. SeaweedFS stays the polished buckets page until/unless we unify.
+S3 ↔ Lambda “actually do things” uses **one** S3 backend → **LocalEmu S3** (#162). SeaweedFS `:8333` remains an optional parity sidecar only.
 
 LocalEmu is the emulator; **stackwrangler** is the product (compose, profile, console, smokes, examples, honesty about depth).
 
@@ -83,7 +83,7 @@ Orgs often tried **LocalStack** for full local repro and got a false green:
 |------|------------|
 | “Authz must match AWS” is absolute — full IAM/condition/SCP parity is rare | Claim **parity on smokes we ship**; document known gaps; expand smoke corpus |
 | Huge backlog of stub tickets recreates catalogue theatre | Execution order = org path data plane; stubs stay labeled stub |
-| Dual S3 (SeaweedFS vs LocalEmu) | **Keep split for now** — [docs/s3-backends.md](s3-backends.md); IaC/runtime LocalEmu; console/`local` SeaweedFS; `./smokes/s3/s3-dual-endpoint-smoke.sh` |
+| Dual S3 (SeaweedFS vs LocalEmu) | **Unified org path** — LocalEmu for console/`local`/IaC ([s3-backends.md](s3-backends.md)); Seaweed optional parity; `./smokes/s3/s3-org-path-brain-smoke.sh` |
 | Emulator ceiling (no real SFTP/RDS/…) | Sidecar or custom bridge; don’t pretend |
 
 ## How this shapes the board
