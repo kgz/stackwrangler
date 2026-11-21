@@ -28,6 +28,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
 | Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| `up` keeps compose overrides (`COMPOSE_EXTRA` / `override.yml` / `.awsbox/compose.local.yml`; dev `restart: unless-stopped`) | happy | covered | `./smokes/platform/up-compose-extra-smoke.sh` · [dev-mode.md](dev-mode.md) · [#748](https://github.com/kgz/stackwrangler/issues/748) |
 | `up` with custom keys in `.env`: S3 write probe uses them; a mismatch reports the key, not disk full (offline, stub `aws`) | happy + sad | covered | `./smokes/platform/up-env-keys-smoke.sh` · [#749](https://github.com/kgz/stackwrangler/issues/749) |
 | ECR edge network: default `10.254.218.0/24`, IP derived from subnet, overlap with another Docker network fails `up` early (offline, stub `docker`) | happy + sad | covered | `./smokes/platform/ecr-edge-subnet-smoke.sh` · [#750](https://github.com/kgz/stackwrangler/issues/750) |
 | `up --dev` as a user other than uid 1000: boot hook hands `.awsbox/dev/localemu` to `localemu` | happy | covered | `./smokes/platform/dev-state-owner-smoke.sh` · [#754](https://github.com/kgz/stackwrangler/issues/754) |
