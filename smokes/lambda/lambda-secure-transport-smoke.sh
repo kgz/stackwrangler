@@ -61,15 +61,23 @@ exports.handler = async (event) => {
   const caBundle = process.env.AWS_CA_BUNDLE || "";
   const nodeCa = process.env.NODE_EXTRA_CA_CERTS || "";
   const sslFile = process.env.SSL_CERT_FILE || "";
+  const phpIniScan = process.env.PHP_INI_SCAN_DIR || "";
+  const javaToolOptions = process.env.JAVA_TOOL_OPTIONS || "";
   const caMounted = fs.existsSync("/etc/awsbox/certs/ca.crt");
   const bundleMounted = fs.existsSync("/etc/awsbox/certs/ca-bundle.crt");
+  const phpIniMounted = fs.existsSync("/etc/awsbox/php/zz-awsbox-ca.ini");
+  const truststoreMounted = fs.existsSync("/etc/awsbox/certs/truststore.p12");
   const out = {
     endpoint,
     caBundle,
     nodeCa,
     sslFile,
+    phpIniScan,
+    javaToolOptions,
     caMounted,
     bundleMounted,
+    phpIniMounted,
+    truststoreMounted,
   };
   if (event && event.mode === "env-only") {
     return out;
@@ -171,6 +179,14 @@ echo "$ENV_BODY" | grep -qE '"caMounted"[[:space:]]*:[[:space:]]*true' \
 	|| fail "CA not mounted: $ENV_BODY"
 echo "$ENV_BODY" | grep -qE '"bundleMounted"[[:space:]]*:[[:space:]]*true' \
 	|| fail "CA bundle not mounted: $ENV_BODY"
+echo "$ENV_BODY" | grep -qE '"phpIniScan"[[:space:]]*:[[:space:]]*"[^"]*/etc/awsbox/php' \
+	|| fail "missing PHP_INI_SCAN_DIR: $ENV_BODY"
+echo "$ENV_BODY" | grep -qE 'javax\.net\.ssl\.trustStore=/etc/awsbox/certs/truststore\.p12' \
+	|| fail "missing JAVA_TOOL_OPTIONS trustStore: $ENV_BODY"
+echo "$ENV_BODY" | grep -qE '"phpIniMounted"[[:space:]]*:[[:space:]]*true' \
+	|| fail "PHP CA ini not mounted: $ENV_BODY"
+echo "$ENV_BODY" | grep -qE '"truststoreMounted"[[:space:]]*:[[:space:]]*true' \
+	|| fail "Java truststore not mounted: $ENV_BODY"
 
 GET_PAYLOAD="$(BUCKET="$BUCKET" python3 -c 'import json,os; print(json.dumps({"bucket":os.environ["BUCKET"],"key":"obj.txt"}))')"
 aws lambda invoke \

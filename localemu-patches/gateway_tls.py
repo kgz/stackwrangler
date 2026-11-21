@@ -13,6 +13,9 @@ This module:
   * publishes the CA under ``/var/lib/awsbox/tls`` (compose ``./.awsbox``)
     so ECS / Lambda / EC2 can bind-mount it and set ``AWS_CA_BUNDLE`` /
     ``NODE_EXTRA_CA_CERTS`` / ``SSL_CERT_FILE``
+  * also publishes a PHP scan-dir ini and a PKCS12 truststore so PHP
+    (ext-curl / openssl) and Java (javax.net.ssl) trust the same CA —
+    those runtimes ignore the env vars above (#771)
 
 Reminting the CA on every start breaks verification: tasks mount the new
 CA from ``.awsbox`` while the live gateway still serves the previous leaf
@@ -25,6 +28,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import os
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -36,8 +40,14 @@ CA_BUNDLE_NAME = "ca-bundle.crt"
 CA_KEY_NAME = "ca.key"
 LEAF_CERT_NAME = "server.crt"
 LEAF_KEY_NAME = "server.key"
+PHP_INI_DIR_NAME = "php"
+PHP_INI_NAME = "zz-awsbox-ca.ini"
+TRUSTSTORE_NAME = "truststore.p12"
+TRUSTSTORE_MARKER_NAME = "truststore.ok"
+JAVA_TRUSTSTORE_PASS = "changeit"
 EMU_DNS_NAME = "localemu.awsbox"
 TASK_CA_DIR = "/etc/awsbox/certs"
+TASK_PHP_DIR = "/etc/awsbox/php"
 
 
 def ensure_gateway_tls(*, force_remint: bool = False) -> Path:
@@ -88,11 +98,19 @@ def ensure_gateway_tls(*, force_remint: bool = False) -> Path:
         LOG.debug("gateway TLS reusing existing CA + leaf")
 
     bundle_parts = [_system_ca_bundle_bytes(), ca_cert_pem]
+    bundle_bytes = b"".join(p for p in bundle_parts if p)
     try:
-        bundle.write_bytes(b"".join(p for p in bundle_parts if p))
+        bundle.write_bytes(bundle_bytes)
     except OSError:
         # boot.d often runs as root; start.d as localemu — skip rewrite if owned.
         LOG.debug("ca-bundle rewrite skipped", exc_info=True)
+        try:
+            bundle_bytes = bundle.read_bytes() if bundle.is_file() else bundle_bytes
+        except OSError:
+            pass
+
+    _write_php_ca_ini(bundle_ctr_path=f"{TASK_CA_DIR}/{CA_BUNDLE_NAME}")
+    _write_java_truststore(bundle_bytes if bundle_bytes else ca_cert_pem)
 
     _install_localemu_server_pem(leaf_cert_pem, leaf_key_pem)
     _chown_tls_tree()
@@ -112,9 +130,29 @@ def task_ca_host_paths() -> tuple[str | None, str | None]:
     return ca, bundle
 
 
+def task_php_ini_host_path() -> str | None:
+    """Docker-host path for the PHP scan-dir directory (BindMount)."""
+    return _resolve_host_bind(str(TLS_DIR / PHP_INI_DIR_NAME))
+
+
+def task_truststore_host_path() -> str | None:
+    """Docker-host path for the Java PKCS12 truststore (BindMount)."""
+    return _resolve_host_bind(str(TLS_DIR / TRUSTSTORE_NAME))
+
+
 def container_ca_paths() -> tuple[str, str]:
     """In-container paths for the CA cert and CA bundle."""
     return f"{TASK_CA_DIR}/{CA_CERT_NAME}", f"{TASK_CA_DIR}/{CA_BUNDLE_NAME}"
+
+
+def container_php_ini_path() -> str:
+    """In-container path for the PHP CA ini (under PHP_INI_SCAN_DIR)."""
+    return f"{TASK_PHP_DIR}/{PHP_INI_NAME}"
+
+
+def container_truststore_path() -> str:
+    """In-container path for the Java PKCS12 truststore."""
+    return f"{TASK_CA_DIR}/{TRUSTSTORE_NAME}"
 
 
 def apply_ca_env(env_vars: dict) -> None:
@@ -130,6 +168,38 @@ def apply_ca_env(env_vars: dict) -> None:
     env_vars.setdefault("NODE_EXTRA_CA_CERTS", ca_ctr)
     env_vars.setdefault("REQUESTS_CA_BUNDLE", bundle_ctr)
     env_vars.setdefault("CURL_CA_BUNDLE", bundle_ctr)
+    env_vars["AWS_CA_BUNDLE"] = bundle_ctr
+    env_vars["SSL_CERT_FILE"] = bundle_ctr
+    env_vars["NODE_EXTRA_CA_CERTS"] = ca_ctr
+    env_vars["REQUESTS_CA_BUNDLE"] = bundle_ctr
+    env_vars["CURL_CA_BUNDLE"] = bundle_ctr
+    _apply_php_ini_scan_dir(env_vars)
+    _apply_java_tool_options(env_vars)
+
+def _apply_php_ini_scan_dir(env_vars: dict) -> None:
+    """Point PHP at ``/etc/awsbox/php`` so curl.cainfo / openssl.cafile apply (#771)."""
+    if not (TLS_DIR / PHP_INI_DIR_NAME / PHP_INI_NAME).is_file():
+        return
+    extra = TASK_PHP_DIR
+    cur = env_vars.get("PHP_INI_SCAN_DIR")
+    if cur is None or cur == "":
+        # Leading colon keeps the compiled-in default scan dir.
+        env_vars["PHP_INI_SCAN_DIR"] = f":{extra}"
+    parts = [p for p in str(cur).split(":") if p]
+    if extra not in parts:
+        env_vars["PHP_INI_SCAN_DIR"] = f"{cur}:{extra}" if cur else f":{extra}"
+def _apply_java_tool_options(env_vars: dict) -> None:
+    """Inject javax.net.ssl.trustStore into JAVA_TOOL_OPTIONS (#771)."""
+    if not (TLS_DIR / TRUSTSTORE_NAME).is_file():
+    ts = container_truststore_path()
+    # Omit trustStoreType — Temurin cacerts may be JKS or PKCS12; Java probes.
+    inject = (
+        f"-Djavax.net.ssl.trustStore={ts} "
+        f"-Djavax.net.ssl.trustStorePassword={JAVA_TRUSTSTORE_PASS}"
+    )
+    cur = (env_vars.get("JAVA_TOOL_OPTIONS") or "").strip()
+    if "javax.net.ssl.trustStore=" in cur:
+    env_vars["JAVA_TOOL_OPTIONS"] = f"{cur} {inject}".strip() if cur else inject
 
 
 def append_no_proxy(env_vars: dict, host: str) -> None:
@@ -203,6 +273,7 @@ def inject_lambda_tls_trust(env_vars: dict, existing_flags: str, gw_ip: str) -> 
         f"{bundle_ctr}:",
         f"-v {bundle_host}:{bundle_ctr}:ro",
     )
+    flags = _append_php_java_mount_flags(flags)
     apply_ca_env(env_vars)
     return flags
 
@@ -228,7 +299,58 @@ def inject_task_tls_trust(env_vars: dict, volumes) -> None:
     ca_ctr, bundle_ctr = container_ca_paths()
     volumes.append(BindMount(ca_host, ca_ctr, read_only=True))
     volumes.append(BindMount(bundle_host, bundle_ctr, read_only=True))
+    _append_php_java_bind_mounts(volumes)
     apply_ca_env(env_vars)
+
+
+def _append_php_java_mount_flags(flags: str) -> str:
+    """Lambda docker flags: mount PHP ini dir + Java truststore when present."""
+    php_src = TLS_DIR / PHP_INI_DIR_NAME / PHP_INI_NAME
+    if php_src.is_file():
+        php_host = task_php_ini_host_path()
+        if php_host:
+            flags = _ensure_flag_token(
+                flags,
+                f"{TASK_PHP_DIR}:",
+                f"-v {php_host}:{TASK_PHP_DIR}:ro",
+            )
+        else:
+            LOG.warning("PHP CA ini host path unresolved; skip mount (#771)")
+    ts_src = TLS_DIR / TRUSTSTORE_NAME
+    if ts_src.is_file():
+        ts_host = task_truststore_host_path()
+        if ts_host:
+            ts_ctr = container_truststore_path()
+            flags = _ensure_flag_token(
+                flags,
+                f"{ts_ctr}:",
+                f"-v {ts_host}:{ts_ctr}:ro",
+            )
+        else:
+            LOG.warning("Java truststore host path unresolved; skip mount (#771)")
+    return flags
+
+
+def _append_php_java_bind_mounts(volumes) -> None:
+    """ECS/EC2 BindMounts for PHP ini dir + Java truststore when present."""
+    from localemu.utils.container_utils.container_client import BindMount
+
+    php_src = TLS_DIR / PHP_INI_DIR_NAME / PHP_INI_NAME
+    if php_src.is_file():
+        php_host = task_php_ini_host_path()
+        if php_host:
+            volumes.append(BindMount(php_host, TASK_PHP_DIR, read_only=True))
+        else:
+            LOG.warning("PHP CA ini host path unresolved; skip mount (#771)")
+    ts_src = TLS_DIR / TRUSTSTORE_NAME
+    if ts_src.is_file():
+        ts_host = task_truststore_host_path()
+        if ts_host:
+            volumes.append(
+                BindMount(ts_host, container_truststore_path(), read_only=True)
+            )
+        else:
+            LOG.warning("Java truststore host path unresolved; skip mount (#771)")
 
 
 def _san_lists() -> tuple[list[str], list[str]]:
@@ -413,6 +535,189 @@ def _mint_leaf_with_ca(
     )
 
 
+def _write_php_ca_ini(*, bundle_ctr_path: str) -> None:
+    """Write ``zz-awsbox-ca.ini`` so unmodified PHP images trust the gateway CA."""
+    php_dir = TLS_DIR / PHP_INI_DIR_NAME
+    try:
+        php_dir.mkdir(parents=True, exist_ok=True)
+        ini = php_dir / PHP_INI_NAME
+        ini.write_text(
+            "; stackwrangler / LocalEmu gateway CA (#771)\n"
+            f"curl.cainfo = {bundle_ctr_path}\n"
+            f"openssl.cafile = {bundle_ctr_path}\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        LOG.debug("PHP CA ini write skipped", exc_info=True)
+
+
+def _write_java_truststore(bundle_pem: bytes) -> None:
+    """Build a Java truststore with the gateway CA for javax.net.ssl (#771).
+
+    OpenSSL ``pkcs12 -nokeys`` produces bags Java 17 loads as **0 entries**
+    (empty trustAnchors). Use keytool against a JRE ``cacerts`` copy instead
+    so public CAs remain trusted and our CA is added. Prefers host ``keytool``,
+    then a one-shot ``docker run eclipse-temurin:17-jre`` (marker file avoids
+    re-running docker on every LocalEmu start).
+    """
+    del bundle_pem  # system CAs come from JRE cacerts; we only need ca.crt
+    ca_crt = TLS_DIR / CA_CERT_NAME
+    dest = TLS_DIR / TRUSTSTORE_NAME
+    marker = TLS_DIR / TRUSTSTORE_MARKER_NAME
+    if not ca_crt.is_file():
+        return
+    # Reuse when marker + store exist and are at least as new as the CA.
+    try:
+        if (
+            dest.is_file()
+            and marker.is_file()
+            and dest.stat().st_mtime >= ca_crt.stat().st_mtime
+            and marker.stat().st_mtime >= ca_crt.stat().st_mtime
+        ):
+            return
+    except OSError:
+        pass
+
+    ok = _write_java_truststore_keytool(ca_crt, dest)
+    if not ok:
+        ok = _write_java_truststore_docker(ca_crt, dest)
+    if not ok:
+        LOG.warning(
+            "Java truststore not built (no keytool/docker); "
+            "JAVA_TOOL_OPTIONS will be omitted (#771)"
+        )
+        return
+    try:
+        marker.write_text("awsbox-ca\n", encoding="utf-8")
+        _relax_key_perms(marker)
+    except OSError:
+        LOG.debug("Java truststore marker write skipped", exc_info=True)
+
+
+def _keytool_import_ca(keystore: Path, ca_crt: Path, *, keytool_bin: str = "keytool") -> bool:
+    """Import ``ca.crt`` into ``keystore`` (create store if needed)."""
+    try:
+        subprocess.run(
+            [
+                keytool_bin,
+                "-delete",
+                "-alias",
+                "awsbox-ca",
+                "-keystore",
+                str(keystore),
+                "-storepass",
+                JAVA_TRUSTSTORE_PASS,
+            ],
+            capture_output=True,
+            check=False,
+        )
+        result = subprocess.run(
+            [
+                keytool_bin,
+                "-importcert",
+                "-noprompt",
+                "-alias",
+                "awsbox-ca",
+                "-file",
+                str(ca_crt),
+                "-keystore",
+                str(keystore),
+                "-storepass",
+                JAVA_TRUSTSTORE_PASS,
+            ],
+            capture_output=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return False
+    if result.returncode != 0:
+        LOG.warning(
+            "keytool import failed rc=%s stderr=%s",
+            result.returncode,
+            (result.stderr or b"")[:300],
+        )
+        return False
+    _relax_key_perms(keystore)
+    return True
+
+
+def _write_java_truststore_keytool(ca_crt: Path, dest: Path) -> bool:
+    """Build truststore with host keytool + a seed store if required."""
+    java_home = os.environ.get("JAVA_HOME", "")
+    seed_candidates = []
+    if java_home:
+        seed_candidates.append(Path(java_home) / "lib" / "security" / "cacerts")
+    seed_candidates.extend(
+        [
+            Path("/etc/ssl/certs/java/cacerts"),
+            Path("/etc/pki/java/cacerts"),
+        ]
+    )
+    seed = next((p for p in seed_candidates if p.is_file()), None)
+    try:
+        if seed is not None:
+            dest.write_bytes(seed.read_bytes())
+        elif dest.exists():
+            dest.unlink()
+    except OSError:
+        LOG.debug("Java truststore seed copy failed", exc_info=True)
+        return False
+    # keytool creates the store on first -importcert when dest is missing.
+    return _keytool_import_ca(dest, ca_crt)
+
+
+def _write_java_truststore_docker(ca_crt: Path, dest: Path) -> bool:
+    """Build truststore via ``docker run eclipse-temurin:17-jre`` + keytool."""
+    host_tls = _resolve_host_bind(str(TLS_DIR))
+    if not host_tls:
+        LOG.debug("Java truststore docker: host TLS path unresolved")
+        return False
+    image = os.environ.get("AWSBOX_JAVA_TRUSTSTORE_IMAGE", "eclipse-temurin:17-jre")
+    script = (
+        "set -e; "
+        'cp "$JAVA_HOME/lib/security/cacerts" /tls/' + TRUSTSTORE_NAME + "; "
+        "keytool -delete -alias awsbox-ca -keystore /tls/" + TRUSTSTORE_NAME
+        + " -storepass " + JAVA_TRUSTSTORE_PASS + " >/dev/null 2>&1 || true; "
+        "keytool -importcert -noprompt -alias awsbox-ca -file /tls/" + CA_CERT_NAME
+        + " -keystore /tls/" + TRUSTSTORE_NAME
+        + " -storepass " + JAVA_TRUSTSTORE_PASS
+    )
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "run",
+                "--rm",
+                "-v",
+                f"{host_tls}:/tls",
+                image,
+                "bash",
+                "-c",
+                script,
+            ],
+            capture_output=True,
+            check=False,
+            timeout=180,
+        )
+    except FileNotFoundError:
+        return False
+    except subprocess.TimeoutExpired:
+        LOG.warning("Java truststore docker timed out (#771)")
+        return False
+    if result.returncode != 0:
+        LOG.warning(
+            "Java truststore docker failed rc=%s stderr=%s",
+            result.returncode,
+            (result.stderr or b"")[:400],
+        )
+        return False
+    if not dest.is_file():
+        return False
+    _relax_key_perms(dest)
+    LOG.info("Java truststore built via docker/%s (#771)", image)
+    return True
+
+
 def _system_ca_bundle_bytes() -> bytes:
     for candidate in (
         "/etc/ssl/certs/ca-certificates.crt",
@@ -471,7 +776,7 @@ def _chown_tls_tree() -> None:
         return
     try:
         os.chown(TLS_DIR, ent.pw_uid, ent.pw_gid)
-        for path in TLS_DIR.iterdir():
+        for path in TLS_DIR.rglob("*"):
             os.chown(path, ent.pw_uid, ent.pw_gid)
     except OSError:
         LOG.debug("chown tls tree skipped", exc_info=True)
