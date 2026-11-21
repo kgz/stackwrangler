@@ -486,7 +486,14 @@ cmd_down() {
 		fi
 	fi
 	# No -v: named volumes + .awsbox/dev survive for --dev warm restart.
-	"${COMPOSE[@]}" down "$@"
+	if [[ "$(read_mode)" == "dev" && $# -eq 0 ]]; then
+		# Keep the compose networks: preserved bridge-mode task containers are
+		# attached to <project>_default, and a recreated network gets a new ID
+		# they can't start on (#753). reset still removes networks.
+		"${COMPOSE[@]}" rm --stop --force
+	else
+		"${COMPOSE[@]}" down "$@"
+	fi
 	cleanup_localemu_vpc_networks
 	if [[ "$remove_profile" -eq 1 ]]; then
 		"$ROOT/bin/stackwrangler-profile" remove
