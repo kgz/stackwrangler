@@ -35,6 +35,52 @@ write_mode() {
 	printf '%s\n' "$1" >"$MODE_FILE"
 }
 
+# Append -f <file> once (compose merge order: later wins).
+compose_add_file() {
+	local f="$1" x
+	[[ -n "$f" ]] || return 0
+	# Absolute path when relative to ROOT.
+	if [[ "$f" != /* ]]; then
+		f="$ROOT/$f"
+	fi
+	[[ -f "$f" ]] || return 0
+	for x in "${COMPOSE[@]}"; do
+		[[ "$x" == "$f" ]] && return 0
+	done
+	COMPOSE+=(-f "$f")
+}
+
+# Caller / checkout overrides after base (+dev). #748
+# Order: docker-compose.override.yml → .awsbox/compose.local.yml →
+# STACKWRANGLER_COMPOSE_EXTRA (space-separated) → STACKWRANGLER_COMPOSE_OVERRIDE (single).
+append_compose_overrides() {
+	local f extras override
+	# up/status may call refresh_compose before load_root_env — pick up .env extras.
+	load_root_env
+	compose_add_file "$ROOT/docker-compose.override.yml"
+	compose_add_file "$ROOT/.awsbox/compose.local.yml"
+	extras="$(sw_env STACKWRANGLER_COMPOSE_EXTRA AWSBOX_COMPOSE_EXTRA "")"
+	# shellcheck disable=SC2086
+	for f in $extras; do
+		compose_add_file "$f"
+	done
+	override="$(sw_env STACKWRANGLER_COMPOSE_OVERRIDE AWSBOX_COMPOSE_OVERRIDE "")"
+	compose_add_file "$override"
+}
+
+# Print merged compose config (debug + smokes for #748).
+cmd_compose_config() {
+	local mode="${1:-}"
+	ensure_env
+	load_root_env
+	if [[ -n "$mode" ]]; then
+		refresh_compose "$mode"
+	else
+		refresh_compose
+	fi
+	"${COMPOSE[@]}" config
+}
+
 # Rebuild COMPOSE + persistence env from recorded (or pending) mode.
 refresh_compose() {
 	local mode="${1:-}"
@@ -56,6 +102,7 @@ refresh_compose() {
 		export AWSBOX_PERSISTENCE=0
 		export STACKWRANGLER_SEAWEED_VOLUME=seaweed-data
 	fi
+	append_compose_overrides
 }
 
 stack_containers_running() {
@@ -1084,6 +1131,10 @@ case "${1:-}" in
 	status)
 		cmd_status
 		;;
+	compose-config)
+		shift
+		cmd_compose_config "$@"
+		;;
 	console)
 		cmd_console
 		;;
@@ -1103,7 +1154,7 @@ case "${1:-}" in
 		exec "$ROOT/bin/awsl-mirror.sh" "$@"
 		;;
 	*)
-		echo "Usage: $0 up [--test|--dev] [--force] | down [--remove-profile] | reset | status | console | calls […] | sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] -- … | hosts … | mirror … | apply <fixture>" >&2
+		echo "Usage: $0 up [--test|--dev] [--force] | down [--remove-profile] | reset | status | compose-config [test|dev] | console | calls […] | sls [--cwd DIR] [--role-arn ARN] [--session-name NAME] [--use-session-env] -- … | hosts … | mirror … | apply <fixture>" >&2
 		exit 1
 		;;
 esac
