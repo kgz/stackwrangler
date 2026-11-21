@@ -7,7 +7,9 @@ awsbox runs **two** S3 APIs on purpose until a later unify. Do not expect one bu
 | **SeaweedFS** | `http://127.0.0.1:8333` | Console general-purpose S3, `aws --profile local` | Real object store + CORS for browser |
 | **LocalEmu S3** | `http://127.0.0.1:4566` | Lambda / CFN / CDK / SAM / Transfer bridge / IAM deny lab | Same process as IAM (`IAM_ENFORCEMENT=1`) |
 
-**Decision (#143):** keep the split for now. Document it; smoke it. Full unify (single brain for console + IaC) is a later project, not silent.
+**Decision (#143):** keep the split for now. Document it; smoke it.
+
+**v0.1.0 org path:** silent dual-brain fails the ship bar. Unify to one S3 brain **or** ship an explicit non-silent switch — [#162](https://github.com/kgz/stackwrangler/issues/162). Path narrative: [org-path.md](org-path.md).
 
 ## Profiles
 
