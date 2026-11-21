@@ -118,13 +118,18 @@ def container_ca_paths() -> tuple[str, str]:
 
 
 def apply_ca_env(env_vars: dict) -> None:
-    """Set SDK / runtime CA trust env vars to the in-container mount paths."""
+    """Set SDK / runtime CA trust env vars to the in-container mount paths.
+
+    Uses ``setdefault`` so a task definition (or Lambda env) that already
+    sets any of these keys keeps its value (#764). Some apps reuse
+    ``SSL_CERT_FILE`` for a *server* cert path, not OpenSSL's CA bundle.
+    """
     ca_ctr, bundle_ctr = container_ca_paths()
-    env_vars["AWS_CA_BUNDLE"] = bundle_ctr
-    env_vars["SSL_CERT_FILE"] = bundle_ctr
-    env_vars["NODE_EXTRA_CA_CERTS"] = ca_ctr
-    env_vars["REQUESTS_CA_BUNDLE"] = bundle_ctr
-    env_vars["CURL_CA_BUNDLE"] = bundle_ctr
+    env_vars.setdefault("AWS_CA_BUNDLE", bundle_ctr)
+    env_vars.setdefault("SSL_CERT_FILE", bundle_ctr)
+    env_vars.setdefault("NODE_EXTRA_CA_CERTS", ca_ctr)
+    env_vars.setdefault("REQUESTS_CA_BUNDLE", bundle_ctr)
+    env_vars.setdefault("CURL_CA_BUNDLE", bundle_ctr)
 
 
 def append_no_proxy(env_vars: dict, host: str) -> None:
