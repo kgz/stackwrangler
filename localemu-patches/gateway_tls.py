@@ -168,13 +168,9 @@ def apply_ca_env(env_vars: dict) -> None:
     env_vars.setdefault("NODE_EXTRA_CA_CERTS", ca_ctr)
     env_vars.setdefault("REQUESTS_CA_BUNDLE", bundle_ctr)
     env_vars.setdefault("CURL_CA_BUNDLE", bundle_ctr)
-    env_vars["AWS_CA_BUNDLE"] = bundle_ctr
-    env_vars["SSL_CERT_FILE"] = bundle_ctr
-    env_vars["NODE_EXTRA_CA_CERTS"] = ca_ctr
-    env_vars["REQUESTS_CA_BUNDLE"] = bundle_ctr
-    env_vars["CURL_CA_BUNDLE"] = bundle_ctr
     _apply_php_ini_scan_dir(env_vars)
     _apply_java_tool_options(env_vars)
+
 
 def _apply_php_ini_scan_dir(env_vars: dict) -> None:
     """Point PHP at ``/etc/awsbox/php`` so curl.cainfo / openssl.cafile apply (#771)."""
@@ -185,12 +181,16 @@ def _apply_php_ini_scan_dir(env_vars: dict) -> None:
     if cur is None or cur == "":
         # Leading colon keeps the compiled-in default scan dir.
         env_vars["PHP_INI_SCAN_DIR"] = f":{extra}"
+        return
     parts = [p for p in str(cur).split(":") if p]
     if extra not in parts:
         env_vars["PHP_INI_SCAN_DIR"] = f"{cur}:{extra}" if cur else f":{extra}"
+
+
 def _apply_java_tool_options(env_vars: dict) -> None:
     """Inject javax.net.ssl.trustStore into JAVA_TOOL_OPTIONS (#771)."""
     if not (TLS_DIR / TRUSTSTORE_NAME).is_file():
+        return
     ts = container_truststore_path()
     # Omit trustStoreType — Temurin cacerts may be JKS or PKCS12; Java probes.
     inject = (
@@ -199,6 +199,7 @@ def _apply_java_tool_options(env_vars: dict) -> None:
     )
     cur = (env_vars.get("JAVA_TOOL_OPTIONS") or "").strip()
     if "javax.net.ssl.trustStore=" in cur:
+        return
     env_vars["JAVA_TOOL_OPTIONS"] = f"{cur} {inject}".strip() if cur else inject
 
 
