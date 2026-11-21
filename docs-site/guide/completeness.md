@@ -37,7 +37,7 @@ Weighted across **64** README-matrix areas (Working ≈ 1.0 → Backlog = 0). Re
   </div>
 </div>
 
-Org-path (Transfer → Lambda → S3 → ECS → RDS + VPC) is ahead of the full catalogue because those hops partly exist — the single end-to-end smoke is still backlog.
+Org-path (Transfer → Lambda → S3 → ECS → RDS + VPC) is ahead of the full catalogue because those hops partly exist — the single end-to-end smoke is still backlog ([#781](https://github.com/kgz/stackwrangler/issues/781)). Honest path write-up: [Org path use case](./use-cases/org-path) · [docs/org-path.md](https://github.com/kgz/stackwrangler/blob/main/docs/org-path.md).
 
 ## Legend
 
@@ -108,8 +108,8 @@ Open work that blocks calling the vision “done”. Prefer Debt tickets over si
 
 | Gap | Why it matters | Track |
 |-----|----------------|--------|
-| Dual S3 (SeaweedFS `:8333` vs LocalEmu `:4566`) | Easy to point CLI/console/Lambda at different brains | [Concepts](./concepts) · unify later |
-| Org-path **one E2E smoke** (Transfer → Lambda → S3 → ECS → RDS) | Vision demo path still not one script | [#90](https://github.com/kgz/stackwrangler/issues/90) / [#91](https://github.com/kgz/stackwrangler/issues/91) |
+| Dual S3 (SeaweedFS `:8333` vs LocalEmu `:4566`) | Easy to point CLI/console/Lambda at different brains; blocks honest org-path ship bar | [Dual S3](./interactions/dual-s3) · unify / non-silent switch [#162](https://github.com/kgz/stackwrangler/issues/162) |
+| Org-path **one E2E smoke** (Transfer → Lambda → S3 → ECS → RDS) | Vision demo path still not one script | [#781](https://github.com/kgz/stackwrangler/issues/781) · example [#780](https://github.com/kgz/stackwrangler/issues/780) · docs [org path](./use-cases/org-path) |
 | IAM / workload-role **depth** | Authz must match AWS beyond the S3 deny lab | [#144](https://github.com/kgz/stackwrangler/issues/144) · resource-policy smokes exist |
 | Transfer console / LOGICAL / IdP / AS2 | SFTP bytes Partial; console & fidelity incomplete | [#321](https://github.com/kgz/stackwrangler/issues/321) · [#322](https://github.com/kgz/stackwrangler/issues/322) · [#314](https://github.com/kgz/stackwrangler/issues/314) |
 | ECS awsvpc / bridge / NLB fidelity | Org networking surprises | [#268](https://github.com/kgz/stackwrangler/issues/268) · [#247](https://github.com/kgz/stackwrangler/issues/247) · [#203](https://github.com/kgz/stackwrangler/issues/203) |

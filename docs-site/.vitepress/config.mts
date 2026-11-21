@@ -163,7 +163,22 @@ export default withMermaid(
               { text: 'Console tour', link: '/guide/console-tour' },
               { text: 'Concepts', link: '/guide/concepts' },
               { text: 'Interactions', link: '/guide/interactions/' },
+              { text: 'Use cases', link: '/guide/use-cases/' },
               { text: 'Changelog', link: '/guide/changelog' },
+            ],
+          },
+          {
+            text: 'Use cases',
+            items: [
+              { text: 'Index', link: '/guide/use-cases/' },
+              {
+                text: 'OpenTofu → Expo + IAM',
+                link: '/guide/use-cases/opentofu-expo-iam',
+              },
+              {
+                text: 'Org path (Transfer → RDS)',
+                link: '/guide/use-cases/org-path',
+              },
             ],
           },
           {

@@ -1,8 +1,8 @@
 # Dual S3 (SeaweedFS + LocalEmu)
 
-Console and `aws --profile local` object UI hit **SeaweedFS** (`:8333`). Lambda / IaC / S3 events hit **LocalEmu S3** (`:4566`). Same account shape; two backends on purpose.
+Console and `aws --profile local` object UI hit **SeaweedFS** (`:8333`). Lambda / IaC / Transfer home / S3 events hit **LocalEmu S3** (`:4566`). Same account shape; two backends on purpose **until** the org-path ship bar lands a single brain or non-silent switch ([#162](https://github.com/kgz/stackwrangler/issues/162)).
 
-**Status:** partial · Docs: [s3-backends.md](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md) · Debt trail [#143](https://github.com/kgz/stackwrangler/issues/143)
+**Status:** partial · Docs: [s3-backends.md](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md) · Org path: [use case](../use-cases/org-path) · Debt [#162](https://github.com/kgz/stackwrangler/issues/162) (from [#143](https://github.com/kgz/stackwrangler/issues/143))
 
 ## Sequence
 

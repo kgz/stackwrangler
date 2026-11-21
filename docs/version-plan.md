@@ -111,6 +111,11 @@ Patch cut for high-impact defects that escaped v0.0.7: `up --dev` restore/resume
 
 Transfer→…→RDS learning/staging path honest end-to-end; path-critical only.
 
+**Ship bar:** a stranger can `./bin/stackwrangler up`, apply the org-path example, put a file through SFTP, and see Lambda → S3 → ECS → RDS complete with the **same** resources in CLI, console, and IaC (no silent dual-S3 cross-wire). Limits documented. Not hosting-company ready (`v1.0.0`).
+
+**In cut:** path example + E2E smoke + docs; blockers that make that story a lie (single S3 brain / non-silent switch, RDS/IaC hard blocks, staging `up` override bugs).  
+**Out of cut:** catalogue width, Transfer console polish unless it blocks the path smoke, unscored Org-path Debt that is not E2E-critical.
+
 ### Unlabelled backlog
 
 Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche IaC, …). Milestone only. Do not pre-label `v0.1.1` / `v0.1.2` / `v1.0.0`.
