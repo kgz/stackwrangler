@@ -4,6 +4,7 @@ Point Terraform at LocalEmu (`AWSBOX_IAM_ENDPOINT`, default `http://127.0.0.1:45
 
 Worked examples:
 
+- [`examples/terraform/org-path/`](../examples/terraform/org-path/) — v0.1.0 org path (VPC → Transfer → Lambda → S3 → ECS → RDS); S3 on `:4566` ([#162](https://github.com/kgz/stackwrangler/issues/162), [#780](https://github.com/kgz/stackwrangler/issues/780))
 - [`examples/terraform/v002-tour/`](../examples/terraform/v002-tour/) — v0.0.2 public-path tour (SQS/SNS/Events/Kinesis/DynamoDB/Secrets/KMS/SFN/ECS/REST/RDS + Lambda/S3)
 - [`examples/terraform/stackwrangler-backend/`](../examples/terraform/stackwrangler-backend/) — remote state + DynamoDB lock
 - [`examples/terraform/s3-lambda/`](../examples/terraform/s3-lambda/) · [`ecs-nginx/`](../examples/terraform/ecs-nginx/)
