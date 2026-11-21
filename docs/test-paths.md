@@ -127,6 +127,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Lambda OAuth wrong client secret → 401, document not posted | sad/other | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda role missing other actions | sad/authz | missing | extend `lambda-authz-smoke.sh` / [#150](https://github.com/kgz/awsl/issues/150) |
 | ECS run-task + HTTP reachable | happy | covered | `./smokes/compute/ecs-smoke.sh` |
+| ECS two awsvpc tasks same containerPort/hostPort 8080 both RUNNING on distinct ENI IPs; DescribeTasks networkBindings; no Docker host PortBindings | happy | covered | `./smokes/compute/ecs-awsvpc-same-port-smoke.sh` · [#769](https://github.com/kgz/stackwrangler/issues/769) |
 | ECS `delete-cluster` → INACTIVE omitted from `list-clusters`; describe still returns it | happy | covered | `./smokes/compute/ecs-inactive-cluster-smoke.sh` · [#401](https://github.com/kgz/stackwrangler/issues/401) |
 | **ECS task role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./smokes/compute/ecs-authz-smoke.sh` |
 | ECS secrets `valueFrom` (ASM JSON key + SSM) via execution role | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
