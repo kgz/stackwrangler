@@ -13,6 +13,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Test/dev mode CLI (#288) | yes (usage, `status` mode, wipe-path markers, compose test/dev; leftover `.awsbox/dev` ignored in test) | — | — | — | `mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | `up` with custom keys in `.env` (#749) | yes (S3 probe signs with exported `.env` keys) | yes (wrong key → "rejected access key", fails fast, not "disk full") | — | — | `up-env-keys-smoke.sh` |
 | ECR edge subnet (#750) | yes (default outside Docker pools; IP follows subnet; own network reused) | yes (overlap → `up` stops and names the network) | — | — | `ecr-edge-subnet-smoke.sh` |
+| Dev state owner (#754) | yes (root-created `/var/lib/localemu` handed to `localemu` before the privilege drop; LocalEmu can write) | yes (nested root-owned files handed over too) | — | — | `dev-state-owner-smoke.sh` |
 | Dev mode keep-data (#288) | yes (`up --dev` → seed → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties) | — | — | — | `mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Reset RDS wipe (#200) | yes (dummy `localemu-rds-*` container + `*-data` volume gone after `reset`) | — | — | — | `mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Persist recreate multi-service (#200) | yes (`PERSISTENCE=1` volume: S3+IAM+Secrets+SSM+DDB+Lambda invoke after recreate) | — | — | — | `persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) |

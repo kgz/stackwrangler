@@ -28,6 +28,8 @@ Env the CLI sets (prefer `STACKWRANGLER_*`; `AWSBOX_*` still accepted as fallbac
 
 Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`.
 
+LocalEmu runs as uid 1000 inside its container. A boot hook gives `.awsbox/dev/localemu` to that user on start, so `up --dev` works whichever uid runs the CLI (#754). Files there end up owned by uid 1000 on the host; `reset` removes them through a container when your user can't.
+
 Do not set `STACKWRANGLER_PERSISTENCE=1` alone in `.env` for day-to-day use — without the `--dev` bind mounts, LocalEmu still writes into the container filesystem and a recreate loses it. Use `up --dev` (or a compose override that mounts `/var/lib/localemu` the same way).
 
 ## Warm restart ([#289](https://github.com/kgz/stackwrangler/issues/289))
