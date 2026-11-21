@@ -153,6 +153,8 @@ services:
       - ./localemu-patches/ecr_pull.py:/opt/awsbox/ecr/awsbox_ecr_pull.py:ro
       # Gateway HTTPS CA + leaf for ECS/Lambda/EC2 AWS_ENDPOINT_URL (#687/#696)
       - ./localemu-patches/gateway_tls.py:/opt/awsbox/tls/awsbox_gateway_tls.py:ro
+      # RDS MySQL server cert SANs + published rds-ca.pem (#765)
+      - ./localemu-patches/rds_tls.py:/opt/awsbox/tls/awsbox_rds_tls.py:ro
 
       # Private hosted zones (#206): answered by the same process as VPCE DNS (vpce_private_dns serve)
       - ./localemu-patches/r53_private_resolver.py:/opt/code/localemu/src/localemu/services/route53/private_resolver.py:ro
