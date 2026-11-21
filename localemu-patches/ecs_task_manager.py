@@ -156,7 +156,8 @@ class DockerTaskManager:
             for container in containers:
                 labels = container.get("labels", {})
                 task_arn = labels.get("localemu.task-arn")
-                if not task_arn or task_arn in self._tasks:
+                # One task can own several containers: group, don't skip (#747).
+                if not task_arn:
                     continue
                 c_name = labels.get("localemu.container-name", "unknown")
                 docker_name = container.get("name", "")

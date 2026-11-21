@@ -15,6 +15,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | ECR edge subnet (#750) | yes (default outside Docker pools; IP follows subnet; own network reused) | yes (overlap → `up` stops and names the network) | — | — | `ecr-edge-subnet-smoke.sh` |
 | Dev state owner (#754) | yes (root-created `/var/lib/localemu` handed to `localemu` before the privilege drop; LocalEmu can write) | yes (nested root-owned files handed over too) | — | — | `dev-state-owner-smoke.sh` |
 | Dev down keeps compose network (#753) | yes (bridge-mode task resumes after `down` → `up --dev`; same network ID) | — | — | — | `dev-down-keeps-network-smoke.sh` |
+| ECS restore: multi-container + held ports (#747) | yes (both containers of a 2-container task and a fixed-port task resume after `down` → `up --dev`) | yes (RunTask on a held host port → `RESOURCE:PORTS`; stop frees it) | — | — | `ecs-restore-multi-container-smoke.sh` |
 | Dev mode keep-data (#288) | yes (`up --dev` → seed → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties) | — | — | — | `mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Reset RDS wipe (#200) | yes (dummy `localemu-rds-*` container + `*-data` volume gone after `reset`) | — | — | — | `mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Persist recreate multi-service (#200) | yes (`PERSISTENCE=1` volume: S3+IAM+Secrets+SSM+DDB+Lambda invoke after recreate) | — | — | — | `persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) |

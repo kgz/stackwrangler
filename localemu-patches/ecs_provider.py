@@ -31,6 +31,29 @@ from localemu.services.plugins import Service, ServiceLifecycleHook
 
 LOG = logging.getLogger(__name__)
 
+
+def _freeze_task_state_progression() -> None:
+    """Keep ECS tasks in the status we set (RUNNING until StopTask) (#747).
+
+    moto's default ``ecs::task`` transition is ``manual``/``times=1`` and its
+    ``describe_tasks`` calls ``task.advance()``, so every DescribeTasks walks a
+    task RUNNING → DEACTIVATING → STOPPING → DEPROVISIONING → STOPPED while
+    ``desiredStatus`` stays RUNNING. The Docker overlay hides that in responses,
+    but persisted state then restores the task as stopped-yet-listed, holding
+    its ports. Real tasks only stop when stopped; StopTask sets STOPPED itself.
+    """
+    try:
+        from moto.moto_api import state_manager
+
+        state_manager.set_transition(
+            "ecs::task", {"progression": "manual", "times": 2**62},
+        )
+    except Exception:  # pragma: no cover — moto always installed
+        LOG.warning("could not freeze ecs::task state progression", exc_info=True)
+
+
+_freeze_task_state_progression()
+
 # Module-level task_manager singleton (double-checked locking)
 _task_manager = None
 _task_manager_lock = threading.Lock()
@@ -316,6 +339,8 @@ def _handle_run_task(
 
     tasks = result.get("tasks", [])
     if not tasks:
+        if not result.get("failures"):
+            result["failures"] = _port_clash_failures(context, request)
         return result
 
     for task in tasks:
@@ -1240,6 +1265,36 @@ def _iter_ecs_backends():
 _MISSING_CONTAINER_REASON = "Task container not restored"
 
 
+def _port_clash_failures(context: RequestContext, request: ServiceRequest) -> list:
+    """Moto places nothing and reports nothing when every container instance
+    already holds a requested host port. AWS returns ``RESOURCE:PORTS`` (#747)."""
+    try:
+        backend = _get_ecs_backend(context)
+        cluster = _normalize_cluster_name(request.get("cluster") or "default")
+        td = backend.describe_task_definition(request.get("taskDefinition") or "")
+        wanted = {
+            str(pm.get("hostPort"))
+            for cdef in getattr(td, "container_definitions", None) or []
+            for pm in (cdef.get("portMappings") or [])
+            if pm.get("hostPort")
+        }
+        failures = []
+        for ci in (backend.container_instances.get(cluster) or {}).values():
+            held = set()
+            for res in getattr(ci, "remaining_resources", None) or []:
+                if res.get("name") == "PORTS":
+                    held.update(str(p) for p in res.get("stringSetValue") or [])
+            if wanted & held:
+                failures.append({
+                    "arn": getattr(ci, "container_instance_arn", ""),
+                    "reason": "RESOURCE:PORTS",
+                })
+        return failures
+    except Exception:
+        LOG.debug("RunTask port-clash check failed", exc_info=True)
+        return []
+
+
 def _task_cluster_name(task) -> str:
     name = getattr(task, "cluster_name", None) or ""
     if name:
@@ -1493,11 +1548,19 @@ def _ecs_on_after_state_load() -> None:
                 status = (getattr(task, "_status", None) or "").upper()
                 if not status:
                     status = (getattr(task, "last_status", "") or "").upper()
-                if status in ("STOPPED", "DEPROVISIONING"):
-                    skipped += 1
-                    continue
                 task_arn = getattr(task, "task_arn", None) or task_id
                 desired = (getattr(task, "desired_status", "") or "").upper()
+                # ManagedState can tick ``_status`` to STOPPED while desired is
+                # still RUNNING: that task is listed as RUNNING and holds its
+                # ports, so resume or stop it below instead of skipping (#747).
+                if status in ("STOPPED", "DEPROVISIONING") and desired != "RUNNING":
+                    # Already stopped: still sweep any host ports it left held.
+                    _force_stop_missing_task(
+                        backend, task,
+                        reason=getattr(task, "stopped_reason", None) or "Task stopped",
+                    )
+                    skipped += 1
+                    continue
                 tracked = mgr._tasks.get(task_arn) if hasattr(mgr, "_tasks") else None
 
                 # Finish stop only when desired is STOPPED (never leave
