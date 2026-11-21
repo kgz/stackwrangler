@@ -368,7 +368,7 @@
 686	in-review	ECS SG exempt task-creds + AWS_ENDPOINT_URL VPCE stand-in
 687	in-review	ECS https AWS_ENDPOINT_URL + CA for SecureTransport
 696	in-review	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
-771	in-progress	ECS/Lambda PHP+Java trust injected https AWS_ENDPOINT_URL CA
+771	in-review	ECS/Lambda PHP+Java trust injected https AWS_ENDPOINT_URL CA
 684	in-review	ecr: restart catalog resync when registry keeps blobs
 709	in-review	IAM ECR repository actions use repository ARN
 714	in-review	sls: do not recreate LocalEmu via aws-redirect (#714)
