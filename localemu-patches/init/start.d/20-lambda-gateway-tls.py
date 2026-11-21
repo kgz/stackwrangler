@@ -1,9 +1,10 @@
-"""Lambda https AWS_ENDPOINT_URL + gateway CA (#696).
+"""Lambda https AWS_ENDPOINT_URL + gateway CA (#696 / #771).
 
 Upstream injects ``AWS_ENDPOINT_URL=http://<compose-ip>:4566``. Rewrite to
 ``https://localemu.awsbox:<port>`` (cert SAN), mount the gateway CA, and set
 ``AWS_CA_BUNDLE`` / ``NODE_EXTRA_CA_CERTS`` / ``SSL_CERT_FILE`` so
-``aws:SecureTransport`` matches ECS (#687).
+``aws:SecureTransport`` matches ECS (#687). Also mounts PHP ini + Java
+PKCS12 and sets ``PHP_INI_SCAN_DIR`` / ``JAVA_TOOL_OPTIONS`` (#771).
 
 CA env is applied only after ``-v`` mounts can succeed (same guard as
 ``inject_task_tls_trust``).

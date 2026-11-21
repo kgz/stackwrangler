@@ -133,9 +133,12 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS task with hard `memory` + soft `memoryReservation` sets both Docker HostConfig fields (#715) | sad | covered | `./smokes/compute/ecs-soft-memory-smoke.sh` |
 | ECS awsvpc task gets `https://localemu.awsbox:4566` + CA env; DenyNonSSL bucket allows task GetObject | happy | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
 | ECS task role over plain `http://` GetObject denied by bucket `aws:SecureTransport=false` Deny | sad/authz | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
+| ECS awsvpc + official `php:8.x-cli` (SDK only) DynamoDB GetItem via injected https `AWS_ENDPOINT_URL` (PHP_INI_SCAN_DIR / zz-awsbox-ca.ini) | happy | covered | `./smokes/compute/ecs-php-endpoint-ca-smoke.sh` · [#771](https://github.com/kgz/stackwrangler/issues/771) |
+| ECS awsvpc + official Temurin JRE (SDK only) DynamoDB GetItem via injected https `AWS_ENDPOINT_URL` (JAVA_TOOL_OPTIONS PKCS12) | happy | covered | `./smokes/compute/ecs-java-endpoint-ca-smoke.sh` · [#771](https://github.com/kgz/stackwrangler/issues/771) |
+| Lambda injects PHP_INI_SCAN_DIR + Java truststore mount/env with https endpoint | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#771](https://github.com/kgz/stackwrangler/issues/771) |
 | ECS private awsvpc + tight egress SG + VPCEs: task-role creds + `AWS_ENDPOINT_URL` / S3 GetObject | happy | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
 | ECS tight egress SG without VPCEs: creds still work; `AWS_ENDPOINT_URL` times out | sad/other | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
-| Lambda `https://localemu.awsbox:4566` + CA env/mount; DenyNonSSL bucket allows role GetObject | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
+| Lambda `https://localemu.awsbox:4566` + CA env/mount (incl. PHP ini + Java PKCS12); DenyNonSSL bucket allows role GetObject | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#696](https://github.com/kgz/stackwrangler/issues/696) / [#771](https://github.com/kgz/stackwrangler/issues/771) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
 | EC2 instance containers get same https `AWS_ENDPOINT_URL` + CA as ECS/Lambda | happy | covered | wiring in `localemu-patches/init/start.d/20-ec2-imds.py` · [#696](https://github.com/kgz/stackwrangler/issues/696) (no dedicated EC2 DenyNonSSL smoke; Lambda smoke covers SecureTransport path) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
@@ -471,7 +474,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./smokes/lambda/lambda-smoke.sh           # happy
 ./smokes/lambda/lambda-authz-smoke.sh     # sad/authz
-./smokes/lambda/lambda-secure-transport-smoke.sh  # https endpoint + DenyNonSSL (#696)
+./smokes/lambda/lambda-secure-transport-smoke.sh  # https endpoint + DenyNonSSL (#696); PHP/Java CA mounts (#771)
+./smokes/compute/ecs-php-endpoint-ca-smoke.sh     # PHP SDK GetItem via injected https CA (#771)
+./smokes/compute/ecs-java-endpoint-ca-smoke.sh    # Java SDK GetItem via PKCS12 truststore (#771)
 ./smokes/security/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
 ./smokes/security/resource-policy-cross-account-smoke.sh # A role vs B secret/key/bucket policies
 ./smokes/transfer/transfer-key-smoke.sh

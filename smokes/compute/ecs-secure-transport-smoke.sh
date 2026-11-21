@@ -146,11 +146,19 @@ echo "$ENV_OUT" | grep -q '^NODE_EXTRA_CA_CERTS=/etc/awsbox/certs/ca.crt$' \
 	|| fail "missing NODE_EXTRA_CA_CERTS: $ENV_OUT"
 echo "$ENV_OUT" | grep -q '^SSL_CERT_FILE=/etc/awsbox/certs/ca-bundle.crt$' \
 	|| fail "missing SSL_CERT_FILE: $ENV_OUT"
+echo "$ENV_OUT" | grep -qE '^PHP_INI_SCAN_DIR=.*(/etc/awsbox/php)' \
+	|| fail "missing PHP_INI_SCAN_DIR: $ENV_OUT"
+echo "$ENV_OUT" | grep -q 'JAVA_TOOL_OPTIONS=.*javax.net.ssl.trustStore=/etc/awsbox/certs/truststore.p12' \
+	|| fail "missing JAVA_TOOL_OPTIONS trustStore: $ENV_OUT"
 
 docker exec "$NAME" test -f /etc/awsbox/certs/ca.crt \
 	|| fail "CA not mounted at /etc/awsbox/certs/ca.crt"
 docker exec "$NAME" test -f /etc/awsbox/certs/ca-bundle.crt \
 	|| fail "CA bundle not mounted"
+docker exec "$NAME" test -f /etc/awsbox/php/zz-awsbox-ca.ini \
+	|| fail "PHP CA ini not mounted"
+docker exec "$NAME" test -f /etc/awsbox/certs/truststore.p12 \
+	|| fail "Java truststore not mounted"
 
 # TLS to the emulator must verify (no -k / no insecure flag).
 HEALTH="$(docker exec "$NAME" sh -c 'wget -qO- -T8 "$AWS_ENDPOINT_URL/_localemu/health"' 2>&1)" \
