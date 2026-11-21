@@ -89,6 +89,34 @@ def _vpc_networks_from_lb(lb: dict, account_id: str, region: str) -> list[str]:
     return nets
 
 
+def _sync_lb_sg_membership(
+    lb: dict, account_id: str, region: str, vpc_networks: list[str]
+) -> None:
+    """Register LocalEmu's VPC IP as a member of the LB security groups (#768)."""
+    try:
+        from localemu.services.ec2.docker import sg_enforcement
+
+        subnet_id = ""
+        for az in lb.get("AvailabilityZones") or []:
+            subnet_id = str(az.get("SubnetId") or "")
+            if subnet_id:
+                break
+        sg_enforcement.sync_load_balancer_membership(
+            lb_arn=str(lb.get("LoadBalancerArn") or ""),
+            sg_ids=[str(sg) for sg in (lb.get("SecurityGroups") or []) if sg],
+            vpc_networks=vpc_networks,
+            account_id=account_id,
+            region=region,
+            subnet_id=subnet_id,
+        )
+    except Exception:
+        LOG.debug(
+            "elbv2: SG membership sync failed for %s",
+            lb.get("LoadBalancerArn"),
+            exc_info=True,
+        )
+
+
 def _handle_create_load_balancer(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -100,15 +128,43 @@ def _handle_create_load_balancer(
         dns = _lb_dns_name(name, region)
         lb["DNSName"] = dns
         account_id = context.account_id or "000000000000"
+        vpc_networks = _vpc_networks_from_lb(lb, account_id, region)
         router.register_lb(
             arn=lb.get("LoadBalancerArn", ""),
             name=name,
             dns_name=dns,
             scheme=lb.get("Scheme", "internet-facing"),
             lb_type=lb.get("Type", "application"),
-            vpc_networks=_vpc_networks_from_lb(lb, account_id, region),
+            vpc_networks=vpc_networks,
         )
+        _sync_lb_sg_membership(lb, account_id, region, vpc_networks)
         LOG.info("ELBv2 LB created: %s (%s)", name, dns)
+    return result
+
+
+def _handle_set_security_groups(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    result = call_moto(context)
+    lb_arn = str(request.get("LoadBalancerArn") or "")
+    if not lb_arn:
+        return result
+    account_id = context.account_id or "000000000000"
+    region = context.region or "us-east-1"
+    meta = get_router().load_balancers.get(lb_arn) or {}
+    vpc_networks = [str(n) for n in (meta.get("vpc_networks") or []) if n]
+    try:
+        from localemu.services.ec2.docker import sg_enforcement
+
+        sg_enforcement.sync_load_balancer_membership(
+            lb_arn=lb_arn,
+            sg_ids=[str(sg) for sg in (request.get("SecurityGroups") or []) if sg],
+            vpc_networks=vpc_networks,
+            account_id=account_id,
+            region=region,
+        )
+    except Exception:
+        LOG.debug("elbv2: SetSecurityGroups membership failed for %s", lb_arn, exc_info=True)
     return result
 
 
@@ -422,6 +478,12 @@ def _handle_delete_load_balancer(
     for listener_arn in to_stop:
         router.stop_listener(listener_arn)
     if lb_arn:
+        try:
+            from localemu.services.ec2.docker import sg_enforcement
+
+            sg_enforcement.release_load_balancer(lb_arn)
+        except Exception:
+            LOG.debug("elbv2: SG membership release failed for %s", lb_arn, exc_info=True)
         router.forget_lb(lb_arn)
     return result
 
@@ -545,6 +607,7 @@ def _handle_describe_target_health(
 _INTERCEPTED_OPS = {
     "CreateLoadBalancer": _handle_create_load_balancer,
     "DeleteLoadBalancer": _handle_delete_load_balancer,
+    "SetSecurityGroups": _handle_set_security_groups,
     "DescribeLoadBalancers": _handle_describe_load_balancers,
     "CreateTargetGroup": _handle_create_target_group,
     "RegisterTargets": _handle_register_targets,

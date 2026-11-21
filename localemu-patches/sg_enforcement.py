@@ -6,10 +6,15 @@ runs the same apply, and refreshes rules when an SG or prefix list changes.
 
 Lambda (and any image without iptables) gets SG_IN / SG_OUT via the alpine
 netns sidecar used for VPC routes — never apt/yum into the workload image.
+
+ELBv2 load balancers also register LocalEmu's VPC address as a member of
+their security groups (#768) so target rules that reference the LB SG admit
+health checks and forwarded traffic.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
 from dataclasses import dataclass
@@ -33,7 +38,17 @@ class Workload:
     vpc_id: str = ""
 
 
+@dataclass
+class LbMembership:
+    eni_id: str
+    account_id: str
+    region: str
+    sg_ids: list[str]
+    vpc_id: str = ""
+
+
 _workloads: dict[str, Workload] = {}
+_lb_enis: dict[str, LbMembership] = {}
 
 
 def install() -> None:
@@ -47,7 +62,8 @@ def install() -> None:
     _patch_rds()
     _patch_rds_caps()
     LOG.info(
-        "awsbox SG enforcement installed (ECS awsvpc + RDS + VPC Lambda + prefix lists)"
+        "awsbox SG enforcement installed "
+        "(ECS awsvpc + RDS + VPC Lambda + ELBv2 SG membership + prefix lists)"
     )
 
 
@@ -103,6 +119,111 @@ def release_container(docker_name: str) -> None:
     except Exception:
         LOG.debug("SG release %s: ENI delete failed", docker_name, exc_info=True)
     _refresh_referencers(wl.sg_ids, wl.account_id, wl.region)
+
+
+def sync_load_balancer_membership(
+    lb_arn: str,
+    sg_ids: list[str] | None,
+    vpc_networks: list[str] | None,
+    account_id: str,
+    region: str,
+    subnet_id: str = "",
+) -> None:
+    """Count LocalEmu's VPC IP as a member of the load balancer's SGs (#768).
+
+    Health checks and forwards leave LocalEmu on the VPC bridge; without this
+    registration a target rule that names the LB SG has no members and drops
+    the traffic. Empty SG lists clear membership (same as no LB in that group).
+    """
+    install()
+    if not lb_arn:
+        return
+    account_id = account_id or "000000000000"
+    region = region or "us-east-1"
+    groups = [str(sg) for sg in (sg_ids or []) if sg]
+    if not groups:
+        release_load_balancer(lb_arn)
+        return
+
+    nets = [str(n) for n in (vpc_networks or []) if n]
+    if not nets:
+        LOG.debug("SG LB %s: no VPC networks; skip membership", lb_arn)
+        return
+
+    primary_ip = ""
+    vpc_id = ""
+    try:
+        from localemu.services.elbv2.listener_router import _join_network
+    except Exception:
+        LOG.debug("SG LB %s: listener_router unavailable", lb_arn, exc_info=True)
+        return
+    for net in nets:
+        ip = _join_network(net)
+        if not ip:
+            continue
+        prefix = "localemu-vpc-"
+        vid = net[len(prefix) :] if net.startswith(prefix) else ""
+        if not primary_ip:
+            primary_ip = ip
+            vpc_id = vid
+            break
+    if not primary_ip:
+        LOG.warning("SG LB %s: no VPC IP for networks %s", lb_arn, nets)
+        return
+
+    eni_id = _lb_eni_id(lb_arn)
+    with _lock:
+        prev = _lb_enis.get(lb_arn)
+    old_sgs = list(prev.sg_ids) if prev is not None else []
+    _upsert_eni(
+        eni_id=eni_id,
+        vpc_id=vpc_id,
+        subnet_id=subnet_id or "",
+        ip=primary_ip,
+        sg_ids=groups,
+        instance_id=f"elbv2:{lb_arn}",
+    )
+    membership = LbMembership(
+        eni_id=eni_id,
+        account_id=account_id,
+        region=region,
+        sg_ids=groups,
+        vpc_id=vpc_id,
+    )
+    with _lock:
+        _lb_enis[lb_arn] = membership
+    changed = list({*old_sgs, *groups})
+    _refresh_referencers(changed, account_id, region)
+    LOG.info(
+        "SG LB membership: %s ip=%s sgs=%s",
+        lb_arn.split(":")[-1],
+        primary_ip,
+        groups,
+    )
+
+
+def release_load_balancer(lb_arn: str) -> None:
+    """Drop the synthetic LB ENI so SG references lose LocalEmu's VPC IP."""
+    if not lb_arn:
+        return
+    with _lock:
+        membership = _lb_enis.pop(lb_arn, None)
+    if membership is None:
+        return
+    try:
+        from localemu.services.ec2.docker.address_index import get_address_index
+
+        get_address_index().delete_eni(membership.eni_id)
+    except Exception:
+        LOG.debug("SG LB release %s: ENI delete failed", lb_arn, exc_info=True)
+    _refresh_referencers(
+        membership.sg_ids, membership.account_id, membership.region
+    )
+
+
+def _lb_eni_id(lb_arn: str) -> str:
+    digest = hashlib.sha1(lb_arn.encode()).hexdigest()[:16]
+    return f"eni-elbv2-{digest}"
 
 
 def _patch_rule_builder() -> None:
