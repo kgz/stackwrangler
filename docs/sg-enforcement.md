@@ -2,8 +2,11 @@
 
 EC2, ECS `awsvpc` tasks, RDS instances, and VPC Lambdas on a VPC subnet enforce their security groups with iptables. A rule that names another security group allows the current members of that group and refuses everyone else. Changing a rule updates running workloads; they do not need to be recreated.
 
+ELBv2 load balancers count LocalEmu’s address on the VPC bridge as a member of the LB’s security groups ([#768](https://github.com/kgz/stackwrangler/issues/768)), so a target rule that admits traffic from the ALB/NLB SG allows health checks and forwards the same way AWS does from LB ENIs. An SG with no load balancer (and no other members) still has an empty reference.
+
 ```bash
 ./smokes/networking/sg-enforcement-smoke.sh
+./smokes/networking/elbv2-sg-member-smoke.sh   # ALB SG → target (#768)
 ```
 
 After pulling, recreate LocalEmu so the patch is mounted:

@@ -68,6 +68,35 @@ checks:
     script: smokes/parity/checks/kms-via-secrets-aliases.sh
     targets: [local, real]
 
+  - id: ecs-awsvpc-same-port
+    title: ECS awsvpc same containerPort / hostPort (#769)
+    issues: [769]
+    covers:
+      - "happy: two Fargate/awsvpc tasks with hostPort=containerPort=8080 both RUNNING"
+      - "DescribeTasks reports networkBindings; distinct ENI IPs; HTTP on each"
+      - "local: Docker PortBindings empty (no host publish)"
+    cost_tier: low
+    est_cost: "~$0.02 for ~15m (2×Fargate 0.25vCPU); $0 if torn down"
+    residual: none
+    suites: [ecs, v008, low]
+    script: smokes/parity/checks/ecs-awsvpc-same-port.sh
+    targets: [local, real]
+
+  - id: elbv2-sg-member
+    title: ALB SG membership for target SG references (#768)
+    issues: [768]
+    covers:
+      - "happy: target admitting only from ALB SG becomes healthy; listener forward 200"
+      - "real: LB ENIs carry the ALB security group"
+      - "local: Host-header forward via LocalEmu edge"
+    cost_tier: low
+    est_cost: "~$0.02 for ~15m (ALB + 1×Fargate); $0 if torn down"
+    residual: none
+    suites: [elbv2, networking, v008, low]
+    script: smokes/parity/checks/elbv2-sg-member.sh
+    targets: [local, real]
+
+
   # ---- legacy monoliths (unchanged bodies; catalog metadata only) ----
   - id: legacy-iam-denied
     title: "Legacy: IAM deny-user + empty role simulate"

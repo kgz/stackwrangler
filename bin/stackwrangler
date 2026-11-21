@@ -414,10 +414,14 @@ cmd_up() {
 	# Orphans with no endpoints (and this project's leftover lambda containers).
 	# --dev preserves stopped EC2/ECS/RDS containers for warm restart (#289).
 	cleanup_localemu_vpc_networks
+	load_root_env # .env may set the ECR edge subnet (#750)
+	sw_ecr_edge_check || exit 1
 	"${COMPOSE[@]}" up -d
+	# Export .env here: wait_healthy's S3 probe signs with the .env keys, and
+	# endpoint_url only loads them inside its own $(…) subshell (#749).
+	load_root_env
 	wait_healthy
 	# Optional IaC re-apply after healthy (#290).
-	load_root_env
 	run_dev_apply_hook
 	"$ROOT/bin/stackwrangler-profile" write "${profile_args[@]+"${profile_args[@]}"}"
 	sync_console_env
@@ -482,7 +486,14 @@ cmd_down() {
 		fi
 	fi
 	# No -v: named volumes + .awsbox/dev survive for --dev warm restart.
-	"${COMPOSE[@]}" down "$@"
+	if [[ "$(read_mode)" == "dev" && $# -eq 0 ]]; then
+		# Keep the compose networks: preserved bridge-mode task containers are
+		# attached to <project>_default, and a recreated network gets a new ID
+		# they can't start on (#753). reset still removes networks.
+		"${COMPOSE[@]}" rm --stop --force
+	else
+		"${COMPOSE[@]}" down "$@"
+	fi
 	cleanup_localemu_vpc_networks
 	if [[ "$remove_profile" -eq 1 ]]; then
 		"$ROOT/bin/stackwrangler-profile" remove

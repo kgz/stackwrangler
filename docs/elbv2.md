@@ -7,6 +7,8 @@ LocalEmu `elbv2` on `:4566` (`SERVICES` includes `elbv2`). Listeners are real so
 AWSBOX_ELBV2_E2E=1 ./bin/e2e.sh  # runs elbv2-smoke in e2e (off by default, #299)
 ./smokes/networking/elbv2-smoke.sh           # NLB/ALB forward, client IP, health, DNS, authz
 ./smokes/networking/elbv2-host-override-register-smoke.sh  # RegisterTargets keeps host_override (#603)
+./smokes/networking/elbv2-sg-member-smoke.sh  # ALB SG membership → target health (#768)
+./smokes/networking/elbv2-persist-restart-smoke.sh  # PERSISTENCE restart keeps LB/listener/rule/TG (#770)
 ./smokes/apigw/apigw-nlb-ecs-smoke.sh   # VPC_LINK → internal NLB → ECS ip target
 ```
 
@@ -28,6 +30,8 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 | DNS | LocalEmu and workloads on the LB VPC get the name in `/etc/hosts` (VPC address). The host list is `.awsbox/elbv2.hosts` (edge address for internet-facing). |
 | VPC_LINK | REST `HTTP_PROXY` integrations with NLB DNS as the URI resolve and forward through the TCP listener ([apigw-rest.md](apigw-rest.md)). |
 | Scheme | Internal listeners bind the VPC address only, so the compose-network address refuses the port. |
+| LB SG membership | LocalEmu’s VPC address is a member of the load balancer’s security groups so target rules that reference the LB SG admit health checks and forwards ([#768](https://github.com/kgz/stackwrangler/issues/768); `SetSecurityGroups` updates membership). |
+| Dev persistence | With `PERSISTENCE=1` / `--dev`, moto ELBv2 state is saved; on load the provider rebuilds LB DNS, target groups, registered targets, listener sockets (incl. ACM TLS), and rules, and rejoins LB VPC networks ([#770](https://github.com/kgz/stackwrangler/issues/770)). |
 
 Internet-facing listeners are reached at the LocalEmu container's compose-network IP (host → that IP works on Linux). Ports 80 and 443 are not published on the host, because those ports are often already taken.
 

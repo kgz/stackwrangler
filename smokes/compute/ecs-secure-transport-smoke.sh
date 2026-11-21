@@ -22,6 +22,7 @@ KEEP="${AWSBOX_ST_KEEP:-0}"
 IMAGE="awsbox-ecs-st:${TS}"
 TMP="$(mktemp -d)"
 TASK_ARN=""
+TASK_ARN_PRESERVE=""
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
@@ -34,6 +35,9 @@ aws() {
 
 cleanup() {
 	[[ "$KEEP" == "1" ]] && { rm -rf "$TMP"; return 0; }
+	if [[ -n "${TASK_ARN_PRESERVE:-}" ]]; then
+		aws ecs stop-task --cluster "$CLUSTER" --task "$TASK_ARN_PRESERVE" >/dev/null 2>&1 || true
+	fi
 	if [[ -n "$TASK_ARN" ]]; then
 		aws ecs stop-task --cluster "$CLUSTER" --task "$TASK_ARN" >/dev/null 2>&1 || true
 	fi
@@ -146,11 +150,19 @@ echo "$ENV_OUT" | grep -q '^NODE_EXTRA_CA_CERTS=/etc/awsbox/certs/ca.crt$' \
 	|| fail "missing NODE_EXTRA_CA_CERTS: $ENV_OUT"
 echo "$ENV_OUT" | grep -q '^SSL_CERT_FILE=/etc/awsbox/certs/ca-bundle.crt$' \
 	|| fail "missing SSL_CERT_FILE: $ENV_OUT"
+echo "$ENV_OUT" | grep -qE '^PHP_INI_SCAN_DIR=.*(/etc/awsbox/php)' \
+	|| fail "missing PHP_INI_SCAN_DIR: $ENV_OUT"
+echo "$ENV_OUT" | grep -q 'JAVA_TOOL_OPTIONS=.*javax.net.ssl.trustStore=/etc/awsbox/certs/truststore.p12' \
+	|| fail "missing JAVA_TOOL_OPTIONS trustStore: $ENV_OUT"
 
 docker exec "$NAME" test -f /etc/awsbox/certs/ca.crt \
 	|| fail "CA not mounted at /etc/awsbox/certs/ca.crt"
 docker exec "$NAME" test -f /etc/awsbox/certs/ca-bundle.crt \
 	|| fail "CA bundle not mounted"
+docker exec "$NAME" test -f /etc/awsbox/php/zz-awsbox-ca.ini \
+	|| fail "PHP CA ini not mounted"
+docker exec "$NAME" test -f /etc/awsbox/certs/truststore.p12 \
+	|| fail "Java truststore not mounted"
 
 # TLS to the emulator must verify (no -k / no insecure flag).
 HEALTH="$(docker exec "$NAME" sh -c 'wget -qO- -T8 "$AWS_ENDPOINT_URL/_localemu/health"' 2>&1)" \
@@ -189,4 +201,51 @@ set -e
 [[ "$GOT_RC" -eq 0 ]] || fail "task GetObject failed (SecureTransport?): $GOT"
 [[ "$GOT" == *secure-transport-ok* ]] || fail "unexpected object body: $GOT"
 
-echo "OK: ecs secure-transport (#687)"
+# #764: task-def SSL_CERT_FILE must not be overwritten by CA injection.
+FAMILY_PRESERVE="${FAMILY}-preserve"
+TASK_ARN_PRESERVE=""
+CDEFS_PRESERVE="$(IMAGE="$IMAGE" python3 -c '
+import json, os
+print(json.dumps([{
+  "name": "probe",
+  "image": os.environ["IMAGE"],
+  "essential": True,
+  "memory": 128,
+  "command": ["sleep", "180"],
+  "environment": [
+    {"name": "SSL_CERT_FILE", "value": "/mnt/dev/cert.pem"},
+  ],
+}]))
+')"
+aws ecs register-task-definition \
+	--family "$FAMILY_PRESERVE" \
+	--requires-compatibilities FARGATE \
+	--network-mode awsvpc \
+	--cpu 256 --memory 512 \
+	--task-role-arn "$ROLE_ARN" \
+	--container-definitions "$CDEFS_PRESERVE" \
+	>/dev/null
+TASK_ARN_PRESERVE="$(
+	aws ecs run-task \
+		--cluster "$CLUSTER" \
+		--task-definition "$FAMILY_PRESERVE" \
+		--launch-type FARGATE \
+		--network-configuration "$NET" \
+		--query 'tasks[0].taskArn' --output text
+)"
+[[ -n "$TASK_ARN_PRESERVE" && "$TASK_ARN_PRESERVE" != "None" ]] \
+	|| fail "preserve RunTask returned no taskArn"
+NAME_PRESERVE=""
+for _ in $(seq 1 90); do
+	NAME_PRESERVE="$(docker ps --filter "label=localemu.task-arn=${TASK_ARN_PRESERVE}" --format '{{.Names}}' | head -1)"
+	[[ -n "$NAME_PRESERVE" ]] && break
+	sleep 1
+done
+[[ -n "$NAME_PRESERVE" ]] || fail "preserve task container not running"
+PRESERVE_OUT="$(docker exec "$NAME_PRESERVE" printenv)"
+echo "$PRESERVE_OUT" | grep -q '^SSL_CERT_FILE=/mnt/dev/cert.pem$' \
+	|| fail "task-def SSL_CERT_FILE overwritten: $PRESERVE_OUT"
+echo "$PRESERVE_OUT" | grep -q '^AWS_CA_BUNDLE=/etc/awsbox/certs/ca-bundle.crt$' \
+	|| fail "missing AWS_CA_BUNDLE on preserve task: $PRESERVE_OUT"
+
+echo "OK: ecs secure-transport (#687, #764)"

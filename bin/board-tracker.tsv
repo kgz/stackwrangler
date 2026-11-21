@@ -368,6 +368,7 @@
 686	in-review	ECS SG exempt task-creds + AWS_ENDPOINT_URL VPCE stand-in
 687	in-review	ECS https AWS_ENDPOINT_URL + CA for SecureTransport
 696	in-review	Debt: Lambda/EC2 http AWS_ENDPOINT_URL (from #687)
+771	in-review	ECS/Lambda PHP+Java trust injected https AWS_ENDPOINT_URL CA
 684	in-review	ecr: restart catalog resync when registry keeps blobs
 709	in-review	IAM ECR repository actions use repository ARN
 714	in-review	sls: do not recreate LocalEmu via aws-redirect (#714)
@@ -380,3 +381,6 @@
 742	backlog	Debt: Terraform S3+DDB empty plan after LocalEmu recreate (from #200)
 743	backlog	Debt: RDS MySQL/Aurora SQL persist after LocalEmu recreate (from #200)
 289	in-review	warm restart prebuilt images + preserve stopped containers
+769	in-review	ecs: awsvpc no Docker host PortBindings (#769)
+765	in-review	rds: MySQL server cert SAN + published RDS CA (#765)
+770	in-review	Dev mode: ELBv2 lost on LocalEmu restart

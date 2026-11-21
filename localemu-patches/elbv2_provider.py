@@ -31,7 +31,7 @@ from localemu.aws.api import RequestContext, ServiceRequest, ServiceResponse
 from localemu.aws.skeleton import DispatchTable, Skeleton
 from localemu.services.elbv2.listener_router import TargetGroup, get_router
 from localemu.services.moto import _proxy_moto, call_moto
-from localemu.services.plugins import Service
+from localemu.services.plugins import Service, ServiceLifecycleHook
 
 LOG = logging.getLogger(__name__)
 
@@ -89,6 +89,34 @@ def _vpc_networks_from_lb(lb: dict, account_id: str, region: str) -> list[str]:
     return nets
 
 
+def _sync_lb_sg_membership(
+    lb: dict, account_id: str, region: str, vpc_networks: list[str]
+) -> None:
+    """Register LocalEmu's VPC IP as a member of the LB security groups (#768)."""
+    try:
+        from localemu.services.ec2.docker import sg_enforcement
+
+        subnet_id = ""
+        for az in lb.get("AvailabilityZones") or []:
+            subnet_id = str(az.get("SubnetId") or "")
+            if subnet_id:
+                break
+        sg_enforcement.sync_load_balancer_membership(
+            lb_arn=str(lb.get("LoadBalancerArn") or ""),
+            sg_ids=[str(sg) for sg in (lb.get("SecurityGroups") or []) if sg],
+            vpc_networks=vpc_networks,
+            account_id=account_id,
+            region=region,
+            subnet_id=subnet_id,
+        )
+    except Exception:
+        LOG.debug(
+            "elbv2: SG membership sync failed for %s",
+            lb.get("LoadBalancerArn"),
+            exc_info=True,
+        )
+
+
 def _handle_create_load_balancer(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
@@ -100,15 +128,43 @@ def _handle_create_load_balancer(
         dns = _lb_dns_name(name, region)
         lb["DNSName"] = dns
         account_id = context.account_id or "000000000000"
+        vpc_networks = _vpc_networks_from_lb(lb, account_id, region)
         router.register_lb(
             arn=lb.get("LoadBalancerArn", ""),
             name=name,
             dns_name=dns,
             scheme=lb.get("Scheme", "internet-facing"),
             lb_type=lb.get("Type", "application"),
-            vpc_networks=_vpc_networks_from_lb(lb, account_id, region),
+            vpc_networks=vpc_networks,
         )
+        _sync_lb_sg_membership(lb, account_id, region, vpc_networks)
         LOG.info("ELBv2 LB created: %s (%s)", name, dns)
+    return result
+
+
+def _handle_set_security_groups(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    result = call_moto(context)
+    lb_arn = str(request.get("LoadBalancerArn") or "")
+    if not lb_arn:
+        return result
+    account_id = context.account_id or "000000000000"
+    region = context.region or "us-east-1"
+    meta = get_router().load_balancers.get(lb_arn) or {}
+    vpc_networks = [str(n) for n in (meta.get("vpc_networks") or []) if n]
+    try:
+        from localemu.services.ec2.docker import sg_enforcement
+
+        sg_enforcement.sync_load_balancer_membership(
+            lb_arn=lb_arn,
+            sg_ids=[str(sg) for sg in (request.get("SecurityGroups") or []) if sg],
+            vpc_networks=vpc_networks,
+            account_id=account_id,
+            region=region,
+        )
+    except Exception:
+        LOG.debug("elbv2: SetSecurityGroups membership failed for %s", lb_arn, exc_info=True)
     return result
 
 
@@ -422,6 +478,12 @@ def _handle_delete_load_balancer(
     for listener_arn in to_stop:
         router.stop_listener(listener_arn)
     if lb_arn:
+        try:
+            from localemu.services.ec2.docker import sg_enforcement
+
+            sg_enforcement.release_load_balancer(lb_arn)
+        except Exception:
+            LOG.debug("elbv2: SG membership release failed for %s", lb_arn, exc_info=True)
         router.forget_lb(lb_arn)
     return result
 
@@ -545,6 +607,7 @@ def _handle_describe_target_health(
 _INTERCEPTED_OPS = {
     "CreateLoadBalancer": _handle_create_load_balancer,
     "DeleteLoadBalancer": _handle_delete_load_balancer,
+    "SetSecurityGroups": _handle_set_security_groups,
     "DescribeLoadBalancers": _handle_describe_load_balancers,
     "CreateTargetGroup": _handle_create_target_group,
     "RegisterTargets": _handle_register_targets,
@@ -569,10 +632,243 @@ def Elbv2Dispatcher(service_model) -> DispatchTable:
     return table
 
 
+def _action_to_dict(action) -> dict:
+    """Normalize a moto FakeAction (or dict) into the shape register_rule expects."""
+    if isinstance(action, dict):
+        return dict(action)
+    data = getattr(action, "data", None)
+    if isinstance(data, dict):
+        return dict(data)
+    out: dict = {}
+    for key in (
+        "Type",
+        "TargetGroupArn",
+        "ForwardConfig",
+        "RedirectConfig",
+        "FixedResponseConfig",
+        "AuthenticateOidcConfig",
+        "AuthenticateCognitoConfig",
+    ):
+        val = getattr(action, key, None)
+        if val is not None:
+            out[key] = val
+    return out
+
+
+def _forward_tg_arn(actions) -> str:
+    for action in actions or []:
+        data = _action_to_dict(action)
+        if (data.get("Type") or "").lower() != "forward":
+            continue
+        tg = data.get("TargetGroupArn") or ""
+        if not tg:
+            fw = data.get("ForwardConfig") or {}
+            tgs = fw.get("TargetGroups") or []
+            if tgs:
+                tg = tgs[0].get("TargetGroupArn") or ""
+        if tg:
+            return str(tg)
+    return ""
+
+
+def _vpc_networks_from_fake_lb(lb, account_id: str, region: str) -> list[str]:
+    """Docker VPC network names for a restored FakeLoadBalancer."""
+    vpc_id = getattr(lb, "vpc_id", "") or ""
+    if hasattr(vpc_id, "id"):
+        vpc_id = vpc_id.id
+    vpc_id = str(vpc_id or "")
+    if vpc_id:
+        return [f"localemu-vpc-{vpc_id}"]
+    nets: list[str] = []
+    for subnet in getattr(lb, "subnets", None) or []:
+        subnet_id = getattr(subnet, "id", None) or str(subnet or "")
+        if not subnet_id:
+            continue
+        resolved = _subnet_vpc_id(str(subnet_id), account_id, region)
+        if not resolved:
+            continue
+        name = f"localemu-vpc-{resolved}"
+        if name not in nets:
+            nets.append(name)
+    return nets
+
+
+def _listener_certificate_from_moto(listener) -> str | None:
+    certs = getattr(listener, "certificates", None) or []
+    for entry in certs:
+        arn = _certificate_arn_from_entry(entry)
+        if arn:
+            return arn
+    cert = getattr(listener, "certificate", None)
+    arn = _certificate_arn_from_entry(cert) if cert else ""
+    return arn or None
+
+
+def _restore_backend(router, backend, account_id: str, region: str) -> tuple[int, int, int, int]:
+    """Rebuild router state for one account/region moto backend.
+
+    Returns (lbs, target_groups, listeners, rules) counts.
+    """
+    lbs = getattr(backend, "load_balancers", {}) or {}
+    tgs = getattr(backend, "target_groups", {}) or {}
+
+    for lb in lbs.values():
+        name = getattr(lb, "name", "") or "lb"
+        arn = getattr(lb, "arn", "") or ""
+        if not arn:
+            continue
+        router.register_lb(
+            arn=arn,
+            name=name,
+            dns_name=_lb_dns_name(name, region),
+            scheme=getattr(lb, "scheme", None) or "internet-facing",
+            lb_type=getattr(lb, "type", None) or "application",
+            vpc_networks=_vpc_networks_from_fake_lb(lb, account_id, region),
+        )
+
+    for tg in tgs.values():
+        arn = getattr(tg, "arn", "") or ""
+        if not arn:
+            continue
+        hc_port = getattr(tg, "health_check_port", None)
+        try:
+            hc_port_int = int(hc_port) if hc_port and str(hc_port).isdigit() else None
+        except (ValueError, TypeError):
+            hc_port_int = None
+        port_raw = getattr(tg, "port", None)
+        try:
+            port_int = int(port_raw) if port_raw is not None else 80
+        except (ValueError, TypeError):
+            port_int = 80
+        router.register_target_group(TargetGroup(
+            arn=arn,
+            name=getattr(tg, "name", "") or "",
+            protocol=getattr(tg, "protocol", None) or "HTTP",
+            port=port_int,
+            health_check_port=hc_port_int,
+        ))
+        targets = []
+        for entry in (getattr(tg, "targets", {}) or {}).values():
+            if not isinstance(entry, dict):
+                continue
+            tid = entry.get("Id")
+            if not tid:
+                continue
+            target: dict = {"Id": tid}
+            if entry.get("Port") is not None:
+                target["Port"] = entry.get("Port")
+            targets.append(target)
+        if targets:
+            router.add_targets(arn, targets)
+
+    listeners_n = 0
+    rules_n = 0
+    for lb in lbs.values():
+        lb_arn = getattr(lb, "arn", "") or ""
+        meta = router.load_balancers.get(lb_arn) or {}
+        for listener in (getattr(lb, "listeners", {}) or {}).values():
+            protocol = (getattr(listener, "protocol", None) or "HTTP")
+            listener_arn = getattr(listener, "arn", "") or ""
+            if not listener_arn:
+                continue
+            if str(protocol).upper() not in ("HTTP", "HTTPS", "TCP", "TLS"):
+                continue
+            default_actions = getattr(listener, "default_actions", None) or []
+            target_group_arn = _forward_tg_arn(default_actions)
+            if not target_group_arn:
+                LOG.debug(
+                    "ELBv2 restore: listener %s has no forward action; skipping",
+                    listener_arn,
+                )
+                continue
+            try:
+                requested_port = int(getattr(listener, "port", None) or 80)
+            except (ValueError, TypeError):
+                requested_port = 80
+            router.start_listener(
+                lb_arn=lb_arn,
+                listener_arn=listener_arn,
+                protocol=str(protocol),
+                requested_port=requested_port,
+                target_group_arn=target_group_arn,
+                scheme=str(meta.get("scheme") or "internet-facing"),
+                vpc_networks=list(meta.get("vpc_networks") or []),
+                certificate_arn=_listener_certificate_from_moto(listener),
+            )
+            listeners_n += 1
+
+            non_default = getattr(listener, "_non_default_rules", None) or {}
+            for rule in non_default.values():
+                rule_arn = getattr(rule, "arn", "") or ""
+                if not rule_arn:
+                    continue
+                actions = [
+                    _action_to_dict(a) for a in (getattr(rule, "actions", None) or [])
+                ]
+                router.register_rule(
+                    rule_arn=rule_arn,
+                    listener_arn=listener_arn,
+                    priority=str(getattr(rule, "priority", "") or "1"),
+                    conditions=list(getattr(rule, "conditions", None) or []),
+                    actions=actions,
+                )
+                rules_n += 1
+
+    return len(lbs), len(tgs), listeners_n, rules_n
+
+
+def _elbv2_on_after_state_load() -> None:
+    """Rebuild listener sockets / rules / targets from restored moto state (#770)."""
+    try:
+        import moto.backends as moto_backends
+
+        bd = moto_backends.get_backend("elbv2")
+    except Exception:
+        LOG.debug("ELBv2 restore: no elbv2 backend", exc_info=True)
+        return
+
+    router = get_router()
+    total_lbs = total_tgs = total_listeners = total_rules = 0
+    for account_id, regions in list(bd.items()):
+        if not isinstance(regions, dict):
+            continue
+        for region, backend in list(regions.items()):
+            try:
+                lbs, tgs, listeners, rules = _restore_backend(
+                    router, backend, str(account_id), str(region),
+                )
+            except Exception:
+                LOG.warning(
+                    "ELBv2 restore failed for %s/%s",
+                    account_id, region, exc_info=True,
+                )
+                continue
+            total_lbs += lbs
+            total_tgs += tgs
+            total_listeners += listeners
+            total_rules += rules
+
+    if total_lbs or total_tgs or total_listeners or total_rules:
+        LOG.info(
+            "ELBv2 restore: %d LB(s), %d TG(s), %d listener(s), %d rule(s)",
+            total_lbs, total_tgs, total_listeners, total_rules,
+        )
+
+
+class Elbv2StateLifecycleHook(ServiceLifecycleHook):
+    def on_after_state_load(self) -> None:
+        _elbv2_on_after_state_load()
+
+
+_lifecycle_hook = Elbv2StateLifecycleHook()
+
+
 def create_elbv2_service() -> Service:
     from localemu.aws.spec import load_service
 
     service_model = load_service("elbv2")
     dispatch_table = Elbv2Dispatcher(service_model)
     skeleton = Skeleton(service_model, dispatch_table)
-    return Service(name="elbv2", skeleton=skeleton)
+    return Service(
+        name="elbv2", skeleton=skeleton, lifecycle_hook=_lifecycle_hook,
+    )

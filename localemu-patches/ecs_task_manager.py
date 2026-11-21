@@ -2,9 +2,11 @@
 
 awsbox patch (#201): secrets ``valueFrom`` via execution role, host-mode
 portMappings without Docker PortBindings, and STOPPED + stoppedReason when
-containers never start. (#211): ECR image URIs require ``ecr:BatchGetImage``
-on the execution role, then pull from the local registry. Mounted over the
-LocalEmu image file.
+containers never start. (#769): awsvpc likewise records host_ports for
+DescribeTasks but does not publish PortBindings on the Docker host.
+(#211): ECR image URIs require ``ecr:BatchGetImage`` on the execution
+role, then pull from the local registry. Mounted over the LocalEmu image
+file.
 
 Port mapping TOCTOU is a known limitation. Docker's port allocation
 is inherently non-atomic — between get_free_tcp_port() and the actual bind
@@ -43,6 +45,28 @@ LOG = logging.getLogger(__name__)
 
 # Label for identifying ECS containers
 ECS_CONTAINER_LABEL = "localemu.service=ecs"
+
+
+def _format_container_error(exc: BaseException) -> str:
+    """Best-effort Docker/client error text (never empty for stoppedReason)."""
+    parts: list[str] = []
+    explanation = getattr(exc, "explanation", None)
+    if explanation:
+        text = str(explanation).strip()
+        if text:
+            parts.append(text)
+    msg = str(exc).strip()
+    if msg and msg not in parts:
+        parts.append(msg)
+    if not parts:
+        for arg in getattr(exc, "args", ()) or ():
+            if arg is None:
+                continue
+            text = str(arg).strip()
+            if text:
+                parts.append(text)
+                break
+    return "; ".join(parts) if parts else type(exc).__name__
 
 # Image pull locks (same pattern as Lambda, EC2, and RDS)
 # PERF-R2-01: bounded with LRU eviction to prevent unbounded growth
@@ -156,7 +180,8 @@ class DockerTaskManager:
             for container in containers:
                 labels = container.get("labels", {})
                 task_arn = labels.get("localemu.task-arn")
-                if not task_arn or task_arn in self._tasks:
+                # One task can own several containers: group, don't skip (#747).
+                if not task_arn:
                     continue
                 c_name = labels.get("localemu.container-name", "unknown")
                 docker_name = container.get("name", "")
@@ -721,13 +746,15 @@ class DockerTaskManager:
                 # networkMode=host when hostPort==containerPort (or omitted);
                 # Docker rejects HostConfig.PortBindings in host mode, so we
                 # record the ports for DescribeTasks but do not bind (#201).
+                # awsvpc is the same: each task has its own ENI/address, so
+                # nothing should publish on the Docker host (#769).
                 ports = PortMappings()
                 host_ports: dict[int, int] = {}
                 for pm in cdef.get("portMappings", []):
                     container_port = pm.get("containerPort")
                     if not container_port:
                         continue
-                    if network_mode == "host":
+                    if network_mode in ("host", "awsvpc"):
                         host_port = pm.get("hostPort") or container_port
                         host_ports[container_port] = host_port
                     else:
@@ -1059,9 +1086,10 @@ class DockerTaskManager:
                         DOCKER_CLIENT.start_container(docker_name)
                     except Exception as start_err:
                         # Container start failure — remove the created container
+                        start_detail = _format_container_error(start_err)
                         LOG.warning(
                             "Failed to start ECS container %s, removing: %s",
-                            docker_name, start_err,
+                            docker_name, start_detail,
                         )
                         try:
                             DOCKER_CLIENT.remove_container(docker_name)
@@ -1069,7 +1097,7 @@ class DockerTaskManager:
                             pass
                         if not task_info.stopped_reason:
                             task_info.stopped_reason = (
-                                f"CannotStartContainerError: {start_err}"
+                                f"CannotStartContainerError: {start_detail}"
                             )
                         container_info = EcsContainerInfo(
                             container_name=c_name,
@@ -1158,13 +1186,14 @@ class DockerTaskManager:
                         docker_name, image, port_info,
                     )
                 except Exception as e:
+                    create_detail = _format_container_error(e)
                     LOG.warning(
                         "Failed to create ECS container %s: %s",
-                        docker_name, e,
+                        docker_name, create_detail,
                     )
                     if not task_info.stopped_reason:
                         task_info.stopped_reason = (
-                            f"CannotStartContainerError: {e}"
+                            f"CannotStartContainerError: {create_detail}"
                         )
                     container_info = EcsContainerInfo(
                         container_name=c_name,

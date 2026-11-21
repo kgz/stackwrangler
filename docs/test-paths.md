@@ -28,6 +28,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
 | Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| `up` with custom keys in `.env`: S3 write probe uses them; a mismatch reports the key, not disk full (offline, stub `aws`) | happy + sad | covered | `./smokes/platform/up-env-keys-smoke.sh` · [#749](https://github.com/kgz/stackwrangler/issues/749) |
+| ECR edge network: default `10.254.218.0/24`, IP derived from subnet, overlap with another Docker network fails `up` early (offline, stub `docker`) | happy + sad | covered | `./smokes/platform/ecr-edge-subnet-smoke.sh` · [#750](https://github.com/kgz/stackwrangler/issues/750) |
+| `up --dev` as a user other than uid 1000: boot hook hands `.awsbox/dev/localemu` to `localemu` | happy | covered | `./smokes/platform/dev-state-owner-smoke.sh` · [#754](https://github.com/kgz/stackwrangler/issues/754) |
+| `--dev` down keeps `<project>_default` so bridge-mode ECS tasks resume after `up --dev` | happy | covered | `./smokes/platform/dev-down-keeps-network-smoke.sh` · [#753](https://github.com/kgz/stackwrangler/issues/753) |
+| ECS restore: every container of a multi-container task resumes; restored tasks list as RUNNING; RunTask on a held host port reports `RESOURCE:PORTS` | happy + sad | covered | `./smokes/platform/ecs-restore-multi-container-smoke.sh` · [#747](https://github.com/kgz/stackwrangler/issues/747) |
 | Dev keep-data: `up --dev` → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties | happy | covered | `./smokes/platform/mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
@@ -122,6 +127,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Lambda OAuth wrong client secret → 401, document not posted | sad/other | covered | `./smokes/lambda/lambda-secret-oauth-smoke.sh` |
 | Lambda role missing other actions | sad/authz | missing | extend `lambda-authz-smoke.sh` / [#150](https://github.com/kgz/awsl/issues/150) |
 | ECS run-task + HTTP reachable | happy | covered | `./smokes/compute/ecs-smoke.sh` |
+| ECS two awsvpc tasks same containerPort/hostPort 8080 both RUNNING on distinct ENI IPs; DescribeTasks networkBindings; no Docker host PortBindings | happy | covered | `./smokes/compute/ecs-awsvpc-same-port-smoke.sh` · [#769](https://github.com/kgz/stackwrangler/issues/769) |
 | ECS `delete-cluster` → INACTIVE omitted from `list-clusters`; describe still returns it | happy | covered | `./smokes/compute/ecs-inactive-cluster-smoke.sh` · [#401](https://github.com/kgz/stackwrangler/issues/401) |
 | **ECS task role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./smokes/compute/ecs-authz-smoke.sh` |
 | ECS secrets `valueFrom` (ASM JSON key + SSM) via execution role | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
@@ -133,9 +139,13 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS task with hard `memory` + soft `memoryReservation` sets both Docker HostConfig fields (#715) | sad | covered | `./smokes/compute/ecs-soft-memory-smoke.sh` |
 | ECS awsvpc task gets `https://localemu.awsbox:4566` + CA env; DenyNonSSL bucket allows task GetObject | happy | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
 | ECS task role over plain `http://` GetObject denied by bucket `aws:SecureTransport=false` Deny | sad/authz | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#687](https://github.com/kgz/stackwrangler/issues/687) |
+| ECS task-def `SSL_CERT_FILE` (and other CA env) preserved; injection uses setdefault | happy | covered | `./smokes/compute/ecs-secure-transport-smoke.sh` · [#764](https://github.com/kgz/stackwrangler/issues/764) |
+| ECS awsvpc + official `php:8.x-cli` (SDK only) DynamoDB GetItem via injected https `AWS_ENDPOINT_URL` (PHP_INI_SCAN_DIR / zz-awsbox-ca.ini) | happy | covered | `./smokes/compute/ecs-php-endpoint-ca-smoke.sh` · [#771](https://github.com/kgz/stackwrangler/issues/771) |
+| ECS awsvpc + official Temurin JRE (SDK only) DynamoDB GetItem via injected https `AWS_ENDPOINT_URL` (JAVA_TOOL_OPTIONS PKCS12) | happy | covered | `./smokes/compute/ecs-java-endpoint-ca-smoke.sh` · [#771](https://github.com/kgz/stackwrangler/issues/771) |
+| Lambda injects PHP_INI_SCAN_DIR + Java truststore mount/env with https endpoint | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#771](https://github.com/kgz/stackwrangler/issues/771) |
 | ECS private awsvpc + tight egress SG + VPCEs: task-role creds + `AWS_ENDPOINT_URL` / S3 GetObject | happy | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
 | ECS tight egress SG without VPCEs: creds still work; `AWS_ENDPOINT_URL` times out | sad/other | covered | `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh` · [#686](https://github.com/kgz/stackwrangler/issues/686) |
-| Lambda `https://localemu.awsbox:4566` + CA env/mount; DenyNonSSL bucket allows role GetObject | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#696](https://github.com/kgz/stackwrangler/issues/696) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
+| Lambda `https://localemu.awsbox:4566` + CA env/mount (incl. PHP ini + Java PKCS12); DenyNonSSL bucket allows role GetObject | happy | covered | `./smokes/lambda/lambda-secure-transport-smoke.sh` · [#696](https://github.com/kgz/stackwrangler/issues/696) / [#771](https://github.com/kgz/stackwrangler/issues/771) (from [#687](https://github.com/kgz/stackwrangler/issues/687)) |
 | EC2 instance containers get same https `AWS_ENDPOINT_URL` + CA as ECS/Lambda | happy | covered | wiring in `localemu-patches/init/start.d/20-ec2-imds.py` · [#696](https://github.com/kgz/stackwrangler/issues/696) (no dedicated EC2 DenyNonSSL smoke; Lambda smoke covers SecureTransport path) |
 | ECS container create failure → STOPPED + stoppedReason | sad/other | covered | `./smokes/compute/ecs-taskdef-smoke.sh` |
 | ECS task-def `entryPoint` overrides image ENTRYPOINT | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#685) |
@@ -209,6 +219,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./smokes/networking/vpce-private-dns-smoke.sh` |
 | Gateway endpoint prefix-list route | sad/other | covered | `./smokes/networking/vpc-egress-smoke.sh` · [#230](https://github.com/kgz/awsl/issues/230) |
 | SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
+| ALB in SG A; target admits 8080 only from A → healthy + listener forward; peer outside A refused; empty SG ref unchanged | happy | covered | `./smokes/networking/elbv2-sg-member-smoke.sh` · [#768](https://github.com/kgz/stackwrangler/issues/768) |
 | SG rule revoke/authorize updates a running target | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix-list SG rule Description round-trips on describe | happy | covered | `./smokes/networking/sg-prefixlist-description-smoke.sh` · [#682](https://github.com/kgz/stackwrangler/issues/682) |
@@ -234,6 +245,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | LB DNS from a VPC instance and from the host | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | Unhealthy NLB target receives no new connections | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 `RegisterTargets` preserves `host_override` / bridge dial | happy | covered | `./smokes/networking/elbv2-host-override-register-smoke.sh` · [#603](https://github.com/kgz/awsl/issues/603) |
+| ELBv2 persist restart: internal HTTPS ALB + rule + target survive LocalEmu restart | happy | covered | `./smokes/networking/elbv2-persist-restart-smoke.sh` · [#770](https://github.com/kgz/stackwrangler/issues/770) · [elbv2.md](elbv2.md) · [dev-mode.md](dev-mode.md) |
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#242](https://github.com/kgz/awsl/issues/242) |
@@ -294,6 +306,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Real AWS SG prefix-list rule Description round-trip | happy | covered | `./smokes/parity/aws-parity-sg-prefixlist-description.sh` (~$0) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) |
 | Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./smokes/parity/aws-parity-hf-cheap.sh` (~$0–cents; ask before real) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Real AWS Trust (v0.0.3) | happy+sad | covered | `./smokes/parity/aws-parity-trust-v003.sh` (KMS 7d residual) |
+| Real AWS v0.0.8: awsvpc same-port + ALB SG member | happy | covered | `./smokes/parity/aws-parity-v008.sh --target both --approve-cost` (~$0.02–0.05) · [aws-parity-v008.md](aws-parity-v008.md) |
 | Real AWS HF skipped: WAF, R53 zone, ACM without DNS, Transfer, CodeDeploy target stack, Batch/ASG compute | — | skipped (cost) | [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) skipped gaps |
 | Prowler aws scan (isolated, scoped unused-services) | happy | covered | `./smokes/security/prowler-smoke.sh` · [prowler.md](prowler.md) |
 | Prowler failing-API count ≤ baseline (ratchet) | sad/other | covered | `./smokes/security/prowler-smoke.sh` |
@@ -436,6 +449,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **RDS wrong password → auth denied** | sad/authz | covered | `./smokes/data/rds-authz-smoke.sh` |
 | RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
+| RDS MySQL TLS VERIFY_IDENTITY with `.awsbox/tls/rds-ca.pem` | happy | covered | `./smokes/data/rds-mysql-tls-smoke.sh` · [#765](https://github.com/kgz/stackwrangler/issues/765) |
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **Aurora MySQL reader rejects writes** | sad/other | covered | `./smokes/data/rds-mysql-smoke.sh` |
@@ -471,7 +485,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./bin/e2e.sh                    # includes IAM deny + S3 parity + playwright subset
 ./smokes/lambda/lambda-smoke.sh           # happy
 ./smokes/lambda/lambda-authz-smoke.sh     # sad/authz
-./smokes/lambda/lambda-secure-transport-smoke.sh  # https endpoint + DenyNonSSL (#696)
+./smokes/lambda/lambda-secure-transport-smoke.sh  # https endpoint + DenyNonSSL (#696); PHP/Java CA mounts (#771)
+./smokes/compute/ecs-php-endpoint-ca-smoke.sh     # PHP SDK GetItem via injected https CA (#771)
+./smokes/compute/ecs-java-endpoint-ca-smoke.sh    # Java SDK GetItem via PKCS12 truststore (#771)
 ./smokes/security/multi-account-smoke.sh    # key→account, AssumeRole, hidden bucket
 ./smokes/security/resource-policy-cross-account-smoke.sh # A role vs B secret/key/bucket policies
 ./smokes/transfer/transfer-key-smoke.sh

@@ -96,7 +96,8 @@ On first `up`, the orchestrator copies defaults into `$STACKWRANGLER_HOME/.env` 
 | `STACKWRANGLER_CONSOLE_HOST_PORT` | `3000` | nginx console |
 | `STACKWRANGLER_ECR_HOST_PORT` | `5000` | distribution registry |
 | `STACKWRANGLER_ECR_HOSTNAME_IMAGE` | `ghcr.io/kgz/stackwrangler-ecr-hostname:latest` | TLS edge for `repositoryUri` docker push (#218) |
-| `STACKWRANGLER_ECR_HOSTNAME_IP` | `172.31.218.10` | fixed bridge IP for that edge (avoid host `:443`) |
+| `STACKWRANGLER_ECR_HOSTNAME_SUBNET` | `10.254.218.0/24` | bridge network for that edge. Kept outside Docker's default pools; `up` stops and names the network if another one overlaps (#750) |
+| `STACKWRANGLER_ECR_HOSTNAME_IP` | host `.10` of the subnet | fixed bridge IP for that edge (avoid host `:443`). Follows the subnet unless set |
 | `STACKWRANGLER_SFTP_HOST_PORT` | `2222` | Transfer native SFTP |
 | `STACKWRANGLER_ACCESS_KEY` / `SECRET_KEY` | product defaults | also written into profile `local` |
 
