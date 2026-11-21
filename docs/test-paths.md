@@ -430,6 +430,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Org path Terraform example (VPC→Transfer→Lambda→S3→ECS→RDS) | happy | covered | `examples/terraform/org-path/` ([#780](https://github.com/kgz/stackwrangler/issues/780)); E2E smoke [#781](https://github.com/kgz/stackwrangler/issues/781) |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./smokes/transfer/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./smokes/transfer/transfer-dataplane-smoke.sh` |
+| Org path E2E: SFTP → Lambda → LocalEmu S3 → ECS → RDS | happy | covered | `./smokes/transfer/org-path-smoke.sh` |
+| Org path E2E: ECS task role without s3:GetObject | sad/authz | covered | `./smokes/transfer/org-path-smoke.sh` |
+| Org path E2E: object only on Seaweed (:8333) not LocalEmu (:4566) | sad | covered | `./smokes/transfer/org-path-smoke.sh` (#162) |
 | `stackwrangler up` while this checkout's beta `atmoz/sftp` container holds the emulator port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | `stackwrangler up` while another project or process holds the SFTP host port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./smokes/transfer/transfer-key-smoke.sh` |
