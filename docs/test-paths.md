@@ -209,6 +209,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Same service hostname from another VPC does not resolve to that endpoint IP | sad/other | covered | `./smokes/networking/vpce-private-dns-smoke.sh` |
 | Gateway endpoint prefix-list route | sad/other | covered | `./smokes/networking/vpc-egress-smoke.sh` · [#230](https://github.com/kgz/awsl/issues/230) |
 | SG allows TCP only from SG A: EC2 and ECS in A connect, B refused | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) |
+| ALB in SG A; target admits 8080 only from A → healthy + listener forward; peer outside A refused; empty SG ref unchanged | happy | covered | `./smokes/networking/elbv2-sg-member-smoke.sh` · [#768](https://github.com/kgz/stackwrangler/issues/768) |
 | SG rule revoke/authorize updates a running target | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix-list SG rule Description round-trips on describe | happy | covered | `./smokes/networking/sg-prefixlist-description-smoke.sh` · [#682](https://github.com/kgz/stackwrangler/issues/682) |
