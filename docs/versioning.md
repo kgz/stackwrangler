@@ -65,7 +65,7 @@ Agents must not create unlabelled-for-pillar or unscored tickets. Unlabelled-for
 | `v0.0.5` | Dependabot / lockfile or IAM fidelity on shipped surfaces (cut closed). |
 | `v0.0.6` | (shipped) Core-stack smoke/parity/proof gap Impact ≥ 3; CI/docs Impact ≥ 2. |
 | `v0.0.7` | (shipped) Dev persistence / local fidelity; Impact ≥ 4. |
-| `v0.0.8` | Escaped local fidelity (restore/ELB/ECS/TLS); Impact ≥ 4. |
+| `v0.0.8` | (shipped) Escaped local fidelity (restore/ELB/ECS/TLS); Impact ≥ 4. |
 | `v0.1.0` | Org-path critical; path-critical only. |
 
 **Do not** default new / Debt tickets to `$(cat docs/CURRENT_RELEASE)`.
