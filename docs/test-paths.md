@@ -242,6 +242,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | LB DNS from a VPC instance and from the host | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | Unhealthy NLB target receives no new connections | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 `RegisterTargets` preserves `host_override` / bridge dial | happy | covered | `./smokes/networking/elbv2-host-override-register-smoke.sh` · [#603](https://github.com/kgz/awsl/issues/603) |
+| ELBv2 persist restart: internal HTTPS ALB + rule + target survive LocalEmu restart | happy | covered | `./smokes/networking/elbv2-persist-restart-smoke.sh` · [#770](https://github.com/kgz/stackwrangler/issues/770) · [elbv2.md](elbv2.md) · [dev-mode.md](dev-mode.md) |
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#242](https://github.com/kgz/awsl/issues/242) |

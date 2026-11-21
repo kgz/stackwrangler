@@ -144,6 +144,8 @@ services:
       # ELBv2 data plane (#203) + NLB DNS for VPC_LINK (#267)
       - ./localemu-patches/elbv2_listener_router.py:/opt/code/localemu/src/localemu/services/elbv2/listener_router.py:ro
       - ./localemu-patches/elbv2_provider.py:/opt/code/localemu/src/localemu/services/elbv2/provider.py:ro
+      # Persist elbv2 moto backend across LocalEmu restart (#770)
+      - ./localemu-patches/state_registry.py:/opt/code/localemu/src/localemu/state/registry.py:ro
       - ./.awsbox:/var/lib/awsbox
       # Shared DNS codec/servers for VPCE + private zones (#206)
       - ./localemu-patches/dns_common.py:/opt/awsbox/dns/awsbox_dns_common.py:ro
