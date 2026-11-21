@@ -20,6 +20,7 @@ Current open cut: see [CURRENT_RELEASE](CURRENT_RELEASE).
 | **v0.0.5** | **Security / deps** — Dependabot + IAM/condition-key fidelity (shipped). |
 | **v0.0.6** | **Maturity / testing** — parity suites, smoke-matrix sad/authz, free-ci (shipped). |
 | **v0.0.7** | **Dev persistence / local fidelity** — restore/dev-mode + ECS/RDS/IAM local fidelity (shipped). |
+| **v0.0.8** | **Escaped local fidelity** — v0.0.7 patch: restore/ELB/ECS/TLS hard blocks. Impact ≥ 4. |
 | **v0.1.0** | **Org path** — Transfer→…→RDS learning/staging path. Path-critical. |
 
 Far-future width (`v0.1.1`, `v0.1.2`, `v1.0.0`) is **not** an active planning label — leave work **unlabelled** until that cut is deliberately opened.
@@ -64,6 +65,7 @@ Agents must not create unlabelled-for-pillar or unscored tickets. Unlabelled-for
 | `v0.0.5` | Dependabot / lockfile or IAM fidelity on shipped surfaces (cut closed). |
 | `v0.0.6` | (shipped) Core-stack smoke/parity/proof gap Impact ≥ 3; CI/docs Impact ≥ 2. |
 | `v0.0.7` | (shipped) Dev persistence / local fidelity; Impact ≥ 4. |
+| `v0.0.8` | Escaped local fidelity (restore/ELB/ECS/TLS); Impact ≥ 4. |
 | `v0.1.0` | Org-path critical; path-critical only. |
 
 **Do not** default new / Debt tickets to `$(cat docs/CURRENT_RELEASE)`.

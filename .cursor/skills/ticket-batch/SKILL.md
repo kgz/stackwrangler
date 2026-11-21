@@ -57,6 +57,11 @@ Cap parallel **code** workers higher if the user asks (e.g. 6). Tickets that wil
 - After the ticket’s smokes/e2e finish (pass or fail): `./bin/stackwrangler down` in that worktree (or `docker compose -p <project> down`). Do **not** leave stacks running for the next agent. Orchestrator may run `./bin/batch-resource-gate.sh down-others` between Docker-using tickets.
 - Never KEEP a stack overnight across the wave. Unique ports are fine; abandoned stacks are not.
 
+**Park when gated (required — don’t serialize the whole wave on one smoke):**
+- Cap gate waits at **~2 minutes** (a few short polls). If still refused: **park** that ticket — push code + smoke scripts, comment on the PR that live LocalEmu is deferred, return. Do **not** sit in 10–40× sleep loops.
+- Orchestrator: when a worker parks (or is mid must-fix waiting on the gate), **start or continue other tickets** (code/OD/docs, or the next wave). Resume the parked worker when `batch-resource-gate.sh check --need-up` would pass (holder finished / stack torn down).
+- Prefer overlapping: one Docker-using ticket on the gate + N code-only workers. Never idle the wave because one ticket is blocked.
+
 Launch workers with the Task tool: `subagent_type: "generalPurpose"`, `run_in_background: true`, the tier's model, and the worker prompt below. Do not invent Task parameters. After the wave is launched, end the turn. Continue when a worker finishes. Do not poll.
 
 ## 4. Worker prompt
@@ -75,7 +80,7 @@ Repo rules to follow (from AGENTS.md and the board docs):
 - Web UI / console tickets: Open Design first. Set board to `designing`, run `./bin/od-design-run.sh --issue <n> "…"`, use theme grey-rose under `design/` (historic dir names — #421), prefer skill `web-clone` when the screen exists in real AWS (read-only screenshots OK). Land mocks under the console design folder before React. Unwired controls: `disabled` + `title="To implement"` (+ Debt only if cut gate matches; see anti-debt-loop). Never-ship controls: omit. No enabled no-ops. Only then `export STACKWRANGLER_AGENT=cursor-batch-<slug>; ./bin/board-status.sh in-progress <n>` (Project field Agent — no per-agent labels; AWSBOX_AGENT still works as fallback). Non-UI tickets start at in-progress the same way.
 - Move the board to in-progress before code edits (after designing when UI), and to in-review when the PR is open/updated, using only the repo's script. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
 - Do not mark the ticket done.
-- Run the tests the ticket and the repo docs require. **Before** `./bin/stackwrangler up` / LocalEmu smoke / console e2e: `./bin/batch-resource-gate.sh check --need-up` (must pass). **After** those tests: `./bin/stackwrangler down` — tear the stack down even on failure; do not leave `awsl-wt-*` compose projects running. If a gap-check script exists, run ./bin/gap-check.sh <n>. Prefer absorbing small additive gaps into this PR; otherwise file scored Debt (pillar + Impact/Effort; release label only if cut gate matches — never auto CURRENT_RELEASE).
+- Run the tests the ticket and the repo docs require. **Before** `./bin/stackwrangler up` / LocalEmu smoke / console e2e: `./bin/batch-resource-gate.sh check --need-up`. If refused: poll a few times (~2 min total), then **park** — push work, comment that live smoke is deferred, return (orchestrator will resume when the gate frees). Do not sleep-loop for tens of minutes. **After** live tests: `./bin/stackwrangler down` even on failure. If a gap-check script exists, run ./bin/gap-check.sh <n>. Prefer absorbing small additive gaps into this PR; otherwise file scored Debt (pillar + Impact/Effort; release label only if cut gate matches — never auto CURRENT_RELEASE).
 - Commit with a short message about why. No Co-authored-by or agent attribution.
 - Push and open a PR against <base>. Body includes Closes #<n> and the test plan. Do not merge.
 

@@ -103,9 +103,13 @@ Make shipped behaviour **provable**: grow dual-side cheap parity, close high-imp
 
 Persistent/dev-mode LocalEmu (restore, warm restart, mode selection) plus core ECS/RDS/IAM fidelity blockers that break real local stacks. Gate: Impact ≥ 4 (`high-focus`). Prefer restore/data-plane hard blocks and false-confidence authz/runtime mismatches over catalogue stubs.
 
-### v0.1.0 — Org path *(active — `CURRENT_RELEASE`)*
+### v0.0.8 — Escaped local fidelity *(active — `CURRENT_RELEASE`)*
 
-Transfer→…→RDS learning/staging path honest end-to-end; path-critical only.
+Patch cut for high-impact defects that escaped v0.0.7: `up --dev` restore/resume, ELB persistence + SG membership, ECS port/TLS injection, RDS MySQL SAN. Gate: Impact ≥ 4 on core local-runtime / restore fidelity. Prefer hard blocks and false-confidence mismatches over catalogue width.
+
+### v0.1.0 — Org path *(next)*
+
+Transfer→…→RDS learning/staging path honest end-to-end; path-critical only. Parked until v0.0.8 ships.
 
 ### Unlabelled backlog
 
@@ -135,6 +139,7 @@ Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche 
 | **v0.0.5** | `label:v0.0.5` | Impact ↓, Effort ↑ |
 | **v0.0.6** | `label:v0.0.6` | Impact ↓, Effort ↑ |
 | **v0.0.7** | `label:v0.0.7` | Impact ↓, Effort ↑ |
+| **v0.0.8** | `label:v0.0.8` | Impact ↓, Effort ↑ |
 | **v0.1.0** | `label:v0.1.0` | Impact ↓, Effort ↑ |
 | **High Impact** | Impact ≥ 4 (or `label:high-focus` until scored) | Impact ↓, Effort ↑ |
 | **Unscored** | Impact empty | Updated ↓ |

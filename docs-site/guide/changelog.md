@@ -2,6 +2,55 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.0.8 — Escaped local fidelity (2026-11-21)
+
+Patch cut for high-impact defects that escaped v0.0.7: `up --dev` restore/resume, ELB persistence + SG membership, ECS port/TLS injection, RDS MySQL SAN. Dual-target parity for the AWS-side asserts (#768/#769).
+
+### Install / platform
+
+- Load `.env` before the Seaweed S3 probe; key mismatch fails fast (not “disk full”) ([#749](https://github.com/kgz/stackwrangler/issues/749))
+- ECR edge network default moved out of Docker’s address pools; overlap fails `up` early ([#750](https://github.com/kgz/stackwrangler/issues/750))
+- `up --dev` works for any host uid (chown LocalEmu state to the image user) ([#754](https://github.com/kgz/stackwrangler/issues/754))
+
+### Dev mode / restore
+
+- Keep compose networks on dev `down` so bridge-mode ECS tasks resume ([#753](https://github.com/kgz/stackwrangler/issues/753))
+- ECS restore: resume every container; release ports held by STOPPED tasks; `RESOURCE:PORTS` on placement failure ([#747](https://github.com/kgz/stackwrangler/issues/747))
+- Persist ELBv2 (LBs/listeners/rules/TGs) across LocalEmu restart and rebuild the router ([#770](https://github.com/kgz/stackwrangler/issues/770))
+
+### Networking / ECS
+
+- Load balancer is a member of its own security group (target SG references admit health checks) ([#768](https://github.com/kgz/stackwrangler/issues/768))
+- awsvpc tasks no longer publish Docker host `PortBindings` (same containerPort can run twice) ([#769](https://github.com/kgz/stackwrangler/issues/769))
+
+### TLS / endpoints
+
+- Don’t overwrite task-def CA env (`setdefault` for `SSL_CERT_FILE` and friends) ([#764](https://github.com/kgz/stackwrangler/issues/764))
+- PHP / Java trust the injected `https://` `AWS_ENDPOINT_URL` (`PHP_INI_SCAN_DIR` + Java truststore) ([#771](https://github.com/kgz/stackwrangler/issues/771))
+- RDS MySQL serves a SAN’d leaf chained to published `.awsbox/tls/rds-ca.pem` ([#765](https://github.com/kgz/stackwrangler/issues/765))
+
+### Parity
+
+- Dual-target suite `v008`: `ecs-awsvpc-same-port` + `elbv2-sg-member` ([docs/aws-parity-v008.md](https://github.com/kgz/stackwrangler/blob/main/docs/aws-parity-v008.md))
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS S3, ECR registry, AWS profile `local` (CLI), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.0.8
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.0.8 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566`.
+
+Optional thin host CLI: [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.0.8/stackwrangler).
+
 ## v0.0.7 — Dev persistence / local fidelity (2026-11-14)
 
 Persistent / always-on local env alongside hermetic test mode: opt-in LocalEmu restore, warm restart, mode CLI, plus ECS/RDS/IAM/ECR fidelity fixes that unblock real Terraform and Serverless stacks.

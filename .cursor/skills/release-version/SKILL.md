@@ -93,6 +93,7 @@ Debt: absorb small gaps in-parent (`docs/gap-check.md`); else evaluate-and-place
 | `v0.0.5` | Security / deps | Dependabot / lockfile; Impact ≥ 3 product (≥ 2 examples) |
 | `v0.0.6` | Maturity / testing | smoke/parity/proof Impact ≥ 3; CI/docs ≥ 2 |
 | `v0.0.7` | Dev persistence / local fidelity | Impact ≥ 4 restore/dev-mode/fidelity |
+| `v0.0.8` | Escaped local fidelity | Impact ≥ 4 restore/ELB/ECS/TLS |
 | `v0.1.0` | Org path | path-critical |
 
 Far-future labels (`v0.1.1`, `v0.1.2`, `v1.0.0`) stay parked until deliberately opened in step 3.
