@@ -380,4 +380,4 @@
 742	backlog	Debt: Terraform S3+DDB empty plan after LocalEmu recreate (from #200)
 743	backlog	Debt: RDS MySQL/Aurora SQL persist after LocalEmu recreate (from #200)
 289	in-review	warm restart prebuilt images + preserve stopped containers
-765	in-progress	rds: MySQL server cert SAN + published RDS CA (#765)
+765	in-review	rds: MySQL server cert SAN + published RDS CA (#765)
