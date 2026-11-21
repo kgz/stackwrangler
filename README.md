@@ -29,7 +29,7 @@ Live local console (grey rose chrome) — same account as CLI and IaC.
 - **API call log** — per-workload CloudTrail-lite (`GET /_awsl/calls`, console `/cloudtrail`, test asserts) · [#194](https://github.com/kgz/stackwrangler/issues/194)
 - **Local → real AWS** — stage here, then point the same tooling at a real account
 
-Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plus sidecars: **SeaweedFS** (console buckets), **distribution/registry** (ECR-shaped push/pull), **atmoz/sftp** (Transfer dataplane). Console buckets UI uses SeaweedFS; IaC / Lambda / S3 events use **LocalEmu S3** ([docs/s3-backends.md](docs/s3-backends.md)).
+Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plus sidecars: **SeaweedFS** (optional S3 parity only), **distribution/registry** (ECR-shaped push/pull), **atmoz/sftp** (Transfer dataplane). Org-path S3 (console, `aws --profile local`, Transfer / Lambda / IaC) is **LocalEmu** on `:4566` ([docs/s3-backends.md](docs/s3-backends.md)).
 
 ## Install (Docker only — no git)
 
@@ -52,7 +52,7 @@ aws --profile local s3 ls
 aws --profile local --endpoint-url http://127.0.0.1:4566 sts get-caller-identity
 ```
 
-Upgrade / teardown / ports / known limits (host Docker, sock mounts, dual S3): [docs/docker-install.md](docs/docker-install.md).
+Upgrade / teardown / ports / known limits (host Docker, sock mounts): [docs/docker-install.md](docs/docker-install.md).
 
 Optional thin CLI (GitHub Release asset `stackwrangler`): same `up` / `down` / `status` commands without typing `docker run`.
 
@@ -60,7 +60,8 @@ Contributor clone path: `./bin/stackwrangler up` copies `.env.example` → `.env
 
 | What | Where |
 |------|--------|
-| S3 (console buckets) | `http://127.0.0.1:8333` SeaweedFS |
+| S3 (org path: console + `profile local` + IaC) | `http://127.0.0.1:4566` LocalEmu |
+| SeaweedFS (optional parity) | `http://127.0.0.1:8333` |
 | LocalEmu (IAM, Lambda, CFN, Transfer, RDS, …) | `http://127.0.0.1:4566` |
 | Transfer SFTP (native) | `127.0.0.1:2222` ([docs/transfer.md](docs/transfer.md)) |
 | Console | `http://127.0.0.1:3000` |

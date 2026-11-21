@@ -109,9 +109,9 @@ export function BucketsPage() {
         <div className="aws-main-primary">
           <h1 className="aws-h1">Buckets</h1>
           <p className="aws-desc">
-            This list is SeaweedFS (<code>{config.endpoint}</code>). Lambda /
-            CFN / Transfer use LocalEmu S3 on <code>:4566</code> — separate
-            store. See <code>docs/s3-backends.md</code>.
+            Org-path S3 brain: LocalEmu (<code>{config.endpoint}</code>) —
+            same store as <code>aws --profile local</code>, Transfer, Lambda,
+            and IaC. See <code>docs/s3-backends.md</code>.
           </p>
           {error ? <div className="error-banner">{error}</div> : null}
           <section className="aws-card">

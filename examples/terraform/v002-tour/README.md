@@ -47,7 +47,7 @@ Defaults use product keys `stackwrangler` / `stackwranglerstackwrangler` against
 
 CFN console Create/Update/StackSets (#93–#95) are console-only here — use the console wizards or `examples/cloudformation/`.
 
-SeaweedFS console buckets (`:8333`) are separate from this LocalEmu S3 bucket ([s3-backends.md](../../../docs/s3-backends.md)).
+Console / `aws --profile local` use the same LocalEmu S3 brain as this bucket ([s3-backends.md](../../../docs/s3-backends.md)).
 
 ## After apply
 
