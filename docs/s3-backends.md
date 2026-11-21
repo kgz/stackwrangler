@@ -20,7 +20,7 @@ Assert all of the following against the **same** store:
 
 **Learner check:** put an object via Transfer / Lambda / `aws --profile local s3 cp` → it must appear in the console buckets list and in `aws --profile local s3 ls`. Success on SeaweedFS alone is the wrong store.
 
-Do **not** point org-path tooling at `STACKWRANGLER_ENDPOINT` / `:8333`.
+Do **not** point org-path tooling at `STACKWRANGLER_ENDPOINT` / `:8333`. Path narrative: [org-path.md](org-path.md).
 
 ## Profiles
 

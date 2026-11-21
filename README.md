@@ -88,13 +88,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Coming from older checkouts named `awsbo
 
 Hosting-shaped paths such as **OpenTofu → VPC → Lambda / EC2 → SNS → Expo** with strict IAM and Secrets Manager — stage locally, then the same shape on real AWS. Details: [docs-site use case](docs-site/guide/use-cases/opentofu-expo-iam.md).
 
+Org learning path (**Transfer → Lambda → S3 → ECS → RDS**, v0.1.0): hops are Partial today; chained example + E2E still landing — [docs/org-path.md](docs/org-path.md) · [docs-site](docs-site/guide/use-cases/org-path.md).
+
 ## Documentation
 
 - [Docker install](docs/docker-install.md) — public path (start here)
 - Public docs site: [docs-site/](docs-site/) (VitePress) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) after Pages is enabled on a public repo
 - Run docs locally: `cd docs-site && pnpm install && pnpm dev`
 - [Compare](docs-site/guide/compare/) — vs LocalEmu, Moto, LocalStack, real AWS, SAM Local, other emulators
-- [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM
+- [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM · [Org path](docs-site/guide/use-cases/org-path.md)
+- [Org path](docs/org-path.md) — Transfer→…→RDS real vs stub (v0.1.0)
 - [Vision](docs/vision.md) — north star (mirrored on the site)
 - [Service status](docs/status.md) — Working / Partial matrix
 - [Contributing](CONTRIBUTING.md)

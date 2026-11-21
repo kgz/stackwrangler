@@ -2,7 +2,7 @@
 
 Console, `aws --profile local`, Transfer / Lambda / IaC all use **LocalEmu S3** (`:4566`). SeaweedFS (`:8333`) is optional parity only — not the learner path.
 
-**Status:** working · Docs: [s3-backends.md](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md) · [#162](https://github.com/kgz/stackwrangler/issues/162)
+**Status:** working · Docs: [s3-backends.md](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md) · Org path: [use case](../use-cases/org-path) · [#162](https://github.com/kgz/stackwrangler/issues/162)
 
 ## Sequence
 

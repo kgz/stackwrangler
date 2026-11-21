@@ -78,6 +78,7 @@ Clone the repo when changing the product (smokes, patches, console source). See 
 - [Architecture](./architecture) — LocalEmu + patches + sidecars
 - [Fidelity](./fidelity) — awkward topology / settings bar
 - [Use case: OpenTofu → Expo + IAM](./use-cases/opentofu-expo-iam) — hero path
+- [Use case: Org path (Transfer → … → RDS)](./use-cases/org-path) — v0.1.0 learning path (partial until E2E)
 - [Vision](./vision) — what “fully working” means
 - [Completeness](./completeness) — Working vs Partial vs stub
 - [Console tour](./console-tour) — more screenshots of shipped surfaces
