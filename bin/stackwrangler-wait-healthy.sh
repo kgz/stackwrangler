@@ -46,19 +46,20 @@ wait_healthy() {
 # Probe CreateBucket + PutObject so up fails fast when Seaweed has no volume capacity.
 wait_s3_writable() {
 	local ep="${1:-}"
-	local key secret region bucket i
+	local key secret region bucket i err
 	if ! command -v aws >/dev/null 2>&1; then
 		return 0
 	fi
-	# Caller already loaded .env via endpoint_url (load_root_env / load_data_env).
+	# Caller must export .env first (load_root_env / load_data_env in the main
+	# shell, not inside $(endpoint_url)), or this signs with the default keys (#749).
 	key="$(sw_env STACKWRANGLER_ACCESS_KEY AWSBOX_ACCESS_KEY stackwrangler)"
 	secret="$(sw_env STACKWRANGLER_SECRET_KEY AWSBOX_SECRET_KEY stackwranglerstackwrangler)"
 	region="$(sw_env STACKWRANGLER_REGION AWSBOX_REGION us-east-1)"
 	bucket="sw-health-$$-$(date +%s)"
 	for i in $(seq 1 30); do
-		if AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" \
+		if err="$(AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" \
 			AWS_DEFAULT_REGION="$region" AWS_EC2_METADATA_DISABLED=true \
-			aws --endpoint-url "$ep" --region "$region" s3 mb "s3://${bucket}" >/dev/null 2>&1 \
+			aws --endpoint-url "$ep" --region "$region" s3 mb "s3://${bucket}" 2>&1 >/dev/null)" \
 			&& printf 'ok' | AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" \
 				AWS_DEFAULT_REGION="$region" AWS_EC2_METADATA_DISABLED=true \
 				aws --endpoint-url "$ep" --region "$region" s3 cp - "s3://${bucket}/.health" >/dev/null 2>&1; then
@@ -70,6 +71,11 @@ wait_s3_writable() {
 		AWS_ACCESS_KEY_ID="$key" AWS_SECRET_ACCESS_KEY="$secret" \
 			AWS_DEFAULT_REGION="$region" AWS_EC2_METADATA_DISABLED=true \
 			aws --endpoint-url "$ep" --region "$region" s3 rb "s3://${bucket}" --force >/dev/null 2>&1 || true
+		if [[ "$err" == *InvalidAccessKeyId* || "$err" == *SignatureDoesNotMatch* ]]; then
+			echo "error: S3 rejected access key '${key}' (${ep}). Seaweed's keys come from .env" >&2
+			echo "  (STACKWRANGLER_ACCESS_KEY / AWSBOX_ACCESS_KEY); export the same .env before this check." >&2
+			exit 1
+		fi
 		sleep 1
 	done
 	echo "error: S3 PutObject did not succeed (Seaweed may have no free volumes / disk full): ${ep}" >&2
