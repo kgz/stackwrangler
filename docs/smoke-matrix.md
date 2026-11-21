@@ -11,6 +11,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 |---------|-------|--------------------|-------------|-------------|--------|
 | Public Docker image install (#487) | yes (alt ports via `install/stackwrangler`) | — | up without docker.sock refused | baked console HTTP | `docker-image-install-smoke.sh` |
 | Test/dev mode CLI (#288) | yes (usage, `status` mode, wipe-path markers, compose test/dev; leftover `.awsbox/dev` ignored in test) | — | — | — | `mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) |
+| `up` compose overrides (#748) | yes (`compose-config` merges EXTRA + override.yml + `.awsbox/compose.local.yml`; dev `restart: unless-stopped`; live `STACKWRANGLER_748_LIVE=1`) | — | — | — | `up-compose-extra-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | `up` with custom keys in `.env` (#749) | yes (S3 probe signs with exported `.env` keys) | yes (wrong key → "rejected access key", fails fast, not "disk full") | — | — | `up-env-keys-smoke.sh` |
 | ECR edge subnet (#750) | yes (default outside Docker pools; IP follows subnet; own network reused) | yes (overlap → `up` stops and names the network) | — | — | `ecr-edge-subnet-smoke.sh` |
 | Dev state owner (#754) | yes (root-created `/var/lib/localemu` handed to `localemu` before the privilege drop; LocalEmu can write) | yes (nested root-owned files handed over too) | — | — | `dev-state-owner-smoke.sh` |

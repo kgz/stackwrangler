@@ -26,7 +26,31 @@ Env the CLI sets (prefer `STACKWRANGLER_*`; `AWSBOX_*` still accepted as fallbac
 - `STACKWRANGLER_PERSISTENCE` — `0` | `1` (maps to LocalEmu `PERSISTENCE`)
 - `STACKWRANGLER_SEAWEED_VOLUME` — `seaweed-data` | `seaweed-data-dev`
 
-Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`.
+Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`. Dev mode sets `restart: unless-stopped` on S3 / LocalEmu / ECR so the stack returns after Docker/WSL restart ([#748](https://github.com/kgz/stackwrangler/issues/748)).
+
+### Compose overrides (#748)
+
+`up` / `down` / `status` rebuild the compose file list via `refresh_compose`. Do **not** assign `COMPOSE=(…)` in a wrapper and expect it to stick — it is overwritten. Use one of:
+
+| Mechanism | When |
+|-----------|------|
+| `docker-compose.override.yml` (repo root) | Auto-merged when the file exists (gitignored) |
+| `.awsbox/compose.local.yml` | Auto-merged; stays under gitignored `.awsbox/` |
+| `STACKWRANGLER_COMPOSE_EXTRA` | Space-separated extra `-f` files (also `AWSBOX_COMPOSE_EXTRA`) |
+| `STACKWRANGLER_COMPOSE_OVERRIDE` | Single extra file (alias; also `AWSBOX_COMPOSE_OVERRIDE`) |
+
+Merge order (later wins): base → `docker-compose.dev.yml` (dev) → `override.yml` → `compose.local.yml` → `COMPOSE_EXTRA` → `COMPOSE_OVERRIDE`.
+
+```bash
+# example: persist + restart tweaks for a staging wrapper
+export STACKWRANGLER_COMPOSE_EXTRA=/path/to/my-override.yml
+./bin/stackwrangler up --dev
+
+# inspect the merged model without starting anything
+./bin/stackwrangler compose-config dev | less
+```
+
+Smoke: `./smokes/platform/up-compose-extra-smoke.sh` (dry always; `STACKWRANGLER_748_LIVE=1` for destructive `up`).
 
 LocalEmu runs as uid 1000 inside its container. A boot hook gives `.awsbox/dev/localemu` to that user on start, so `up --dev` works whichever uid runs the CLI (#754). Files there end up owned by uid 1000 on the host; `reset` removes them through a container when your user can't.
 
