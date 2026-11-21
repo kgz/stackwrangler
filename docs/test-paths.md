@@ -458,6 +458,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | RDS engine map vs `describe-db-engine-versions` testdata | happy | covered | `./bin/check-rds-engine-map.sh` |
 | RDS parameter group Terraform converge (`Source=user`) | happy | covered | `./smokes/data/rds-parameter-group-smoke.sh` · [#710](https://github.com/kgz/stackwrangler/issues/710) |
 | RDS DB / cluster parameter groups → container | happy | covered | `./smokes/data/rds-param-groups-smoke.sh` · [#703](https://github.com/kgz/stackwrangler/issues/703) |
+| RDS Create→Describe no multi-minute hang | happy | covered | `./smokes/data/rds-tf-create-describe-smoke.sh` · [#718](https://github.com/kgz/stackwrangler/issues/718) |
 | Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
@@ -501,6 +502,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./bin/check-rds-engine-map.sh           # map vs testdata (no stack)
 ./smokes/data/rds-parameter-group-smoke.sh  # TF converge (#710)
 ./smokes/data/rds-param-groups-smoke.sh # needs mysql + psql (#703)
+./smokes/data/rds-tf-create-describe-smoke.sh  # Create→Describe bound (#718)
 # …add others as you touch a surface
 ```
 

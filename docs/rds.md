@@ -8,6 +8,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
 ./smokes/data/rds-parameter-group-smoke.sh  # param group Source + TF converge
 ./smokes/data/rds-param-groups-smoke.sh # DB / cluster parameter groups → container
+./smokes/data/rds-tf-create-describe-smoke.sh  # Create→Describe bound (#718)
 ./smokes/data/rds-mysql-tls-smoke.sh # MySQL TLS VERIFY_IDENTITY + rds-ca.pem (#765)
 ```
 
@@ -62,6 +63,7 @@ Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/r
 | Private DNS from workloads | [#206](https://github.com/kgz/awsl/issues/206) |
 | Console create | Wired for Postgres/MySQL `CreateDBInstance` (`/rds/create`). Aurora engine choice disabled — use `./smokes/data/rds-mysql-smoke.sh` |
 | Parameter groups | `DescribeDBParameters` / cluster variant return `Source=user` for modified params so Terraform converges ([#710](https://github.com/kgz/stackwrangler/issues/710)). User overrides apply to the container CMD at create; MySQL `reboot-db-instance` re-applies via `SET GLOBAL`; Postgres recreates the container so `-c` flags refresh ([#703](https://github.com/kgz/stackwrangler/issues/703)). Engine-default groups stay at image defaults. |
+| Terraform create waiter | Create returns ``available``; Describe stays lock-free / ≤seconds ([#718](https://github.com/kgz/stackwrangler/issues/718)) |
 
 ## Aurora scope
 
