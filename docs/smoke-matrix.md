@@ -46,6 +46,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Real AWS SG prefix-list Description (#682) | **yes** (parity) | n/a | teardown | — | `aws-parity-sg-prefixlist-description.sh` |
 | Real AWS HF cheap (#296/#297/#190/#294/#230 VPCE) | **yes** (focused) | **yes** (Deny 403, missing/disabled key) | schedule quiet after disable | — | `aws-parity-hf-cheap.sh` · skipped gaps [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Real AWS Trust v0.0.3 | local smokes + **yes** | IAM/SNS/DDB/CFN/ECR/KMS | teardown (+KMS 7d) | — | `aws-parity-trust-v003.sh` |
+| Real AWS v0.0.8 (#768/#769) | **yes** (parity) | — | teardown | — | `aws-parity-v008.sh` / `bin/parity --suite v008` · [aws-parity-v008.md](aws-parity-v008.md) |
 | Lambda VPC → host service | yes | — | unmapped name; non-VPC mapped name ENOTFOUND ([#187](https://github.com/kgz/awsl/issues/187)) | — | `lambda-vpc-smoke.sh` |
 | VPC Docker network lifecycle (#479) | yes (same CIDR after `down`/`up` + VPC Lambda invoke) | — | CreateVpc InternalError + moto rollback when bridge stubbed; leftover `localemu-vpc-*` removed on down | — | `vpc-network-lifecycle-smoke.sh` |
 | Lambda → Secrets Manager → OAuth token → external API | yes (+ per-stage secret isolation, env-var base URL) | **yes** (role without `GetSecretValue`: mock sees no requests) | wrong client secret → 401, no document posted | — | `lambda-secret-oauth-smoke.sh` |
