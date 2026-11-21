@@ -35,7 +35,7 @@ Same spirit as the catalogue milestones. Match the script prefix, then the excep
 | `smokes/compute/` | `ecs-*` (incl. `ecs-sqs-queueurl-smoke.sh`), `ec2-*`, `ecr-*`, `batch-*`, `autoscaling-*`, `application-autoscaling-*`, `apprunner-*`, `elasticbeanstalk-*`, `codedeploy-*` |
 | `smokes/apigw/` | `apigw-*` |
 | `smokes/data/` | `dynamodb-*`, `rds-*` |
-| `smokes/transfer/` | `transfer-*` |
+| `smokes/transfer/` | `transfer-*`, `org-path-smoke.sh` (#781) |
 | `smokes/security/` | `kms-*`, `secrets-*`, `resource-policy-*`, `oidc-*`, `multi-account-*`, `acm-*`, `prowler-*`, `iam-access-denied.sh`, `iam-simulate-policy-smoke.sh`, `iam-permissions-boundary-key-smoke.sh`, `iam-role-path-arn-smoke.sh`, `iam-policy-arn-condition-smoke.sh`, `lambda-esm-mapping-arn-smoke.sh`, `lambda-esm-function-arn-smoke.sh`, `iam-alarm-sns-sub-arn-smoke.sh`, `scheduler-iam-arns-smoke.sh`, `ec2-vpc-condition-keys-smoke.sh`, `api-call-log-*.sh` |
 | `smokes/s3/` | `s3-*` (including `s3-parity.sh`) |
 | `smokes/iac/` | `cfn-*`, `cdk-*`, `sam-*`, `serverless-*-smoke.sh`, `terraform-*`, `dev-apply-hook-smoke.sh`, `iac-smoke.sh` |
