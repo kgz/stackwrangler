@@ -214,7 +214,7 @@
 307	in-review	Debt: aws:ResourceTag on DynamoDB index ARNs resolves no table tags (from #296)
 309	backlog	Debt: API Gateway usage reporting and per-stage plan throttle (from #294)
 310	backlog	Debt: Console for API Gateway API keys and usage plans (from #294)
-311	backlog	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
+311	in-review	Debt: API Gateway IAM actions smoked beyond API keys and usage plans (from #294)
 313	backlog	Debt: Transfer connectors console UI (from #295)
 314	backlog	Debt: Transfer connectors: RetrieveFilePaths and AS2 (from #295)
 315	done	Debt: Transfer connectors need paramiko installed at boot (from #295)
