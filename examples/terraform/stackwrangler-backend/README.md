@@ -5,8 +5,10 @@ Bootstrap creates a **state bucket** and **DynamoDB lock table** (local state). 
 Full notes: [docs/terraform-stackwrangler.md](../../../docs/terraform-stackwrangler.md).
 
 ```bash
-./bin/awsbox up
+./bin/stackwrangler up
 AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh
+# Persist across LocalEmu recreate (#742):
+./smokes/iac/terraform-backend-persist-recreate-smoke.sh
 ```
 
 Manual: apply `bootstrap/` first, copy `app/backend_override.tf.example` → `app/backend_override.tf`, fill bucket/table names, then `terraform init && apply` under `app/`.

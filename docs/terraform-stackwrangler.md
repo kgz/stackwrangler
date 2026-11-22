@@ -165,6 +165,17 @@ The script:
 2. Runs a **canary** `sts get-caller-identity` **without** a local endpoint; if that call **succeeds**, it aborts (real AWS credentials/route would be used)
 3. Bootstraps state bucket + lock table, applies the app workspace, asserts a second plan is no-change
 
+## Persist recreate smoke (#742)
+
+Proves remote state + lock survive a LocalEmu container recreate under `PERSISTENCE=1` (unique volume; does not flip host `--dev` mode):
+
+```bash
+./bin/stackwrangler up
+./smokes/iac/terraform-backend-persist-recreate-smoke.sh
+```
+
+Flow: bootstrap + app `apply` → recreate LocalEmu with the persist volume → assert state object + lock table → `terraform plan -detailed-exitcode` is empty.
+
 ## Manual walkthrough
 
 ```bash
