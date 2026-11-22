@@ -1,5 +1,11 @@
 # stackwrangler
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/kgz/stackwrangler)](https://github.com/kgz/stackwrangler/releases/latest)
+[![parity-free](https://github.com/kgz/stackwrangler/actions/workflows/parity-free.yml/badge.svg)](https://github.com/kgz/stackwrangler/actions/workflows/parity-free.yml)
+[![Docs](https://img.shields.io/badge/docs-kgz.github.io-0B6E4F)](https://kgz.github.io/stackwrangler/)
+[![GHCR](https://img.shields.io/badge/GHCR-stackwrangler-blue?logo=github)](https://github.com/kgz/stackwrangler/pkgs/container/stackwrangler)
+
 **Not affiliated with Amazon Web Services.** Independent open-source tooling to develop and test AWS-shaped stacks locally, then deploy to real AWS. Not an AWS product and not a hosted substitute for AWS.
 
 One **local AWS-shaped account** — real APIs, a grey-rose console on localhost, and IaC against profile `local`. Learn and stage without a cloud bill.
