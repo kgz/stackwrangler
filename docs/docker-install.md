@@ -43,6 +43,8 @@ docker run --rm --network host \
 
 That single `up` brings APIs **and** the baked console web app (nginx image) — open <http://127.0.0.1:3000>. Org-path S3 + LocalEmu APIs on `:4566` (SeaweedFS `:8333` optional parity). Profile `local` is written for the AWS CLI.
 
+**Host file ownership (Linux):** create `~/.stackwrangler` and `~/.aws` on the host first (as yourself), then bind-mount them. The orchestrator runs as root inside the container so it can talk to the Docker socket, but after `up` it chowns the files it wrote (`.env`, `README.txt`, `~/.aws/config`, `~/.aws/credentials`) to the **owner of those mount directories** — so you can edit them without `sudo`. Credentials are tightened to mode `0600`. Do not run the one-liner as root on the host; a root-owned home mount stays root-owned by design.
+
 Pin a product cut with a version tag (sibling LocalEmu/console/ECR images use the same tag):
 
 ```bash
@@ -87,7 +89,7 @@ export STACKWRANGLER_HOME=$HOME/.stackwrangler
 
 ## First-run config
 
-On first `up`, the orchestrator copies defaults into `$STACKWRANGLER_HOME/.env` (same knobs as `.env.example`: ports, keys, region, account ids).
+On first `up`, the orchestrator copies defaults into `$STACKWRANGLER_HOME/.env` (same knobs as `.env.example`: ports, keys, region, account ids). Those files (and profile `local` under `~/.aws`) are left owned by the bind-mount user so you can edit `~/.stackwrangler/.env` and add other AWS profiles without `sudo` ([#746](https://github.com/kgz/stackwrangler/issues/746)).
 
 | Knob | Default | Notes |
 |------|---------|--------|

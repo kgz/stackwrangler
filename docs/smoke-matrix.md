@@ -10,6 +10,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Surface | Happy | Sad (authz / deny) | Sad (other) | Console e2e | Script |
 |---------|-------|--------------------|-------------|-------------|--------|
 | Public Docker image install (#487) | yes (alt ports via `install/stackwrangler`) | — | up without docker.sock refused | baked console HTTP | `docker-image-install-smoke.sh` |
+| Docker install host ownership (#746) | yes (bind-mount files owned by mount user, not root; credentials `0600`; host can append) | yes (pre-existing user credentials stay non-root after rewrite) | — | — | `docker-host-owned-smoke.sh` |
 | Test/dev mode CLI (#288) | yes (usage, `status` mode, wipe-path markers, compose test/dev; leftover `.awsbox/dev` ignored in test) | — | — | — | `mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | `up` compose overrides (#748) | yes (`compose-config` merges EXTRA + override.yml + `.awsbox/compose.local.yml`; dev `restart: unless-stopped`; live `STACKWRANGLER_748_LIVE=1`) | — | — | — | `up-compose-extra-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | `up` with custom keys in `.env` (#749) | yes (S3 probe signs with exported `.env` keys) | yes (wrong key → "rejected access key", fails fast, not "disk full") | — | — | `up-env-keys-smoke.sh` |
