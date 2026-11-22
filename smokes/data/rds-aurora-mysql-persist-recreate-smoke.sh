@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# #743: Aurora MySQL writer + reader SQL + cluster endpoints survive PERSISTENCE=1 recreate.
+# #743: Aurora MySQL writer + reader SQL + cluster endpoints survive PERSISTENCE=1
+# LocalEmu recreate (graceful stop + force-recreate with stop_grace_period).
+#
+# Sidecars are stopped on LocalEmu shutdown under PERSISTENCE; readers resume via
+# databases reconcile and writers via localemu-patches 20-rds-mysql resume.
+# This smoke does not docker-rm volumes/containers (hard writer volume-recreate
+# is still outside databases reconcile).
 #
 # Requires an already-up stackwrangler compose project for this worktree.
-# Recreates only the localstack service with PERSISTENCE=1 and a unique state volume.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -77,9 +82,11 @@ command -v mysql >/dev/null || {
 	exit 1
 }
 
+# stop_grace_period must cover ON_SHUTDOWN dill save (compose default ~10s is too short).
 cat >"$OVERRIDE" <<YAML
 services:
   localstack:
+    stop_grace_period: 90s
     environment:
       PERSISTENCE: "1"
     volumes:
@@ -160,22 +167,12 @@ start_localstack_persist() {
 }
 
 recreate_localstack_persist() {
-	echo "recreate localstack (PERSISTENCE=1, force)"
+	# Graceful stop first so ON_SHUTDOWN flushes moto state (clusters + instances).
+	echo "recreate localstack (PERSISTENCE=1, stop+force)"
+	"${COMPOSE[@]}" stop localstack >/dev/null
 	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null
 	wait_localemu
 	sleep 5
-}
-
-wait_container() {
-	local name="$1"
-	for _ in $(seq 1 90); do
-		if docker inspect "$name" >/dev/null 2>&1; then
-			return 0
-		fi
-		sleep 2
-	done
-	echo "FAIL: container ${name} not restored" >&2
-	return 1
 }
 
 LS_ID="$("${BASE_COMPOSE[@]}" ps -q localstack 2>/dev/null || true)"
@@ -231,13 +228,26 @@ R_HOST_BEFORE="$(aws rds describe-db-instances --db-instance-identifier "$READER
 R_PORT_BEFORE="$(aws rds describe-db-instances --db-instance-identifier "$READER" \
 	--query 'DBInstances[0].Endpoint.Port' --output text)"
 
-echo "== PERSISTENCE recreate keeps writer/reader SQL + cluster endpoints =="
+echo "== PERSISTENCE LocalEmu recreate keeps writer/reader SQL + cluster endpoints =="
 docker volume inspect "localemu-rds-${CLUSTER}-data" >/dev/null
 docker volume inspect "localemu-rds-${READER}-data" >/dev/null
-docker rm -f "localemu-rds-${READER}" "localemu-rds-${CLUSTER}" >/dev/null
+docker inspect "localemu-rds-${CLUSTER}" >/dev/null
+docker inspect "localemu-rds-${READER}" >/dev/null
 recreate_localstack_persist
-wait_container "localemu-rds-${CLUSTER}"
-wait_container "localemu-rds-${READER}"
+# Under PERSISTENCE, LocalEmu stop pauses RDS sidecars; readers resume via
+# databases reconcile and writers via 20-rds-mysql resume thread.
+for name in "localemu-rds-${CLUSTER}" "localemu-rds-${READER}"; do
+	for _ in $(seq 1 90); do
+		if docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null | grep -qx true; then
+			break
+		fi
+		sleep 2
+	done
+	docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null | grep -qx true || {
+		echo "FAIL: ${name} not running after recreate" >&2
+		exit 1
+	}
+done
 
 W_AFTER="$(wait_cluster_port "$CLUSTER" "$WRITER_PORT")"
 W_HOST_AFTER="$(echo "$W_AFTER" | awk '{print $1}')"
