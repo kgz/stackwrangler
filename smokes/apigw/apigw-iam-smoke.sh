@@ -137,9 +137,25 @@ mk_role() {
 		--policy-document "file://${policy_file}" >/dev/null
 }
 
+# Empty REST APIs cannot CreateDeployment ("doesn't contain any methods").
+seed_mock_get() {
+	local api="$1" root
+	root="$(aws_admin apigateway get-resources --rest-api-id "$api" --query 'items[0].id' --output text)"
+	aws_admin apigateway put-method --rest-api-id "$api" --resource-id "$root" --http-method GET \
+		--authorization-type NONE >/dev/null
+	aws_admin apigateway put-integration --rest-api-id "$api" --resource-id "$root" --http-method GET \
+		--type MOCK --request-templates '{"application/json":"{\"statusCode\":200}"}' >/dev/null
+	aws_admin apigateway put-method-response --rest-api-id "$api" --resource-id "$root" \
+		--http-method GET --status-code 200 >/dev/null
+	aws_admin apigateway put-integration-response --rest-api-id "$api" --resource-id "$root" \
+		--http-method GET --status-code 200 --selection-pattern '' >/dev/null
+}
+
 echo "==> admin: two REST APIs + API key fixture"
 API_A="$(aws_admin apigateway create-rest-api --name "iam-a-${TS}" --query id --output text)"
 API_B="$(aws_admin apigateway create-rest-api --name "iam-b-${TS}" --query id --output text)"
+seed_mock_get "$API_A"
+seed_mock_get "$API_B"
 KEY_ID="$(aws_admin apigateway create-api-key --name "iam-key-${TS}" --enabled --query id --output text)"
 KEY_ARN="${AGW}/apikeys/${KEY_ID}"
 
