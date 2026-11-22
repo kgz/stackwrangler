@@ -52,7 +52,7 @@ Smoke: `./smokes/transfer/transfer-sftp-port-smoke.sh`.
 | Home type | **PATH** `/bucket` or `/bucket/prefix` only. **LOGICAL** `HomeDirectoryMappings` are not supported — API may store the user; SFTP login is refused (`transfer-authz-smoke.sh`) |
 | Authz under Transfer role | Empty / under-permissioned role → SFTP put fails with Permission denied and the object is absent (`transfer-authz-smoke.sh`). Simulate-principal-policy remains a control-plane probe in the same smoke |
 | IdP / custom identity providers | **Not supported.** `create-server` may accept `API_GATEWAY` / `AWS_DIRECTORY_SERVICE` / `AWS_LAMBDA` for IaC shape; inbound SFTP never invokes an IdP — only SERVICE_MANAGED SSH keys (`transfer-authz-smoke.sh`) |
-| Console create user / import key | CLI / smoke only → [#321](https://github.com/kgz/awsl/issues/321) |
+| Console create user / import key | Server detail → Add user / Add SSH key ([#321](https://github.com/kgz/stackwrangler/issues/321)); e2e `console/e2e/transfer-create-user.spec.ts` |
 | Host key | Ephemeral RSA in the LocalEmu container (`StrictHostKeyChecking=no` in smokes) |
 
 ## Outbound SFTP connectors
