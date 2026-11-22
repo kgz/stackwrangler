@@ -39,7 +39,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 |---------|------------|---------|--------|
 | S3 general purpose | LocalEmu objects (org path) + optional Seaweed parity | Buckets / objects / preview | **Working** (org-path LocalEmu) |
 | S3 specialty / Access Points / Lens | — | Empty states | **Console chrome** · disabled controls [#355](https://github.com/kgz/awsl/issues/355) |
-| Transfer Family | API + native SFTP (SSH keys) → S3; outbound connectors (`StartFileTransfer` → remote SFTP) | Servers list/detail · connectors: [#313](https://github.com/kgz/awsl/issues/313) | **Partial** (`docs/transfer.md`) · console user/key [#321](https://github.com/kgz/awsl/issues/321) · LOGICAL/custom IdP N/A (honest refuse) · retrieve/AS2 [#314](https://github.com/kgz/awsl/issues/314) |
+| Transfer Family | API + native SFTP (SSH keys) → S3; outbound connectors (`StartFileTransfer` → remote SFTP) | Servers list/detail · create user / import key · connectors: [#313](https://github.com/kgz/awsl/issues/313) | **Partial** (`docs/transfer.md`) · LOGICAL/custom IdP N/A (honest refuse) · retrieve/AS2 [#314](https://github.com/kgz/awsl/issues/314) · delete/remove key [#357](https://github.com/kgz/awsl/issues/357) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
 Smokes: `./smokes/s3/s3-org-path-brain-smoke.sh`, `./smokes/s3/s3-parity.sh`, `./smokes/transfer/transfer-smoke.sh`, `./smokes/transfer/transfer-key-smoke.sh`, `./smokes/transfer/transfer-dataplane-smoke.sh`, `./smokes/transfer/transfer-authz-smoke.sh`, `./smokes/transfer/transfer-connector-smoke.sh`

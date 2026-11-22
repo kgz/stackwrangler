@@ -1,8 +1,10 @@
 import {
   CreateServerCommand,
+  CreateUserCommand,
   DeleteServerCommand,
   DescribeServerCommand,
   DescribeUserCommand,
+  ImportSshPublicKeyCommand,
   ListServersCommand,
   ListUsersCommand,
   TransferClient,
@@ -134,6 +136,44 @@ export async function describeUser(
     throw new Error(`User ${userName} not found`)
   }
   return out.User
+}
+
+export type CreateTransferUserInput = {
+  serverId: string
+  userName: string
+  roleArn: string
+  homeDirectory?: string
+  sshPublicKeyBody?: string
+}
+
+export async function createUser(input: CreateTransferUserInput): Promise<void> {
+  const home = input.homeDirectory?.trim()
+  const key = input.sshPublicKeyBody?.trim()
+  await client().send(
+    new CreateUserCommand({
+      ServerId: input.serverId,
+      UserName: input.userName.trim(),
+      Role: input.roleArn.trim(),
+      HomeDirectoryType: 'PATH',
+      ...(home ? { HomeDirectory: home } : {}),
+      ...(key ? { SshPublicKeyBody: key } : {}),
+    }),
+  )
+}
+
+export async function importSshPublicKey(
+  serverId: string,
+  userName: string,
+  sshPublicKeyBody: string,
+): Promise<string> {
+  const out = await client().send(
+    new ImportSshPublicKeyCommand({
+      ServerId: serverId,
+      UserName: userName,
+      SshPublicKeyBody: sshPublicKeyBody.trim(),
+    }),
+  )
+  return out.SshPublicKeyId ?? ''
 }
 
 export type { DescribedServer, DescribedUser, ListedServer, ListedUser }

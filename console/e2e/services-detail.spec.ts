@@ -305,9 +305,12 @@ test.describe('Built service detail pages (#349)', () => {
     await expect(overview).toContainText('Service managed')
     await expect(overview).toContainText('arn:aws:transfer:')
     const users = page.getByTestId('transfer-users-table')
-    for (const col of ['User name', 'Home directory', 'Role']) {
+    for (const col of ['User name', 'Home directory', 'Role', 'SSH keys']) {
       await expect(users.locator('th').filter({ hasText: col })).toBeVisible()
     }
+    await expect(page.getByTestId('transfer-add-user')).toBeVisible()
+    await expect(page.getByTestId('transfer-add-ssh-key')).toBeVisible()
+    await expect(page.getByTestId('transfer-delete-user')).toBeDisabled()
     // LocalEmu list-users can be empty even when user-count is 1.
     await expect(users).toContainText(/e2e-sftp-user|No users/)
     const dataPlane = page.locator('.aws-kv').last()

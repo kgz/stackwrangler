@@ -108,6 +108,15 @@ Sad paths: access role without `s3:GetObject`, without the secret, without `kms:
 | Real AWS | `StartFileTransfer` is asynchronous there too; failure detail comes from results and logs |
 
 Debt: console [#313](https://github.com/kgz/awsl/issues/313) · retrieve / AS2 [#314](https://github.com/kgz/awsl/issues/314) · offline SFTP client [#315](https://github.com/kgz/awsl/issues/315).
+<<<<<<< HEAD
+=======
+| FTPS/FTP / AS2 | Not exercised |
+| Home type | PATH `/bucket` or `/bucket/prefix` only (LOGICAL / IdP → [#322](https://github.com/kgz/awsl/issues/322)) |
+| Authz under Transfer role | API simulate: `transfer-authz-smoke.sh`; deeper SFTP-byte deny matrix → [#322](https://github.com/kgz/awsl/issues/322) |
+| Console create user / import key | Server detail → Add user / Add SSH key ([#321](https://github.com/kgz/awsl/issues/321)) |
+| IdP / custom identity providers | Not implemented → [#322](https://github.com/kgz/awsl/issues/322) |
+| Host key | Ephemeral RSA in the LocalEmu container (`StrictHostKeyChecking=no` in smokes) |
+>>>>>>> origin/feature/321-transfer-console-user
 
 ## Slice
 

@@ -36,7 +36,7 @@ Honest map of what moves bytes today vs control-plane / sidecar / still open. St
 |-----|------------------|--------------|
 | **VPC / SG** | **Partial** | Create/describe + enforcement smokes; topology fidelity still deepening |
 | **Transfer control plane** | **Partial** | `create-server` / `create-user` / `ImportSshPublicKey` on LocalEmu |
-| **Transfer SFTP → object** | **Partial** · **Sidecar-shaped native listen** | SSH public keys only → Put under Transfer role into **LocalEmu S3** (`:4566`). Empty-role put denied (`transfer-authz-smoke.sh`). LOGICAL / custom IdP / password **N/A** (honest refuse — [docs/transfer.md](transfer.md)). Console user/key → [#321](https://github.com/kgz/stackwrangler/issues/321) |
+| **Transfer SFTP → object** | **Partial** · **Sidecar-shaped native listen** | SSH public keys only → Put under Transfer role into **LocalEmu S3** (`:4566`). Empty-role put denied (`transfer-authz-smoke.sh`). LOGICAL / custom IdP / password **N/A** (honest refuse — [docs/transfer.md](transfer.md)). Console create user / import key shipped ([#321](https://github.com/kgz/stackwrangler/issues/321)) |
 | **Lambda** | **Working** (invoke) | ObjectCreated / path wiring is hop-smoked with Transfer; full path chain → [#781](https://github.com/kgz/stackwrangler/issues/781) |
 | **S3** | **Partial** (dual brain) | Path / IaC / events → LocalEmu `:4566`. Console + `aws --profile local` → SeaweedFS `:8333`. See [Dual S3](#dual-s3--post-162) |
 | **ECS task** | **Partial** | Docker tasks + ECR pull smokes; console Run/service depth still Debt |
