@@ -21,7 +21,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | Area | Status | Notes |
 |------|--------|--------|
 | `./bin/stackwrangler up` + profile `local` | **Working** | Compose + managed AWS profile |
-| Test / dev mode + opt-in persistence | **Working** | `up --test`\|`--dev`; `--dev` → `STACKWRANGLER_PERSISTENCE=1` + `.awsbox/dev` (LocalEmu+ECR) + `seaweed-data-dev`; `reset` wipes LocalEmu/Seaweed/ECR/RDS vols (RDS wipe smoked); multi-service recreate smoke; Postgres SQL persist via [#705](https://github.com/kgz/stackwrangler/issues/705). Debt: TF empty-plan [#742](https://github.com/kgz/stackwrangler/issues/742); MySQL/Aurora SQL [#743](https://github.com/kgz/stackwrangler/issues/743) · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| Test / dev mode + opt-in persistence | **Working** | `up --test`\|`--dev`; `--dev` → `STACKWRANGLER_PERSISTENCE=1` + `.awsbox/dev` (LocalEmu+ECR) + `seaweed-data-dev`; `reset` wipes LocalEmu/Seaweed/ECR/RDS vols (RDS wipe smoked); multi-service recreate smoke; TF S3+DDB empty plan after recreate ([#742](https://github.com/kgz/stackwrangler/issues/742)); Postgres SQL persist via [#705](https://github.com/kgz/stackwrangler/issues/705). Debt: MySQL/Aurora SQL [#743](https://github.com/kgz/stackwrangler/issues/743) · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Console shell (grey rose) | **Working** | Chrome from `design/stackwrangler-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
 | Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [labels.md](labels.md) · `./smokes/account/labels-smoke.sh` |
 | Org-path S3 brain | **Working** | Console/`local`/Transfer/Lambda/IaC → LocalEmu `:4566` · Seaweed `:8333` optional parity only · [s3-backends.md](s3-backends.md) · [org-path.md](org-path.md) · `./smokes/s3/s3-org-path-brain-smoke.sh` |
@@ -164,7 +164,7 @@ Smokes: `./smokes/apigw/apigw-smoke.sh` · `./smokes/apigw/apigw-authz-smoke.sh`
 | Tool | Status |
 |------|--------|
 | Terraform S3+Lambda | **Working** (`examples/terraform/…`, local apply) |
-| Terraform S3 backend + lock | **Working** ([terraform-stackwrangler.md](terraform-stackwrangler.md), `examples/terraform/stackwrangler-backend/`) |
+| Terraform S3 backend + lock | **Working** ([terraform-stackwrangler.md](terraform-stackwrangler.md), `examples/terraform/stackwrangler-backend/`) · empty plan after LocalEmu recreate [#742](https://github.com/kgz/stackwrangler/issues/742) |
 | Dev apply hook on `up` | **CLI + smoke** — `STACKWRANGLER_DEV_APPLY_HOOK` / `.awsbox/dev-apply-hook` after healthy ([#290](https://github.com/kgz/stackwrangler/issues/290)); `--dev` wiring [#288](https://github.com/kgz/stackwrangler/issues/288) · `./smokes/iac/dev-apply-hook-smoke.sh` |
 | CloudFormation | **Partial** — failed create rolls back and delete-stack removes resources ([#212](https://github.com/kgz/awsl/issues/212)); in-place rollback / Snapshot [#228](https://github.com/kgz/awsl/issues/228); stacks UI + Create stack (upload/paste, poll) [#93](https://github.com/kgz/awsl/issues/93); update/change sets [#94](https://github.com/kgz/awsl/issues/94); StackSets list + nested nav chrome [#95](https://github.com/kgz/awsl/issues/95) ([cfn-stacksets-nested.md](cfn-stacksets-nested.md)) · write-path audit [#147](https://github.com/kgz/awsl/issues/147) done; drift/notifications Debt [#564](https://github.com/kgz/stackwrangler/issues/564) |
 | CDK / SAM samples | **Working** (smokes against local CFN) |
@@ -173,7 +173,7 @@ Smokes: `./smokes/apigw/apigw-smoke.sh` · `./smokes/apigw/apigw-authz-smoke.sh`
 | CodeDeploy | **CLI + smoke** — ECS blue/green + Lambda canary DG (control plane) · `./smokes/compute/codedeploy-smoke.sh` · slice `examples/serverless-v3-rest/slices/codedeploy/` · alias weight [#340](https://github.com/kgz/awsl/issues/340) · authz/console [#341](https://github.com/kgz/awsl/issues/341) |
 | CodePipeline / Build / Artifact | **Backlog** |
 
-Smokes: `./smokes/iac/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh`, `./smokes/iac/dev-apply-hook-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/compute/codedeploy-smoke.sh`
+Smokes: `./smokes/iac/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh`, `./smokes/iac/terraform-backend-persist-recreate-smoke.sh`, `./smokes/iac/dev-apply-hook-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/compute/codedeploy-smoke.sh`
 
 
 ## Org staging path (target)
