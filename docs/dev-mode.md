@@ -97,7 +97,7 @@ What survives a LocalEmu **container recreate** when `--dev` / `PERSISTENCE=1` +
 | Secrets Manager | **Persisted** | same | |
 | SSM Parameter Store | **Persisted** | same | |
 | DynamoDB | **Persisted** | same | |
-| Lambda (metadata + code bodies) | **Persisted** when `s3_bodies` intact; invoke works after recreate | same | If code blobs wiped → `Failed` until `UpdateFunctionCode` ([#713](https://github.com/kgz/stackwrangler/issues/713)) |
+| Lambda (metadata + code bodies) | **Persisted** when `s3_bodies` intact; invoke works after recreate ([#751](https://github.com/kgz/stackwrangler/issues/751)) | same | If code blobs wiped → `Failed` until `UpdateFunctionCode` ([#713](https://github.com/kgz/stackwrangler/issues/713)) |
 | SQS event source mappings | **Persisted**; orphans deletable ([#717](https://github.com/kgz/stackwrangler/issues/717)) | same | |
 | ECR images (registry:2) | **Persisted** (`.awsbox/dev/ecr`) | same | Moto ECR catalog resyncs from registry ([#684](https://github.com/kgz/stackwrangler/issues/684)) |
 | RDS Postgres | **Persisted** (smoked) — volume `localemu-rds-<id>-data`; host port + SQL row survive restart/recreate ([#705](https://github.com/kgz/stackwrangler/issues/705)) | same (containers may stop on `down`; volume kept) | `delete-db-instance` removes the volume; `reset` removes all `localemu-rds-*` |
