@@ -50,6 +50,33 @@ Docs: https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md
 EOF
 }
 
+# Bind mounts keep the host directory uid:gid; files we create as root would
+# otherwise be uneditable on the host (~/.aws, ~/.stackwrangler) — #746.
+reclaim_mount_owned() {
+	local dir="$1"
+	shift
+	[[ -d "$dir" ]] || return 0
+	local owner
+	owner="$(stat -c '%u:%g' "$dir" 2>/dev/null || true)"
+	[[ -n "$owner" ]] || return 0
+	local f
+	for f in "$@"; do
+		[[ -e "$f" ]] || continue
+		chown "$owner" "$f" 2>/dev/null || true
+	done
+}
+
+reclaim_host_files() {
+	reclaim_mount_owned "$DATA" "$DATA/.env" "$DATA/README.txt"
+	local aws_home="${HOME}/.aws"
+	if [[ -d "$aws_home" ]]; then
+		reclaim_mount_owned "$aws_home" "$aws_home/config" "$aws_home/credentials"
+		if [[ -f "$aws_home/credentials" ]]; then
+			chmod 600 "$aws_home/credentials" 2>/dev/null || true
+		fi
+	fi
+}
+
 ensure_env() {
 	if [[ ! -f "$DATA/.env" ]]; then
 		cp "$OPT_ROOT/.env.example" "$DATA/.env"
@@ -72,6 +99,7 @@ ensure_env() {
 		echo "created $DATA/.env from defaults"
 	fi
 	printf '# managed by stackwrangler image — see docs/docker-install.md\n' >"$DATA/README.txt"
+	reclaim_host_files
 }
 
 # Load $DATA/.env without clobbering vars already set (docker run -e / install script).
@@ -140,6 +168,7 @@ source "$OPT_ROOT/bin/stackwrangler-dev-apply-hook.sh"
 write_profile() {
 	# Reuse checkout profile helper with ROOT=DATA so it reads DATA/.env
 	ROOT="$DATA" "$OPT_ROOT/bin/stackwrangler-profile" write "$@"
+	reclaim_host_files
 }
 
 cmd_up() {
@@ -184,6 +213,7 @@ cmd_down() {
 	"${COMPOSE[@]}" down "${extra[@]}"
 	if [[ "$remove_profile" -eq 1 ]]; then
 		ROOT="$DATA" "$OPT_ROOT/bin/stackwrangler-profile" remove
+		reclaim_host_files
 	fi
 }
 
