@@ -61,6 +61,7 @@ User relies on the agent to not lose half-baked follow-ups (especially UI stubs)
 
 ```bash
 ./bin/gap-check.sh <n>
+./bin/coverage-report.sh   # prove-coverage % — keep high; no drop without Debt
 ```
 
 1. Walk the checklist in `docs/gap-check.md`

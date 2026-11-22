@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awsbox — AWS Transfer Family</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="transfer-user-detail" data-nav="transfer-server-detail" data-service="transfer" data-title="awsbox" data-crumb="awsbox">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">awsbox</h1>
+        <button type="button" class="btn btn-normal" data-od-id="btn-delete-user" title="To implement" disabled aria-disabled="true">Delete user</button>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+      </div>
+      <div class="aws-subtitle-row"><span class="aws-status aws-status-success">Active</span><span>s-abc12def34 · SFTP · Service managed</span></div>
+
+      <section class="aws-card" data-od-id="user-overview-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">User overview</h2>
+          <dl class="aws-kv" data-od-id="user-overview">
+            <div><dt>Server ID</dt><dd><a href="transfer-server-detail.html" data-od-id="link-server">s-abc12def34</a></dd></div>
+            <div><dt>Identity provider</dt><dd>Service managed</dd></div>
+            <div><dt>Role ARN</dt><dd><code class="aws-mono">arn:aws:iam::445772506418:role/TransferAccess</code></dd></div>
+            <div><dt>Home directory type</dt><dd>PATH</dd></div>
+            <div><dt>Home directory</dt><dd><code class="aws-mono">/awsbox-home</code></dd></div>
+            <div><dt>ARN</dt><dd><code class="aws-mono">arn:aws:transfer:ap-southeast-2:445772506418:server/s-abc12def34/user/awsbox</code></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="aws-card" style="margin-top:16px" data-od-id="ssh-keys-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">SSH public keys <span class="aws-quiet" style="font-size:13px;font-weight:400">2 of 10</span></h2>
+          <div class="aws-toolbar" data-od-id="ssh-keys-toolbar">
+            <button type="button" class="btn btn-normal" data-od-id="btn-remove-key" title="To implement" disabled aria-disabled="true">Remove key</button>
+            <div class="spacer"></div>
+            <a class="btn btn-primary" href="transfer-import-ssh-key.html" data-od-id="btn-add-key">Add SSH key</a>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" data-od-id="ssh-keys-table">
+              <thead><tr><th scope="col"><span class="th-inner">Fingerprint</span></th><th scope="col"><span class="th-inner">Public key body</span></th><th scope="col"><span class="th-inner">Date added</span></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code class="aws-mono">SHA256:u5mT…9kA0</code></td>
+                  <td><code class="aws-mono">ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK7f2pQ… user@laptop</code></td>
+                  <td>12 Oct 2026, 09:14 UTC</td>
+                </tr>
+                <tr>
+                  <td><code class="aws-mono">SHA256:p2Rk…wV4m</code></td>
+                  <td><code class="aws-mono">ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB… deploy@ci</code></td>
+                  <td>22 Nov 2026, 04:31 UTC</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

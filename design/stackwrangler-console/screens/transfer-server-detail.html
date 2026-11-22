@@ -33,12 +33,30 @@
       <section class="aws-card" style="margin-top:16px" data-od-id="users-card">
         <div class="aws-card-body">
           <h2 class="aws-section-title">Users</h2>
+          <div class="aws-toolbar" data-od-id="users-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh users" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" data-od-id="btn-delete-user" title="To implement" disabled aria-disabled="true">Delete user</button>
+            <div class="spacer"></div>
+            <a class="btn btn-normal" href="transfer-import-ssh-key.html" data-od-id="btn-add-ssh-key">Add SSH key</a>
+            <a class="btn btn-primary" href="transfer-create-user.html" data-od-id="btn-add-user">Add user</a>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search users" data-find-table="#transfer-users-table" aria-label="Search users" data-od-id="find-users" />
+            </label>
+            <div class="aws-pager" data-od-id="users-pagination">
+              <button type="button" disabled aria-disabled="true" title="To implement" aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-disabled="true" title="To implement" aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
           <div class="aws-table-wrap">
-            <table class="aws-table" data-od-id="transfer-users-table">
-              <thead><tr><th scope="col"><span class="th-inner">User name <span aria-hidden="true">↑</span></span></th><th scope="col"><span class="th-inner">Home directory</span></th><th scope="col"><span class="th-inner">Role</span></th></tr></thead>
+            <table class="aws-table" id="transfer-users-table" data-od-id="transfer-users-table">
+              <thead><tr><th scope="col"><span class="th-inner">User name <span aria-hidden="true">↑</span></span></th><th scope="col"><span class="th-inner">Home directory</span></th><th scope="col"><span class="th-inner">Role</span></th><th scope="col"><span class="th-inner">SSH keys</span></th></tr></thead>
               <tbody>
-                <tr><td>awsbox</td><td><code class="aws-mono">/awsbox-home</code></td><td><code class="aws-mono">arn:aws:iam::445772506418:role/TransferAccess</code></td></tr>
-                <tr><td>partner</td><td><code class="aws-mono">/partner-drop</code></td><td><code class="aws-mono">arn:aws:iam::445772506418:role/TransferAccess</code></td></tr>
+                <tr data-name="awsbox"><td><a href="transfer-user-detail.html" data-od-id="user-awsbox">awsbox</a></td><td><code class="aws-mono">/awsbox-home</code></td><td><code class="aws-mono">arn:aws:iam::445772506418:role/TransferAccess</code></td><td>1</td></tr>
+                <tr data-name="partner"><td><a href="transfer-user-detail.html" data-od-id="user-partner">partner</a></td><td><code class="aws-mono">/partner-drop</code></td><td><code class="aws-mono">arn:aws:iam::445772506418:role/TransferAccess</code></td><td>0</td></tr>
               </tbody>
             </table>
           </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ResourceLabel } from '../components/ResourceLabel'
-import { RefreshButton } from '../components/S3Ui'
+import { RefreshButton, TO_IMPLEMENT } from '../components/S3Ui'
 import {
   DetailHeader,
   EmptyRow,
@@ -297,6 +297,33 @@ function ServerDetail({ serverId }: { serverId: string }) {
             />
           </Section>
           <Section title="Users" spaced>
+            <div className="aws-toolbar" style={{ marginBottom: 12 }}>
+              <button
+                type="button"
+                className="btn btn-normal"
+                disabled
+                aria-disabled="true"
+                title={TO_IMPLEMENT}
+                data-testid="transfer-delete-user"
+              >
+                Delete user
+              </button>
+              <div className="spacer" />
+              <Link
+                className="btn btn-normal"
+                to={`/transfer/servers/${encodeURIComponent(serverId)}/users/import-ssh-key`}
+                data-testid="transfer-add-ssh-key"
+              >
+                Add SSH key
+              </Link>
+              <Link
+                className="btn btn-primary"
+                to={`/transfer/servers/${encodeURIComponent(serverId)}/users/create`}
+                data-testid="transfer-add-user"
+              >
+                Add user
+              </Link>
+            </div>
             <div className="aws-table-wrap">
               <table className="aws-table" data-testid="transfer-users-table">
                 <thead>
@@ -304,31 +331,42 @@ function ServerDetail({ serverId }: { serverId: string }) {
                     <PlainHeader>User name</PlainHeader>
                     <PlainHeader>Home directory</PlainHeader>
                     <PlainHeader>Role</PlainHeader>
+                    <PlainHeader>SSH keys</PlainHeader>
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <EmptyRow
-                      colSpan={3}
+                      colSpan={4}
                       loading={false}
                       loadingText=""
                       title="No users"
-                      text="LocalEmu list-users may be empty. Create via CLI smoke."
+                      text="Add a service-managed user here, or run ./smokes/transfer/transfer-key-smoke.sh"
                     />
                   ) : (
-                    users.map((u) => (
-                      <tr key={u.UserName}>
-                        <td>{u.UserName ?? '—'}</td>
-                        <td>
-                          <Mono>{u.HomeDirectory ?? '—'}</Mono>
-                        </td>
-                        <td>
-                          <ResourceLabel ids={[u.Arn]}>
-                            <Mono>{u.Arn ?? '—'}</Mono>
-                          </ResourceLabel>
-                        </td>
-                      </tr>
-                    ))
+                    users.map((u) => {
+                      const name = u.UserName ?? ''
+                      return (
+                        <tr key={name}>
+                          <td>
+                            <Link
+                              to={`/transfer/servers/${encodeURIComponent(serverId)}/users/${encodeURIComponent(name)}`}
+                            >
+                              {name || '—'}
+                            </Link>
+                          </td>
+                          <td>
+                            <Mono>{u.HomeDirectory ?? '—'}</Mono>
+                          </td>
+                          <td>
+                            <ResourceLabel ids={[u.Role, u.Arn]}>
+                              <Mono>{u.Role ?? '—'}</Mono>
+                            </ResourceLabel>
+                          </td>
+                          <td>{u.SshPublicKeyCount ?? 0}</td>
+                        </tr>
+                      )
+                    })
                   )}
                 </tbody>
               </table>

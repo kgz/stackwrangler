@@ -10,6 +10,9 @@ Permanent, re-runnable checks that exercise the **same assertions** against Loca
 # Local only (automation-friendly; no --approve-cost)
 ./bin/parity run --tier free --target local
 
+# CI (`parity-free` / job `free-ci local parity`): free-ci suite on LocalEmu
+# ./bin/parity run --suite free-ci --target local
+
 # Real AWS (prints cost/residual banner; refuses without flag)
 ./bin/parity run --suite v005 --target real --approve-cost
 
@@ -58,6 +61,19 @@ Prefer existing fixture aliases (see [AGENTS.md](../AGENTS.md) / aws-cost-approv
 ## Suites (tags)
 
 Examples in the catalog: `free-ci`, `v005`, `scheduler`, `iam`, `kms`, `legacy`, `trust`. Filter with `--suite`.
+
+## Prove coverage
+
+Honest inventory % (not “% of AWS”):
+
+```bash
+./bin/coverage-report.sh          # overall = mean(matrix, test-paths, free-ci)
+./bin/coverage-report.sh --gaps   # open no/debt/missing + uncatalogued free legacy
+```
+
+Raising free-ci %: catalogue free `aws-parity-*.sh` leftovers into `catalog.yaml` with `suites: […, free-ci]`, prefer dual-mode `checks/*` under `$1`. See [#676](https://github.com/kgz/stackwrangler/issues/676).
+
+`free-ci` (local CI / free re-runs): dual-mode v0.0.5 checks + free legacy (`iam-denied`, `batch10`, `cfn-s3-lambda`, `cfn-authz`, `cfn-path-scoped-role` [#679], `sg-prefixlist-description` [#682], `trust-v003`). `legacy-hf-cheap` stays `low` (real schedule wait) until split. List: `./bin/parity list --suite free-ci`.
 
 ## Env
 

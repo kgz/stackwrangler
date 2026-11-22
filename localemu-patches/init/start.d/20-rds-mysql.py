@@ -218,6 +218,49 @@ wait "$pid"
 """
 
 
+def _writer_host_port_from_docker(cid: str) -> int | None:
+    """Host publish port for a cluster writer after PERSISTENCE reload.
+
+    Reconcile only walks moto ``databases`` (reader instances), so the writer
+    keyed by cluster id is often missing from DockerDbManager after LocalEmu
+    recreate even when ``localemu-rds-<cid>`` is still running.
+    """
+    try:
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+
+        inspect = DOCKER_CLIENT.inspect_container(f"localemu-rds-{cid}")
+    except Exception:
+        return None
+    ports = (inspect.get("NetworkSettings") or {}).get("Ports") or {}
+    for key, bindings in ports.items():
+        if not key.startswith("3306/") or not bindings:
+            continue
+        host = bindings[0].get("HostPort") if isinstance(bindings[0], dict) else None
+        if isinstance(host, str) and host.isdigit():
+            return int(host)
+    return None
+
+
+def _writer_host_port_from_meta(cid: str) -> int | None:
+    try:
+        from localemu import config
+
+        data = getattr(getattr(config, "dirs", None), "data", None)
+        if not data:
+            return None
+        path = f"{data}/rds-host-port/{cid}.json"
+        with open(path, encoding="utf-8") as fh:
+            meta = json.load(fh)
+    except Exception:
+        return None
+    port = meta.get("host_port") if isinstance(meta, dict) else None
+    if isinstance(port, int):
+        return port
+    if isinstance(port, str) and port.isdigit():
+        return int(port)
+    return None
+
+
 def _stamp_cluster(context, cluster: dict) -> None:
     from localemu.services.rds.provider import _init_db_manager, _rds_endpoint_address
 
@@ -227,6 +270,8 @@ def _stamp_cluster(context, cluster: dict) -> None:
         return
     info = mgr.get_instance_info(cid)
     host_port = getattr(info, "host_port", None) if info is not None else None
+    if not host_port:
+        host_port = _writer_host_port_from_docker(cid) or _writer_host_port_from_meta(cid)
     if not host_port:
         return
     region = context.region or "us-east-1"
@@ -460,6 +505,31 @@ def _install() -> None:
         table["DescribeDBClusters"] = _handle_describe_db_clusters
         return table
 
+    def _rebind_live_dispatch() -> None:
+        # PERSISTENCE loads RDS before start.d and freezes the Skeleton table
+        # with upstream handlers — same issue as 21-rds-host-port Create*.
+        try:
+            from localemu.services.plugins import SERVICE_PLUGINS
+
+            svc = SERVICE_PLUGINS.get_service("rds")
+            skeleton = getattr(svc, "skeleton", None) if svc is not None else None
+            table = getattr(skeleton, "dispatch_table", None)
+            if not isinstance(table, dict):
+                return
+            for op, handler in (
+                ("CreateDBCluster", _handle_create_db_cluster),
+                ("CreateDBInstance", _handle_create_db_instance),
+                ("DescribeDBClusters", _handle_describe_db_clusters),
+            ):
+                if op in table:
+                    table[op] = handler
+            LOG.info("rds mysql rebound live Create*/DescribeDBClusters dispatch")
+        except Exception:
+            LOG.debug("rds mysql dispatch rebind skipped", exc_info=True)
+
+    # Writer stop/resume + hard volume-recreate lives in 21-rds-host-port
+    # (_restore_cluster_writers) so host-port meta + ContextVar pins apply.
+
     setattr(is_postgres_engine, "_awsbox_mysql", True)
     cluster_init.is_postgres_engine = is_postgres_engine
     cluster_init.writer_postgres_command = writer_postgres_command
@@ -474,6 +544,7 @@ def _install() -> None:
     provider._INTERCEPTED_OPS["CreateDBInstance"] = _handle_create_db_instance
     provider._INTERCEPTED_OPS["DescribeDBClusters"] = _handle_describe_db_clusters
     provider.RdsDispatcher = RdsDispatcher
+    _rebind_live_dispatch()
     LOG.info("awsbox rds mysql patch applied")
 
 

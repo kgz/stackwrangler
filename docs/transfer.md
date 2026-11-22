@@ -28,7 +28,7 @@ Smoke: `./smokes/transfer/transfer-sftp-port-smoke.sh`.
 ./smokes/transfer/transfer-smoke.sh              # API: server + user + S3 home
 ./smokes/transfer/transfer-key-smoke.sh          # SSH key auth + put → S3 + ObjectCreated Lambda
 ./smokes/transfer/transfer-dataplane-smoke.sh    # short key put → S3 (no Lambda)
-./smokes/transfer/transfer-authz-smoke.sh        # empty Transfer role → PutObject deny (simulate)
+./smokes/transfer/transfer-authz-smoke.sh        # empty Transfer role → SFTP put deny + object absent; LOGICAL/IdP N/A
 ./smokes/transfer/transfer-connector-smoke.sh    # outbound connector: S3 object → remote SFTP host (+ sad paths)
 ```
 
@@ -43,13 +43,17 @@ Smoke: `./smokes/transfer/transfer-sftp-port-smoke.sh`.
 
 `DescribeServer` includes `Endpoint` = `127.0.0.1:<host-port>` and reports `ONLINE`.
 
-## Limits
+## Limits (inbound)
 
 | Area | Behaviour |
 |------|-----------|
 | `list-servers` / `list-users` | May be empty; use `describe-*` |
-| FTPS/FTP | Not exercised |
-| Authz under Transfer role | `./smokes/transfer/transfer-authz-smoke.sh` (simulate); SFTP-byte deny → [#141](https://github.com/kgz/awsl/issues/141) |
+| FTPS/FTP / AS2 | Not exercised |
+| Home type | **PATH** `/bucket` or `/bucket/prefix` only. **LOGICAL** `HomeDirectoryMappings` are not supported — API may store the user; SFTP login is refused (`transfer-authz-smoke.sh`) |
+| Authz under Transfer role | Empty / under-permissioned role → SFTP put fails with Permission denied and the object is absent (`transfer-authz-smoke.sh`). Simulate-principal-policy remains a control-plane probe in the same smoke |
+| IdP / custom identity providers | **Not supported.** `create-server` may accept `API_GATEWAY` / `AWS_DIRECTORY_SERVICE` / `AWS_LAMBDA` for IaC shape; inbound SFTP never invokes an IdP — only SERVICE_MANAGED SSH keys (`transfer-authz-smoke.sh`) |
+| Console create user / import key | Server detail → Add user / Add SSH key ([#321](https://github.com/kgz/stackwrangler/issues/321)); e2e `console/e2e/transfer-create-user.spec.ts` |
+| Host key | Ephemeral RSA in the LocalEmu container (`StrictHostKeyChecking=no` in smokes) |
 
 ## Outbound SFTP connectors
 
@@ -92,7 +96,7 @@ With a `LoggingRole` (needs `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs
 
 Sad paths: access role without `s3:GetObject`, without the secret, without `kms:Decrypt`, trust scoped to another account, wrong host key, Lambda role without `iam:PassRole`.
 
-### Limits
+### Limits (outbound)
 
 | Area | Behaviour |
 |------|-----------|
@@ -104,12 +108,6 @@ Sad paths: access role without `s3:GetObject`, without the secret, without `kms:
 | Real AWS | `StartFileTransfer` is asynchronous there too; failure detail comes from results and logs |
 
 Debt: console [#313](https://github.com/kgz/awsl/issues/313) · retrieve / AS2 [#314](https://github.com/kgz/awsl/issues/314) · offline SFTP client [#315](https://github.com/kgz/awsl/issues/315).
-| FTPS/FTP / AS2 | Not exercised |
-| Home type | PATH `/bucket` or `/bucket/prefix` only (LOGICAL / IdP → [#322](https://github.com/kgz/awsl/issues/322)) |
-| Authz under Transfer role | API simulate: `transfer-authz-smoke.sh`; deeper SFTP-byte deny matrix → [#322](https://github.com/kgz/awsl/issues/322) |
-| Console create user / import key | CLI / smoke only → [#321](https://github.com/kgz/awsl/issues/321) |
-| IdP / custom identity providers | Not implemented → [#322](https://github.com/kgz/awsl/issues/322) |
-| Host key | Ephemeral RSA in the LocalEmu container (`StrictHostKeyChecking=no` in smokes) |
 
 ## Slice
 

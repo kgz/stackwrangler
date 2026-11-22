@@ -62,6 +62,47 @@ is_managed() {
 	' "$CREDS_FILE"
 }
 
+# Rewrite via temp without flipping owner/mode to the process user (root in the
+# public image). Host bind mounts stay editable by the invoking user (#746).
+_file_ug() {
+	local f="$1"
+	if stat -c '%u:%g' "$f" >/dev/null 2>&1; then
+		stat -c '%u:%g' "$f"
+	elif stat -f '%u:%g' "$f" >/dev/null 2>&1; then
+		stat -f '%u:%g' "$f"
+	fi
+}
+
+_file_mode() {
+	local f="$1"
+	if stat -c '%a' "$f" >/dev/null 2>&1; then
+		stat -c '%a' "$f"
+	elif stat -f '%OLp' "$f" >/dev/null 2>&1; then
+		stat -f '%OLp' "$f"
+	fi
+}
+
+_replace_keeping_meta() {
+	local f="$1"
+	local tmp="${f}.awsbox.tmp"
+	local owner mode
+	owner="$(_file_ug "$f")"
+	mode="$(_file_mode "$f")"
+	[[ -n "$owner" ]] && chown "$owner" "$tmp" 2>/dev/null || true
+	[[ -n "$mode" ]] && chmod "$mode" "$tmp" 2>/dev/null || true
+	mv "$tmp" "$f"
+}
+
+_match_parent_owner() {
+	local f="$1"
+	local dir owner
+	dir="$(dirname "$f")"
+	[[ -e "$f" && -d "$dir" ]] || return 0
+	owner="$(_file_ug "$dir")"
+	[[ -n "$owner" ]] || return 0
+	chown "$owner" "$f" 2>/dev/null || true
+}
+
 strip_profile_creds() {
 	local f="$1"
 	[[ -f "$f" ]] || return 0
@@ -70,7 +111,7 @@ strip_profile_creds() {
 		skip && /^\[/ { skip=0 }
 		!skip { print }
 	' "$f" > "${f}.awsbox.tmp"
-	mv "${f}.awsbox.tmp" "$f"
+	_replace_keeping_meta "$f"
 }
 
 strip_profile_config() {
@@ -81,7 +122,7 @@ strip_profile_config() {
 		skip && /^\[/ { skip=0 }
 		!skip { print }
 	' "$f" > "${f}.awsbox.tmp"
-	mv "${f}.awsbox.tmp" "$f"
+	_replace_keeping_meta "$f"
 }
 
 cmd_write() {
@@ -175,6 +216,11 @@ cmd_write() {
 	sed -i '1{/^$/d}' "$CREDS_FILE" 2>/dev/null || true
 	sed -i '1{/^$/d}' "$CONFIG_FILE" 2>/dev/null || true
 
+	# sed -i may recreate the inode as the process user (root in the image).
+	_match_parent_owner "$CREDS_FILE"
+	_match_parent_owner "$CONFIG_FILE"
+	chmod 600 "$CREDS_FILE" 2>/dev/null || true
+
 	echo "wrote profile '${PROFILE_NAME}' → s3 + LocalEmu services ${IAM_ENDPOINT} (org-path brain; region ${REGION})"
 }
 
@@ -189,6 +235,9 @@ cmd_remove() {
 	fi
 	strip_profile_creds "$CREDS_FILE"
 	strip_profile_config "$CONFIG_FILE"
+	_match_parent_owner "$CREDS_FILE"
+	_match_parent_owner "$CONFIG_FILE"
+	[[ -f "$CREDS_FILE" ]] && chmod 600 "$CREDS_FILE" 2>/dev/null || true
 	echo "removed profile '${PROFILE_NAME}'"
 }
 

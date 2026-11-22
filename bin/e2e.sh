@@ -116,6 +116,7 @@ echo "==> ACM request/import + API domain + ALB HTTPS ARN"
 echo "==> Logs / API GW / EC2 authz"
 ./smokes/logs/logs-authz-smoke.sh
 ./smokes/apigw/apigw-authz-smoke.sh
+./smokes/apigw/apigw-iam-smoke.sh
 ./smokes/compute/ec2-authz-smoke.sh
 
 echo "==> EC2 smoke"

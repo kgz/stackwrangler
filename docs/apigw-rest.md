@@ -72,7 +72,7 @@ Per-client keys minted at runtime by a Lambda (`CreateApiKey` + `CreateUsagePlan
 
 Throttled requests do not count against the quota. With `apiKeySource` AUTHORIZER the key is the authorizer's `usageIdentifierKey`; `x-api-key` is ignored.
 
-IAM follows AWS: every API Gateway management call (v1 and v2) is `apigateway:<HTTP verb>` on `arn:aws:apigateway:<region>::/<path>` (for example `POST` on `/apikeys`, `GET` on `/usageplans/<id>/keys`, `DELETE` on `/apikeys/<id>`). `apigateway:CreateApiKey`-style action names no longer match. Smoked for keys and usage plans only → [#311](https://github.com/kgz/awsl/issues/311).
+IAM follows AWS: every API Gateway management call (v1 and v2) is `apigateway:<HTTP verb>` on `arn:aws:apigateway:<region>::/<path>` (for example `POST` on `/apikeys`, `GET` on `/usageplans/<id>/keys`, `DELETE` on `/apikeys/<id>`, `POST` on `/restapis/<id>/deployments`, `PUT` on `/tags/*`, `POST` on `/domainnames`, v2 `POST` on `/apis`). `apigateway:CreateApiKey`-style action names no longer match. Smoke: `./smokes/apigw/apigw-usage-plan-smoke.sh` (keys/plans) · `./smokes/apigw/apigw-iam-smoke.sh` (REST deploy role, tags, domain names, v2 — [#311](https://github.com/kgz/awsl/issues/311)).
 
 Limitations: limits come from the plan only (no per-stage / per-method `apiStages[].throttle`), counters are in memory and reset on restart, and `get-usage` / `update-usage` are not wired to them → [#309](https://github.com/kgz/awsl/issues/309). No console → [#310](https://github.com/kgz/awsl/issues/310).
 

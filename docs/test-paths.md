@@ -20,6 +20,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | covered | Script asserts the outcome |
 | thin | Partial / incidental only |
 | missing | No automated check |
+| debt | Tracked gap (link the issue) |
+
+Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 
 ---
 
@@ -27,6 +30,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
+| Prove coverage report: matrix cell classifier (prose ≠ gap) + freeish/uncatalogued detection | happy + sad | covered | `./smokes/platform/coverage-report-smoke.sh` (`./bin/coverage-report.sh --self-test`) · [#676](https://github.com/kgz/stackwrangler/issues/676) |
 | Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | `up` keeps compose overrides (`COMPOSE_EXTRA` / `override.yml` / `.awsbox/compose.local.yml`; dev `restart: unless-stopped`) | happy | covered | `./smokes/platform/up-compose-extra-smoke.sh` · [dev-mode.md](dev-mode.md) · [#748](https://github.com/kgz/stackwrangler/issues/748) |
 | `up` with custom keys in `.env`: S3 write probe uses them; a mismatch reports the key, not disk full (offline, stub `aws`) | happy + sad | covered | `./smokes/platform/up-env-keys-smoke.sh` · [#749](https://github.com/kgz/stackwrangler/issues/749) |
@@ -37,8 +41,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Dev keep-data: `up --dev` → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties | happy | covered | `./smokes/platform/mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
-| Terraform S3+DDB empty plan after LocalEmu recreate | happy | debt | [#742](https://github.com/kgz/stackwrangler/issues/742) (from #200) |
-| RDS MySQL/Aurora SQL persist after LocalEmu recreate | happy | debt | [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200); Postgres covered by `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| Terraform S3+DDB empty plan after LocalEmu recreate | happy | covered | `./smokes/iac/terraform-backend-persist-recreate-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) · [#742](https://github.com/kgz/stackwrangler/issues/742) (from #200) |
+| RDS MySQL SQL persist after hard LocalEmu recreate (`docker rm` + volume) | happy | covered | `./smokes/data/rds-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200); Postgres: `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| Aurora MySQL writer+reader SQL + cluster endpoints after hard LocalEmu recreate (`docker rm` + volume) | happy | covered | `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200) |
 | Warm restart: `--dev` cleanup preserves EC2/ECS/RDS containers; prebuilt ec2-base + awsbox-rt; probe-only iptables | happy | covered | `./smokes/platform/warm-restart-smoke.sh` · [dev-mode.md](dev-mode.md) · [#289](https://github.com/kgz/stackwrangler/issues/289) |
 | Warm restart: `down` → `up --dev` keeps same EC2/ECS Docker container IDs | happy | covered | `./smokes/platform/warm-restart-smoke.sh` (live) · [#289](https://github.com/kgz/stackwrangler/issues/289); timed SLA → [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Warm restart: `reset --force` reclaim removes preserved workloads + orphan `localemu-vpc-*` | sad/other | covered | `./smokes/platform/warm-restart-smoke.sh` · [#289](https://github.com/kgz/stackwrangler/issues/289) |
@@ -46,6 +51,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Public path: console HTTP on release nginx image | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: `aws --profile local` sts + s3 ls after image up | happy | covered | `./smokes/platform/docker-image-install-smoke.sh` |
 | Public path: orchestrator `up` without `/var/run/docker.sock` | sad/other | covered | `./smokes/platform/docker-image-install-smoke.sh` |
+| Public path: after image `ensure_env` + profile write, `~/.stackwrangler` / `~/.aws` files match mount owner (not root) + credentials `0600` | happy | covered | `./smokes/platform/docker-host-owned-smoke.sh` · [docker-install.md](docker-install.md) · [#746](https://github.com/kgz/stackwrangler/issues/746) |
 | `aws s3` mb/ls/cp/rm (SeaweedFS profile) | happy | covered | `./smokes/s3/s3-parity.sh` |
 | LocalEmu S3 `PERSISTENCE=1` recreate: GetObject + PutObject on restored bucket | happy | covered | `./smokes/s3/s3-persist-recreate-smoke.sh` · [#712](https://github.com/kgz/stackwrangler/issues/712) · [s3-backends.md](s3-backends.md) |
 | S3 console buckets/objects | ui | covered | `cd console && yarn test:e2e` / `./bin/e2e.sh` |
@@ -89,6 +95,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Lambda deploy zip | happy | covered | `./smokes/lambda/lambda-deploy-smoke.sh` |
 | Lambda UpdateFunctionCode after PERSISTENCE recreate (code missing → Failed) | happy | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` · [#713](https://github.com/kgz/stackwrangler/issues/713) |
 | Lambda delete-function after PERSISTENCE recreate with no version manager | sad/other | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` (wipe `s3_bodies` → Failed → delete) · [#713](https://github.com/kgz/stackwrangler/issues/713) |
+| Lambda PERSISTENCE recreate keeps Active + invoke (bodies intact; multi-fn / published / ESM) | happy | covered | `./smokes/lambda/lambda-persist-restore-smoke.sh` · [#751](https://github.com/kgz/stackwrangler/issues/751) |
 | **Lambda role missing `s3:PutObject` → AccessDenied** | sad/authz | covered | `./smokes/lambda/lambda-authz-smoke.sh` |
 | Lambda role trust `aws:SourceAccount` = function account → CreateFunction ok; other account → refused; plain trust ok | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-condition-smoke.sh` |
 | Lambda role trust `aws:SourceArn` = function ARN → CreateFunction ok; other ARN → refused | happy + sad/authz | covered | `./smokes/lambda/lambda-trust-sourcearn-smoke.sh` |
@@ -109,6 +116,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | REST usage plan throttle (rate/burst) → 429 | sad/other | covered | `./smokes/apigw/apigw-usage-plan-smoke.sh` |
 | REST usage plan quota → 429 | sad/other | covered | `./smokes/apigw/apigw-usage-plan-smoke.sh` |
 | `apigateway:POST` on `/apikeys` denied for a role (CreateApiKey) | sad/authz | covered | `./smokes/apigw/apigw-usage-plan-smoke.sh` · [#311](https://github.com/kgz/awsl/issues/311) |
+| Deploy role scoped to one REST API: `create-deployment` / `create-stage` / `create-authorizer` allowed | happy | covered | `./smokes/apigw/apigw-iam-smoke.sh` · [#311](https://github.com/kgz/awsl/issues/311) |
+| Deploy role denied on another REST API (`/restapis/*`) | sad/authz | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
+| Deploy role denied on `/domainnames` and v2 `/apis` without those resources | sad/authz | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
+| `apigateway:PUT` on `/tags/*` required to tag an API key; allowed with PUT | sad/authz + happy | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
+| Role with `/domainnames` can `create-domain-name`; role with v2 `/apis` can `create-api` | happy | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
 | REST usage plan `get-usage` / per-stage throttle | happy | missing | [#309](https://github.com/kgz/awsl/issues/309) |
 | REST `HTTP_PROXY` forwards curl `-d` form-urlencoded body bytes unchanged to the backend | happy | covered | `./smokes/apigw/apigw-proxy-body-smoke.sh` · [apigw-rest.md](apigw-rest.md) · [#364](https://github.com/kgz/awsl/issues/364) |
 | REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | covered | `./smokes/apigw/apigw-nlb-ecs-smoke.sh` phase A · [apigw-rest.md](apigw-rest.md) |
@@ -194,7 +206,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./smokes/compute/ecs-ec2-smoke.sh`, `./smokes/compute/codedeploy-smoke.sh` |
 | CodeDeploy Lambda app + canary deployment config + create-deployment Succeeded | happy | covered (control plane) | `./smokes/compute/codedeploy-smoke.sh` |
 | CodeDeploy Lambda canary alias weight shift | happy | missing | [#340](https://github.com/kgz/awsl/issues/340) |
-| CodeDeploy deny create-deployment / create-application | sad/authz | missing | [#341](https://github.com/kgz/awsl/issues/341) |
+| CodeDeploy deny create-application → AccessDenied | sad/authz | covered | `./smokes/compute/codedeploy-authz-smoke.sh` · [#341](https://github.com/kgz/awsl/issues/341) |
 | **ECS deny `ecs:CreateService` → AccessDenied** | sad/authz | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
 | EC2 running + user-data file | happy | covered | `./smokes/compute/ec2-smoke.sh` |
 | EC2 IMDSv2 instance-profile reads secret | happy | covered | `./smokes/compute/ec2-imds-smoke.sh` |
@@ -267,6 +279,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Network Firewall packet filtering | happy | missing | [#441](https://github.com/kgz/stackwrangler/issues/441) · [network-firewall.md](network-firewall.md) |
 | Firewall Manager org policy enforcement | happy | missing | [#442](https://github.com/kgz/stackwrangler/issues/442) · [network-firewall.md](network-firewall.md) |
 | **WAFv2 deny-user CreateWebACL → AccessDenied** | sad/authz | covered | `./smokes/networking/waf-authz-smoke.sh` |
+| **Network Firewall deny-user CreateRuleGroup → AccessDenied** | sad/authz | covered | `./smokes/networking/network-firewall-fms-authz-smoke.sh` · [#440](https://github.com/kgz/stackwrangler/issues/440) |
+| **Firewall Manager deny-user PutPolicy → AccessDenied** | sad/authz | covered | `./smokes/networking/network-firewall-fms-authz-smoke.sh` · [#440](https://github.com/kgz/stackwrangler/issues/440) |
 | WAFv2 rule evaluation blocks/allows HTTP | happy | missing | [#326](https://github.com/kgz/awsl/issues/326) · [waf.md](waf.md) |
 | WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |
 | CFN `AWS::WAFv2::WebACL` / Association deploy | happy | missing | [#325](https://github.com/kgz/awsl/issues/325) |
@@ -281,6 +295,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN same deploy role after pathless `GetRole`/`DeleteRolePolicy`/… grant → `CREATE_COMPLETE` | happy | covered | `./smokes/iac/cfn-path-scoped-role-smoke.sh` · [#679](https://github.com/kgz/stackwrangler/issues/679) |
 | Serverless v3 deploy → `/public/health` → redeploy → remove | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) |
 | Serverless v3 `${ssm:…}` + RestApi OpenAPI `Body` resource | happy | covered | `./smokes/iac/serverless-v3-smoke.sh` |
+| Serverless v3 deploy with missing `${ssm:…}` param fails (no Service deployed) | sad/other | covered | `./smokes/iac/serverless-v3-sad-smoke.sh` · [#330](https://github.com/kgz/awsl/issues/330) |
 | Serverless v4 topic+consumer deploy (≥2 MiB zip / Expect: 100-continue) → SNS publish → SQS ESM Lambda → redeploy → remove; `.serverless/` owned by invoking user | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · [#467](https://github.com/kgz/awsl/issues/467) · [#469](https://github.com/kgz/awsl/issues/469) |
 | Serverless v4 `${ssm:…}` + cross-stack `Fn::ImportValue` SNS→SQS | happy | covered | `./smokes/iac/serverless-v4-smoke.sh` |
 | Serverless v4 sad: missing auth; host aws without `AWS_ENDPOINT_URL` refuses real AWS; TLS-down; missing `Fn::ImportValue` deploy fails; SNS filter-drop absent from S3 | sad/other | covered | `./smokes/iac/serverless-v4-smoke.sh` · [#460](https://github.com/kgz/awsl/issues/460) |
@@ -303,9 +318,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | CFN `DeletionPolicy: Snapshot` | sad/other | missing | [#228](https://github.com/kgz/awsl/issues/228) |
 | Real AWS CFN S3+Lambda (same template) | happy | covered | `./smokes/parity/aws-parity-cfn-s3-lambda.sh` · [aws-parity-cfn.md](aws-parity-cfn.md) |
 | Real AWS CFN empty Lambda role → AccessDenied | sad/authz | covered | `./smokes/parity/aws-parity-cfn-authz.sh` |
-| Real AWS CFN path-scoped role GetRole deny + pathless grant | happy+sad | covered | `./smokes/parity/aws-parity-cfn-path-scoped-role.sh` (~$0) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) |
-| Real AWS SG prefix-list rule Description round-trip | happy | covered | `./smokes/parity/aws-parity-sg-prefixlist-description.sh` (~$0) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) |
-| Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./smokes/parity/aws-parity-hf-cheap.sh` (~$0–cents; ask before real) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
+| Real AWS CFN path-scoped role GetRole deny + pathless grant | happy+sad | covered | `./smokes/parity/aws-parity-cfn-path-scoped-role.sh` (~$0; `free-ci` / `legacy-cfn-path-scoped-role`) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) · [#679](https://github.com/kgz/stackwrangler/issues/679) |
+| Real AWS SG prefix-list rule Description round-trip | happy | covered | `./smokes/parity/aws-parity-sg-prefixlist-description.sh` (~$0; `free-ci` / `legacy-sg-prefixlist-description`) · [aws-parity-batch-2026-11-11.md](aws-parity-batch-2026-11-11.md) · [#682](https://github.com/kgz/stackwrangler/issues/682) |
+| Real AWS HF cheap: DDB GSI/condition, schedule→Lambda, REST Deny 403, API key/usage plan, S3 GW VPCE | happy+sad | covered | `./smokes/parity/aws-parity-hf-cheap.sh` (~$0–cents; `low` suite — not free-ci) · [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) |
 | Real AWS Trust (v0.0.3) | happy+sad | covered | `./smokes/parity/aws-parity-trust-v003.sh` (KMS 7d residual) |
 | Real AWS v0.0.8: awsvpc same-port + ALB SG member | happy | covered | `./smokes/parity/aws-parity-v008.sh --target both --approve-cost` (~$0.02–0.05) · [aws-parity-v008.md](aws-parity-v008.md) |
 | Real AWS HF skipped: WAF, R53 zone, ACM without DNS, Transfer, CodeDeploy target stack, Batch/ASG compute | — | skipped (cost) | [aws-parity-hf-cheap.md](aws-parity-hf-cheap.md) skipped gaps |
@@ -427,6 +442,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |
+| Console create SERVICE_MANAGED user + import SSH key | happy | covered | `console/e2e/transfer-create-user.spec.ts` |
 | Org path Terraform example (VPC→Transfer→Lambda→S3→ECS→RDS) | happy | covered | `examples/terraform/org-path/` ([#780](https://github.com/kgz/stackwrangler/issues/780)); E2E smoke [#781](https://github.com/kgz/stackwrangler/issues/781) |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./smokes/transfer/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./smokes/transfer/transfer-dataplane-smoke.sh` |
@@ -436,8 +452,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `stackwrangler up` while this checkout's beta `atmoz/sftp` container holds the emulator port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | `stackwrangler up` while another project or process holds the SFTP host port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./smokes/transfer/transfer-key-smoke.sh` |
-| **Transfer empty role → simulate PutObject deny** | sad/authz | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
-| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) |
+| **Transfer empty role → SFTP put Permission denied; object absent** | sad/authz | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
+| Transfer empty role → simulate PutObject deny (control-plane probe) | sad/authz | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
+| LOGICAL `HomeDirectoryMappings` → SFTP login refused (N/A) | sad | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
+| Custom / API Gateway IdP accepted for IaC; SFTP never calls IdP (N/A) | sad | covered | `./smokes/transfer/transfer-authz-smoke.sh` · [docs/transfer.md](transfer.md) |
 | Transfer create/describe/update/delete-connector, test-connection | happy | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer start-file-transfer: S3 object → remote SFTP (Lambda-created tenant connector) | happy | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer connector events in CloudWatch Logs | happy | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
@@ -447,7 +465,6 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **Transfer create-connector without `iam:PassRole`** | sad/authz | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer connector wrong trusted host key | sad | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer connector retrieve / AS2 | happy | missing | [#314](https://github.com/kgz/awsl/issues/314) |
-| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./smokes/data/rds-smoke.sh` |
 | RDS stable host port (`--port` / tag, reboot keep, conflict; CreateDBCluster unpinned ≠ 3306/5432 + pinned writer) | happy+sad | covered | `./smokes/data/rds-stable-host-port-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
 | RDS host port survives LocalEmu restart + PERSISTENCE recreate | happy | covered | `./smokes/data/rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
@@ -455,9 +472,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | RDS MySQL TLS VERIFY_IDENTITY with `.awsbox/tls/rds-ca.pem` | happy | covered | `./smokes/data/rds-mysql-tls-smoke.sh` · [#765](https://github.com/kgz/stackwrangler/issues/765) |
+| RDS MySQL host port + SQL row after hard PERSISTENCE recreate (`docker rm`) | happy | covered | `./smokes/data/rds-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) |
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **Aurora MySQL reader rejects writes** | sad/other | covered | `./smokes/data/rds-mysql-smoke.sh` |
+| Aurora MySQL writer+reader SQL + cluster endpoints after hard PERSISTENCE recreate (`docker rm`) | happy | covered | `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) |
 | RDS EngineVersion → pinned Docker image (`mysql:8.0.37`, Aurora 3.05.2 → `mysql:8.0.32`) | happy | covered | `./smokes/data/rds-engine-version-smoke.sh` · [rds.md](rds.md) · [#704](https://github.com/kgz/stackwrangler/issues/704) |
 | **RDS unknown EngineVersion → InvalidParameterCombination** | sad/other | covered | `./smokes/data/rds-engine-version-smoke.sh` |
 | RDS engine map vs `describe-db-engine-versions` testdata | happy | covered | `./bin/check-rds-engine-map.sh` |
@@ -478,6 +497,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `_custom_id_` value fails the id format check | sad/other | covered | `./smokes/account/custom-id-smoke.sh` |
 | Terraform bootstrap state bucket + DynamoDB lock, then remote-state apply | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
 | Terraform second plan no-change with S3 backend on LocalEmu | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
+| Terraform S3 state object + DynamoDB lock table intact after LocalEmu recreate | happy | covered | `./smokes/iac/terraform-backend-persist-recreate-smoke.sh` · [#742](https://github.com/kgz/stackwrangler/issues/742) |
+| Terraform plan no-change after LocalEmu recreate (`PERSISTENCE=1`) | happy | covered | `./smokes/iac/terraform-backend-persist-recreate-smoke.sh` · [#742](https://github.com/kgz/stackwrangler/issues/742) |
 | Terraform backend smoke canary: real AWS STS succeeds → abort | sad/other | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
 | `up` runs `STACKWRANGLER_DEV_APPLY_HOOK` / `.awsbox/dev-apply-hook` after healthy | happy | covered | `./smokes/iac/dev-apply-hook-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
 | Failing / missing dev apply hook makes apply exit non-zero | sad/other | covered | `./smokes/iac/dev-apply-hook-smoke.sh` |
@@ -503,6 +524,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./smokes/data/rds-stable-host-port-smoke.sh  # needs psql · #705
 ./smokes/data/rds-host-port-restart-persist-smoke.sh  # PERSISTENCE=1 restart+recreate · #705
 ./smokes/data/rds-mysql-smoke.sh        # needs mysql
+./smokes/data/rds-mysql-persist-recreate-smoke.sh  # MySQL SQL after recreate · #743
+./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh  # Aurora writer+reader · #743
 ./smokes/data/rds-engine-version-smoke.sh  # pinned images + unknown reject
 ./bin/check-rds-engine-map.sh           # map vs testdata (no stack)
 ./smokes/data/rds-parameter-group-smoke.sh  # TF converge (#710)
@@ -513,4 +536,4 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 
 Wire new paths here **in the same PR** as the smoke. If deferred → Debt ticket + link in the Status column.
 | Real AWS batch10 messaging/data/crypto | happy+sad | covered | `./smokes/parity/aws-parity-batch10.sh` |
-| Dual-target parity suites (catalog) | happy+sad | covered | `./bin/parity list` / `./bin/parity run --tier free --target local` · [parity-suites.md](parity-suites.md) (#662–#666 checks + legacy) |
+| Dual-target parity suites (catalog) | happy+sad | covered | `./bin/parity list` / `./bin/parity run --tier free --target local` · CI: `.github/workflows/parity-free.yml` (`--suite free-ci --target local`) · [parity-suites.md](parity-suites.md) (#662–#666 checks + legacy) |

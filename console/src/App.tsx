@@ -44,7 +44,10 @@ import { CloudFormationUpdateStackPage } from './pages/CloudFormationUpdateStack
 import { CloudFormationCreateChangeSetPage } from './pages/CloudFormationCreateChangeSetPage'
 import { CloudFormationChangeSetDetailPage } from './pages/CloudFormationChangeSetDetailPage'
 import { CloudFormationStackSetsPage } from './pages/CloudFormationStackSetsPage'
+import { TransferCreateUserPage } from './pages/TransferCreateUserPage'
+import { TransferImportSshKeyPage } from './pages/TransferImportSshKeyPage'
 import { TransferServersPage } from './pages/TransferServersPage'
+import { TransferUserDetailPage } from './pages/TransferUserDetailPage'
 import { RdsCreateDatabasePage } from './pages/RdsCreateDatabasePage'
 import { RdsInstancesPage } from './pages/RdsInstancesPage'
 import {
@@ -150,6 +153,18 @@ export default function App() {
             element={<CloudFormationStackSetsPage />}
           />
           <Route path="transfer" element={<TransferServersPage />} />
+          <Route
+            path="transfer/servers/:serverId/users/create"
+            element={<TransferCreateUserPage />}
+          />
+          <Route
+            path="transfer/servers/:serverId/users/import-ssh-key"
+            element={<TransferImportSshKeyPage />}
+          />
+          <Route
+            path="transfer/servers/:serverId/users/:userName"
+            element={<TransferUserDetailPage />}
+          />
           <Route
             path="transfer/servers/:serverId"
             element={<TransferServersPage />}

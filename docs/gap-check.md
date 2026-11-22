@@ -37,6 +37,7 @@ For the shipped surface, list anything that is **not** fully Working:
 | **Smokes** | happy path only; no deliberate failure case — update [smoke-matrix.md](smoke-matrix.md) |
 | **Smoke matrix** | row missing or Sad column empty with no Debt link |
 | **Path rubric** | scenario not listed in [test-paths.md](test-paths.md) |
+| **Prove coverage** | run [`./bin/coverage-report.sh`](../bin/coverage-report.sh); overall % must not drop without absorbing the gap or filing Debt. Prefer closing `no`/`missing` cells and cataloguing free parity into `free-ci` over new catalogue width |
 | **Public docs** | New Working/Partial surface ships with no docs-site or [interactions](../docs-site/guide/interactions/) page, and this PR did not add one → `Doc:` |
 | **Screenshot** | Console/UI change needs a product shot and [docs-capture](docs-catalog.md) was skipped → `Doc:` |
 | **Interaction edge** | New cross-service path with no catalog entry under `docs-site/guide/interactions/` → `Doc:` (or add the page in this PR) |

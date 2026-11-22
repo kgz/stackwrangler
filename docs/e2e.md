@@ -11,9 +11,9 @@ We use two complementary layers against the **real** local stack (not mocked S3)
 
 Standard for browser e2e on React apps: real Chromium, file upload, traces on failure. Cypress is fine too; Playwright is the default here.
 
-## Local only
+## Local + CI free parity
 
-No GitHub Actions — run smokes locally (free-tier friendly).
+Full Playwright/`e2e.sh` stays local. Free dual-target parity runs on PRs via `.github/workflows/parity-free.yml` (`./bin/parity run --suite free-ci --target local`).
 
 ```bash
 ./bin/stackwrangler up   # ./bin/awsbox is a shim to the same CLI
@@ -26,4 +26,4 @@ cd console && yarn playwright test --ui   # interactive
 
 Needs: Docker, AWS CLI v2, Node 20+, yarn.
 
-IaC smokes (LocalEmu `:4566`): `./smokes/iac/iac-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cfn-caller-iam-smoke.sh`, `./smokes/iac/cfn-path-scoped-role-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/iac/serverless-v4-smoke.sh`, `./smokes/iac/serverless-v4-workspace-smoke.sh`, `./smokes/iac/serverless-v4-role-arn-smoke.sh`, `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh` ([docs/serverless-stackwrangler.md](serverless-stackwrangler.md)).
+IaC smokes (LocalEmu `:4566`): `./smokes/iac/iac-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cfn-caller-iam-smoke.sh`, `./smokes/iac/cfn-path-scoped-role-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/iac/serverless-v3-sad-smoke.sh`, `./smokes/iac/serverless-v4-smoke.sh`, `./smokes/iac/serverless-v4-workspace-smoke.sh`, `./smokes/iac/serverless-v4-role-arn-smoke.sh`, `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh` ([docs/serverless-stackwrangler.md](serverless-stackwrangler.md)).
