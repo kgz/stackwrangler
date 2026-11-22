@@ -113,13 +113,18 @@ Transfer→…→RDS learning/staging path honest end-to-end; path-critical only
 
 **Ship bar (met):** a stranger can `./bin/stackwrangler up`, apply the org-path example, put a file through SFTP, and see Lambda → S3 → ECS → RDS complete with the **same** resources in CLI, console, and IaC (LocalEmu S3 brain). Limits documented. Not hosting-company ready (`v1.0.0`).
 
-### v0.1.1 — Escaped org-path fidelity *(open — `CURRENT_RELEASE` after cut)*
+### v0.1.1 — Prove + path UI *(active — `CURRENT_RELEASE`)*
 
-Patch cut for high-impact defects that escape v0.1.0 on the org path / local runtime. Gate: Impact ≥ 4 path-critical. Do not dump catalogue width here.
+Prove shipped behaviour (free local parity on CI, smoke-matrix sad/authz on core, persist/restore hard blocks) and close **org-path / shipped-core** console holes (Transfer user/key, path authz; then ECS/ELB/ECR as scored). Soft WIP ~15 labelled.
+
+**Ship bar:** free-ci parity runs on PRs; core sad/authz gaps closed or ticketed honestly; Transfer create-user/SSH-key UI + SFTP-byte authz honest for the org path. Not catalogue width / not `v1.0.0`.
+
+**Gate:** Impact ≥ 3 on smoke/parity/CI or org-path / shipped-core console; Impact ≥ 4 escaped path/runtime still in.  
+**Out of cut:** unscored `v1:` stubs, Network Firewall packet realism, FinOps/Code*/AI catalogue.
 
 ### Unlabelled backlog
 
-Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche IaC, …). Milestone only. Do not pre-label `v0.1.1` / `v0.1.2` / `v1.0.0`.
+Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche IaC, …). Milestone only. Do not pre-label `v0.1.2` / `v1.0.0`.
 
 ### Later declaration (when opened)
 
