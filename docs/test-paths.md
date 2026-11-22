@@ -437,8 +437,10 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | `stackwrangler up` while this checkout's beta `atmoz/sftp` container holds the emulator port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | `stackwrangler up` while another project or process holds the SFTP host port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./smokes/transfer/transfer-key-smoke.sh` |
-| **Transfer empty role → simulate PutObject deny** | sad/authz | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
-| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#141](https://github.com/kgz/awsl/issues/141) |
+| **Transfer empty role → SFTP put Permission denied; object absent** | sad/authz | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
+| Transfer empty role → simulate PutObject deny (control-plane probe) | sad/authz | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
+| LOGICAL `HomeDirectoryMappings` → SFTP login refused (N/A) | sad | covered | `./smokes/transfer/transfer-authz-smoke.sh` |
+| Custom / API Gateway IdP accepted for IaC; SFTP never calls IdP (N/A) | sad | covered | `./smokes/transfer/transfer-authz-smoke.sh` · [docs/transfer.md](transfer.md) |
 | Transfer create/describe/update/delete-connector, test-connection | happy | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer start-file-transfer: S3 object → remote SFTP (Lambda-created tenant connector) | happy | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer connector events in CloudWatch Logs | happy | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
@@ -448,7 +450,6 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | **Transfer create-connector without `iam:PassRole`** | sad/authz | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer connector wrong trusted host key | sad | covered | `./smokes/transfer/transfer-connector-smoke.sh` |
 | Transfer connector retrieve / AS2 | happy | missing | [#314](https://github.com/kgz/awsl/issues/314) |
-| Transfer under-permissioned role (SFTP bytes) | sad/authz | missing | [#322](https://github.com/kgz/awsl/issues/322) |
 | RDS Postgres SQL round-trip | happy | covered | `./smokes/data/rds-smoke.sh` |
 | RDS stable host port (`--port` / tag, reboot keep, conflict; CreateDBCluster unpinned ≠ 3306/5432 + pinned writer) | happy+sad | covered | `./smokes/data/rds-stable-host-port-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
 | RDS host port survives LocalEmu restart + PERSISTENCE recreate | happy | covered | `./smokes/data/rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |

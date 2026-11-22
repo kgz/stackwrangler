@@ -111,7 +111,7 @@ Open work that blocks calling the vision “done”. Prefer Debt tickets over si
 | Org-path S3 unified on LocalEmu `:4566` | SeaweedFS remains optional parity only | [Org-path S3](./interactions/dual-s3) · [#162](https://github.com/kgz/stackwrangler/issues/162) |
 | Org-path **one E2E smoke** (Transfer → Lambda → S3 → ECS → RDS) | Vision demo path still not one script | [#781](https://github.com/kgz/stackwrangler/issues/781) · example [#780](https://github.com/kgz/stackwrangler/issues/780) · docs [org path](./use-cases/org-path) |
 | IAM / workload-role **depth** | Authz must match AWS beyond the S3 deny lab | [#144](https://github.com/kgz/stackwrangler/issues/144) · resource-policy smokes exist |
-| Transfer console / LOGICAL / IdP / AS2 | SFTP bytes Partial; console & fidelity incomplete | [#321](https://github.com/kgz/stackwrangler/issues/321) · [#322](https://github.com/kgz/stackwrangler/issues/322) · [#314](https://github.com/kgz/stackwrangler/issues/314) |
+| Transfer console / AS2 | SFTP bytes + empty-role authz smoked; LOGICAL/IdP N/A (honest); console incomplete | [#321](https://github.com/kgz/stackwrangler/issues/321) · [#314](https://github.com/kgz/stackwrangler/issues/314) |
 | ECS awsvpc / bridge / NLB fidelity | Org networking surprises | [#268](https://github.com/kgz/stackwrangler/issues/268) · [#247](https://github.com/kgz/stackwrangler/issues/247) · [#203](https://github.com/kgz/stackwrangler/issues/203) |
 | RDS Aurora failover | Instance Create (Postgres/MySQL) wired; Aurora console create out of scope — CLI smoke + failover | [#225](https://github.com/kgz/stackwrangler/issues/225) |
 | Console depth on Partial services | List-only or disabled Create → Debt | gap-check before `done` |
