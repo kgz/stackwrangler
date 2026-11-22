@@ -95,8 +95,26 @@ def _key_matches(user, presented) -> bool:
     return False
 
 
-def _parse_home(home: str | None) -> tuple[str, str]:
-    """Return (bucket, key_prefix) for PATH home `/bucket` or `/bucket/prefix`."""
+def _home_type_name(user) -> str:
+    raw = getattr(user, "home_directory_type", None)
+    if raw is None:
+        return "PATH"
+    return getattr(raw, "value", None) or str(raw)
+
+
+def _parse_home(user) -> tuple[str, str]:
+    """Return (bucket, key_prefix) for PATH home `/bucket` or `/bucket/prefix`.
+
+    LOGICAL ``HomeDirectoryMappings`` are not implemented — refuse at login so
+    IaC that stores LOGICAL does not get a silent PATH-shaped home (#322).
+    """
+    home_type = _home_type_name(user).upper()
+    if home_type == "LOGICAL":
+        raise ValueError(
+            "HomeDirectoryType LOGICAL is not supported "
+            "(PATH /bucket[/prefix] only; see docs/transfer.md)"
+        )
+    home = getattr(user, "home_directory", None)
     trimmed = (home or "").strip().strip("/")
     if not trimmed:
         raise ValueError("Transfer user has no HomeDirectory")
@@ -104,6 +122,16 @@ def _parse_home(home: str | None) -> tuple[str, str]:
     if not bucket:
         raise ValueError(f"Invalid HomeDirectory: {home}")
     return bucket, prefix.strip("/")
+
+
+def _is_access_denied(exc: Exception) -> bool:
+    response = getattr(exc, "response", None)
+    if isinstance(response, dict):
+        code = str((response.get("Error") or {}).get("Code") or "")
+        if code in ("AccessDenied", "AccessDeniedException", "403", "Forbidden"):
+            return True
+    text = str(exc)
+    return "AccessDenied" in text or "not authorized" in text.lower()
 
 
 def _as_list(value):
@@ -226,7 +254,7 @@ class _TransferSession:
         self.region = region
         self.server_id = server_id
         self.user = user
-        self.bucket, self.prefix = _parse_home(user.home_directory)
+        self.bucket, self.prefix = _parse_home(user)
         self._s3 = None
 
     def s3(self):
@@ -321,6 +349,8 @@ def _make_sftp_interface(paramiko):
                         self._key,
                         exc,
                     )
+                    if isinstance(exc, PermissionError) or _is_access_denied(exc):
+                        return paramiko.SFTP_PERMISSION_DENIED
                     return paramiko.SFTP_FAILURE
             return super().close()
 
@@ -446,15 +476,48 @@ def _make_sftp_interface(paramiko):
     return TransferFS
 
 
+def _make_sftp_server(paramiko):
+    """paramiko 3.x always replies SFTP_OK on CLOSE; honour Handle.close() codes.
+
+    Without this, IAM AccessDenied on put_object is logged but OpenSSH ``sftp put``
+    still exits 0 and prints no deny (#322).
+    """
+
+    class TransferSFTPServer(paramiko.SFTPServer):
+        def _process(self, t, request_number, msg):
+            if t == paramiko.sftp.CMD_CLOSE:
+                handle = msg.get_binary()
+                if handle in self.folder_table:
+                    del self.folder_table[handle]
+                    self._send_status(request_number, paramiko.SFTP_OK)
+                    return
+                if handle in self.file_table:
+                    ret = self.file_table[handle].close()
+                    del self.file_table[handle]
+                    if isinstance(ret, int):
+                        self._send_status(request_number, ret)
+                    else:
+                        self._send_status(request_number, paramiko.SFTP_OK)
+                    return
+                self._send_status(
+                    request_number, paramiko.SFTP_BAD_MESSAGE, "Invalid handle"
+                )
+                return
+            return super()._process(t, request_number, msg)
+
+    return TransferSFTPServer
+
+
 def _handle_client(client, addr):
     paramiko = _paramiko()
     Auth = _make_server_interface(paramiko)
     FS = _make_sftp_interface(paramiko)
+    SFTPServer = _make_sftp_server(paramiko)
     transport = None
     try:
         transport = paramiko.Transport(client)
         transport.add_server_key(_host_key())
-        transport.set_subsystem_handler("sftp", paramiko.SFTPServer, FS)
+        transport.set_subsystem_handler("sftp", SFTPServer, FS)
         server = Auth()
         transport.start_server(server=server)
         channel = transport.accept(20)
