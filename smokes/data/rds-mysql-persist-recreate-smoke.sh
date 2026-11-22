@@ -74,9 +74,11 @@ command -v mysql >/dev/null || {
 	exit 1
 }
 
+# stop_grace_period must cover ON_SHUTDOWN dill save (compose default ~10s is too short).
 cat >"$OVERRIDE" <<YAML
 services:
   localstack:
+    stop_grace_period: 90s
     environment:
       PERSISTENCE: "1"
     volumes:
@@ -122,7 +124,9 @@ start_localstack_persist() {
 }
 
 recreate_localstack_persist() {
-	echo "recreate localstack (PERSISTENCE=1, force)"
+	# Graceful stop first so ON_SHUTDOWN flushes moto state before the new container.
+	echo "recreate localstack (PERSISTENCE=1, stop+force)"
+	"${COMPOSE[@]}" stop localstack >/dev/null
 	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null
 	wait_localemu
 	sleep 5
