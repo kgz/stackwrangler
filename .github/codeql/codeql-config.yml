@@ -1,0 +1,10 @@
+# CodeQL paths for product code. Design mocks + sample apps are out of scope
+# (intentional probes / static HTML); dismissals alone were too noisy.
+# Agent triage for remaining localemu false positives:
+#   docs/code-scanning.md · .cursor/rules/codeql-emulator-triage.mdc · AGENTS.md
+name: stackwrangler
+paths-ignore:
+  - design/**
+  - examples/**
+  - docs-site/**
+  - testdata/**

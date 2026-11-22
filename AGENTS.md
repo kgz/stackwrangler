@@ -84,6 +84,21 @@ When you use stackwrangler to check a stack, a policy or a workload, **act as th
 
 Maintainers with GitHub **project** access may use `bin/board-status.sh` / `bin/board-tracker.tsv` / `bin/issue-score.sh`. Board lifecycle: **Backlog** → **Designing** → **In progress** → **In review** → **Done** (`ready` aliases to backlog). That loop is optional for external contributors (private board; clone ≠ project access).
 
+## Code scanning / CodeQL (emulator false positives)
+
+stackwrangler is a **local AWS emulator**. Many CodeQL / Dependabot / secret-scan hits are expected noise, not ship-blockers. **Do not auto-file an issue or “fix” every red alert.** Triage first; see [.cursor/rules/codeql-emulator-triage.mdc](.cursor/rules/codeql-emulator-triage.mdc) and [docs/code-scanning.md](docs/code-scanning.md).
+
+Quick filter:
+
+| Usually dismiss / wontfix | Usually real |
+|-----------------------------|----------------|
+| Bind `0.0.0.0` / `''` in `localemu-patches/` (listeners, DNS, SFTP, ELB) | Trust-boundary leak: real AWS / host secrets / unexpected network escape |
+| Clear-text local secrets meta / debug logs of ARNs or flags (not values) | Logging or persisting **real** credential *values* outside the local data dir |
+| `design/**`, `examples/**` probes (SSRF/XSS in mocks or smoke Lambdas) | Production `console/` sinks that interpret untrusted HTML/URLs unsafely |
+| Name-confused “secret” variables that are ARNs/ids | Actual secret material in logs, images, or public docs |
+
+Config already `paths-ignore`s design/examples ([.github/codeql/codeql-config.yml](.github/codeql/codeql-config.yml)). Prefer dismiss-with-reason over noisy tickets.
+
 ---
 
 # Real AWS cost — ask first

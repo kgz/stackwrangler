@@ -1,0 +1,44 @@
+---
+description: Triage CodeQL / security CI with local-emulator false-positive lens
+alwaysApply: true
+---
+
+# Code scanning triage (local emulator)
+
+stackwrangler / LocalEmu is a **local AWS emulator**. CodeQL, Dependabot, GitGuardian, and similar tools assume production cloud/app threat models. **Many failures are false positives or intentional local behaviour.** Agents must triage before filing issues, opening “security fix” PRs, or treating a red check as must-fix.
+
+Full note: `docs/code-scanning.md`. Product defaults: `AGENTS.md`.
+
+## Before acting on an alert
+
+1. Read the **alerted line** (not only the rule id).
+2. Ask: is this code meant to **mimic AWS locally**, run **only on the developer machine / Docker network**, or sit in **design mocks / examples / smokes**?
+3. Classify: **dismiss** · **document / suppress** · **optional hardening** · **real fix**.
+4. Only **real fix** (or hardening the user asked for) becomes an issue/PR. Do not mass-file one ticket per CodeQL alert.
+
+## Usually dismiss (`false_positive` / `won't_fix` / `used_in_tests`)
+
+- **`py/bind-socket-all-network-interfaces`** in `localemu-patches/` — ELB/DNS/SFTP/listeners must bind like AWS-local services (`0.0.0.0` / VPC IP). Often already `# noqa: S104`.
+- **Clear-text “secret” logging** when the logged value is an **ARN, name, boolean flag, or exception**, not the secret payload (CodeQL name confusion around `secret` / `MasterUserPassword`).
+- **Clear-text storage** of local RDS/container master passwords under the stack data dir — required for host-port reconnect; local-only trust model.
+- **`design/**`** Open Design HTML/JS (innerHTML in mocks) — not the React console.
+- **`examples/**` / smoke Lambdas** that intentionally fetch caller-supplied URLs (egress probes) — `used_in_tests` / by design.
+- Paths already ignored by `.github/codeql/codeql-config.yml` (`design/**`, `examples/**`, `docs-site/**`, `testdata/**`) — dismiss leftover default-setup alerts; do not re-ticket.
+
+## Usually real (fix or file)
+
+- Untrusted input reaching a dangerous sink in **shipped product UI** (`console/`) or public docs that teach unsafe patterns.
+- Emulator behaviour that can **exfiltrate real AWS credentials**, write secrets outside the local data dir, or bind/publish in a way that breaks the documented local-only assumption without disclosure.
+- Dependency CVEs in **runtime images / lockfiles we ship**, after confirming the vulnerable code path is reachable (not only “CVE exists in tree”).
+- Secret-scan hits that are **real credentials** (not fixtures/placeholders) — must-fix.
+
+## Grey zone (optional hardening — do not auto-block)
+
+- ALB/ELB **proxy header / redirect `Location` forwarding** (`py/http-response-splitting`) — parity with real load-balancer behaviour under a local trust model; harden only with care so smokes/parity still pass.
+- Console **connect-hint** host rewriting (`includes('rds.amazonaws.com')`) — UX string for `psql`/`mysql`, not a fetch sanitizer; low impact.
+
+## PR review / CI
+
+- Failing CodeQL on an emulator-by-design pattern → **note** with rule + path + why dismissed; not automatic must-fix.
+- Failing GitGuardian / secret scan → must-fix if real secret; **note** if clear fixture/false positive (same bar as `ticket-batch` review-prompt).
+- Never “fix” a bind-all-interfaces finding by binding only `127.0.0.1` if that breaks VPC/DNS/ELB parity — document instead.
