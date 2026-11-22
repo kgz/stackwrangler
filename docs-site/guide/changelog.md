@@ -2,6 +2,40 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.1.0 — Org path (2026-11-22)
+
+First coherent product cut: Transfer→…→RDS learning/staging path honest end-to-end. Same resources in CLI, console, and IaC (LocalEmu S3 brain). Path-critical only — not hosting-company ready (`v1.0.0`).
+
+### Org path / S3
+
+- Unify org-path S3 onto LocalEmu `:4566` (console + `aws --profile local` + Transfer/Lambda/IaC); SeaweedFS optional parity only ([#162](https://github.com/kgz/stackwrangler/issues/162))
+- Terraform example `examples/terraform/org-path/` (VPC → Transfer → Lambda → S3 → ECS → RDS) ([#780](https://github.com/kgz/stackwrangler/issues/780))
+- E2E smoke SFTP → Lambda → LocalEmu S3 → ECS → RDS (+ ECS deny authz) ([#781](https://github.com/kgz/stackwrangler/issues/781))
+- Docs: org-path real vs stub + ship bar ([#782](https://github.com/kgz/stackwrangler/issues/782))
+
+### Platform / IaC
+
+- `up` keeps compose overrides (`COMPOSE_EXTRA` / `override.yml` / `.awsbox/compose.local.yml`); dev `restart: unless-stopped` ([#748](https://github.com/kgz/stackwrangler/issues/748))
+- RDS/Terraform: Create→Describe no longer stalls for tens of minutes ([#718](https://github.com/kgz/stackwrangler/issues/718))
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS (parity), ECR registry, AWS profile `local` (CLI → LocalEmu S3), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.1.0
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.1.0 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566` · org path: [docs/org-path.md](https://github.com/kgz/stackwrangler/blob/main/docs/org-path.md) · example `examples/terraform/org-path/`.
+
+Optional thin host CLI: [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.1.0/stackwrangler).
+
 ## v0.0.8 — Escaped local fidelity (2026-11-21)
 
 Patch cut for high-impact defects that escaped v0.0.7: `up --dev` restore/resume, ELB persistence + SG membership, ECS port/TLS injection, RDS MySQL SAN. Dual-target parity for the AWS-side asserts (#768/#769).

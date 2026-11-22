@@ -29,7 +29,7 @@ Live local console (grey rose chrome) — same account as CLI and IaC.
 - **API call log** — per-workload CloudTrail-lite (`GET /_awsl/calls`, console `/cloudtrail`, test asserts) · [#194](https://github.com/kgz/stackwrangler/issues/194)
 - **Local → real AWS** — stage here, then point the same tooling at a real account
 
-Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plus sidecars: **SeaweedFS** (console buckets), **distribution/registry** (ECR-shaped push/pull), **atmoz/sftp** (Transfer dataplane). Console buckets UI uses SeaweedFS; IaC / Lambda / S3 events use **LocalEmu S3** ([docs/s3-backends.md](docs/s3-backends.md)).
+Built on **LocalEmu** (not LocalStack Community — we need IAM enforcement) plus sidecars: **SeaweedFS** (optional S3 parity only), **distribution/registry** (ECR-shaped push/pull), **atmoz/sftp** (Transfer dataplane). Org-path S3 (console, `aws --profile local`, Transfer / Lambda / IaC) is **LocalEmu** on `:4566` ([docs/s3-backends.md](docs/s3-backends.md)).
 
 ## Install (Docker only — no git)
 
@@ -52,7 +52,7 @@ aws --profile local s3 ls
 aws --profile local --endpoint-url http://127.0.0.1:4566 sts get-caller-identity
 ```
 
-Upgrade / teardown / ports / known limits (host Docker, sock mounts, dual S3): [docs/docker-install.md](docs/docker-install.md).
+Upgrade / teardown / ports / known limits (host Docker, sock mounts): [docs/docker-install.md](docs/docker-install.md).
 
 Optional thin CLI (GitHub Release asset `stackwrangler`): same `up` / `down` / `status` commands without typing `docker run`.
 
@@ -60,7 +60,8 @@ Contributor clone path: `./bin/stackwrangler up` copies `.env.example` → `.env
 
 | What | Where |
 |------|--------|
-| S3 (console buckets) | `http://127.0.0.1:8333` SeaweedFS |
+| S3 (org path: console + `profile local` + IaC) | `http://127.0.0.1:4566` LocalEmu |
+| SeaweedFS (optional parity) | `http://127.0.0.1:8333` |
 | LocalEmu (IAM, Lambda, CFN, Transfer, RDS, …) | `http://127.0.0.1:4566` |
 | Transfer SFTP (native) | `127.0.0.1:2222` ([docs/transfer.md](docs/transfer.md)) |
 | Console | `http://127.0.0.1:3000` |
@@ -87,13 +88,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Coming from older checkouts named `awsbo
 
 Hosting-shaped paths such as **OpenTofu → VPC → Lambda / EC2 → SNS → Expo** with strict IAM and Secrets Manager — stage locally, then the same shape on real AWS. Details: [docs-site use case](docs-site/guide/use-cases/opentofu-expo-iam.md).
 
+Org learning path (**Transfer → Lambda → S3 → ECS → RDS**, v0.1.0): hops are Partial today; chained example + E2E still landing — [docs/org-path.md](docs/org-path.md) · [docs-site](docs-site/guide/use-cases/org-path.md).
+
 ## Documentation
 
 - [Docker install](docs/docker-install.md) — public path (start here)
 - Public docs site: [docs-site/](docs-site/) (VitePress) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) after Pages is enabled on a public repo
 - Run docs locally: `cd docs-site && pnpm install && pnpm dev`
 - [Compare](docs-site/guide/compare/) — vs LocalEmu, Moto, LocalStack, real AWS, SAM Local, other emulators
-- [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM
+- [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM · [Org path](docs-site/guide/use-cases/org-path.md)
+- [Org path](docs/org-path.md) — Transfer→…→RDS real vs stub (v0.1.0)
 - [Vision](docs/vision.md) — north star (mirrored on the site)
 - [Service status](docs/status.md) — Working / Partial matrix
 - [Contributing](CONTRIBUTING.md)

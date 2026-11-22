@@ -24,7 +24,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | Test / dev mode + opt-in persistence | **Working** | `up --test`\|`--dev`; `--dev` → `STACKWRANGLER_PERSISTENCE=1` + `.awsbox/dev` (LocalEmu+ECR) + `seaweed-data-dev`; `reset` wipes LocalEmu/Seaweed/ECR/RDS vols (RDS wipe smoked); multi-service recreate smoke; Postgres SQL persist via [#705](https://github.com/kgz/stackwrangler/issues/705). Debt: TF empty-plan [#742](https://github.com/kgz/stackwrangler/issues/742); MySQL/Aurora SQL [#743](https://github.com/kgz/stackwrangler/issues/743) · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Console shell (grey rose) | **Working** | Chrome from `design/stackwrangler-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
 | Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [labels.md](labels.md) · `./smokes/account/labels-smoke.sh` |
-| Dual S3 (SeaweedFS + LocalEmu) | **Documented split** | UI/`local` → `:8333`; Lambda/IaC → `:4566` · [s3-backends.md](s3-backends.md) · smoke `./smokes/s3/s3-dual-endpoint-smoke.sh` |
+| Org-path S3 brain | **Working** | Console/`local`/Transfer/Lambda/IaC → LocalEmu `:4566` · Seaweed `:8333` optional parity only · [s3-backends.md](s3-backends.md) · [org-path.md](org-path.md) · `./smokes/s3/s3-org-path-brain-smoke.sh` |
 | IAM enforcement | **Partial** | simulate `./smokes/security/iam-simulate-policy-smoke.sh` · resource policies `./smokes/security/resource-policy-smoke.sh` · role path ARN `./smokes/security/iam-role-path-arn-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | IAM enforcement | **Partial** | resource policies `./smokes/security/resource-policy-smoke.sh` · cross-account `./smokes/security/resource-policy-cross-account-smoke.sh` · role path ARN `./smokes/security/iam-role-path-arn-smoke.sh` · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
 | IAM enforcement | **Partial** | simulate `./smokes/security/iam-simulate-policy-smoke.sh` · resource policies `./smokes/security/resource-policy-smoke.sh` · alarm/SNS sub ARN `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · cross-account [#233](https://github.com/kgz/awsl/issues/233) · workload roles [#144](https://github.com/kgz/awsl/issues/144) |
@@ -37,12 +37,12 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 
 | Service | CLI / data | Console | Status |
 |---------|------------|---------|--------|
-| S3 general purpose | SeaweedFS objects + parity script | Buckets / objects / preview | **Working** (UI) · **Partial** (vs LocalEmu S3 for events) |
+| S3 general purpose | LocalEmu objects (org path) + optional Seaweed parity | Buckets / objects / preview | **Working** (org-path LocalEmu) |
 | S3 specialty / Access Points / Lens | — | Empty states | **Console chrome** · disabled controls [#355](https://github.com/kgz/awsl/issues/355) |
 | Transfer Family | API + native SFTP (SSH keys) → S3; outbound connectors (`StartFileTransfer` → remote SFTP) | Servers list/detail · connectors: [#313](https://github.com/kgz/awsl/issues/313) | **Partial** (`docs/transfer.md`) · console user/key [#321](https://github.com/kgz/awsl/issues/321) · LOGICAL/IdP/authz [#322](https://github.com/kgz/awsl/issues/322) · retrieve/AS2 [#314](https://github.com/kgz/awsl/issues/314) |
 | EFS / FSx / EBS | — | — | **Backlog** |
 
-Smokes: `./smokes/s3/s3-parity.sh`, `./smokes/s3/s3-dual-endpoint-smoke.sh`, `./smokes/transfer/transfer-smoke.sh`, `./smokes/transfer/transfer-key-smoke.sh`, `./smokes/transfer/transfer-dataplane-smoke.sh`, `./smokes/transfer/transfer-authz-smoke.sh`, `./smokes/transfer/transfer-connector-smoke.sh`
+Smokes: `./smokes/s3/s3-org-path-brain-smoke.sh`, `./smokes/s3/s3-parity.sh`, `./smokes/transfer/transfer-smoke.sh`, `./smokes/transfer/transfer-key-smoke.sh`, `./smokes/transfer/transfer-dataplane-smoke.sh`, `./smokes/transfer/transfer-authz-smoke.sh`, `./smokes/transfer/transfer-connector-smoke.sh`
 
 
 ## Compute & containers
@@ -178,12 +178,17 @@ Smokes: `./smokes/iac/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/
 
 ## Org staging path (target)
 
-VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS — epic [#90](https://github.com/kgz/awsl/issues/90) / path [#91](https://github.com/kgz/awsl/issues/91).
+VPC → Transfer/SFTP → Lambda → S3 → ECS → RDS — epic [#90](https://github.com/kgz/stackwrangler/issues/90) / path [#91](https://github.com/kgz/stackwrangler/issues/91). Cut: **v0.1.0**. Stranger-facing write-up: [org-path.md](org-path.md) · [docs-site use case](../docs-site/guide/use-cases/org-path.md).
+
+**Path overall: Partial** — hops smoked; chained example + E2E not on `main` yet. Do **not** claim Working until [#781](https://github.com/kgz/stackwrangler/issues/781) lands green.
 
 | Hop | Today |
 |-----|--------|
 | Transfer bytes | **Partial** native SSH-key SFTP → LocalEmu S3 |
-| Lambda / S3 / ECS / RDS | **Partial**–**Working** pieces exist |
-| Full E2E one smoke | **Backlog** |
+| Lambda / S3 / ECS / RDS | **Partial**–**Working** pieces exist (hop smokes) |
+| Dual S3 vs one brain | **Documented split** · ship-bar unify / non-silent switch [#162](https://github.com/kgz/stackwrangler/issues/162) |
+| Terraform org-path example | **Backlog** → [#780](https://github.com/kgz/stackwrangler/issues/780) |
+| Full E2E one smoke | **Backlog** → [#781](https://github.com/kgz/stackwrangler/issues/781) |
+| Path docs | **Partial** — [org-path.md](org-path.md) · [#782](https://github.com/kgz/stackwrangler/issues/782) |
 
 

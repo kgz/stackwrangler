@@ -2,7 +2,7 @@
 
 Inbound SFTP lands objects in S3. Native SSH key path is smoked; LOGICAL / IdP / deeper authz still open.
 
-**Status:** partial · Gaps: console user/key [#321](https://github.com/kgz/stackwrangler/issues/321) · LOGICAL/IdP [#322](https://github.com/kgz/stackwrangler/issues/322)
+**Status:** partial · Gaps: console user/key [#321](https://github.com/kgz/stackwrangler/issues/321) · LOGICAL/IdP [#322](https://github.com/kgz/stackwrangler/issues/322) · Full org chain [use case](../use-cases/org-path) ([#781](https://github.com/kgz/stackwrangler/issues/781))
 
 ## Sequence
 

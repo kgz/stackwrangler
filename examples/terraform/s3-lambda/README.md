@@ -12,4 +12,4 @@ terraform init
 terraform apply -auto-approve -var="bucket_name=my-demo-bucket"
 ```
 
-Console General purpose buckets (SeaweedFS) will **not** show this bucket — IaC S3 lives on LocalEmu until backends are unified.
+Console General purpose buckets and `aws --profile local` use the same LocalEmu S3 brain as this bucket ([s3-backends.md](../../../docs/s3-backends.md)).

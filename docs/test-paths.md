@@ -28,6 +28,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
 | Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| `up` keeps compose overrides (`COMPOSE_EXTRA` / `override.yml` / `.awsbox/compose.local.yml`; dev `restart: unless-stopped`) | happy | covered | `./smokes/platform/up-compose-extra-smoke.sh` · [dev-mode.md](dev-mode.md) · [#748](https://github.com/kgz/stackwrangler/issues/748) |
 | `up` with custom keys in `.env`: S3 write probe uses them; a mismatch reports the key, not disk full (offline, stub `aws`) | happy + sad | covered | `./smokes/platform/up-env-keys-smoke.sh` · [#749](https://github.com/kgz/stackwrangler/issues/749) |
 | ECR edge network: default `10.254.218.0/24`, IP derived from subnet, overlap with another Docker network fails `up` early (offline, stub `docker`) | happy + sad | covered | `./smokes/platform/ecr-edge-subnet-smoke.sh` · [#750](https://github.com/kgz/stackwrangler/issues/750) |
 | `up --dev` as a user other than uid 1000: boot hook hands `.awsbox/dev/localemu` to `localemu` | happy | covered | `./smokes/platform/dev-state-owner-smoke.sh` · [#754](https://github.com/kgz/stackwrangler/issues/754) |
@@ -426,8 +427,12 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |
+| Org path Terraform example (VPC→Transfer→Lambda→S3→ECS→RDS) | happy | covered | `examples/terraform/org-path/` ([#780](https://github.com/kgz/stackwrangler/issues/780)); E2E smoke [#781](https://github.com/kgz/stackwrangler/issues/781) |
 | SFTP SSH-key put → LocalEmu S3 (+ ObjectCreated Lambda) | happy | covered | `./smokes/transfer/transfer-key-smoke.sh` |
 | SFTP key put → S3 (short dataplane) | happy | covered | `./smokes/transfer/transfer-dataplane-smoke.sh` |
+| Org path E2E: SFTP → Lambda → LocalEmu S3 → ECS → RDS | happy | covered | `./smokes/transfer/org-path-smoke.sh` |
+| Org path E2E: ECS task role without s3:GetObject | sad/authz | covered | `./smokes/transfer/org-path-smoke.sh` |
+| Org path E2E: object only on Seaweed (:8333) not LocalEmu (:4566) | sad | covered | `./smokes/transfer/org-path-smoke.sh` (#162) |
 | `stackwrangler up` while this checkout's beta `atmoz/sftp` container holds the emulator port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | `stackwrangler up` while another project or process holds the SFTP host port | sad | covered | `./smokes/transfer/transfer-sftp-port-smoke.sh` |
 | **Wrong SSH key rejected (no password fallback)** | sad/authz | covered | `./smokes/transfer/transfer-key-smoke.sh` |
@@ -458,10 +463,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | RDS engine map vs `describe-db-engine-versions` testdata | happy | covered | `./bin/check-rds-engine-map.sh` |
 | RDS parameter group Terraform converge (`Source=user`) | happy | covered | `./smokes/data/rds-parameter-group-smoke.sh` · [#710](https://github.com/kgz/stackwrangler/issues/710) |
 | RDS DB / cluster parameter groups → container | happy | covered | `./smokes/data/rds-param-groups-smoke.sh` · [#703](https://github.com/kgz/stackwrangler/issues/703) |
+| RDS Create→Describe no multi-minute hang | happy | covered | `./smokes/data/rds-tf-create-describe-smoke.sh` · [#718](https://github.com/kgz/stackwrangler/issues/718) |
 | Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
-| **Seaweed vs LocalEmu S3 are separate stores** | sad/other | covered | `./smokes/s3/s3-dual-endpoint-smoke.sh` · [s3-backends.md](s3-backends.md) |
+| **Org-path S3 = LocalEmu; profile local sees put; Seaweed does not** | happy + sad | covered | `./smokes/s3/s3-org-path-brain-smoke.sh` · [s3-backends.md](s3-backends.md) |
 | `awsl apply` synthetic VPC/subnet/SG ids + CIDRs | happy | covered | `./smokes/account/mirror-smoke.sh` · [mirror.md](mirror.md) |
 | `awsl apply` fixture tags (Name, CDK subnet, Tier=private RT) + TF data sources | happy | covered | `./smokes/account/mirror-tags-smoke.sh` · [mirror.md](mirror.md) |
 | `awsl mirror --out` inside the repo (not gitignored) | sad/other | covered | `./smokes/account/mirror-smoke.sh` |
@@ -501,6 +507,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 ./bin/check-rds-engine-map.sh           # map vs testdata (no stack)
 ./smokes/data/rds-parameter-group-smoke.sh  # TF converge (#710)
 ./smokes/data/rds-param-groups-smoke.sh # needs mysql + psql (#703)
+./smokes/data/rds-tf-create-describe-smoke.sh  # Create→Describe bound (#718)
 # …add others as you touch a surface
 ```
 

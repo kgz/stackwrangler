@@ -12,8 +12,8 @@ echo "==> stack"
 echo "==> CLI parity"
 ./smokes/s3/s3-parity.sh | tee docs/s3-parity.md
 
-echo "==> Dual S3 split (Seaweed ≠ LocalEmu)"
-./smokes/s3/s3-dual-endpoint-smoke.sh
+echo "==> Org-path S3 brain (LocalEmu = profile local)"
+./smokes/s3/s3-org-path-brain-smoke.sh
 
 echo "==> IAM AccessDenied"
 ./smokes/security/iam-access-denied.sh

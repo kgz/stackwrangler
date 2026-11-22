@@ -161,7 +161,8 @@ cmd_up() {
 	iam="$(iam_endpoint_url)"
 	cu="$(console_url)"
 	echo
-	echo "S3 API:     ${ep}"
+	echo "S3 (org path): ${iam}  (profile local + console + IaC)"
+	echo "SeaweedFS (optional parity): ${ep}"
 	echo "IAM/Lambda: ${iam}"
 	echo "Console:    ${cu}"
 	echo "Profile:    local  (aws --profile local s3 ls)"
@@ -192,20 +193,20 @@ cmd_status() {
 	load_data_env
 	"${COMPOSE[@]}" ps
 	local ep code iam cu
-	ep="$(endpoint_url)"
-	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
-	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
-		echo "s3:       ${ep} (live, http ${code})"
-	else
-		echo "s3:       ${ep} (not reachable)"
-	fi
 	iam="$(iam_endpoint_url)"
 	if curl -sf --max-time 1 "${iam}/_localstack/health" >/dev/null 2>&1 \
 		|| curl -sf --max-time 1 "${iam}/_localemu/health" >/dev/null 2>&1 \
 		|| [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${iam}/" || true)" =~ ^[12345][0-9][0-9]$ ]]; then
-		echo "iam:      ${iam} (live)"
+		echo "s3/iam:   ${iam} (org-path brain, live)"
 	else
-		echo "iam:      ${iam} (not reachable)"
+		echo "s3/iam:   ${iam} (org-path brain, not reachable)"
+	fi
+	ep="$(endpoint_url)"
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${ep}/" || true)"
+	if [[ "$code" =~ ^[12345][0-9][0-9]$ ]]; then
+		echo "seaweed:  ${ep} (optional parity, live, http ${code})"
+	else
+		echo "seaweed:  ${ep} (optional parity, not reachable)"
 	fi
 	cu="$(console_url)"
 	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "${cu}/" || true)"

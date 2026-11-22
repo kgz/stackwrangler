@@ -107,9 +107,15 @@ Persistent/dev-mode LocalEmu (restore, warm restart, mode selection) plus core E
 
 Patch cut for high-impact defects that escaped v0.0.7: `up --dev` restore/resume, ELB persistence + SG membership, ECS port/TLS injection, RDS MySQL SAN. Gate: Impact ≥ 4 on core local-runtime / restore fidelity. Prefer hard blocks and false-confidence mismatches over catalogue width.
 
-### v0.1.0 — Org path *(active — `CURRENT_RELEASE`)*
+### v0.1.0 — Org path *(shipped 2026-11-22)*
 
 Transfer→…→RDS learning/staging path honest end-to-end; path-critical only.
+
+**Ship bar (met):** a stranger can `./bin/stackwrangler up`, apply the org-path example, put a file through SFTP, and see Lambda → S3 → ECS → RDS complete with the **same** resources in CLI, console, and IaC (LocalEmu S3 brain). Limits documented. Not hosting-company ready (`v1.0.0`).
+
+### v0.1.1 — Escaped org-path fidelity *(open — `CURRENT_RELEASE` after cut)*
+
+Patch cut for high-impact defects that escape v0.1.0 on the org path / local runtime. Gate: Impact ≥ 4 path-critical. Do not dump catalogue width here.
 
 ### Unlabelled backlog
 

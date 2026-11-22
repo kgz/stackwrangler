@@ -35,7 +35,7 @@ For **host** AWS CLI / SDK v3 calls against LocalEmu:
 export AWS_ENDPOINT_URL="${AWSBOX_IAM_ENDPOINT:-http://127.0.0.1:4566}"
 ```
 
-`AWS_ENDPOINT_URL` must point at LocalEmu for those clients (including deployment-bucket prep). Profile `local` alone sends S3 to SeaweedFS (`:8333`).
+`AWS_ENDPOINT_URL` should point at LocalEmu for those clients (including deployment-bucket prep). Profile `local` already sends S3 to LocalEmu (`:4566`) — same org-path brain as console ([s3-backends.md](s3-backends.md)).
 
 Optional S3-specific endpoint (virtual-hosted style clients):
 
@@ -105,7 +105,7 @@ aws ssm put-parameter --name /demo/sls4/dev/app-name --type String --value my-ap
 ./bin/stackwrangler sls --cwd examples/serverless-v4-sns-sqs/consumer -- deploy --stage local
 ```
 
-`sls` / `ensure_aws_redirect` bring up **only** the `aws-redirect` container (`--no-deps`). They fail if LocalEmu is not already running, so a user compose override (e.g. `PERSISTENCE=1`, state volume) is not stripped mid-deploy ([#714](https://github.com/kgz/awsl/issues/714)). Smoke: `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh`. Longer term: wire `STACKWRANGLER_COMPOSE_OVERRIDE` into `COMPOSE` ([#288](https://github.com/kgz/awsl/issues/288) / [#291](https://github.com/kgz/awsl/issues/291)).
+`sls` / `ensure_aws_redirect` bring up **only** the `aws-redirect` container (`--no-deps`). They fail if LocalEmu is not already running, so a user compose override (e.g. `PERSISTENCE=1`, state volume) is not stripped mid-deploy ([#714](https://github.com/kgz/awsl/issues/714)). Smoke: `./smokes/iac/sls-aws-redirect-no-deps-smoke.sh`. For `up` itself, wire overrides through `STACKWRANGLER_COMPOSE_EXTRA` / `docker-compose.override.yml` / `.awsbox/compose.local.yml` ([#748](https://github.com/kgz/stackwrangler/issues/748) · [dev-mode.md](dev-mode.md)).
 
 Manual compose (optional): `docker compose --profile aws-redirect up -d --no-deps aws-redirect`.
 

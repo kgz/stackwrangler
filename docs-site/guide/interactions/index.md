@@ -23,7 +23,7 @@ Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/is
 | API GW REST → VPC link → NLB → ECS | partial | `apigw-nlb-ecs-smoke.sh` | — | [apigw-nlb-ecs](./apigw-nlb-ecs) |
 | Lambda → Secrets → OAuth HTTP | shipped | `lambda-secret-oauth-smoke.sh` | — | [lambda-secrets-http](./lambda-secrets-http) |
 | Transfer SFTP → S3 | partial | `transfer-dataplane-smoke.sh`, `transfer-key-smoke.sh` | — | [transfer-sftp-s3](./transfer-sftp-s3) |
-| Dual S3 (SeaweedFS + LocalEmu) | partial | `s3-dual-endpoint-smoke.sh` | [home-s3-buckets](/assets/console/home-s3-buckets.png) | [dual-s3](./dual-s3) |
+| Org-path S3 (LocalEmu single brain) | working | `s3-org-path-brain-smoke.sh` | [home-s3-buckets](/assets/console/home-s3-buckets.png) | [dual-s3](./dual-s3) |
 | IAM AccessDenied lab | shipped | `iam-access-denied.sh` | — | [iam-deny](./iam-deny) |
 | IAM role path in resource ARN | shipped | `iam-role-path-arn-smoke.sh` | — | [iam-role-path](./iam-role-path) |
 | S3 SSE-KMS ViaService / SourceArn | shipped | `service-origin-condition-keys-smoke.sh` | — | [s3-kms-via-service](./s3-kms-via-service) |

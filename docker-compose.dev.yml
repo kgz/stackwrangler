@@ -5,7 +5,11 @@
 # RDS engine data lives in Docker volumes localemu-rds-<id>-data (not compose) —
 # survive LocalEmu recreate; wiped by `./bin/stackwrangler reset`.
 services:
+  # Come back after Docker/WSL restart (#748).
+  s3:
+    restart: unless-stopped
   localstack:
+    restart: unless-stopped
     # ON_SHUTDOWN dill save needs more than compose's ~10s default (#289).
     stop_grace_period: 90s
     environment:
@@ -13,5 +17,6 @@ services:
     volumes:
       - ./.awsbox/dev/localemu:/var/lib/localemu
   ecr-registry:
+    restart: unless-stopped
     volumes:
       - ./.awsbox/dev/ecr:/var/lib/registry

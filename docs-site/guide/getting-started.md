@@ -37,7 +37,7 @@ Tear down with the same image and `down` (thin CLI: `stackwrangler down`; option
 
 Browse <http://127.0.0.1:3000> — already running after `up` (baked static console on the release nginx image; no Vite).
 
-Grey-rose chrome, same account as the CLI. Home opens on **S3 general purpose buckets** (SeaweedFS):
+Grey-rose chrome, same account as the CLI. Home opens on **S3 general purpose buckets** (LocalEmu):
 
 ![Console home — S3 buckets](/assets/console/home-s3-buckets.png)
 
@@ -45,19 +45,17 @@ Grey-rose chrome, same account as the CLI. Home opens on **S3 general purpose bu
 
 ::: code-group
 
-```bash [S3 (SeaweedFS)]
+```bash [S3 (LocalEmu)]
 aws --profile local s3 ls
 ```
 
 ```bash [Lambda (LocalEmu)]
-aws --profile local \
-  --endpoint-url http://127.0.0.1:4566 \
-  lambda list-functions
+aws --profile local lambda list-functions
 ```
 
 :::
 
-Profile `local` points S3 at SeaweedFS (`:8333`). Most other services use LocalEmu (`:4566`). See [Concepts](./concepts) for the dual-S3 split.
+Profile `local` points S3 and other services at LocalEmu (`:4566`). SeaweedFS (`:8333`) is optional parity only. See [Concepts](./concepts).
 
 ## 4. Upgrade / teardown
 
@@ -80,6 +78,7 @@ Clone the repo when changing the product (smokes, patches, console source). See 
 - [Architecture](./architecture) — LocalEmu + patches + sidecars
 - [Fidelity](./fidelity) — awkward topology / settings bar
 - [Use case: OpenTofu → Expo + IAM](./use-cases/opentofu-expo-iam) — hero path
+- [Use case: Org path (Transfer → … → RDS)](./use-cases/org-path) — v0.1.0 learning path (partial until E2E)
 - [Vision](./vision) — what “fully working” means
 - [Completeness](./completeness) — Working vs Partial vs stub
 - [Console tour](./console-tour) — more screenshots of shipped surfaces

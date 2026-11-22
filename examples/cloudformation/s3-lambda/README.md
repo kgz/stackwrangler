@@ -7,4 +7,4 @@ Same story as `examples/terraform/s3-lambda` — named bucket + Lambda that writ
 ./smokes/iac/cfn-smoke.sh
 ```
 
-Console General purpose buckets (SeaweedFS) will **not** show this bucket.
+Console General purpose buckets and `aws --profile local` use the same LocalEmu S3 brain as this bucket.

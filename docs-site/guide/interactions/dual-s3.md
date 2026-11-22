@@ -1,20 +1,20 @@
-# Dual S3 (SeaweedFS + LocalEmu)
+# Org-path S3 (single LocalEmu brain)
 
-Console and `aws --profile local` object UI hit **SeaweedFS** (`:8333`). Lambda / IaC / S3 events hit **LocalEmu S3** (`:4566`). Same account shape; two backends on purpose.
+Console, `aws --profile local`, Transfer / Lambda / IaC all use **LocalEmu S3** (`:4566`). SeaweedFS (`:8333`) is optional parity only — not the learner path.
 
-**Status:** partial · Docs: [s3-backends.md](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md) · Debt trail [#143](https://github.com/kgz/stackwrangler/issues/143)
+**Status:** working · Docs: [s3-backends.md](https://github.com/kgz/stackwrangler/blob/main/docs/s3-backends.md) · Org path: [use case](../use-cases/org-path) · [#162](https://github.com/kgz/stackwrangler/issues/162)
 
 ## Sequence
 
-1. `./bin/stackwrangler up` — both endpoints listening.
-2. Console buckets list/objects → SeaweedFS.
-3. Lambda or CFN that uses S3 → LocalEmu endpoint.
-4. Smoke asserts the split; do not pretend one store.
+1. `./bin/stackwrangler up` — profile `local` S3 → LocalEmu.
+2. Console buckets list/objects → LocalEmu (via `/aws-iam` proxy).
+3. Lambda / CFN / Transfer that uses S3 → same LocalEmu endpoint.
+4. Smoke asserts put via LocalEmu is visible on `aws --profile local` and absent on Seaweed.
 
 ## Prove it
 
 ```bash
-./smokes/s3/s3-dual-endpoint-smoke.sh
+./smokes/s3/s3-org-path-brain-smoke.sh
 ```
 
 ## Console
