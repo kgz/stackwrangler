@@ -125,6 +125,8 @@ checks:
     targets: [local, real]
     legacy: true
 
+  # Keep low: monolith waits on real schedule→Lambda (~3–4m) + multi-service;
+  # not free enough for free-ci until split into dual-mode checks/*.
   - id: legacy-hf-cheap
     title: "Legacy: high-focus cheap parity"
     issues: []
@@ -161,6 +163,33 @@ checks:
     residual: none
     suites: [legacy, iac, iam, free-ci]
     script: smokes/parity/aws-parity-cfn-authz.sh
+    targets: [local, real]
+    legacy: true
+
+  - id: legacy-cfn-path-scoped-role
+    title: "Legacy: CFN path-scoped deploy role GetRole (#679)"
+    issues: [679]
+    covers:
+      - "sad: path-only deploy role → iam:GetRole AccessDenied + DELETE_FAILED"
+      - "happy: pathless GetRole/DeleteRolePolicy grant → CREATE_COMPLETE"
+    cost_tier: free
+    est_cost: "~$0 (IAM + short-lived CFN stacks)"
+    residual: "none if torn down; else leftover sw-psr-* IAM roles/policies"
+    suites: [legacy, iac, iam, free-ci]
+    script: smokes/parity/aws-parity-cfn-path-scoped-role.sh
+    targets: [local, real]
+    legacy: true
+
+  - id: legacy-sg-prefixlist-description
+    title: "Legacy: SG prefix-list rule Description (#682)"
+    issues: [682]
+    covers:
+      - "happy: PrefixListIds[].Description round-trips on DescribeSecurityGroupRules + DescribeSecurityGroups"
+    cost_tier: free
+    est_cost: "~$0 (VPC + SG + managed prefix list if torn down)"
+    residual: none
+    suites: [legacy, ec2, networking, free-ci]
+    script: smokes/parity/aws-parity-sg-prefixlist-description.sh
     targets: [local, real]
     legacy: true
 

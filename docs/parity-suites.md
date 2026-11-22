@@ -73,6 +73,8 @@ Honest inventory % (not “% of AWS”):
 
 Raising free-ci %: catalogue free `aws-parity-*.sh` leftovers into `catalog.yaml` with `suites: […, free-ci]`, prefer dual-mode `checks/*` under `$1`. See [#676](https://github.com/kgz/stackwrangler/issues/676).
 
+`free-ci` (local CI / free re-runs): dual-mode v0.0.5 checks + free legacy (`iam-denied`, `batch10`, `cfn-s3-lambda`, `cfn-authz`, `cfn-path-scoped-role` [#679], `sg-prefixlist-description` [#682], `trust-v003`). `legacy-hf-cheap` stays `low` (real schedule wait) until split. List: `./bin/parity list --suite free-ci`.
+
 ## Env
 
 | Var | Meaning |
