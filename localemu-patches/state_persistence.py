@@ -27,8 +27,10 @@ Load flow (ON_STARTUP, priority 5, before services accept requests):
        the identity of the live ``_universal`` / ``_global`` dicts — the
        shared-dict invariant used by ``CrossAccountAttribute`` /
        ``CrossRegionAttribute`` descriptors depends on those identities.
-    3. Restore CloudTrail native module state, CloudTrail events, S3 bodies
-       and DynamoDB SQLite snapshot assets.
+    3. Restore DynamoDB SQLite assets, then S3 object bodies (eager-start S3
+       so the ephemeral backend exists — #712). Bodies must land *before*
+       post-load hooks: Lambda deferred restore reads code from the spool
+       (or falls back to boto3→localhost:4566 and races the gateway — #751).
     4. Invoke ``on_after_state_load()`` on every loaded provider so they
        can rebuild volatile runtime state (Lambda execution environments,
        EventBridge rule services, CloudWatch alarm schedulers, …).
@@ -79,7 +81,7 @@ def _get_s3_backend(*, require: bool = False):
     non-ephemeral store.
 
     When ``require`` is True, eagerly start the S3 plugin so body restore
-    can run after post-load hooks (#712).
+    can run before post-load hooks that download Lambda code (#712, #751).
     """
     try:
         from localemu.services.plugins import SERVICE_PLUGINS
@@ -517,11 +519,17 @@ class LoadOrchestrator:
 
         assets_dir = os.path.join(state_dir, "assets")
         # DynamoDB SQLite files must land before post-load hooks that open them.
-        # S3 bodies wait until after hooks: ``_get_s3_backend()`` needs the S3
-        # provider, which is only constructed when post-load eager-starts it.
-        # Restoring earlier always skipped bodies (backend None) → metadata
-        # without data, and missing spool dirs → PutObject ENOENT (#712).
         self._restore_ddb_assets(assets_dir)
+
+        # S3 bodies BEFORE post-load hooks (#751). Lambda's on_after_state_load
+        # schedules deferred create_function_version which reads code from the
+        # ephemeral spool (fast path) or falls back to boto3→localhost:4566.
+        # Bodies restored *after* that hook raced the gateway: large / early
+        # versions missed the spool, hit EndpointConnectionError, and stayed
+        # Failed. Eager-require S3 first so the backend exists (#712); then
+        # land bodies; then fire hooks so restore sees a populated spool.
+        self._restore_s3_bodies(assets_dir)
+        self._ensure_s3_bucket_dirs()
 
         # on_after_state_load hooks. Must run AFTER all stores are live
         # because the hooks typically re-derive runtime caches from the
@@ -538,9 +546,6 @@ class LoadOrchestrator:
         # threads, etc.).
         if getattr(self, "_trigger_post_load_hooks", True):
             self._fire_post_load_hooks(manifest.get("services", []))
-
-        self._restore_s3_bodies(assets_dir)
-        self._ensure_s3_bucket_dirs()
 
         LOG.info("Persistence load complete: %d stores restored", loaded)
         return True

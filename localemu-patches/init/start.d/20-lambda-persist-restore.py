@@ -1,17 +1,18 @@
-"""Lambda PERSISTENCE restore: wait for code spool; mark Failed if missing (#713).
+"""Lambda PERSISTENCE restore: wait for code spool + gateway; mark Failed (#713/#751).
 
 ``boot.d`` runs in a separate entrypoint process, so monkeypatches there never
 reach the main LocalEmu server. This lives in ``start.d`` (in-process).
 
 Persistence load (``on_infra_start`` priority 5) runs *before* start.d
-(priority 0) and schedules deferred restore on a worker thread. We:
-1. Patch ``_run_deferred_restore`` so the worker marks leftover Pending Failed.
-2. Run a late sweep in case the worker already finished the unpatched path.
+(priority 0) and schedules deferred restore on a worker thread. As of #751,
+``state_persistence`` restores ``s3_bodies`` *before* Lambda's post-load hook
+so the in-process S3 fast path usually hits. We still:
 
-With #712, S3 bodies restore *after* post-load hooks, so the first download
-can miss. Wait for the zip in the ephemeral store (or a short deadline), run
-upstream restore, then flip leftover ``Pending`` versions to ``Failed`` so
-``UpdateFunctionCode`` can replace them via ``update_version`` → create.
+1. Patch ``_run_deferred_restore`` to wait for spool + gateway (HTTP fallback
+   for missing bodies / non-internal buckets must not race ``localhost:4566``).
+2. Run a late sweep in case the worker already finished the unpatched path.
+3. Surface unrestored ``Pending`` as ``Failed`` with an actionable reason so
+   ``UpdateFunctionCode`` can replace them (#713).
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
+import socket
 import threading
 import time
 from io import BytesIO
@@ -39,12 +41,30 @@ def _code_wait_s() -> float:
         return 45.0
 
 
+def _gateway_wait_s() -> float:
+    raw = (
+        os.environ.get("STACKWRANGLER_LAMBDA_PERSIST_GATEWAY_WAIT_S")
+        or os.environ.get("AWSBOX_LAMBDA_PERSIST_GATEWAY_WAIT_S")
+        or "60"
+    )
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return 60.0
+
+
 _CODE_POLL_S = 0.5
+_GATEWAY_POLL_S = 0.25
 # Upstream create_function_version().result(timeout=30) during deferred restore.
 _DEFERRED_CREATE_TIMEOUT_S = 35.0
 _MISSING_CODE_REASON = (
     "Function code is unavailable after LocalEmu restart; "
     "call UpdateFunctionCode to replace it."
+)
+_GATEWAY_FAIL_REASON = (
+    "Function restore could not reach the LocalEmu gateway (localhost:4566) "
+    "to download code; retry after the emulator is ready, or call "
+    "UpdateFunctionCode to replace the zip."
 )
 
 
@@ -71,6 +91,34 @@ def _code_in_spool(fn_version) -> bool:
     except Exception:
         LOG.debug("code spool probe failed", exc_info=True)
         return False
+
+
+def _layer_codes_in_spool(fn_version) -> bool:
+    layers = getattr(fn_version.config, "layers", None) or []
+    for layer in layers:
+        code = getattr(layer, "code", None)
+        if code is None:
+            continue
+        bucket = getattr(code, "s3_bucket", None)
+        key = getattr(code, "s3_key", None)
+        if not bucket or not key:
+            continue
+        try:
+            from localemu.services.lambda_.invocation.lambda_models import (
+                _try_read_archive_from_local_store,
+            )
+
+            if not _try_read_archive_from_local_store(
+                bucket=bucket,
+                key=key,
+                version_id=getattr(code, "s3_object_version", None),
+                target_file=BytesIO(),
+            ):
+                return False
+        except Exception:
+            LOG.debug("layer spool probe failed", exc_info=True)
+            return False
+    return True
 
 
 def _pending_versions(pending_functions):
@@ -105,7 +153,9 @@ def _wait_for_code_spool(pending_functions) -> None:
         pending = _pending_versions(pending_functions)
         if not pending:
             return
-        if all(_code_in_spool(v) for _, v in pending):
+        if all(
+            _code_in_spool(v) and _layer_codes_in_spool(v) for _, v in pending
+        ):
             LOG.info(
                 "Lambda persistence restore: code spool ready for %d version(s)",
                 len(pending),
@@ -119,7 +169,51 @@ def _wait_for_code_spool(pending_functions) -> None:
     )
 
 
-def _mark_version_failed(fn, fn_version) -> None:
+def _gateway_listen_addr() -> tuple[str, int]:
+    try:
+        from localemu import config
+
+        listen = config.GATEWAY_LISTEN[0]
+        host = getattr(listen, "host", None) or "127.0.0.1"
+        if host in ("0.0.0.0", "::", "[::]"):
+            host = "127.0.0.1"
+        return host, int(listen.port)
+    except Exception:
+        return "127.0.0.1", 4566
+
+
+def _gateway_accepts_tcp() -> bool:
+    host, port = _gateway_listen_addr()
+    try:
+        with socket.create_connection((host, port), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
+def _wait_for_gateway() -> bool:
+    """Block until the edge gateway accepts TCP (boto3 HTTP fallback needs it)."""
+    wait_s = _gateway_wait_s()
+    if wait_s <= 0:
+        return _gateway_accepts_tcp()
+    deadline = time.monotonic() + wait_s
+    while time.monotonic() < deadline:
+        if _gateway_accepts_tcp():
+            LOG.info(
+                "Lambda persistence restore: gateway ready at %s:%s",
+                *_gateway_listen_addr(),
+            )
+            return True
+        time.sleep(_GATEWAY_POLL_S)
+    LOG.warning(
+        "Lambda persistence restore: gateway not accepting connections after "
+        "%.0fs — HTTP code download may fail with EndpointConnectionError (#751)",
+        wait_s,
+    )
+    return False
+
+
+def _mark_version_failed(fn, fn_version, *, reason: str = _MISSING_CODE_REASON) -> None:
     from localemu.aws.api.lambda_ import LastUpdateStatus, State, StateReasonCode
     from localemu.services.lambda_.invocation.lambda_models import (
         UpdateStatus,
@@ -129,7 +223,7 @@ def _mark_version_failed(fn, fn_version) -> None:
     new_state = VersionState(
         state=State.Failed,
         code=StateReasonCode.InvalidZipFileException,
-        reason=_MISSING_CODE_REASON,
+        reason=reason,
     )
     new_config = dataclasses.replace(
         fn_version.config,
@@ -154,7 +248,7 @@ def _lambda_service_from_provider(provider):
     return getattr(provider, "lambda_service", None)
 
 
-def _mark_pending_failed(pending_pairs, lambda_service) -> int:
+def _mark_pending_failed(pending_pairs, lambda_service, *, reason: str = _MISSING_CODE_REASON) -> int:
     from localemu.aws.api.lambda_ import State
 
     marked = 0
@@ -163,10 +257,11 @@ def _mark_pending_failed(pending_pairs, lambda_service) -> int:
         if live.config.state.state != State.Pending:
             continue
         LOG.warning(
-            "Marking unrestored Lambda version Failed: %s",
+            "Marking unrestored Lambda version Failed: %s (%s)",
             live.id.qualified_arn(),
+            reason,
         )
-        _mark_version_failed(fn, live)
+        _mark_version_failed(fn, live, reason=reason)
         _discard_starting(lambda_service, live.id.qualified_arn())
         marked += 1
     return marked
@@ -179,14 +274,18 @@ def _patch_deferred_restore() -> None:
 
     def _run_deferred_restore(self, pending_functions, pending_esms) -> None:
         _wait_for_code_spool(pending_functions)
+        gateway_ok = _wait_for_gateway()
         original(self, pending_functions, pending_esms)
 
         # Upstream leaves Pending when create never ran or timed out before
         # start() could report Failed. Surface that as Failed so clients and
-        # UpdateFunctionCode see a terminal state (#713).
+        # UpdateFunctionCode see a terminal state (#713). Prefer a gateway
+        # hint when TCP never came up (#751).
+        reason = _MISSING_CODE_REASON if gateway_ok else _GATEWAY_FAIL_REASON
         _mark_pending_failed(
             _pending_versions(pending_functions),
             _lambda_service_from_provider(self),
+            reason=reason,
         )
 
     LambdaProvider._run_deferred_restore = _run_deferred_restore
@@ -212,7 +311,10 @@ def _late_sweep_pending() -> None:
     if not restore_arns:
         LOG.info("Lambda persistence late sweep: no restore-era Pending (#713)")
         return
-    remaining = max(0.0, _code_wait_s() + _DEFERRED_CREATE_TIMEOUT_S - snap_s)
+    remaining = max(
+        0.0,
+        _code_wait_s() + _gateway_wait_s() + _DEFERRED_CREATE_TIMEOUT_S - snap_s,
+    )
     time.sleep(remaining)
     try:
         from localemu.services.plugins import SERVICE_PLUGINS
@@ -242,6 +344,8 @@ try:
         name="lambda-persist-failed-sweep",
         daemon=True,
     ).start()
-    LOG.info("Lambda persistence restore wait/Failed marking installed (#713)")
+    LOG.info(
+        "Lambda persistence restore wait/Failed marking installed (#713/#751)"
+    )
 except Exception:
-    LOG.exception("Failed to install Lambda persistence restore patch (#713)")
+    LOG.exception("Failed to install Lambda persistence restore patch (#713/#751)")
