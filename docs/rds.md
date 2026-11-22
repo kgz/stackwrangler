@@ -6,6 +6,8 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./bin/stackwrangler up --force
 ./smokes/data/rds-smoke.sh          # Postgres
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
+./smokes/data/rds-mysql-persist-recreate-smoke.sh       # MySQL SQL after PERSISTENCE recreate (#743)
+./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh # Aurora writer+reader after recreate (#743)
 ./smokes/data/rds-parameter-group-smoke.sh  # param group Source + TF converge
 ./smokes/data/rds-param-groups-smoke.sh # DB / cluster parameter groups → container
 ./smokes/data/rds-tf-create-describe-smoke.sh  # Create→Describe bound (#718)
@@ -14,12 +16,12 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 
 Keep resources: `STACKWRANGLER_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
 
-Needs host `psql` (Postgres smoke) or `mysql` (MySQL smoke).
+Needs host `psql` (Postgres smoke) or `mysql` (MySQL / Aurora smokes).
 
 ## What works
 
 - `create-db-instance` / `describe-db-instances` / `delete-db-instance` for `postgres` and `mysql`
-- **Stable host ports** ([#705](https://github.com/kgz/stackwrangler/issues/705)): `Endpoint.Port` is the published host port. Pass `--port 3306` (or tag `stackwrangler:host-port=3306`) to pin it when free; otherwise the first assigned port is kept for the life of the instance (reboot, LocalEmu restart, persistence recreate). A taken port returns `InvalidParameterValue` with a clear message. Console detail shows the same port from `describe-db-instances`. With `PERSISTENCE=1`, host port + master creds are also saved under the LocalEmu state dir so a volume recreate after `docker rm` keeps the same publish port. Prove restart + recreate with `./smokes/data/rds-host-port-restart-persist-smoke.sh`.
+- **Stable host ports** ([#705](https://github.com/kgz/stackwrangler/issues/705)): `Endpoint.Port` is the published host port. Pass `--port 3306` (or tag `stackwrangler:host-port=3306`) to pin it when free; otherwise the first assigned port is kept for the life of the instance (reboot, LocalEmu restart, persistence recreate). A taken port returns `InvalidParameterValue` with a clear message. Console detail shows the same port from `describe-db-instances`. With `PERSISTENCE=1`, host port + master creds are also saved under the LocalEmu state dir so a volume recreate after `docker rm` keeps the same publish port. Prove Postgres restart + recreate with `./smokes/data/rds-host-port-restart-persist-smoke.sh`. MySQL / Aurora MySQL SQL + endpoints after recreate: `./smokes/data/rds-mysql-persist-recreate-smoke.sh` and `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` ([#743](https://github.com/kgz/stackwrangler/issues/743)).
 - `create-db-cluster` for `aurora-mysql`: writer container, cluster endpoint on `localhost:<host-port>` (cluster `--port` / tag pins the **writer** publish port)
 - Further `create-db-instance --db-cluster-identifier` adds a **reader**. Readers get their **own** stable host port (pin with `--port` / tag on that instance). The cluster `ReaderEndpoint` hostname matches the writer style (`localhost`); clients that need the reader must use the **reader instance** `Endpoint.Address` + `Endpoint.Port` from `describe-db-instances` — there is no second port field on the cluster.
 - `ManageMasterUserPassword` stores `{"username","password"}` in Secrets Manager (`rds!…`). The container uses that password

@@ -21,7 +21,7 @@ Working / Partial / control-plane depth for the local stack. Product pitch and q
 | Area | Status | Notes |
 |------|--------|--------|
 | `./bin/stackwrangler up` + profile `local` | **Working** | Compose + managed AWS profile |
-| Test / dev mode + opt-in persistence | **Working** | `up --test`\|`--dev`; `--dev` → `STACKWRANGLER_PERSISTENCE=1` + `.awsbox/dev` (LocalEmu+ECR) + `seaweed-data-dev`; `reset` wipes LocalEmu/Seaweed/ECR/RDS vols (RDS wipe smoked); multi-service recreate smoke; Postgres SQL persist via [#705](https://github.com/kgz/stackwrangler/issues/705). Debt: TF empty-plan [#742](https://github.com/kgz/stackwrangler/issues/742); MySQL/Aurora SQL [#743](https://github.com/kgz/stackwrangler/issues/743) · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
+| Test / dev mode + opt-in persistence | **Working** | `up --test`\|`--dev`; `--dev` → `STACKWRANGLER_PERSISTENCE=1` + `.awsbox/dev` (LocalEmu+ECR) + `seaweed-data-dev`; `reset` wipes LocalEmu/Seaweed/ECR/RDS vols (RDS wipe smoked); multi-service recreate smoke; Postgres SQL persist via [#705](https://github.com/kgz/stackwrangler/issues/705); MySQL/Aurora SQL persist via [#743](https://github.com/kgz/stackwrangler/issues/743). Debt: TF empty-plan [#742](https://github.com/kgz/stackwrangler/issues/742) · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Console shell (grey rose) | **Working** | Chrome from `design/stackwrangler-console` · S3 + built-service pages match mocks · unwired controls disabled → [#355](https://github.com/kgz/awsl/issues/355), [#357](https://github.com/kgz/awsl/issues/357) |
 | Console labels | **Working** | `STACKWRANGLER_LABELS` file kept outside the repo · [labels.md](labels.md) · `./smokes/account/labels-smoke.sh` |
 | Org-path S3 brain | **Working** | Console/`local`/Transfer/Lambda/IaC → LocalEmu `:4566` · Seaweed `:8333` optional parity only · [s3-backends.md](s3-backends.md) · [org-path.md](org-path.md) · `./smokes/s3/s3-org-path-brain-smoke.sh` |
@@ -98,7 +98,7 @@ Smoke: `./smokes/account/mirror-smoke.sh` · `./smokes/account/mirror-tags-smoke
 | DynamoDB | put/get · GSI query · scan filter · conditional writes · UpdateItem expressions · TransactWriteItems · TTL sweep · IAM on table/index ARNs · table resource policy + `aws:SourceVpce` | Tables list | **Working** (CLI) · console list [#174](https://github.com/kgz/awsl/issues/174) · create/detail [#549](https://github.com/kgz/awsl/issues/549) · `./smokes/data/dynamodb-depth-smoke.sh` · `./smokes/data/dynamodb-resource-policy-smoke.sh` · Batch/Transact table-scoped IAM [#306](https://github.com/kgz/awsl/issues/306) · index `aws:ResourceTag` [#307](https://github.com/kgz/awsl/issues/307) |
 | ElastiCache / other DBs | — | — | **Backlog** |
 
-Smoke: `./smokes/data/rds-smoke.sh` · sad: `./smokes/data/rds-authz-smoke.sh` (needs host `psql`) · MySQL/Aurora: `./smokes/data/rds-mysql-smoke.sh` (needs host `mysql`)
+Smoke: `./smokes/data/rds-smoke.sh` · sad: `./smokes/data/rds-authz-smoke.sh` (needs host `psql`) · MySQL/Aurora: `./smokes/data/rds-mysql-smoke.sh` · persist recreate: `./smokes/data/rds-mysql-persist-recreate-smoke.sh`, `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` (needs host `mysql`)
 
 
 ## Messaging & integration
