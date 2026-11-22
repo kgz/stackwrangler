@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Import SSH public key — AWS Transfer Family</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="transfer-import-ssh-key" data-nav="transfer-server-detail" data-service="transfer" data-title="Import SSH public key" data-crumb="Import SSH public key">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Import SSH public key</h1>
+      <p class="aws-desc">Add an SSH public key to an existing service-managed user on <code class="aws-mono">s-abc12def34</code>. The user can then authenticate over SFTP with the matching private key.</p>
+
+      <form id="import-key-form" data-od-id="import-key-form">
+        <section class="aws-card" data-od-id="import-key-card">
+          <div class="aws-card-body aws-form-stack">
+
+            <div class="aws-form-section">
+              <h2 class="aws-section-title">User</h2>
+              <div class="aws-field">
+                <label class="aws-label" for="key-user">User name <span class="req" aria-hidden="true">*</span></label>
+                <select class="aws-select" id="key-user" name="userName" style="max-width:480px;width:100%" required data-od-id="field-key-user">
+                  <option value="awsbox">awsbox</option>
+                  <option value="partner">partner</option>
+                </select>
+                <p class="aws-hint">Only service-managed users on this server are listed.</p>
+              </div>
+            </div>
+
+            <div class="aws-form-section" data-od-id="key-source-section">
+              <h2 class="aws-section-title">SSH public key</h2>
+              <ul class="aws-radio-list" data-od-id="key-source-options">
+                <li>
+                  <label>
+                    <input type="radio" name="keySource" value="paste" checked data-od-id="key-source-paste" />
+                    <span>
+                      <strong>Paste key body</strong>
+                      <span class="sub">Enter the SSH public key in OpenSSH format.</span>
+                    </span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="keySource" value="file" disabled aria-disabled="true" title="To implement" data-od-id="key-source-file" />
+                    <span>
+                      <strong>Upload a .pub file</strong>
+                      <span class="sub">Select a public key file from your computer. Not available in this mock.</span>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+              <div class="aws-field" style="margin-top:12px">
+                <label class="aws-label" for="ssh-key-body">Public key body <span class="req" aria-hidden="true">*</span></label>
+                <textarea class="aws-input" id="ssh-key-body" name="sshPublicKeyBody" rows="5" placeholder="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI… user@host" spellcheck="false" style="height:132px;padding:8px 10px;resize:vertical;font-family:var(--font-mono);font-size:13px;line-height:1.5" required data-od-id="field-ssh-key"></textarea>
+                <p class="aws-hint">Paste a single public key including the algorithm prefix, for example <code class="aws-mono">ssh-ed25519 AAAA… comment</code>. A private key will not work. Each user can have up to 10 keys.</p>
+              </div>
+            </div>
+
+            <div class="aws-form-actions" data-od-id="import-actions">
+              <a class="btn btn-normal" href="transfer-server-detail.html" data-od-id="btn-cancel">Cancel</a>
+              <div class="spacer" style="flex:1"></div>
+              <button type="submit" class="btn btn-primary" data-od-id="btn-import-key">Import key</button>
+            </div>
+
+          </div>
+        </section>
+      </form>
+
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById("import-key-form");
+      if (!form) return;
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        window.location.href = "transfer-user-detail.html";
+      });
+    })();
+  </script>
+</body>
+</html>

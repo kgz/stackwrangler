@@ -107,7 +107,7 @@ Debt: console [#313](https://github.com/kgz/awsl/issues/313) · retrieve / AS2 [
 | FTPS/FTP / AS2 | Not exercised |
 | Home type | PATH `/bucket` or `/bucket/prefix` only (LOGICAL / IdP → [#322](https://github.com/kgz/awsl/issues/322)) |
 | Authz under Transfer role | API simulate: `transfer-authz-smoke.sh`; deeper SFTP-byte deny matrix → [#322](https://github.com/kgz/awsl/issues/322) |
-| Console create user / import key | CLI / smoke only → [#321](https://github.com/kgz/awsl/issues/321) |
+| Console create user / import key | Server detail → Add user / Add SSH key ([#321](https://github.com/kgz/awsl/issues/321)) |
 | IdP / custom identity providers | Not implemented → [#322](https://github.com/kgz/awsl/issues/322) |
 | Host key | Ephemeral RSA in the LocalEmu container (`StrictHostKeyChecking=no` in smokes) |
 

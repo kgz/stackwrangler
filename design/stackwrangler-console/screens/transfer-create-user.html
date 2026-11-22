@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create user — AWS Transfer Family</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="transfer-create-user" data-nav="transfer-server-detail" data-service="transfer" data-title="Create user" data-crumb="Create user">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Create user</h1>
+      <p class="aws-desc">Add a service-managed user to <code class="aws-mono">s-abc12def34</code>. Users authenticate with an SSH public key and are mapped to an IAM role and home directory.</p>
+
+      <form id="create-user-form" data-od-id="create-user-form">
+        <section class="aws-card" data-od-id="create-user-card">
+          <div class="aws-card-body aws-form-stack">
+
+            <div class="aws-form-section">
+              <h2 class="aws-section-title">User configuration</h2>
+              <div class="aws-field">
+                <label class="aws-label" for="user-name">User name <span class="req" aria-hidden="true">*</span></label>
+                <input class="aws-input" id="user-name" name="userName" type="text" autocomplete="off" placeholder="my-user" required data-od-id="field-user-name" />
+                <p class="aws-hint">3–100 characters. Use letters, numbers, hyphens, underscores, periods, and @ symbols.</p>
+              </div>
+              <div class="aws-field">
+                <label class="aws-label">Server</label>
+                <p style="margin:0"><code class="aws-mono">s-abc12def34</code> <span class="aws-quiet">· SFTP · Service managed</span></p>
+              </div>
+            </div>
+
+            <div class="aws-form-section" data-od-id="identity-provider-section">
+              <h2 class="aws-section-title">Identity provider</h2>
+              <ul class="aws-radio-list" data-od-id="identity-options">
+                <li>
+                  <label>
+                    <input type="radio" name="identityProvider" value="service-managed" checked data-od-id="idp-service-managed" />
+                    <span>
+                      <strong>Service managed</strong>
+                      <span class="sub">Manage user credentials and SSH public keys in AWS Transfer Family.</span>
+                    </span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="identityProvider" value="custom" disabled aria-disabled="true" title="To implement" data-od-id="idp-custom" />
+                    <span>
+                      <strong>Custom identity provider</strong>
+                      <span class="sub">Authenticate through API Gateway, AWS Lambda, or AWS Directory Service. Not available in this mock.</span>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+
+            <div class="aws-form-section" data-od-id="permissions-section">
+              <h2 class="aws-section-title">Permissions</h2>
+              <div class="aws-field">
+                <label class="aws-label" for="role-arn">Role ARN <span class="req" aria-hidden="true">*</span></label>
+                <input class="aws-input" id="role-arn" name="roleArn" type="text" autocomplete="off" placeholder="arn:aws:iam::445772506418:role/TransferAccess" required data-od-id="field-role-arn" />
+                <p class="aws-hint">The IAM role Transfer Family assumes for this user. It must trust <code class="aws-mono">transfer.amazonaws.com</code>.</p>
+              </div>
+            </div>
+
+            <div class="aws-form-section" data-od-id="home-directory-section">
+              <h2 class="aws-section-title">Home directory</h2>
+              <div class="aws-field">
+                <label class="aws-label">Home directory type</label>
+                <ul class="aws-radio-list" data-od-id="home-dir-types">
+                  <li>
+                    <label>
+                      <input type="radio" name="homeDirType" value="PATH" checked data-od-id="home-path" />
+                      <span>
+                        <strong>PATH</strong>
+                        <span class="sub">Map the user to an absolute path in the server's storage, for example <code class="aws-mono">/awsbox-home</code>.</span>
+                      </span>
+                    </label>
+                  </li>
+                  <li>
+                    <label>
+                      <input type="radio" name="homeDirType" value="LOGICAL" disabled aria-disabled="true" title="To implement" data-od-id="home-logical" />
+                      <span>
+                        <strong>LOGICAL</strong>
+                        <span class="sub">Map logical directories to S3 bucket paths. Not available in this mock.</span>
+                      </span>
+                    </label>
+                  </li>
+                </ul>
+              </div>
+              <div class="aws-field" style="margin-top:12px">
+                <label class="aws-label" for="home-dir">Home directory</label>
+                <input class="aws-input" id="home-dir" name="homeDirectory" type="text" autocomplete="off" placeholder="/my-user-home" data-od-id="field-home-directory" />
+                <p class="aws-hint">Optional. Leave blank to use the storage root for this user.</p>
+              </div>
+              <div class="aws-field" style="margin-top:12px">
+                <label class="aws-label">Home directory mapping</label>
+                <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-home-mapping">Add mapping…</button>
+              </div>
+            </div>
+
+            <div class="aws-form-section" data-od-id="ssh-key-section">
+              <h2 class="aws-section-title">SSH public key <span class="aws-quiet" style="font-size:13px;font-weight:400">Optional</span></h2>
+              <div class="aws-field">
+                <label class="aws-label" for="ssh-key-body">Public key body</label>
+                <textarea class="aws-input" id="ssh-key-body" name="sshPublicKeyBody" rows="5" placeholder="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI… user@host" spellcheck="false" style="height:120px;padding:8px 10px;resize:vertical;font-family:var(--font-mono);font-size:13px;line-height:1.5" data-od-id="field-ssh-key"></textarea>
+                <p class="aws-hint">Paste the full public key including the algorithm prefix. A private key will not work. You can add keys after the user is created.</p>
+              </div>
+              <div class="aws-field" style="margin-top:12px">
+                <label class="aws-label">Public key file</label>
+                <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-upload-key">Choose .pub file…</button>
+              </div>
+            </div>
+
+            <div class="aws-form-section" data-od-id="additional-section">
+              <h2 class="aws-section-title">Additional settings <span class="aws-quiet" style="font-size:13px;font-weight:400">Optional</span></h2>
+              <div class="aws-field">
+                <label class="aws-label">Tags</label>
+                <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-tags">Add tag…</button>
+              </div>
+            </div>
+
+            <div class="aws-form-actions" data-od-id="create-actions">
+              <a class="btn btn-normal" href="transfer-server-detail.html" data-od-id="btn-cancel">Cancel</a>
+              <div class="spacer" style="flex:1"></div>
+              <button type="submit" class="btn btn-primary" data-od-id="btn-create-user">Create user</button>
+            </div>
+
+          </div>
+        </section>
+      </form>
+
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById("create-user-form");
+      if (!form) return;
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        window.location.href = "transfer-user-detail.html";
+      });
+    })();
+  </script>
+</body>
+</html>
