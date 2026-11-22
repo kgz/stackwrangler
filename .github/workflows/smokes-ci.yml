@@ -1,0 +1,39 @@
+# Curated local-only smokes on PRs / main (#807).
+# LocalEmu only — no real AWS. Full e2e.sh (Playwright / Prowler) stays local.
+name: smokes-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci-smokes:
+    name: curated local smokes
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AWS CLI
+        run: |
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+          unzip -q /tmp/awscliv2.zip -d /tmp
+          sudo /tmp/aws/install --update
+
+      - name: Install host tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zip python3-yaml jq curl openssh-client
+
+      - name: Start LocalEmu stack
+        run: |
+          chmod +x bin/stackwrangler bin/awsbox bin/ci-smokes.sh
+          ./bin/stackwrangler up --force
+
+      - name: Curated local smokes
+        run: ./bin/ci-smokes.sh
+
+      - name: Tear down
+        if: always()
+        run: ./bin/stackwrangler down || true
