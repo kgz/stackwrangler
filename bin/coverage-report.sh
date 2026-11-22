@@ -38,6 +38,8 @@ mode = os.environ["COVERAGE_MODE"]
 # Columns: Surface | Happy | Sad (authz) | Sad (other) | Console e2e | Script
 NA = re.compile(r"^(?:—|-|–|n/?a|n\.a\.?)(?:\s|$)", re.I)
 BOLD = re.compile(r"\*+")
+# Status form: `no job run → [#335]` / `no … → #N` (ticket arrow), not prose arrows.
+NO_TICKET_ARROW = re.compile(r"→\s*\[?#")
 
 def classify_matrix_cell(raw: str) -> str:
     """Matrix cells: explicit no/debt/thin/missing = gap; — = n/a; else covered.
@@ -45,7 +47,8 @@ def classify_matrix_cell(raw: str) -> str:
     Descriptive sad/console prose (e.g. 'up without docker.sock refused',
     'no default route; route removed', 'missing psql') documents what *is*
     tested — count as covered, not a gap. Leading-token `no`/`missing` alone
-    is too greedy; only status forms count as gaps.
+    is too greedy; only status forms count as gaps. `no <noun> → [#ticket]`
+    is a deferred-status gap, not covered prose.
     """
     s = raw.strip()
     if not s or NA.match(s):
@@ -59,8 +62,10 @@ def classify_matrix_cell(raw: str) -> str:
     if word == "yes":
         return "covered"
     if word == "no":
-        # status: `no`, `no → …`, `no (…)` — not prose like "no default route"
+        # status: `no`, `no → …`, `no (…)`, `no <words> → [#N]` / `→ #N`
         if not rest or rest.startswith("→") or rest.startswith("("):
+            return "gap"
+        if NO_TICKET_ARROW.search(rest):
             return "gap"
         return "covered"
     if word in ("debt", "thin", "missing"):
@@ -108,6 +113,7 @@ def run_self_test() -> int:
         ("no default route; route removed", "covered"),
         ("no direct route without proxy env", "covered"),
         ("no direct route without proxy env; non-root image blocked", "covered"),
+        ("no direct route without proxy; no default docker bridge (#271)", "covered"),
         ("missing psql", "covered"),
         ("missing path / non-zero apply exits non-zero", "covered"),
         ("missing file → no labels", "covered"),
@@ -122,6 +128,9 @@ def run_self_test() -> int:
         ("**no**", "gap"),
         ("no → [#310](https://example/310)", "gap"),
         ("no (parity gaps)", "gap"),
+        ("no job run → [#335](https://example/335)", "gap"),
+        ("no environment → [#335](https://example/335)", "gap"),
+        ("no dataplane → #335", "gap"),
         ("debt [#742](https://example/742)", "gap"),
         ("thin", "gap"),
         ("thin list [#172](https://example/172)", "gap"),
