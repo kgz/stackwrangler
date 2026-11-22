@@ -62,6 +62,17 @@ Prefer existing fixture aliases (see [AGENTS.md](../AGENTS.md) / aws-cost-approv
 
 Examples in the catalog: `free-ci`, `v005`, `scheduler`, `iam`, `kms`, `legacy`, `trust`. Filter with `--suite`.
 
+## Prove coverage
+
+Honest inventory % (not “% of AWS”):
+
+```bash
+./bin/coverage-report.sh          # overall = mean(matrix, test-paths, free-ci)
+./bin/coverage-report.sh --gaps   # open no/debt/missing + uncatalogued free legacy
+```
+
+Raising free-ci %: catalogue free `aws-parity-*.sh` leftovers into `catalog.yaml` with `suites: […, free-ci]`, prefer dual-mode `checks/*` under `$1`. See [#676](https://github.com/kgz/stackwrangler/issues/676).
+
 ## Env
 
 | Var | Meaning |

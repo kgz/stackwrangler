@@ -24,10 +24,19 @@ cat <<'EOF'
 [ ] Tracker + board backlog updated for any new Debt / Doc: tickets?
 [ ] docs/smoke-matrix.md updated (happy + sad columns)?
 [ ] docs/test-paths.md lists every new path (searchable)?
+[ ] ./bin/coverage-report.sh run — overall % did not drop without Debt; new gaps absorbed or ticketed?
 [ ] Public docs: docs-site / interactions page updated in this PR, or Doc: filed?
 [ ] Screenshot: console/UI shot captured via ./bin/docs-capture.sh, or Doc: filed / N/A?
 [ ] Interaction edge: new cross-service path has catalog page, or Doc: filed?
 EOF
+echo
+
+echo "=== Prove coverage ==="
+if [[ -x "$ROOT/bin/coverage-report.sh" ]]; then
+	"$ROOT/bin/coverage-report.sh" || true
+else
+	echo "MISSING bin/coverage-report.sh"
+fi
 echo
 
 echo "=== Path rubric present? ==="

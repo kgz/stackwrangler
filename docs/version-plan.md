@@ -117,7 +117,7 @@ Transfer→…→RDS learning/staging path honest end-to-end; path-critical only
 
 Prove shipped behaviour (free local parity on CI, smoke-matrix sad/authz on core, persist/restore hard blocks) and close **org-path / shipped-core** console holes (Transfer user/key, path authz; then ECS/ELB/ECR as scored). Soft WIP ~15 labelled.
 
-**Ship bar:** free-ci parity runs on PRs; core sad/authz gaps closed or ticketed honestly; Transfer create-user/SSH-key UI + SFTP-byte authz honest for the org path. Not catalogue width / not `v1.0.0`.
+**Ship bar:** free-ci parity runs on PRs; core sad/authz gaps closed or ticketed honestly; Transfer create-user/SSH-key UI + SFTP-byte authz honest for the org path; prove-coverage via `./bin/coverage-report.sh` held or rising (matrix + test-paths + free-ci). Not catalogue width / not `v1.0.0`.
 
 **Gate:** Impact ≥ 3 on smoke/parity/CI or org-path / shipped-core console; Impact ≥ 4 escaped path/runtime still in.  
 **Out of cut:** unscored `v1:` stubs, Network Firewall packet realism, FinOps/Code*/AI catalogue.
