@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { e2eCreds } from './helpers/env'
@@ -32,13 +32,27 @@ function tryAws(args: string[]) {
   }
 }
 
+function fakePubKey(comment: string): string {
+  return `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI${randomBytes(16).toString('base64url').slice(0, 32)} ${comment}`
+}
+
+async function expectDecodedPath(page: Page, path: string) {
+  await expect
+    .poll(() => {
+      const url = new URL(page.url())
+      return decodeURIComponent(url.pathname)
+    })
+    .toBe(path)
+}
+
 test.describe('Transfer create user + import SSH key (#321)', () => {
   const ts = Date.now()
   const roleName = `e2e-xfer-role-${ts}`
-  const userName = `e2e-xfer-user-${ts}`
+  const createUserName = `e2e-xfer-create-${ts}`
+  const importUserName = `e2e-xfer-import-${ts}`
   let serverId = ''
   let roleArn = ''
-  const pubKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI${randomBytes(16).toString('base64url').slice(0, 32)} e2e@stackwrangler`
+  const pubKey = fakePubKey('e2e@stackwrangler')
 
   test.beforeAll(() => {
     aws([
@@ -80,18 +94,34 @@ test.describe('Transfer create user + import SSH key (#321)', () => {
       '--output',
       'text',
     ])
+    aws([
+      'transfer',
+      'create-user',
+      '--server-id',
+      serverId,
+      '--user-name',
+      importUserName,
+      '--role',
+      roleArn,
+      '--home-directory',
+      '/e2e-import-home',
+      '--home-directory-type',
+      'PATH',
+    ])
   })
 
   test.afterAll(() => {
-    if (serverId && userName) {
-      tryAws([
-        'transfer',
-        'delete-user',
-        '--server-id',
-        serverId,
-        '--user-name',
-        userName,
-      ])
+    for (const name of [createUserName, importUserName]) {
+      if (serverId) {
+        tryAws([
+          'transfer',
+          'delete-user',
+          '--server-id',
+          serverId,
+          '--user-name',
+          name,
+        ])
+      }
     }
     if (serverId) {
       tryAws(['transfer', 'delete-server', '--server-id', serverId])
@@ -113,20 +143,21 @@ test.describe('Transfer create user + import SSH key (#321)', () => {
     )
 
     await page.getByTestId('transfer-add-user').click()
-    await expect(page).toHaveURL(
-      new RegExp(`/transfer/servers/${serverId}/users/create$`),
+    await expectDecodedPath(
+      page,
+      `/transfer/servers/${serverId}/users/create`,
     )
-    await page.getByTestId('transfer-create-user-name').fill(userName)
+    await page.getByTestId('transfer-create-user-name').fill(createUserName)
     await page.getByTestId('transfer-create-role').fill(roleArn)
     await page.getByTestId('transfer-create-home').fill('/e2e-home')
     await page.getByTestId('transfer-create-ssh-key').fill(pubKey)
     await page.getByTestId('transfer-create-user-submit').click()
-    await expect(page).toHaveURL(
-      new RegExp(`/transfer/servers/${serverId}/users/${userName}$`),
-      { timeout: 20000 },
+    await expectDecodedPath(
+      page,
+      `/transfer/servers/${serverId}/users/${createUserName}`,
     )
     await expect(
-      page.getByRole('heading', { level: 1, name: userName }),
+      page.getByRole('heading', { level: 1, name: createUserName }),
     ).toBeVisible()
     const keys = page.getByTestId('transfer-ssh-keys-table')
     await expect(keys).toContainText(pubKey.slice(0, 24), { timeout: 15000 })
@@ -137,7 +168,7 @@ test.describe('Transfer create user + import SSH key (#321)', () => {
       '--server-id',
       serverId,
       '--user-name',
-      userName,
+      createUserName,
       '--output',
       'json',
     ])
@@ -145,21 +176,37 @@ test.describe('Transfer create user + import SSH key (#321)', () => {
     expect(described).toContain(pubKey.split(' ')[0] ?? 'ssh-ed25519')
   })
 
-  test('import additional SSH key from UI', async ({ page }) => {
-    const secondKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI${randomBytes(16).toString('base64url').slice(0, 32)} e2e2@stackwrangler`
+  test('import SSH key from UI for existing user', async ({ page }) => {
+    const secondKey = fakePubKey('e2e-import@stackwrangler')
     await page.goto(
-      `/transfer/servers/${encodeURIComponent(serverId)}/users/import-ssh-key?user=${encodeURIComponent(userName)}`,
+      `/transfer/servers/${encodeURIComponent(serverId)}/users/import-ssh-key?user=${encodeURIComponent(importUserName)}`,
     )
     await expect(
       page.getByRole('heading', { level: 1, name: 'Import SSH public key' }),
     ).toBeVisible()
+    await expect(page.getByTestId('transfer-import-user')).toHaveValue(
+      importUserName,
+      { timeout: 15000 },
+    )
     await page.getByTestId('transfer-import-ssh-key').fill(secondKey)
     await page.getByTestId('transfer-import-submit').click()
-    await expect(page).toHaveURL(
-      new RegExp(`/transfer/servers/${serverId}/users/${userName}$`),
-      { timeout: 20000 },
+    await expectDecodedPath(
+      page,
+      `/transfer/servers/${serverId}/users/${importUserName}`,
     )
     const keys = page.getByTestId('transfer-ssh-keys-table')
     await expect(keys).toContainText(secondKey.slice(0, 24), { timeout: 15000 })
+
+    const described = aws([
+      'transfer',
+      'describe-user',
+      '--server-id',
+      serverId,
+      '--user-name',
+      importUserName,
+      '--output',
+      'json',
+    ])
+    expect(described).toContain('SshPublicKey')
   })
 })
