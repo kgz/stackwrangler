@@ -190,14 +190,17 @@ for c in json.loads(os.environ["CHECKS_JSON"]):
 	esac
 
 	FAIL=0
+	FAILED_IDS=()
 	while IFS= read -r line; do
 		[[ -n "$line" ]] || continue
 		id="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["id"])' "$line")"
+		title="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("title") or "")' "$line")"
 		script="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["script"])' "$line")"
 		legacy="$(python3 -c 'import json,sys; print("1" if json.loads(sys.argv[1]).get("legacy") else "0")' "$line")"
 		path="$ROOT/$script"
 		[[ -f "$path" ]] || {
-			echo "FAIL: missing script $path" >&2
+			echo "FAIL: id=${id} name=${title:-?} missing script $path" >&2
+			FAILED_IDS+=("$id")
 			FAIL=1
 			continue
 		}
@@ -206,10 +209,10 @@ for c in json.loads(os.environ["CHECKS_JSON"]):
 		for t in "${TARGETS[@]}"; do
 			has_t="$(python3 -c 'import json,sys; print("1" if sys.argv[2] in (json.loads(sys.argv[1]).get("targets") or []) else "0")' "$line" "$t")"
 			if [[ "$has_t" != "1" ]]; then
-				echo "---- skip ${id} target=${t} (not in targets) ----"
+				echo "---- skip id=${id} name=${title:-?} target=${t} (not in targets) ----"
 				continue
 			fi
-			echo "======== RUN ${id} target=${t} ========"
+			echo "======== RUN id=${id} name=${title:-?} target=${t} ========"
 			if [[ "$legacy" == "1" ]]; then
 				env_args=()
 				[[ "$KEEP" == "1" ]] && env_args+=(AWSBOX_PARITY_KEEP=1)
@@ -219,7 +222,8 @@ for c in json.loads(os.environ["CHECKS_JSON"]):
 					env_args+=(AWSBOX_PARITY_SKIP_LOCAL=1 AWSBOX_PARITY_SKIP_REAL=0 AWSBOX_ALLOW_REAL_AWS=1)
 				fi
 				if ! env "${env_args[@]}" "$path"; then
-					echo "FAIL: ${id} (${t})" >&2
+					echo "FAIL: id=${id} name=${title:-?} target=${t}" >&2
+					FAILED_IDS+=("$id")
 					FAIL=1
 				fi
 			else
@@ -230,14 +234,18 @@ for c in json.loads(os.environ["CHECKS_JSON"]):
 					unset AWSBOX_PARITY_KEEP || true
 				fi
 				if ! "$path"; then
-					echo "FAIL: ${id} (${t})" >&2
+					echo "FAIL: id=${id} name=${title:-?} target=${t}" >&2
+					FAILED_IDS+=("$id")
 					FAIL=1
 				fi
 			fi
 		done
 	done < <(CHECKS_JSON="$CHECKS_JSON" python3 -c 'import json,os; [print(json.dumps(c)) for c in json.loads(os.environ["CHECKS_JSON"])]')
 
-	[[ "$FAIL" -eq 0 ]] || exit 1
+	if [[ "$FAIL" -ne 0 ]]; then
+		echo "FAILING CHECK IDS: ${FAILED_IDS[*]}" >&2
+		exit 1
+	fi
 	echo "ALL OK ($COUNT check(s), target=${TARGET})"
 	;;
 *)

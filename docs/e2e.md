@@ -11,9 +11,9 @@ We use two complementary layers against the **real** local stack (not mocked S3)
 
 Standard for browser e2e on React apps: real Chromium, file upload, traces on failure. Cypress is fine too; Playwright is the default here.
 
-## Local only
+## Local + CI free parity
 
-No GitHub Actions — run smokes locally (free-tier friendly).
+Full Playwright/`e2e.sh` stays local. Free dual-target parity runs on PRs via `.github/workflows/parity-free.yml` (`./bin/parity run --suite free-ci --target local`).
 
 ```bash
 ./bin/stackwrangler up   # ./bin/awsbox is a shim to the same CLI

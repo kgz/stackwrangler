@@ -10,6 +10,9 @@ Permanent, re-runnable checks that exercise the **same assertions** against Loca
 # Local only (automation-friendly; no --approve-cost)
 ./bin/parity run --tier free --target local
 
+# CI (`parity-free` / job `free-ci local parity`): free-ci suite on LocalEmu
+# ./bin/parity run --suite free-ci --target local
+
 # Real AWS (prints cost/residual banner; refuses without flag)
 ./bin/parity run --suite v005 --target real --approve-cost
 
