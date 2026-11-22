@@ -12,7 +12,7 @@ aws --profile local …
 
 CLI entry is `./bin/stackwrangler` (`./bin/awsbox` is a one-line shim). Prefer `STACKWRANGLER_*` env vars where documented; some older `AWSBOX_*` names remain as fallbacks.
 
-Smokes: [docs/test-paths.md](docs/test-paths.md) · [docs/smoke-matrix.md](docs/smoke-matrix.md) · [docs/smokes.md](docs/smokes.md).
+Smokes: [docs/test-paths.md](docs/test-paths.md) · [docs/smoke-matrix.md](docs/smoke-matrix.md) · [docs/smokes.md](docs/smokes.md). Prove coverage: `./bin/coverage-report.sh` (matrix + paths + free-ci %).
 
 ## Branch / PR
 
@@ -71,8 +71,9 @@ Never raw `curl` for OD runs — always `./bin/od-design-run.sh`.
 
 1. Walk the checklist in `docs/gap-check.md`
 2. Prefer **absorbing** small additive gaps into this PR. Otherwise file `Debt: … (from #<n>)` with pillar + Impact/Effort; release label only if cut gate matches (never default `CURRENT_RELEASE`). Tracker row + docs link. Console debt designs use Open Design `web-clone`
-3. Prefer shipping docs in the PR; if blocked on public docs / screenshot / interaction edge → `Doc: … (from #<n>)` per [docs/docs-catalog.md](docs/docs-catalog.md) (skill `docs-catalog`). User-facing host/ports/Docker copy is **Linux-first** (not WSL-led; #491).
-4. Mention new Debt / Doc issues (or “absorbed”) in the PR body
+3. Run `./bin/coverage-report.sh` — keep overall prove-coverage % high; do not drop % without Debt for each new gap
+4. Prefer shipping docs in the PR; if blocked on public docs / screenshot / interaction edge → `Doc: … (from #<n>)` per [docs/docs-catalog.md](docs/docs-catalog.md) (skill `docs-catalog`). User-facing host/ports/Docker copy is **Linux-first** (not WSL-led; #491).
+5. Mention new Debt / Doc issues (or “absorbed”) in the PR body
 
 Do **not** treat the parent as finished until gaps are absorbed, ticketed, or explicitly N/A in the PR.
 

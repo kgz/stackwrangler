@@ -81,6 +81,7 @@ Repo rules to follow (from AGENTS.md and the board docs):
 - Move the board to in-progress before code edits (after designing when UI), and to in-review when the PR is open/updated, using only the repo's script. If bin/board-tracker.tsv has a row for this issue, set that row's expected status to match. Do not run board-audit --apply.
 - Do not mark the ticket done.
 - Run the tests the ticket and the repo docs require. **Before** `./bin/stackwrangler up` / LocalEmu smoke / console e2e: `./bin/batch-resource-gate.sh check --need-up`. If refused: poll a few times (~2 min total), then **park** — push work, comment that live smoke is deferred, return (orchestrator will resume when the gate frees). Do not sleep-loop for tens of minutes. **After** live tests: `./bin/stackwrangler down` even on failure. If a gap-check script exists, run ./bin/gap-check.sh <n>. Prefer absorbing small additive gaps into this PR; otherwise file scored Debt (pillar + Impact/Effort; release label only if cut gate matches — never auto CURRENT_RELEASE).
+- **Prove coverage (keep % high):** run `./bin/coverage-report.sh` before finishing (and paste overall + matrix/paths/free-ci lines on the PR). Update `docs/smoke-matrix.md` + `docs/test-paths.md` for every new path. Prefer absorbing smokes that flip `no`/`missing`/`debt` cells or catalogue free `aws-parity-*` into `free-ci` over catalogue width. Do **not** leave a new applicable matrix cell as `no` without a Debt link. Overall % must not drop versus `origin/<base>` without absorbing or filing Debt for each new gap (`./bin/coverage-report.sh --gaps`).
 - Commit with a short message about why. No Co-authored-by or agent attribution.
 - Push and open a PR against <base>. Body includes Closes #<n> and the test plan. Do not merge.
 
@@ -88,7 +89,7 @@ No writes to a real AWS account. Local emulators only. At most one LocalEmu stac
 
 Never touch the parent/primary checkout. Never `git clean -fdx` / `git clean -x` (wipes `.git/info/exclude` paths such as maintainer `local-only-notes/`). Do not add private folders to the public `.gitignore`.
 
-Return: branch, PR URL, commands you ran and their results, files touched, gap-check result, anything you did not finish.
+Return: branch, PR URL, commands you ran and their results, files touched, gap-check result, coverage-report overall % (and whether it rose/held/dropped vs base), anything you did not finish.
 ```
 
 ## 5. Review
@@ -137,11 +138,11 @@ Merge each surviving ticket branch in with `git merge --no-ff`. **Conflicts are 
 ## 7. Report
 
 ```
-| Issue | Tier | PR | Review | On batch branch |
-| #n | implement | url | clean / failed 3 times (logged on PR) | yes / conflict logged on PR |
+| Issue | Tier | PR | Review | On batch branch | Coverage Δ |
+| #n | implement | url | clean / failed 3 times (logged on PR) | yes / conflict logged on PR | rose / held / dropped (note) |
 ```
 
-Then the batch branch name, tickets skipped, and potential follow-ups you filed or skipped. The default branch was not merged. Real-AWS parity was not run (needs a later explicit approval — §8).
+Also print `./bin/coverage-report.sh` on the batch branch tip (overall + three legs). Goal: **keep overall prove-coverage % as high as possible** across the wave — prefer tickets/absorbs that close matrix `no`/`debt`, path `missing`, or free-ci uncatalogued leftovers (#676). The default branch was not merged. Real-AWS parity was not run (needs a later explicit approval — §8).
 
 ## 8. Real-AWS parity (later turn only)
 

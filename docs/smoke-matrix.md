@@ -5,6 +5,8 @@
 Honest coverage grid. Update when adding or closing a smoke.  
 **Sad path** = deliberate expected failure that must exit 0 only when the failure is observed.
 
+Score: `./bin/coverage-report.sh` (matrix cells + [test-paths](test-paths.md) + `free-ci` catalog). Explicit `no` / `debt` / `thin` / `missing` lower %; descriptive sad/console prose counts as covered.
+
 Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smokes/<area>/<name>.sh`. Script names in the table are the file name, not the directory.
 
 | Surface | Happy | Sad (authz / deny) | Sad (other) | Console e2e | Script |

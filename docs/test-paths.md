@@ -20,6 +20,9 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | covered | Script asserts the outcome |
 | thin | Partial / incidental only |
 | missing | No automated check |
+| debt | Tracked gap (link the issue) |
+
+Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 
 ---
 
