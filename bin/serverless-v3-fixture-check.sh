@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # List parent + slices under examples/serverless-v3-rest and report pass/fail/gap.
-# Does not start awsbox. Parent uses serverless-v3-smoke.sh; slices declare their smoke in README.
+# Does not start awsbox. Parent uses serverless-v3-smoke.sh (+ serverless-v3-sad-smoke.sh); slices declare their smoke in README.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,7 +12,11 @@ printf '%-18s %-8s %s\n' "-----" "------" "----"
 parent_ok=0
 if [[ -f "$EX/serverless.yml" && -f "$ROOT/smokes/iac/serverless-v3-smoke.sh" ]]; then
 	parent_ok=1
-	printf '%-18s %-8s %s\n' "(parent)" "ready" "./smokes/iac/serverless-v3-smoke.sh"
+	note="./smokes/iac/serverless-v3-smoke.sh"
+	if [[ -f "$ROOT/smokes/iac/serverless-v3-sad-smoke.sh" ]]; then
+		note+=", ./smokes/iac/serverless-v3-sad-smoke.sh"
+	fi
+	printf '%-18s %-8s %s\n' "(parent)" "ready" "$note"
 else
 	printf '%-18s %-8s %s\n' "(parent)" "gap" "missing serverless.yml or smoke script"
 fi
