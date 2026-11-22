@@ -2,6 +2,52 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.1.1 — Prove + path UI (2026-11-22)
+
+Prove shipped behaviour and close org-path / shipped-core console holes. Free local parity on CI, smoke-matrix sad/authz honesty, persist/restore hard blocks, Transfer create-user + SFTP authz. Not catalogue width / not `v1.0.0`.
+
+### Prove / CI
+
+- CI job runs `./bin/parity --suite free-ci --target local` on PRs ([#675](https://github.com/kgz/stackwrangler/issues/675))
+- Catalogue path-scoped CFN role + SG prefix-list Description into free-ci ([#676](https://github.com/kgz/stackwrangler/issues/676) / [#679](https://github.com/kgz/stackwrangler/issues/679) / [#682](https://github.com/kgz/stackwrangler/issues/682))
+- `./bin/coverage-report.sh` (matrix + test-paths + free-ci) wired into gap-check / batch review ([#676](https://github.com/kgz/stackwrangler/issues/676))
+- Close high-impact smoke-matrix sad/authz gaps on shipped core ([#677](https://github.com/kgz/stackwrangler/issues/677))
+
+### Path UI / Transfer
+
+- Console: create Transfer user + import SSH key ([#321](https://github.com/kgz/stackwrangler/issues/321))
+- SFTP-byte PutObject deny when the Transfer role is empty; LOGICAL homes / custom IdPs documented N/A ([#322](https://github.com/kgz/stackwrangler/issues/322))
+
+### Persist / restore
+
+- Lambda persist restore waits for the gateway before invoke ([#751](https://github.com/kgz/stackwrangler/issues/751))
+- Terraform S3+DDB empty plan after LocalEmu recreate ([#742](https://github.com/kgz/stackwrangler/issues/742))
+- RDS MySQL + Aurora MySQL SQL + endpoints survive hard recreate (`docker rm` sidecars; volumes kept) ([#743](https://github.com/kgz/stackwrangler/issues/743))
+
+### Platform / smokes
+
+- Docker install leaves `~/.aws` / `~/.stackwrangler` owned by the bind-mount user ([#746](https://github.com/kgz/stackwrangler/issues/746))
+- API Gateway IAM beyond keys/usage plans ([#311](https://github.com/kgz/stackwrangler/issues/311))
+- Serverless v3 missing-SSM sad smoke ([#330](https://github.com/kgz/stackwrangler/issues/330))
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS (parity), ECR registry, AWS profile `local` (CLI → LocalEmu S3), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.1.1
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.1.1 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566` · prove: `./bin/coverage-report.sh` · free-ci: `./bin/parity list --suite free-ci` · [docs/parity-suites.md](https://github.com/kgz/stackwrangler/blob/main/docs/parity-suites.md).
+
+Optional thin host CLI: [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.1.1/stackwrangler).
+
 ## v0.1.0 — Org path (2026-11-22)
 
 First coherent product cut: Transfer→…→RDS learning/staging path honest end-to-end. Same resources in CLI, console, and IaC (LocalEmu S3 brain). Path-critical only — not hosting-company ready (`v1.0.0`).

@@ -113,18 +113,19 @@ Transfer→…→RDS learning/staging path honest end-to-end; path-critical only
 
 **Ship bar (met):** a stranger can `./bin/stackwrangler up`, apply the org-path example, put a file through SFTP, and see Lambda → S3 → ECS → RDS complete with the **same** resources in CLI, console, and IaC (LocalEmu S3 brain). Limits documented. Not hosting-company ready (`v1.0.0`).
 
-### v0.1.1 — Prove + path UI *(active — `CURRENT_RELEASE`)*
+### v0.1.1 — Prove + path UI *(shipped 2026-11-22)*
 
-Prove shipped behaviour (free local parity on CI, smoke-matrix sad/authz on core, persist/restore hard blocks) and close **org-path / shipped-core** console holes (Transfer user/key, path authz; then ECS/ELB/ECR as scored). Soft WIP ~15 labelled.
+Prove shipped behaviour (free local parity on CI, smoke-matrix sad/authz on core, persist/restore hard blocks) and close **org-path / shipped-core** console holes (Transfer user/key, path authz). Soft WIP ~15 labelled.
 
-**Ship bar:** free-ci parity runs on PRs; core sad/authz gaps closed or ticketed honestly; Transfer create-user/SSH-key UI + SFTP-byte authz honest for the org path; prove-coverage via `./bin/coverage-report.sh` held or rising (matrix + test-paths + free-ci). Not catalogue width / not `v1.0.0`.
+**Ship bar (met):** free-ci parity runs on PRs; core sad/authz gaps closed or ticketed honestly; Transfer create-user/SSH-key UI + SFTP-byte authz honest for the org path; prove-coverage via `./bin/coverage-report.sh` held or rising (matrix + test-paths + free-ci). Not catalogue width / not `v1.0.0`.
 
-**Gate:** Impact ≥ 3 on smoke/parity/CI or org-path / shipped-core console; Impact ≥ 4 escaped path/runtime still in.  
-**Out of cut:** unscored `v1:` stubs, Network Firewall packet realism, FinOps/Code*/AI catalogue.
+### v0.1.2 — Escaped prove/path fidelity *(active — `CURRENT_RELEASE`)*
+
+Patch cut for high-impact defects that escape v0.1.1 on prove/CI, org-path console, or persist/restore. Gate: Impact ≥ 4 path/runtime/proof-critical. Do not dump catalogue width here.
 
 ### Unlabelled backlog
 
-Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche IaC, …). Milestone only. Do not pre-label `v0.1.2` / `v1.0.0`.
+Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche IaC, …). Milestone only. Do not pre-label `v1.0.0`.
 
 ### Later declaration (when opened)
 
@@ -152,12 +153,14 @@ Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche 
 | **v0.0.7** | `label:v0.0.7` | Impact ↓, Effort ↑ |
 | **v0.0.8** | `label:v0.0.8` | Impact ↓, Effort ↑ |
 | **v0.1.0** | `label:v0.1.0` | Impact ↓, Effort ↑ |
+| **v0.1.1** | `label:v0.1.1` | Impact ↓, Effort ↑ |
+| **v0.1.2** | `label:v0.1.2` | Impact ↓, Effort ↑ |
 | **High Impact** | Impact ≥ 4 (or `label:high-focus` until scored) | Impact ↓, Effort ↑ |
 | **Unscored** | Impact empty | Updated ↓ |
 | **No version** | open + no `v0.*` / `v1.*` release label | Impact ↓ |
 | **Default** | full board | Status |
 
-Hide premature views (`v0.1.1`, `v0.1.2`, `v1.0.0`, junk tabs) until those cuts reopen. Create the label + view together when opening a cut.
+Hide premature views (`v1.0.0`, junk tabs) until those cuts reopen. Create the label + view together when opening a cut.
 
 ---
 

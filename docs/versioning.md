@@ -22,9 +22,10 @@ Current open cut: see [CURRENT_RELEASE](CURRENT_RELEASE).
 | **v0.0.7** | **Dev persistence / local fidelity** — restore/dev-mode + ECS/RDS/IAM local fidelity (shipped). |
 | **v0.0.8** | **Escaped local fidelity** — v0.0.7 patch: restore/ELB/ECS/TLS hard blocks. Impact ≥ 4. |
 | **v0.1.0** | **Org path** — Transfer→…→RDS learning/staging path. Path-critical. Ship bar: stranger runs example + SFTP ingest; same resources in CLI/console/IaC (see [version-plan.md](version-plan.md)). *(shipped)* |
-| **v0.1.1** | **Prove + path UI** — free-ci / smoke sad-authz + org-path console honesty (see [version-plan.md](version-plan.md)). |
+| **v0.1.1** | **Prove + path UI** — free-ci / smoke sad-authz + org-path console honesty (see [version-plan.md](version-plan.md)). *(shipped)* |
+| **v0.1.2** | **Escaped prove/path fidelity** — v0.1.1 patch: Impact ≥ 4 proof/path/runtime hard blocks (see [version-plan.md](version-plan.md)). |
 
-Far-future width (`v0.1.2`, `v1.0.0`) is **not** an active planning label — leave work **unlabelled** until that cut is deliberately opened.
+Far-future width (`v1.0.0`) is **not** an active planning label — leave work **unlabelled** until that cut is deliberately opened.
 
 Out-of-footprint / catalogue-width work stays **unlabelled** — milestone only.
 
@@ -68,7 +69,8 @@ Agents must not create unlabelled-for-pillar or unscored tickets. Unlabelled-for
 | `v0.0.7` | (shipped) Dev persistence / local fidelity; Impact ≥ 4. |
 | `v0.0.8` | (shipped) Escaped local fidelity (restore/ELB/ECS/TLS); Impact ≥ 4. |
 | `v0.1.0` | (shipped) Org-path critical only. |
-| `v0.1.1` | Prove + path UI: Impact ≥ 3 smoke/parity/CI or org-path/shipped-core console; Impact ≥ 4 escaped still in (see [version-plan.md](version-plan.md)). |
+| `v0.1.1` | (shipped) Prove + path UI. |
+| `v0.1.2` | Escaped prove/path fidelity; Impact ≥ 4 (see [version-plan.md](version-plan.md)). |
 
 **Do not** default new / Debt tickets to `$(cat docs/CURRENT_RELEASE)`.
 
