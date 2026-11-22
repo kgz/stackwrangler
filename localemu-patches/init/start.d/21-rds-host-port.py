@@ -238,6 +238,8 @@ def _write_instance_meta(info) -> None:
         "db_name": info.db_name,
         "db_instance_class": info.db_instance_class,
         "vpc_id": info.vpc_id,
+        "cluster_id": getattr(info, "cluster_id", None),
+        "is_writer": bool(getattr(info, "is_writer", False)),
     }
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(payload), encoding="utf-8")
@@ -414,6 +416,10 @@ def _install() -> None:
         db_name = getattr(moto_db, "db_name", None)
         db_instance_class = getattr(moto_db, "db_instance_class", None) or "db.t3.micro"
         vpc_id = None
+        cluster_id = getattr(moto_db, "db_cluster_identifier", None) or getattr(
+            moto_db, "cluster_id", None
+        )
+        is_writer = False
         if held is not None:
             master_pass = getattr(held, "master_password", "") or ""
             master_user = getattr(held, "master_username", None) or "admin"
@@ -421,6 +427,10 @@ def _install() -> None:
             db_name = getattr(held, "db_name", None) or db_name
             db_instance_class = getattr(held, "db_instance_class", None) or db_instance_class
             vpc_id = getattr(held, "vpc_id", None)
+            held_cid = getattr(held, "cluster_id", None)
+            if isinstance(held_cid, str) and held_cid:
+                cluster_id = held_cid
+            is_writer = bool(getattr(held, "is_writer", False))
         if meta:
             if not master_pass:
                 pw = meta.get("master_password")
@@ -440,24 +450,33 @@ def _install() -> None:
             vid = meta.get("vpc_id")
             if isinstance(vid, str):
                 vpc_id = vid
+            meta_cid = meta.get("cluster_id")
+            if isinstance(meta_cid, str) and meta_cid:
+                cluster_id = meta_cid
+            if meta.get("is_writer") is True:
+                is_writer = True
         if not master_pass or preferred is None:
             return "failed"
         _set_pending_host_port(db_id, preferred)
         pref_token = _PREFERRED_HOST_PORT.set(preferred)
         try:
             _ensure_host_port_free(preferred, exclude_db_id=db_id)
-            info = mgr.create_db_instance(
-                db_instance_id=db_id,
-                engine=engine,
-                engine_version=getattr(moto_db, "engine_version", None),
-                master_username=master_user,
-                master_password=master_pass,
-                db_name=db_name,
-                allocated_storage=getattr(moto_db, "allocated_storage", 20) or 20,
-                db_instance_class=db_instance_class,
-                port=None,
-                vpc_id=vpc_id,
-            )
+            create_kwargs = {
+                "db_instance_id": db_id,
+                "engine": engine,
+                "engine_version": getattr(moto_db, "engine_version", None),
+                "master_username": master_user,
+                "master_password": master_pass,
+                "db_name": db_name,
+                "allocated_storage": getattr(moto_db, "allocated_storage", 20) or 20,
+                "db_instance_class": db_instance_class,
+                "port": None,
+                "vpc_id": vpc_id,
+            }
+            if isinstance(cluster_id, str) and cluster_id:
+                create_kwargs["cluster_id"] = cluster_id
+                create_kwargs["is_writer"] = is_writer
+            info = mgr.create_db_instance(**create_kwargs)
             provider._patch_moto_endpoint(moto_db, region, info.host_port)
             for attr in ("status", "db_instance_status"):
                 if hasattr(moto_db, attr):
@@ -562,11 +581,217 @@ def _install() -> None:
     _rebind_live_dispatch()
     LOG.info("awsbox rds stable host-port patch applied")
 
+    def _docker_volume_exists(volume_name: str) -> bool:
+        # Prefer upstream helper when present; DOCKER_CLIENT has no volume API.
+        upstream = getattr(provider, "_docker_volume_exists", None)
+        if callable(upstream):
+            return bool(upstream(volume_name))
+        try:
+            import docker
+
+            docker.from_env().volumes.get(volume_name)
+            return True
+        except Exception:
+            return False
+
+    def _restore_cluster_writers(mgr) -> None:
+        """Resume or volume-recreate Aurora writers (not in moto databases).
+
+        ``_rds_on_after_state_load`` only walks standalone/reader instances.
+        Writers are keyed by cluster id; after ``docker rm`` + LocalEmu
+        recreate they must be rebuilt against ``localemu-rds-<cid>-data``.
+        """
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+        import moto.backends as mb
+
+        try:
+            from localemu.services.rds.cluster_orchestrator import get_orchestrator
+            from localemu.services.rds.docker.cluster_init import make_docker_cluster_ops
+            from localemu.services.rds.docker.db_manager import (
+                cluster_network_name,
+                ensure_cluster_network,
+            )
+        except Exception:
+            LOG.warning("aurora writer restore: cluster helpers missing", exc_info=True)
+            return
+
+        try:
+            rds = mb.get_backend("rds")
+        except Exception:
+            LOG.warning("aurora writer restore: no moto rds backend", exc_info=True)
+            return
+
+        orch = get_orchestrator(make_docker_cluster_ops())
+        restored = 0
+        for _acct, region_map in list(rds.items()):
+            if not isinstance(region_map, dict):
+                continue
+            for region, backend in list(region_map.items()):
+                clusters = getattr(backend, "clusters", None) or {}
+                for cid, cluster in list(clusters.items()):
+                    name = mgr._container_name(cid)
+                    volume_name = f"localemu-rds-{cid}-data"
+                    meta = _read_instance_meta(cid)
+                    exists = False
+                    running = False
+                    try:
+                        inspect = DOCKER_CLIENT.inspect_container(name)
+                        exists = True
+                        running = bool((inspect.get("State") or {}).get("Running"))
+                    except Exception:
+                        exists = False
+
+                    if exists and running:
+                        held = mgr.get_instance_info(cid)
+                        if held is None:
+                            try:
+                                labels = (inspect.get("Config") or {}).get("Labels") or {}
+                                info = mgr._hydrate_from_container(name, labels)
+                                if info is not None:
+                                    with mgr._lock:
+                                        mgr._instances[cid] = info
+                            except Exception:
+                                LOG.debug(
+                                    "hydrate running aurora writer %s failed",
+                                    cid,
+                                    exc_info=True,
+                                )
+                        restored += 1
+                        continue
+
+                    if exists and not running:
+                        try:
+                            DOCKER_CLIENT.start_container(name)
+                            held = mgr.get_instance_info(cid)
+                            if held is None:
+                                labels = (
+                                    (DOCKER_CLIENT.inspect_container(name).get("Config") or {})
+                                    .get("Labels")
+                                    or {}
+                                )
+                                info = mgr._hydrate_from_container(name, labels)
+                                if info is not None:
+                                    with mgr._lock:
+                                        mgr._instances[cid] = info
+                            restored += 1
+                            LOG.info("aurora writer %s resumed (docker start)", cid)
+                            continue
+                        except Exception:
+                            LOG.warning(
+                                "aurora writer %s start failed — trying volume recreate",
+                                cid,
+                                exc_info=True,
+                            )
+                            try:
+                                DOCKER_CLIENT.remove_container(name, force=True)
+                            except Exception:
+                                pass
+
+                    if not _docker_volume_exists(volume_name):
+                        LOG.warning(
+                            "aurora writer %s missing container and volume %s",
+                            cid,
+                            volume_name,
+                        )
+                        continue
+                    if not meta or not isinstance(meta.get("master_password"), str):
+                        LOG.warning(
+                            "aurora writer %s: volume present but host-port meta "
+                            "missing password — cannot recreate",
+                            cid,
+                        )
+                        continue
+                    preferred = _parse_port(meta.get("host_port"))
+                    if preferred is None:
+                        preferred = _parse_port(getattr(cluster, "port", None))
+                    if preferred is None:
+                        LOG.warning("aurora writer %s: no host port in meta/cluster", cid)
+                        continue
+                    master_pass = meta["master_password"]
+                    master_user = meta.get("master_username")
+                    if not isinstance(master_user, str) or not master_user:
+                        master_user = getattr(cluster, "master_username", None) or "admin"
+                    engine = meta.get("engine")
+                    if not isinstance(engine, str) or not engine:
+                        engine = getattr(cluster, "engine", None) or "aurora-mysql"
+                    db_name = meta.get("db_name")
+                    if not isinstance(db_name, str):
+                        db_name = getattr(cluster, "database_name", None) or getattr(
+                            cluster, "db_name", None
+                        )
+                    db_instance_class = meta.get("db_instance_class")
+                    if not isinstance(db_instance_class, str) or not db_instance_class:
+                        db_instance_class = "db.t3.micro"
+
+                    with mgr._lock:
+                        mgr._instances.pop(cid, None)
+                    try:
+                        ensure_cluster_network(cid)
+                        orch.register_cluster(
+                            cluster_id=cid,
+                            engine=engine,
+                            network_name=cluster_network_name(cid),
+                            master_username=master_user,
+                            master_password=master_pass,
+                        )
+                        _set_pending_host_port(cid, preferred)
+                        pref_token = _PREFERRED_HOST_PORT.set(preferred)
+                        try:
+                            _ensure_host_port_free(preferred, exclude_db_id=cid)
+                            info = mgr.create_db_instance(
+                                db_instance_id=cid,
+                                engine=engine,
+                                engine_version=getattr(cluster, "engine_version", None),
+                                master_username=master_user,
+                                master_password=master_pass,
+                                db_name=db_name if isinstance(db_name, str) else None,
+                                allocated_storage=20,
+                                db_instance_class=db_instance_class,
+                                port=None,
+                                cluster_id=cid,
+                                is_writer=True,
+                            )
+                        finally:
+                            _PREFERRED_HOST_PORT.reset(pref_token)
+                        orch.register_member(
+                            cid,
+                            cid,
+                            is_writer=True,
+                            promotion_tier=1,
+                            host_port=info.host_port,
+                        )
+                        # Stamp moto cluster Port for Describe before mysql patch runs.
+                        try:
+                            if hasattr(cluster, "port"):
+                                cluster.port = info.host_port
+                        except Exception:
+                            pass
+                        _write_instance_meta(info)
+                        restored += 1
+                        LOG.info(
+                            "aurora writer %s volume-recreated on host port %s (%s)",
+                            cid,
+                            info.host_port,
+                            region,
+                        )
+                    except Exception:
+                        LOG.warning(
+                            "aurora writer %s volume recreate failed",
+                            cid,
+                            exc_info=True,
+                        )
+
+        if restored:
+            LOG.info("aurora writers restored after persist load: %d", restored)
+
     # Persistence reconcile runs before start.d (and may mark volume-only
     # instances incompatible). Re-run with our restore path — in a daemon
     # thread so we do not block Ready while leftover DBs are recreated.
     def _reconcile_after_patch() -> None:
         try:
+            mgr = provider._init_db_manager()
+            if mgr is not None:
+                _restore_cluster_writers(mgr)
             provider._rds_on_after_state_load()
         except Exception:
             LOG.warning("rds host-port post-patch reconcile failed", exc_info=True)

@@ -38,8 +38,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Terraform S3+DDB empty plan after LocalEmu recreate | happy | debt | [#742](https://github.com/kgz/stackwrangler/issues/742) (from #200) |
-| RDS MySQL SQL persist after LocalEmu recreate | happy | covered | `./smokes/data/rds-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200); Postgres: `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
-| Aurora MySQL writer+reader SQL + cluster endpoints after LocalEmu recreate | happy | covered | `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200) |
+| RDS MySQL SQL persist after hard LocalEmu recreate (`docker rm` + volume) | happy | covered | `./smokes/data/rds-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200); Postgres: `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
+| Aurora MySQL writer+reader SQL + cluster endpoints after hard LocalEmu recreate (`docker rm` + volume) | happy | covered | `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200) |
 | Warm restart: `--dev` cleanup preserves EC2/ECS/RDS containers; prebuilt ec2-base + awsbox-rt; probe-only iptables | happy | covered | `./smokes/platform/warm-restart-smoke.sh` · [dev-mode.md](dev-mode.md) · [#289](https://github.com/kgz/stackwrangler/issues/289) |
 | Warm restart: `down` → `up --dev` keeps same EC2/ECS Docker container IDs | happy | covered | `./smokes/platform/warm-restart-smoke.sh` (live) · [#289](https://github.com/kgz/stackwrangler/issues/289); timed SLA → [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Warm restart: `reset --force` reclaim removes preserved workloads + orphan `localemu-vpc-*` | sad/other | covered | `./smokes/platform/warm-restart-smoke.sh` · [#289](https://github.com/kgz/stackwrangler/issues/289) |
@@ -456,11 +456,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | RDS MySQL TLS VERIFY_IDENTITY with `.awsbox/tls/rds-ca.pem` | happy | covered | `./smokes/data/rds-mysql-tls-smoke.sh` · [#765](https://github.com/kgz/stackwrangler/issues/765) |
-| RDS MySQL host port + SQL row after PERSISTENCE recreate | happy | covered | `./smokes/data/rds-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) |
+| RDS MySQL host port + SQL row after hard PERSISTENCE recreate (`docker rm`) | happy | covered | `./smokes/data/rds-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) |
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | **Aurora MySQL reader rejects writes** | sad/other | covered | `./smokes/data/rds-mysql-smoke.sh` |
-| Aurora MySQL writer+reader SQL + cluster endpoints after PERSISTENCE recreate | happy | covered | `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) |
+| Aurora MySQL writer+reader SQL + cluster endpoints after hard PERSISTENCE recreate (`docker rm`) | happy | covered | `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) |
 | RDS EngineVersion → pinned Docker image (`mysql:8.0.37`, Aurora 3.05.2 → `mysql:8.0.32`) | happy | covered | `./smokes/data/rds-engine-version-smoke.sh` · [rds.md](rds.md) · [#704](https://github.com/kgz/stackwrangler/issues/704) |
 | **RDS unknown EngineVersion → InvalidParameterCombination** | sad/other | covered | `./smokes/data/rds-engine-version-smoke.sh` |
 | RDS engine map vs `describe-db-engine-versions` testdata | happy | covered | `./bin/check-rds-engine-map.sh` |

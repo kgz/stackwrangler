@@ -527,73 +527,8 @@ def _install() -> None:
         except Exception:
             LOG.debug("rds mysql dispatch rebind skipped", exc_info=True)
 
-    def _resume_cluster_writers() -> None:
-        """Start stopped Aurora writer containers after PERSISTENCE reload.
-
-        ``_rds_on_after_state_load`` only walks moto ``databases`` (readers /
-        standalone instances). Writers live under the cluster id and stay
-        stopped after ``shutdown_all`` unless we resume them here.
-        """
-        import threading
-
-        def _run() -> None:
-            try:
-                from localemu.services.rds.provider import _init_db_manager, _safe_hydrate
-                from localemu.utils.docker_utils import DOCKER_CLIENT
-                import moto.backends as mb
-
-                mgr = _init_db_manager()
-                if mgr is None:
-                    return
-                try:
-                    rds = mb.get_backend("rds")
-                except Exception:
-                    LOG.warning("aurora writer resume: no moto rds backend", exc_info=True)
-                    return
-                resumed = 0
-                for _acct, region_map in list(rds.items()):
-                    if not isinstance(region_map, dict):
-                        continue
-                    for _region, backend in list(region_map.items()):
-                        clusters = getattr(backend, "clusters", None) or {}
-                        for cid in list(clusters.keys()):
-                            name = f"localemu-rds-{cid}"
-                            try:
-                                inspect = DOCKER_CLIENT.inspect_container(name)
-                            except Exception:
-                                continue
-                            running = bool((inspect.get("State") or {}).get("Running"))
-                            if not running:
-                                try:
-                                    DOCKER_CLIENT.start_container(name)
-                                except Exception:
-                                    LOG.warning(
-                                        "failed to resume aurora writer %s",
-                                        cid,
-                                        exc_info=True,
-                                    )
-                                    continue
-                            try:
-                                if mgr.get_instance_info(cid) is None:
-                                    info = _safe_hydrate(mgr, name)
-                                    if info is not None:
-                                        with mgr._lock:
-                                            mgr._instances[cid] = info
-                            except Exception:
-                                LOG.debug(
-                                    "hydrate aurora writer %s skipped",
-                                    cid,
-                                    exc_info=True,
-                                )
-                            resumed += 1
-                if resumed:
-                    LOG.info("aurora writers resumed after persist load: %d", resumed)
-            except Exception:
-                LOG.warning("aurora writer resume failed", exc_info=True)
-
-        threading.Thread(
-            target=_run, name="rds-mysql-resume-writers", daemon=True
-        ).start()
+    # Writer stop/resume + hard volume-recreate lives in 21-rds-host-port
+    # (_restore_cluster_writers) so host-port meta + ContextVar pins apply.
 
     setattr(is_postgres_engine, "_awsbox_mysql", True)
     cluster_init.is_postgres_engine = is_postgres_engine
@@ -610,7 +545,6 @@ def _install() -> None:
     provider._INTERCEPTED_OPS["DescribeDBClusters"] = _handle_describe_db_clusters
     provider.RdsDispatcher = RdsDispatcher
     _rebind_live_dispatch()
-    _resume_cluster_writers()
     LOG.info("awsbox rds mysql patch applied")
 
 
