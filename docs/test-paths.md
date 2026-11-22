@@ -109,6 +109,11 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | REST usage plan throttle (rate/burst) → 429 | sad/other | covered | `./smokes/apigw/apigw-usage-plan-smoke.sh` |
 | REST usage plan quota → 429 | sad/other | covered | `./smokes/apigw/apigw-usage-plan-smoke.sh` |
 | `apigateway:POST` on `/apikeys` denied for a role (CreateApiKey) | sad/authz | covered | `./smokes/apigw/apigw-usage-plan-smoke.sh` · [#311](https://github.com/kgz/awsl/issues/311) |
+| Deploy role scoped to one REST API: `create-deployment` / `create-stage` / `create-authorizer` allowed | happy | covered | `./smokes/apigw/apigw-iam-smoke.sh` · [#311](https://github.com/kgz/awsl/issues/311) |
+| Deploy role denied on another REST API (`/restapis/*`) | sad/authz | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
+| Deploy role denied on `/domainnames` and v2 `/apis` without those resources | sad/authz | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
+| `apigateway:PUT` on `/tags/*` required to tag an API key; allowed with PUT | sad/authz + happy | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
+| Role with `/domainnames` can `create-domain-name`; role with v2 `/apis` can `create-api` | happy | covered | `./smokes/apigw/apigw-iam-smoke.sh` |
 | REST usage plan `get-usage` / per-stage throttle | happy | missing | [#309](https://github.com/kgz/awsl/issues/309) |
 | REST `HTTP_PROXY` forwards curl `-d` form-urlencoded body bytes unchanged to the backend | happy | covered | `./smokes/apigw/apigw-proxy-body-smoke.sh` · [apigw-rest.md](apigw-rest.md) · [#364](https://github.com/kgz/awsl/issues/364) |
 | REST `HTTP_PROXY` via VPC link to internal NLB to ECS task, path param + injected header at backend | happy | covered | `./smokes/apigw/apigw-nlb-ecs-smoke.sh` phase A · [apigw-rest.md](apigw-rest.md) |
