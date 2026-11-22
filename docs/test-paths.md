@@ -194,7 +194,7 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | ECS CodeDeploy revision names a missing task definition → Failed | sad/other | covered | `./smokes/compute/ecs-ec2-smoke.sh`, `./smokes/compute/codedeploy-smoke.sh` |
 | CodeDeploy Lambda app + canary deployment config + create-deployment Succeeded | happy | covered (control plane) | `./smokes/compute/codedeploy-smoke.sh` |
 | CodeDeploy Lambda canary alias weight shift | happy | missing | [#340](https://github.com/kgz/awsl/issues/340) |
-| CodeDeploy deny create-deployment / create-application | sad/authz | missing | [#341](https://github.com/kgz/awsl/issues/341) |
+| CodeDeploy deny create-application → AccessDenied | sad/authz | covered | `./smokes/compute/codedeploy-authz-smoke.sh` · [#341](https://github.com/kgz/awsl/issues/341) |
 | **ECS deny `ecs:CreateService` → AccessDenied** | sad/authz | covered | `./smokes/compute/ecs-ec2-smoke.sh` |
 | EC2 running + user-data file | happy | covered | `./smokes/compute/ec2-smoke.sh` |
 | EC2 IMDSv2 instance-profile reads secret | happy | covered | `./smokes/compute/ec2-imds-smoke.sh` |
@@ -267,6 +267,8 @@ Smokes live in `smokes/<area>/` ([smokes.md](smokes.md)). Paths below are `./smo
 | Network Firewall packet filtering | happy | missing | [#441](https://github.com/kgz/stackwrangler/issues/441) · [network-firewall.md](network-firewall.md) |
 | Firewall Manager org policy enforcement | happy | missing | [#442](https://github.com/kgz/stackwrangler/issues/442) · [network-firewall.md](network-firewall.md) |
 | **WAFv2 deny-user CreateWebACL → AccessDenied** | sad/authz | covered | `./smokes/networking/waf-authz-smoke.sh` |
+| **Network Firewall deny-user CreateRuleGroup → AccessDenied** | sad/authz | covered | `./smokes/networking/network-firewall-fms-authz-smoke.sh` · [#440](https://github.com/kgz/stackwrangler/issues/440) |
+| **Firewall Manager deny-user PutPolicy → AccessDenied** | sad/authz | covered | `./smokes/networking/network-firewall-fms-authz-smoke.sh` · [#440](https://github.com/kgz/stackwrangler/issues/440) |
 | WAFv2 rule evaluation blocks/allows HTTP | happy | missing | [#326](https://github.com/kgz/awsl/issues/326) · [waf.md](waf.md) |
 | WAFv2 console | ui | missing | [#324](https://github.com/kgz/awsl/issues/324) |
 | CFN `AWS::WAFv2::WebACL` / Association deploy | happy | missing | [#325](https://github.com/kgz/awsl/issues/325) |

@@ -9,6 +9,7 @@ LocalEmu `network-firewall` (stub_providers for policy/rule-group; moto fallthro
 ```bash
 ./bin/awsbox up --force   # after SERVICES / start.d change
 ./smokes/networking/network-firewall-fms-smoke.sh
+./smokes/networking/network-firewall-fms-authz-smoke.sh  # deny CreateRuleGroup / PutPolicy
 ```
 
 `AWSBOX_NFW_KEEP=1` (or `KEEP=1`) skips teardown while iterating.

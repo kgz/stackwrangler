@@ -170,10 +170,10 @@ Smokes: `./smokes/apigw/apigw-smoke.sh` · `./smokes/apigw/apigw-authz-smoke.sh`
 | CDK / SAM samples | **Working** (smokes against local CFN) |
 | Serverless Framework v3 | **Partial** — `examples/serverless-v3-rest` · [serverless-stackwrangler.md](serverless-stackwrangler.md) · authorizer http-event [#328](https://github.com/kgz/awsl/issues/328) · domain-manager [#329](https://github.com/kgz/awsl/issues/329) · sad smoke [#330](https://github.com/kgz/awsl/issues/330) |
 | Pulumi / Ansible examples | **Backlog** |
-| CodeDeploy | **CLI + smoke** — ECS blue/green + Lambda canary DG (control plane) · `./smokes/compute/codedeploy-smoke.sh` · slice `examples/serverless-v3-rest/slices/codedeploy/` · alias weight [#340](https://github.com/kgz/awsl/issues/340) · authz/console [#341](https://github.com/kgz/awsl/issues/341) |
+| CodeDeploy | **CLI + smoke** — ECS blue/green + Lambda canary DG (control plane) · `./smokes/compute/codedeploy-smoke.sh` · deny CreateApplication · `./smokes/compute/codedeploy-authz-smoke.sh` · slice `examples/serverless-v3-rest/slices/codedeploy/` · alias weight [#340](https://github.com/kgz/awsl/issues/340) · console [#341](https://github.com/kgz/awsl/issues/341) |
 | CodePipeline / Build / Artifact | **Backlog** |
 
-Smokes: `./smokes/iac/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh`, `./smokes/iac/dev-apply-hook-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/compute/codedeploy-smoke.sh`
+Smokes: `./smokes/iac/iac-smoke.sh`, `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh`, `./smokes/iac/dev-apply-hook-smoke.sh`, `./smokes/iac/cfn-smoke.sh`, `./smokes/iac/cfn-lifecycle-smoke.sh`, `./smokes/iac/cdk-smoke.sh`, `./smokes/iac/sam-smoke.sh`, `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/compute/codedeploy-smoke.sh`, `./smokes/compute/codedeploy-authz-smoke.sh`
 
 
 ## Org staging path (target)
