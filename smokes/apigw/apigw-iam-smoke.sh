@@ -189,7 +189,7 @@ cat >"$WORKDIR/tags.json" <<EOF
     },
     {
       "Effect": "Allow",
-      "Action": "apigateway:PUT",
+      "Action": ["apigateway:GET", "apigateway:PUT"],
       "Resource": ["${AGW}/tags", "${AGW}/tags/*"]
     }
   ]
