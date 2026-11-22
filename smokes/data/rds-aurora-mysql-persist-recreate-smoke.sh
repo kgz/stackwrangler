@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
-# #743: Aurora MySQL writer + reader SQL + cluster endpoints survive PERSISTENCE=1
-# LocalEmu recreate (graceful stop + force-recreate with stop_grace_period).
-#
-# Sidecars are stopped on LocalEmu shutdown under PERSISTENCE; readers resume via
-# databases reconcile and writers via localemu-patches 20-rds-mysql resume.
-# This smoke does not docker-rm volumes/containers (hard writer volume-recreate
-# is still outside databases reconcile).
+# #743: Aurora MySQL writer + reader SQL + cluster endpoints survive hard
+# PERSISTENCE=1 LocalEmu recreate (docker-rm sidecars; volumes + meta kept) —
+# same bar as MySQL #743 / Postgres #705.
 #
 # Requires an already-up stackwrangler compose project for this worktree.
 set -euo pipefail
@@ -99,7 +95,7 @@ YAML
 wait_cluster_port() {
 	local cid="$1" want="$2"
 	local host="" port=""
-	for _ in $(seq 1 90); do
+	for _ in $(seq 1 120); do
 		host="$(aws rds describe-db-clusters --db-cluster-identifier "$cid" \
 			--query 'DBClusters[0].Endpoint' --output text 2>/dev/null || true)"
 		port="$(aws rds describe-db-clusters --db-cluster-identifier "$cid" \
@@ -117,7 +113,7 @@ wait_cluster_port() {
 wait_instance_port() {
 	local id="$1" want="$2"
 	local host="" port=""
-	for _ in $(seq 1 90); do
+	for _ in $(seq 1 120); do
 		host="$(aws rds describe-db-instances --db-instance-identifier "$id" \
 			--query 'DBInstances[0].Endpoint.Address' --output text 2>/dev/null || true)"
 		port="$(aws rds describe-db-instances --db-instance-identifier "$id" \
@@ -134,7 +130,7 @@ wait_instance_port() {
 
 wait_mysql() {
 	local port="$1"
-	for _ in $(seq 1 60); do
+	for _ in $(seq 1 90); do
 		if mysql_q "$port" 'SELECT 1' >/dev/null 2>&1; then
 			return 0
 		fi
@@ -147,7 +143,7 @@ wait_mysql() {
 wait_reader_row() {
 	local port="$1" want="$2"
 	local note=""
-	for _ in $(seq 1 45); do
+	for _ in $(seq 1 60); do
 		note="$(mysql_q "$port" "SELECT note FROM persist_smoke WHERE id = 1" 2>/dev/null || true)"
 		if [[ "$note" == "$want" ]]; then
 			echo "$note"
@@ -156,6 +152,18 @@ wait_reader_row() {
 		sleep 2
 	done
 	echo "FAIL: reader row missing (got '${note}')" >&2
+	return 1
+}
+
+wait_container() {
+	local name="$1"
+	for _ in $(seq 1 120); do
+		if docker inspect "$name" >/dev/null 2>&1; then
+			return 0
+		fi
+		sleep 2
+	done
+	echo "FAIL: container ${name} not restored" >&2
 	return 1
 }
 
@@ -228,26 +236,13 @@ R_HOST_BEFORE="$(aws rds describe-db-instances --db-instance-identifier "$READER
 R_PORT_BEFORE="$(aws rds describe-db-instances --db-instance-identifier "$READER" \
 	--query 'DBInstances[0].Endpoint.Port' --output text)"
 
-echo "== PERSISTENCE LocalEmu recreate keeps writer/reader SQL + cluster endpoints =="
+echo "== PERSISTENCE hard recreate (docker-rm sidecars; volumes kept) =="
 docker volume inspect "localemu-rds-${CLUSTER}-data" >/dev/null
 docker volume inspect "localemu-rds-${READER}-data" >/dev/null
-docker inspect "localemu-rds-${CLUSTER}" >/dev/null
-docker inspect "localemu-rds-${READER}" >/dev/null
+docker rm -f "localemu-rds-${READER}" "localemu-rds-${CLUSTER}" >/dev/null
 recreate_localstack_persist
-# Under PERSISTENCE, LocalEmu stop pauses RDS sidecars; readers resume via
-# databases reconcile and writers via 20-rds-mysql resume thread.
-for name in "localemu-rds-${CLUSTER}" "localemu-rds-${READER}"; do
-	for _ in $(seq 1 90); do
-		if docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null | grep -qx true; then
-			break
-		fi
-		sleep 2
-	done
-	docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null | grep -qx true || {
-		echo "FAIL: ${name} not running after recreate" >&2
-		exit 1
-	}
-done
+wait_container "localemu-rds-${CLUSTER}"
+wait_container "localemu-rds-${READER}"
 
 W_AFTER="$(wait_cluster_port "$CLUSTER" "$WRITER_PORT")"
 W_HOST_AFTER="$(echo "$W_AFTER" | awk '{print $1}')"
@@ -283,4 +278,4 @@ NOTE_R="$(wait_reader_row "$READER_PORT" "aurora-keep")"
 	exit 1
 }
 
-echo "OK: PERSISTENCE recreate kept aurora-mysql ${CLUSTER} writer ${W_HOST_AFTER}:${W_PORT_AFTER} reader ${R_HOST_AFTER}:${R_PORT_AFTER}"
+echo "OK: PERSISTENCE hard recreate kept aurora-mysql ${CLUSTER} writer ${W_HOST_AFTER}:${W_PORT_AFTER} reader ${R_HOST_AFTER}:${R_PORT_AFTER}"
