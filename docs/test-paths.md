@@ -41,7 +41,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | Dev keep-data: `up --dev` → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties | happy | covered | `./smokes/platform/mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
-| Terraform S3+DDB empty plan after LocalEmu recreate | happy | debt | [#742](https://github.com/kgz/stackwrangler/issues/742) (from #200) |
+| Terraform S3+DDB empty plan after LocalEmu recreate | happy | covered | `./smokes/iac/terraform-backend-persist-recreate-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) · [#742](https://github.com/kgz/stackwrangler/issues/742) (from #200) |
 | RDS MySQL/Aurora SQL persist after LocalEmu recreate | happy | debt | [#743](https://github.com/kgz/stackwrangler/issues/743) (from #200); Postgres covered by `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705) |
 | Warm restart: `--dev` cleanup preserves EC2/ECS/RDS containers; prebuilt ec2-base + awsbox-rt; probe-only iptables | happy | covered | `./smokes/platform/warm-restart-smoke.sh` · [dev-mode.md](dev-mode.md) · [#289](https://github.com/kgz/stackwrangler/issues/289) |
 | Warm restart: `down` → `up --dev` keeps same EC2/ECS Docker container IDs | happy | covered | `./smokes/platform/warm-restart-smoke.sh` (live) · [#289](https://github.com/kgz/stackwrangler/issues/289); timed SLA → [#200](https://github.com/kgz/stackwrangler/issues/200) |
@@ -492,6 +492,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | `_custom_id_` value fails the id format check | sad/other | covered | `./smokes/account/custom-id-smoke.sh` |
 | Terraform bootstrap state bucket + DynamoDB lock, then remote-state apply | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
 | Terraform second plan no-change with S3 backend on LocalEmu | happy | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
+| Terraform S3 state object + DynamoDB lock table intact after LocalEmu recreate | happy | covered | `./smokes/iac/terraform-backend-persist-recreate-smoke.sh` · [#742](https://github.com/kgz/stackwrangler/issues/742) |
+| Terraform plan no-change after LocalEmu recreate (`PERSISTENCE=1`) | happy | covered | `./smokes/iac/terraform-backend-persist-recreate-smoke.sh` · [#742](https://github.com/kgz/stackwrangler/issues/742) |
 | Terraform backend smoke canary: real AWS STS succeeds → abort | sad/other | covered | `AWSBOX_TERRAFORM_BACKEND_SMOKE=1 ./smokes/iac/terraform-backend-smoke.sh` |
 | `up` runs `STACKWRANGLER_DEV_APPLY_HOOK` / `.awsbox/dev-apply-hook` after healthy | happy | covered | `./smokes/iac/dev-apply-hook-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) |
 | Failing / missing dev apply hook makes apply exit non-zero | sad/other | covered | `./smokes/iac/dev-apply-hook-smoke.sh` |

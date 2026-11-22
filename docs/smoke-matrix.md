@@ -24,7 +24,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | Dev mode keep-data (#288) | yes (`up --dev` → seed → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties) | — | — | — | `mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Reset RDS wipe (#200) | yes (dummy `localemu-rds-*` container + `*-data` volume gone after `reset`) | — | — | — | `mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) |
 | Persist recreate multi-service (#200) | yes (`PERSISTENCE=1` volume: S3+IAM+Secrets+SSM+DDB+Lambda invoke after recreate) | — | — | — | `persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) |
-| TF S3+DDB empty plan after recreate (#200) | debt [#742](https://github.com/kgz/stackwrangler/issues/742) | — | — | — | — |
+| TF S3+DDB empty plan after recreate (#200) | yes (`PERSISTENCE=1` volume: apply → recreate → `plan` no-change; state object + lock table) | — | — | — | `terraform-backend-persist-recreate-smoke.sh` · [terraform-stackwrangler.md](terraform-stackwrangler.md) · [#742](https://github.com/kgz/stackwrangler/issues/742) |
 | RDS MySQL/Aurora SQL after recreate (#200) | debt [#743](https://github.com/kgz/stackwrangler/issues/743) (Postgres: `rds-host-port-restart-persist-smoke.sh` · [#705](https://github.com/kgz/stackwrangler/issues/705)) | — | — | — | — |
 | Warm restart (#289) | yes (preserve stopped EC2/ECS/RDS; prebuilt `ec2-base`/`awsbox-rt`; probe-only SG; live `down`→`up --dev` same container IDs) | — | force reclaim empties orphans; missing probe-only/prebuilts fail hard | — | `warm-restart-smoke.sh` · [dev-mode.md](dev-mode.md); timed SLA → [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | S3 org-path (LocalEmu) | yes | — | single-brain | yes | `s3-org-path-brain-smoke.sh` |
