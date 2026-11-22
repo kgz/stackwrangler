@@ -384,4 +384,4 @@
 769	in-review	ecs: awsvpc no Docker host PortBindings (#769)
 765	in-review	rds: MySQL server cert SAN + published RDS CA (#765)
 770	in-review	Dev mode: ELBv2 lost on LocalEmu restart
-807	in-progress	CI curated local smokes on PRs (#807)
+807	in-review	CI curated local smokes on PRs (#807)
