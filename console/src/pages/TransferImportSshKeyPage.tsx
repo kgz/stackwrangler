@@ -9,8 +9,11 @@ export function TransferImportSshKeyPage() {
   const serverId = rawId ? decodeURIComponent(rawId) : ''
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [users, setUsers] = useState<string[]>([])
-  const [userName, setUserName] = useState(searchParams.get('user') ?? '')
+  const preselected = searchParams.get('user')?.trim() ?? ''
+  const [users, setUsers] = useState<string[]>(
+    preselected ? [preselected] : [],
+  )
+  const [userName, setUserName] = useState(preselected)
   const [sshKey, setSshKey] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -26,17 +29,29 @@ export function TransferImportSshKeyPage() {
       const names = listed
         .map((u) => u.UserName)
         .filter((n): n is string => Boolean(n))
-      setUsers(names)
+      // LocalEmu list-users is often empty; keep ?user= / typed name available.
+      const merged = Array.from(
+        new Set([
+          ...names,
+          ...(preselected ? [preselected] : []),
+        ]),
+      )
+      setUsers(merged)
       setUserName((cur) => {
-        if (cur && names.includes(cur)) return cur
-        return names[0] ?? ''
+        if (cur && merged.includes(cur)) return cur
+        if (preselected && merged.includes(preselected)) return preselected
+        return merged[0] ?? cur
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+      if (preselected) {
+        setUsers([preselected])
+        setUserName(preselected)
+      }
     } finally {
       setLoading(false)
     }
-  }, [serverId])
+  }, [serverId, preselected])
 
   useEffect(() => {
     void refreshUsers()
@@ -83,30 +98,43 @@ export function TransferImportSshKeyPage() {
               <label className="aws-label" htmlFor="key-user">
                 User name <span className="req">*</span>
               </label>
-              <select
-                className="aws-select"
-                id="key-user"
-                name="userName"
-                style={{ maxWidth: 480, width: '100%' }}
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                disabled={loading || users.length === 0}
-                data-testid="transfer-import-user"
-              >
-                {users.length === 0 ? (
-                  <option value="">
-                    {loading ? 'Loading users…' : 'No users on this server'}
-                  </option>
-                ) : (
-                  users.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))
-                )}
-              </select>
+              {users.length === 0 && !loading ? (
+                <input
+                  className="aws-input"
+                  id="key-user"
+                  name="userName"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="existing-user"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  data-testid="transfer-import-user"
+                />
+              ) : (
+                <select
+                  className="aws-select"
+                  id="key-user"
+                  name="userName"
+                  style={{ maxWidth: 480, width: '100%' }}
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  disabled={loading && users.length === 0}
+                  data-testid="transfer-import-user"
+                >
+                  {loading && users.length === 0 ? (
+                    <option value="">Loading users…</option>
+                  ) : (
+                    users.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))
+                  )}
+                </select>
+              )}
               <p className="aws-hint">
-                Only service-managed users on this server are listed.
+                Service-managed users on this server. LocalEmu list-users may be
+                empty — pass <code>?user=</code> or type the user name.
               </p>
             </div>
           </div>
