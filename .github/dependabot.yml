@@ -1,0 +1,62 @@
+# Version + Actions updates (security updates already enabled in repo settings).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /console
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      console-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /docs-site
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      docs-site-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /examples/serverless-v3-rest
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      examples-v3:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /examples/serverless-v4-sns-sqs
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      examples-v4-sns:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /examples/serverless-v4-workspace
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      examples-v4-ws:
+        patterns: ["*"]
