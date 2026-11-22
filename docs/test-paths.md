@@ -30,6 +30,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 
 | Path / scenario | Kind | Status | How |
 |-----------------|------|--------|-----|
+| Prove coverage report: matrix cell classifier (prose ≠ gap) + freeish/uncatalogued detection | happy + sad | covered | `./smokes/platform/coverage-report-smoke.sh` (`./bin/coverage-report.sh --self-test`) · [#676](https://github.com/kgz/stackwrangler/issues/676) |
 | Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | `up` keeps compose overrides (`COMPOSE_EXTRA` / `override.yml` / `.awsbox/compose.local.yml`; dev `restart: unless-stopped`) | happy | covered | `./smokes/platform/up-compose-extra-smoke.sh` · [dev-mode.md](dev-mode.md) · [#748](https://github.com/kgz/stackwrangler/issues/748) |
 | `up` with custom keys in `.env`: S3 write probe uses them; a mismatch reports the key, not disk full (offline, stub `aws`) | happy + sad | covered | `./smokes/platform/up-env-keys-smoke.sh` · [#749](https://github.com/kgz/stackwrangler/issues/749) |

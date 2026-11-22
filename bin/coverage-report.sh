@@ -4,6 +4,7 @@
 #   ./bin/coverage-report.sh           # human summary
 #   ./bin/coverage-report.sh --json    # machine
 #   ./bin/coverage-report.sh --gaps    # list open gaps (matrix no/debt, paths thin/missing/debt)
+#   ./bin/coverage-report.sh --self-test  # classifier + freeish unit checks
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,8 +13,9 @@ for arg in "$@"; do
 	case "$arg" in
 	--json) MODE=json ;;
 	--gaps) MODE=gaps ;;
+	--self-test) MODE=self_test ;;
 	-h | --help)
-		sed -n '2,8p' "$0"
+		sed -n '2,9p' "$0"
 		exit 0
 		;;
 	*)
@@ -35,29 +37,126 @@ mode = os.environ["COVERAGE_MODE"]
 # --- smoke-matrix -----------------------------------------------------------
 # Columns: Surface | Happy | Sad (authz) | Sad (other) | Console e2e | Script
 NA = re.compile(r"^(?:—|-|–|n/?a|n\.a\.?)(?:\s|$)", re.I)
-YES = re.compile(r"^\*?\*?yes\b", re.I)
-NO = re.compile(r"^\*?\*?no\b", re.I)
-# Leading status only — do not treat "missing ExternalId" inside a yes cell as a gap.
-GAP_STATUS = re.compile(r"^\*?\*?(?:debt|thin|missing)\b", re.I)
+BOLD = re.compile(r"\*+")
 
 def classify_matrix_cell(raw: str) -> str:
     """Matrix cells: explicit no/debt/thin/missing = gap; — = n/a; else covered.
 
-    Descriptive sad/console prose (e.g. 'up without docker.sock refused', 'teardown',
-    'list+detail') documents what *is* tested — count as covered, not a gap.
+    Descriptive sad/console prose (e.g. 'up without docker.sock refused',
+    'no default route; route removed', 'missing psql') documents what *is*
+    tested — count as covered, not a gap. Leading-token `no`/`missing` alone
+    is too greedy; only status forms count as gaps.
     """
     s = raw.strip()
     if not s or NA.match(s):
         return "na"
-    low = s.lower()
-    if NO.match(s) or low.startswith("no →") or low.startswith("no ("):
-        return "gap"
-    if GAP_STATUS.match(s):
-        return "gap"
-    if YES.match(s) or low.startswith("**yes") or "yes (" in low or "yes `" in low:
+    plain = BOLD.sub("", s).strip()
+    if not plain:
+        return "na"
+    first, _, rest = plain.partition(" ")
+    word = first.lower()
+    rest = rest.lstrip()
+    if word == "yes":
+        return "covered"
+    if word == "no":
+        # status: `no`, `no → …`, `no (…)` — not prose like "no default route"
+        if not rest or rest.startswith("→") or rest.startswith("("):
+            return "gap"
+        return "covered"
+    if word in ("debt", "thin", "missing"):
+        # status-only / ticket-linked; prose after missing/thin noun → covered
+        if not rest:
+            return "gap"
+        if rest.startswith("[") or rest.startswith("#"):
+            return "gap"
+        if word == "debt":
+            return "gap"
+        if word == "thin":
+            # `thin` / `thin list [#N]` are status, not sad-path prose
+            return "gap"
+        # missing <prose…> (e.g. missing psql, missing path / …)
         return "covered"
     # non-empty prose = covered claim (sad-path description, console depth, teardown)
     return "covered"
+
+
+def freeish_cost_line(cost_line: str) -> bool:
+    """Legacy aws-parity header cost line → count toward free-ci denominator."""
+    low = cost_line.lower()
+    metered = any(
+        k in low
+        for k in (
+            "fargate",
+            "alb",
+            "nat",
+            "rds",
+            "eip",
+            "≈ $",
+            "~$0.0",
+            "$0.0",
+            "$0.02",
+            "$0.05",
+        )
+    )
+    return ("$0" in low or "free-tier" in low or "~$0" in low) and not metered
+
+
+def run_self_test() -> int:
+    """Unit checks for matrix classifier + freeish detection (#676)."""
+    cases = [
+        # covered prose (must not be greedy leading-token gaps)
+        ("no default route; route removed", "covered"),
+        ("no direct route without proxy env", "covered"),
+        ("no direct route without proxy env; non-root image blocked", "covered"),
+        ("missing psql", "covered"),
+        ("missing path / non-zero apply exits non-zero", "covered"),
+        ("missing file → no labels", "covered"),
+        ("up without docker.sock refused", "covered"),
+        ("list+detail", "covered"),
+        ("teardown", "covered"),
+        ("yes", "covered"),
+        ("**yes**", "covered"),
+        ("yes (alt ports via install)", "covered"),
+        # explicit gaps
+        ("no", "gap"),
+        ("**no**", "gap"),
+        ("no → [#310](https://example/310)", "gap"),
+        ("no (parity gaps)", "gap"),
+        ("debt [#742](https://example/742)", "gap"),
+        ("thin", "gap"),
+        ("thin list [#172](https://example/172)", "gap"),
+        ("missing", "gap"),
+        ("missing [#1](https://example/1)", "gap"),
+        # n/a
+        ("—", "na"),
+        ("n/a", "na"),
+        ("-", "na"),
+    ]
+    failed = 0
+    for cell, want in cases:
+        got = classify_matrix_cell(cell)
+        if got != want:
+            print(f"FAIL classify: {cell!r} -> {got!r} (want {want!r})", file=sys.stderr)
+            failed += 1
+    freeish_cases = [
+        ("# cost: free-tier / $0", True),
+        ("# cost: ~$0 local only", True),
+        ("# cost: $0", True),
+        ("# cost: ~$0.05 fargate", False),
+        ("# cost: ≈ $0.02 alb", False),
+        ("# cost: uses nat + eip", False),
+        ("# no cost line keywords", False),
+    ]
+    for line, want in freeish_cases:
+        got = freeish_cost_line(line)
+        if got != want:
+            print(f"FAIL freeish: {line!r} -> {got!r} (want {want!r})", file=sys.stderr)
+            failed += 1
+    if failed:
+        print(f"coverage-report self-test: {failed} failure(s)", file=sys.stderr)
+        return 1
+    print(f"OK coverage-report self-test ({len(cases)} classify + {len(freeish_cases)} freeish)")
+    return 0
 
 matrix_gaps = []
 matrix = {"covered": 0, "gap": 0, "na": 0, "cells": 0, "rows": 0}
@@ -195,12 +294,7 @@ if legacy_dir.is_dir():
             if "cost" in low and ("$" in line or "free" in low):
                 cost_line = low
                 break
-        metered = any(
-            k in cost_line
-            for k in ("fargate", "alb", "nat", "rds", "eip", "≈ $", "~$0.0", "$0.0", "$0.02", "$0.05")
-        )
-        freeish = ("$0" in cost_line or "free-tier" in cost_line or "~$0" in cost_line) and not metered
-        if freeish:
+        if freeish_cost_line(cost_line):
             uncatalogued_free.append(rel)
         else:
             uncatalogued_other.append(rel)
@@ -243,6 +337,9 @@ report = {
         "ids": [e["id"] for e in free_ci],
     },
 }
+
+if mode == "self_test":
+    sys.exit(run_self_test())
 
 if mode == "json":
     print(json.dumps(report, indent=2))
