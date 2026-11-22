@@ -59,6 +59,8 @@ Prefer existing fixture aliases (see [AGENTS.md](../AGENTS.md) / aws-cost-approv
 
 Examples in the catalog: `free-ci`, `v005`, `scheduler`, `iam`, `kms`, `legacy`, `trust`. Filter with `--suite`.
 
+`free-ci` (local CI / free re-runs): dual-mode v0.0.5 checks + free legacy (`iam-denied`, `batch10`, `cfn-s3-lambda`, `cfn-authz`, `cfn-path-scoped-role` [#679], `sg-prefixlist-description` [#682], `trust-v003`). `legacy-hf-cheap` stays `low` (real schedule wait) until split. List: `./bin/parity list --suite free-ci`.
+
 ## Env
 
 | Var | Meaning |
