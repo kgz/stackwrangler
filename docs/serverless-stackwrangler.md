@@ -46,7 +46,7 @@ export AWS_ENDPOINT_URL_S3=http://s3.localhost.localstack.cloud:4566
 ## v3
 
 - Example: [examples/serverless-v3-rest](../examples/serverless-v3-rest/)
-- Smoke: `./smokes/iac/serverless-v3-smoke.sh` (deploy → `/public/health` → redeploy → remove)
+- Smoke: `./smokes/iac/serverless-v3-smoke.sh` (deploy → `/public/health` → redeploy → remove); sad: `./smokes/iac/serverless-v3-sad-smoke.sh` (missing `${ssm:…}` → deploy fails) [#330](https://github.com/kgz/awsl/issues/330)
 - Slice status: `./bin/serverless-v3-fixture-check.sh`
 - Uses plugins: `serverless-esbuild`, `serverless-iam-roles-per-function`, `serverless-localstack`
 

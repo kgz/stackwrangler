@@ -42,6 +42,12 @@ Smoke (creates deploy bucket + SSM param, deploy → invoke → redeploy → rem
 ./smokes/iac/serverless-v3-smoke.sh
 ```
 
+Sad path (deploy bucket present, missing `${ssm:…}` param — exits 0 only when failure is observed) [#330](https://github.com/kgz/awsl/issues/330):
+
+```bash
+./smokes/iac/serverless-v3-sad-smoke.sh
+```
+
 Slice status (parent + any `slices/*` present):
 
 ```bash
@@ -52,7 +58,7 @@ Slice status (parent + any `slices/*` present):
 
 | Slice | Ticket | Smoke |
 |-------|--------|-------|
-| _(parent)_ | [#185](https://github.com/kgz/awsl/issues/185) | `./smokes/iac/serverless-v3-smoke.sh` |
+| _(parent)_ | [#185](https://github.com/kgz/awsl/issues/185) · sad [#330](https://github.com/kgz/awsl/issues/330) | `./smokes/iac/serverless-v3-smoke.sh`, `./smokes/iac/serverless-v3-sad-smoke.sh` |
 | [api-keys](slices/api-keys/) | [#294](https://github.com/kgz/awsl/issues/294) | `./smokes/apigw/apigw-usage-plan-smoke.sh` |
 | [transfer-out](slices/transfer-out/) | [#295](https://github.com/kgz/awsl/issues/295) | `./smokes/transfer/transfer-connector-smoke.sh` |
 | [ddb](slices/ddb/) | [#296](https://github.com/kgz/awsl/issues/296) | `./smokes/data/dynamodb-depth-smoke.sh` |
