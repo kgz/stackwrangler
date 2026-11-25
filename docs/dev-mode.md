@@ -26,7 +26,7 @@ Env the CLI sets (prefer `STACKWRANGLER_*`; `AWSBOX_*` still accepted as fallbac
 - `STACKWRANGLER_PERSISTENCE` — `0` | `1` (maps to LocalEmu `PERSISTENCE`)
 - `STACKWRANGLER_SEAWEED_VOLUME` — `seaweed-data` | `seaweed-data-dev`
 
-Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`. Dev mode sets `restart: unless-stopped` on S3 / LocalEmu / ECR so the stack returns after Docker/WSL restart ([#748](https://github.com/kgz/stackwrangler/issues/748)).
+Compose: base `docker-compose.yml` +, for `--dev` only, `docker-compose.dev.yml`. Dev mode sets `restart: unless-stopped` on core services (S3, LocalEmu, ECR registry + hostname, and profile-gated sftp / aws-redirect) so the stack returns after Docker/WSL restart ([#748](https://github.com/kgz/stackwrangler/issues/748) · [#763](https://github.com/kgz/stackwrangler/issues/763)). Ephemeral `--test` keeps the default `no`. RDS engine containers LocalEmu creates under `PERSISTENCE=1` get the same policy (start.d hook); ECS task resume after reboot is separate ([#716](https://github.com/kgz/stackwrangler/issues/716) / [#747](https://github.com/kgz/stackwrangler/issues/747)).
 
 ### Compose overrides (#748)
 
