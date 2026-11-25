@@ -29,6 +29,7 @@ import ssl
 import tempfile
 import threading
 import time
+import re
 from dataclasses import dataclass, field
 from itertools import count
 from pathlib import Path
@@ -217,7 +218,9 @@ class Rule:
     boto/moto returns (``Field`` + one of HostHeaderConfig /
     PathPatternConfig / HttpHeaderConfig / QueryStringConfig /
     SourceIpConfig). ``actions`` is the raw DefaultActions-shaped list
-    (Type + per-type config block).
+    (Type + per-type config block). ``transforms`` holds url-rewrite /
+    host-header-rewrite blocks applied after the rule matches and
+    before forward (#766).
 
     Priority comparison matches the ELBv2 contract: ``"default"`` is
     always evaluated LAST; everything else sorts as a positive integer
@@ -229,6 +232,7 @@ class Rule:
     priority: str  # "default" or stringified positive int
     conditions: list[dict] = field(default_factory=list)
     actions: list[dict] = field(default_factory=list)
+    transforms: list[dict] = field(default_factory=list)
 
     @property
     def priority_key(self) -> int:
@@ -238,6 +242,88 @@ class Rule:
             return int(self.priority)
         except ValueError:
             return 10_000_000
+
+
+def _expand_dollar_groups(template: str, match: re.Match) -> str:
+    """Expand AWS-style ``$1``… capture refs in a rewrite Replace string."""
+
+    def repl(m: re.Match) -> str:
+        idx = int(m.group(1))
+        if idx == 0:
+            return match.group(0)
+        if match.lastindex is None or idx > match.lastindex:
+            return ""
+        group = match.group(idx)
+        return "" if group is None else group
+
+    return re.sub(r"\$(\d+)", repl, template)
+
+
+def _first_rewrite(transform: dict, config_key: str) -> Optional[tuple[str, str]]:
+    cfg = transform.get(config_key) or {}
+    rewrites = cfg.get("Rewrites") or []
+    if not rewrites:
+        return None
+    rewrite = rewrites[0] or {}
+    regex = rewrite.get("Regex")
+    replace = rewrite.get("Replace")
+    if regex is None or replace is None:
+        return None
+    return str(regex), str(replace)
+
+
+def apply_url_rewrite(path: str, transform: dict) -> str:
+    """Rewrite request path only; keep the query string. Empty → ``/``."""
+    pair = _first_rewrite(transform, "UrlRewriteConfig")
+    if pair is None:
+        return path
+    regex, replace = pair
+    path_only, sep, query = path.partition("?")
+    try:
+        match = re.search(regex, path_only)
+    except re.error:
+        LOG.debug("elbv2 url-rewrite bad regex %r", regex)
+        return path
+    if match is None:
+        return path
+    new_path = _expand_dollar_groups(replace, match)
+    if new_path == "":
+        new_path = "/"
+    return new_path + (sep + query if sep else "")
+
+
+def apply_host_header_rewrite(host: str, transform: dict) -> str:
+    """Rewrite the Host header value (port stripped for match, restored if present)."""
+    pair = _first_rewrite(transform, "HostHeaderRewriteConfig")
+    if pair is None:
+        return host
+    regex, replace = pair
+    host_only, sep, port = host.partition(":")
+    try:
+        match = re.search(regex, host_only)
+    except re.error:
+        LOG.debug("elbv2 host-header-rewrite bad regex %r", regex)
+        return host
+    if match is None:
+        return host
+    new_host = _expand_dollar_groups(replace, match)
+    if sep and ":" not in new_host:
+        return new_host + sep + port
+    return new_host
+
+
+def apply_rule_transforms(
+    path: str, host: str, transforms: list[dict],
+) -> tuple[str, str]:
+    """Apply rule transforms after match, before forward (#766)."""
+    out_path, out_host = path, host
+    for transform in transforms or []:
+        typ = (transform.get("Type") or "").lower()
+        if typ == "url-rewrite":
+            out_path = apply_url_rewrite(out_path, transform)
+        elif typ == "host-header-rewrite":
+            out_host = apply_host_header_rewrite(out_host, transform)
+    return out_path, out_host
 
 
 def _path_pattern_match(pattern: str, path: str) -> bool:
@@ -336,12 +422,14 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format: str, *args) -> None:  # noqa: A002
         LOG.debug("elbv2-listener %s - " + format, self._listener_arn, *args)
 
-    def _select_target_group_arn(self, listener: Listener) -> tuple[str, Optional[dict]]:
+    def _select_target_group_arn(
+        self, listener: Listener,
+    ) -> tuple[str, Optional[dict], list[dict]]:
         """Walk rules in priority order; return the chosen target-group
-        ARN plus the matched action dict (or None for the default-path
-        fallback). Non-forward actions short-circuit by returning their
-        action dict with an empty TG ARN — the caller renders the
-        response directly without proxying."""
+        ARN, the matched terminal action dict (or None for forward), and
+        any transforms from the matched rule. Conditions see the original
+        request; transforms are applied by the caller before forward (#766).
+        Non-forward actions short-circuit with an empty TG ARN."""
         host = self.headers.get("Host", "")
         rules = self._router.rules.get(self._listener_arn) or []
         for rule in sorted(rules, key=lambda r: r.priority_key):
@@ -361,6 +449,7 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
             ) if rule.conditions else True
             if not all_match:
                 continue
+            transforms = list(rule.transforms or [])
             for action in rule.actions:
                 a_type = (action.get("Type") or "").lower()
                 if a_type == "forward":
@@ -371,9 +460,9 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
                         if tgs:
                             tg_arn = tgs[0].get("TargetGroupArn", "")
                     if tg_arn:
-                        return tg_arn, None
+                        return tg_arn, None, transforms
                 elif a_type in {"fixed-response", "redirect"}:
-                    return "", action
+                    return "", action, transforms
             # If the matched rule had no actionable action (e.g. authenticate-*
             # is unsupported), fall through to the next rule.
         # No rule matched — listener default action (#767).
@@ -387,11 +476,11 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
                     if tgs:
                         tg_arn = tgs[0].get("TargetGroupArn", "")
                 if tg_arn:
-                    return tg_arn, None
+                    return tg_arn, None, []
             elif a_type in {"fixed-response", "redirect"}:
-                return "", action
+                return "", action, []
         # Back-compat for listeners started before default_actions was stored.
-        return listener.target_group_arn, None
+        return listener.target_group_arn, None, []
 
     def _render_action(self, action: dict, listener: Listener) -> None:
         a_type = (action.get("Type") or "").lower()
@@ -440,10 +529,16 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(503, "Listener not available")
             return
 
-        chosen_tg_arn, terminal_action = self._select_target_group_arn(listener)
+        chosen_tg_arn, terminal_action, transforms = self._select_target_group_arn(
+            listener,
+        )
         if terminal_action is not None:
             self._render_action(terminal_action, listener)
             return
+
+        forward_path, forward_host = apply_rule_transforms(
+            self.path, self.headers.get("Host", ""), transforms,
+        )
 
         tg = self._router.target_groups.get(chosen_tg_arn)
         if not tg:
@@ -499,7 +594,10 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
         # lifetime of the connection. No re-balancing mid-stream;
         # the connection is pinned to the picked target.
         if _is_websocket_upgrade(self.headers):
-            return self._handle_websocket(target, listener, body)
+            return self._handle_websocket(
+                target, listener, body,
+                forward_path=forward_path, forward_host=forward_host,
+            )
 
         # Lambda target group: invoke the function directly via boto3 with
         # the AWS-documented ALB→Lambda event shape, then translate the
@@ -509,6 +607,7 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
         if target.lambda_arn:
             return self._handle_lambda_target(
                 target, chosen_tg_arn, listener, body,
+                forward_path=forward_path, forward_host=forward_host,
             )
 
         try:
@@ -516,10 +615,12 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
             headers = {
                 k: v for k, v in self.headers.items() if k.lower() not in _HOP_BY_HOP
             }
+            if forward_host:
+                headers["Host"] = forward_host
             headers["X-Forwarded-For"] = self.client_address[0]
             headers["X-Forwarded-Proto"] = listener.protocol.lower()
             headers["X-Forwarded-Port"] = str(listener.port)
-            conn.request(self.command, self.path, body=body, headers=headers)
+            conn.request(self.command, forward_path, body=body, headers=headers)
             upstream = conn.getresponse()
             self.send_response(upstream.status, upstream.reason)
             for k, v in upstream.getheaders():
@@ -551,6 +652,9 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
     def _handle_websocket(
         self, target: "Target", listener: "Listener",
         body: Optional[bytes],
+        *,
+        forward_path: Optional[str] = None,
+        forward_host: Optional[str] = None,
     ) -> None:
         """Proxy an HTTP/1.1 WebSocket Upgrade.
 
@@ -565,6 +669,7 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
         that ALB terminates client TLS and the target receives
         plain HTTP/WS. Same shape as the existing reverse proxy.
         """
+        path = forward_path if forward_path is not None else self.path
         upstream = None
         try:
             upstream = socket.create_connection(
@@ -574,10 +679,16 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
             # (Upgrade / Connection / Sec-WebSocket-Key /
             # Sec-WebSocket-Version / Sec-WebSocket-Protocol) verbatim
             # — those are the handshake. Strip only Host (we set our
-            # own) and Content-Length (no body on the GET).
+            # own, or the rewritten Host from rule transforms) and
+            # Content-Length (no body on the GET).
+            host_line = (
+                forward_host
+                if forward_host
+                else f"{target.host}:{target.port}"
+            )
             request_lines = [
-                f"{self.command} {self.path} HTTP/1.1",
-                f"Host: {target.host}:{target.port}",
+                f"{self.command} {path} HTTP/1.1",
+                f"Host: {host_line}",
                 f"X-Forwarded-For: {self.client_address[0]}",
                 f"X-Forwarded-Proto: {listener.protocol.lower()}",
                 f"X-Forwarded-Port: {listener.port}",
@@ -644,6 +755,9 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
     def _handle_lambda_target(
         self, target: "Target", tg_arn: str, listener: "Listener",
         body: Optional[bytes],
+        *,
+        forward_path: Optional[str] = None,
+        forward_host: Optional[str] = None,
     ) -> None:
         """ALB → Lambda forward.
 
@@ -663,13 +777,16 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(502, "Bad Gateway: cannot reach LocalEmu Lambda client")
             return
 
-        # Build the ELB-shaped Lambda event.
-        split = urlsplit(self.path)
+        # Build the ELB-shaped Lambda event (after rule transforms).
+        req_path = forward_path if forward_path is not None else self.path
+        split = urlsplit(req_path)
         path = split.path or "/"
         qs_raw = parse_qs(split.query, keep_blank_values=True)
         qs_single = {k: v[0] for k, v in qs_raw.items()}
         # Headers: lowercased single-string values (ALB→Lambda contract).
         hdr_single = {k.lower(): v for k, v in self.headers.items()}
+        if forward_host:
+            hdr_single["host"] = forward_host
         # Detect binary body so we can base64-flag it. Heuristic: not-text.
         is_b64 = False
         body_field = ""
@@ -1220,6 +1337,7 @@ class ListenerRouter:
         priority: str,
         conditions: list[dict],
         actions: list[dict],
+        transforms: Optional[list[dict]] = None,
     ) -> None:
         rule = Rule(
             arn=rule_arn,
@@ -1227,6 +1345,7 @@ class ListenerRouter:
             priority=str(priority),
             conditions=list(conditions or []),
             actions=list(actions or []),
+            transforms=list(transforms or []),
         )
         with self._lock:
             # Drop any prior version of this rule first so modify-flows work.

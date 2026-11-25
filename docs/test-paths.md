@@ -256,6 +256,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | NLB TLS listener forwards after termination | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ALB host + path → TG-A, other requests → default TG | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ALB fixed-response 404 default + `/svc/*` forward; ModifyListener redirect then forward | happy | covered | `./smokes/networking/elbv2-nonforward-default-smoke.sh` · [#767](https://github.com/kgz/stackwrangler/issues/767) |
+| ALB rule url-rewrite + host-header-rewrite; DescribeRules / ResetTransforms | happy | covered | `./smokes/networking/elbv2-rule-transforms-smoke.sh` · [#766](https://github.com/kgz/stackwrangler/issues/766) |
 | LB DNS from a VPC instance and from the host | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | Unhealthy NLB target receives no new connections | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 `RegisterTargets` preserves `host_override` / bridge dial | happy | covered | `./smokes/networking/elbv2-host-override-register-smoke.sh` · [#603](https://github.com/kgz/awsl/issues/603) |
