@@ -71,6 +71,8 @@
     { type: "Service", label: "RDS", href: "rds-databases.html" },
     { type: "Service", label: "ECS", href: "ecs-clusters.html" },
     { type: "Service", label: "EC2", href: "ec2-instances.html" },
+    { type: "Service", label: "ECR", href: "ecr-repositories.html" },
+    { type: "Service", label: "Elastic Container Registry", href: "ecr-repositories.html" },
     { type: "Feature", label: "General purpose buckets", href: "general-purpose-buckets.html" },
     { type: "Feature", label: "Customer managed keys", href: "kms-keys.html" },
     { type: "Feature", label: "Directory buckets", href: "directory-buckets.html" },
@@ -111,6 +113,8 @@
     { type: "Feature", label: "Instances", href: "ec2-instances.html" },
     { type: "Feature", label: "VPCs", href: "ec2-vpcs.html" },
     { type: "Feature", label: "Load balancers", href: "ec2-load-balancers.html" },
+    { type: "Feature", label: "Private repositories", href: "ecr-repositories.html" },
+    { type: "Feature", label: "awsbox-api", href: "ecr-repository-detail.html" },
     { type: "Bucket", label: "test--apse2-az1--x-s3", href: "bucket-objects.html" },
   ];
 
@@ -417,6 +421,22 @@
       ],
       foot: [],
     },
+    ecr: {
+      label: "Elastic Container Registry",
+      home: "ecr-repositories.html",
+      tree: [
+        {
+          id: "ecr-repos",
+          label: "Repositories",
+          open: true,
+          items: [
+            { id: "ecr-repositories", label: "Private repositories", href: "ecr-repositories.html" },
+            { id: "ecr-repository-detail", label: "Repository detail", href: "ecr-repository-detail.html" },
+          ],
+        },
+      ],
+      foot: [],
+    },
     ec2: {
       label: "EC2",
       home: "ec2-instances.html",
@@ -688,6 +708,7 @@
       ["EB", "EventBridge", "Event bus and rules", "eventbridge-rules.html"],
       ["DDB", "DynamoDB", "NoSQL key-value and document store", "dynamodb-tables.html"],
       ["EC2", "EC2", "Virtual servers in the cloud", "ec2-instances.html"],
+      ["ECR", "ECR", "Container image registry", "ecr-repositories.html"],
       ["RDS", "RDS", "Managed relational databases", "rds-databases.html"],
     ]
       .map(([abbr, name, desc, href], i) =>

@@ -31,6 +31,8 @@ import { SnsCreateTopicPage } from './pages/SnsCreateTopicPage'
 import { SnsTopicDetailPage } from './pages/SnsTopicDetailPage'
 import { SnsTopicsPage } from './pages/SnsTopicsPage'
 import { DynamoDBTablesPage } from './pages/DynamoDBTablesPage'
+import { EcrRepositoriesPage } from './pages/EcrRepositoriesPage'
+import { EcrRepositoryDetailPage } from './pages/EcrRepositoryDetailPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
 import { FileSystemsPage } from './pages/FileSystemsPage'
@@ -114,6 +116,11 @@ export default function App() {
             element={<SnsTopicDetailPage />}
           />
           <Route path="dynamodb" element={<DynamoDBTablesPage />} />
+          <Route path="ecr" element={<EcrRepositoriesPage />} />
+          <Route
+            path="ecr/repositories/:name"
+            element={<EcrRepositoryDetailPage />}
+          />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route
             path="apigateway/rest-apis"

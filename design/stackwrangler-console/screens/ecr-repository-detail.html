@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awsbox-api — Amazon ECR</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ecr-repository-detail" data-nav="ecr-repositories" data-service="ecr" data-title="awsbox-api" data-crumb="awsbox-api">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <div style="flex:1;min-width:0">
+          <h1 class="aws-h1" data-od-id="page-title" style="margin:0">awsbox-api</h1>
+          <div class="aws-subtitle-row">
+            <span>Private</span>
+            <span><code class="aws-mono">000000000000.dkr.ecr.ap-southeast-2.amazonaws.com/awsbox-api</code></span>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-repository" title="To implement">Delete</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-push-commands" title="To implement">View push commands</button>
+      </div>
+
+      <p class="aws-desc"><a href="ecr-repositories.html" data-od-id="back-list">← Private repositories</a></p>
+
+      <section class="aws-card" data-od-id="content-card" data-tabs>
+        <div class="aws-tabs" role="tablist" data-od-id="repository-detail-tabs">
+          <button type="button" class="aws-tab active" data-tab="details" aria-current="page" data-od-id="tab-details">Details</button>
+          <button type="button" class="aws-tab" data-tab="images" data-od-id="tab-images">Images</button>
+          <button type="button" class="aws-tab" data-tab="permissions" disabled aria-disabled="true" title="To implement" data-od-id="tab-permissions">Permissions</button>
+          <button type="button" class="aws-tab" data-tab="lifecycle" disabled aria-disabled="true" title="To implement" data-od-id="tab-lifecycle">Lifecycle policy</button>
+          <button type="button" class="aws-tab" data-tab="scanning" disabled aria-disabled="true" title="To implement" data-od-id="tab-scanning">Scan settings</button>
+        </div>
+        <div class="aws-card-body aws-tab-panels">
+          <div data-tab-panel="details" data-od-id="panel-details">
+            <h2 class="aws-section-title">Repository details</h2>
+            <dl class="aws-kv" data-od-id="repository-overview">
+              <div>
+                <dt>Repository name</dt>
+                <dd>awsbox-api</dd>
+              </div>
+              <div>
+                <dt>Repository URI</dt>
+                <dd><code class="aws-mono">000000000000.dkr.ecr.ap-southeast-2.amazonaws.com/awsbox-api</code></dd>
+              </div>
+              <div>
+                <dt>Repository ARN</dt>
+                <dd><code class="aws-mono">arn:aws:ecr:ap-southeast-2:000000000000:repository/awsbox-api</code></dd>
+              </div>
+              <div>
+                <dt>Created at</dt>
+                <dd>2026-11-02 10:24:31</dd>
+              </div>
+              <div>
+                <dt>Registry ID</dt>
+                <dd><code class="aws-mono">000000000000</code></dd>
+              </div>
+              <div>
+                <dt>Region</dt>
+                <dd>ap-southeast-2</dd>
+              </div>
+              <div>
+                <dt>Image tag mutability</dt>
+                <dd>Mutable</dd>
+              </div>
+              <div>
+                <dt>Image scanning configuration</dt>
+                <dd>Scan on push</dd>
+              </div>
+              <div>
+                <dt>Encryption type</dt>
+                <dd>AES256</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div data-tab-panel="images" hidden data-od-id="panel-images">
+            <h2 class="aws-section-title">Images</h2>
+            <p class="aws-desc">Image tags pushed to this repository.</p>
+            <div class="aws-table-wrap">
+              <table class="aws-table" data-od-id="images-table">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="th-inner">Image tag</span></th>
+                    <th scope="col"><span class="th-inner">Image digest</span></th>
+                    <th scope="col"><span class="th-inner">Last pushed</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code class="aws-mono">latest</code></td>
+                    <td><code class="aws-mono">sha256:7f3a1c9e2b4d6a80f5c1e2d3b4a5960718293a4b5c6d7e8f9012a3b4c5d6e7f8</code></td>
+                    <td>2026-11-20 09:41:18</td>
+                  </tr>
+                  <tr>
+                    <td><code class="aws-mono">v1.4.2</code></td>
+                    <td><code class="aws-mono">sha256:2b8c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0</code></td>
+                    <td>2026-11-14 15:02:47</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

@@ -329,6 +329,22 @@ const SIDEBARS: Record<AppId, SidebarDef> = {
       },
     ],
   },
+  ecr: {
+    title: 'Elastic Container Registry',
+    sections: [
+      {
+        id: 'ecr-main',
+        label: 'Private registry',
+        items: [
+          {
+            label: 'Private repositories',
+            to: '/ecr',
+            active: under('/ecr'),
+          },
+        ],
+      },
+    ],
+  },
   apigw: {
     title: 'API Gateway',
     sections: [
