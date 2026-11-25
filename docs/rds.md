@@ -6,6 +6,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./bin/stackwrangler up --force
 ./smokes/data/rds-smoke.sh          # Postgres
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
+./smokes/data/rds-aurora-mysql-failover-smoke.sh # FailoverDBCluster promote (#225)
 ./smokes/data/rds-mysql-persist-recreate-smoke.sh       # MySQL SQL after PERSISTENCE recreate (#743)
 ./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh # Aurora writer+reader after recreate (#743)
 ./smokes/data/rds-parameter-group-smoke.sh  # param group Source + TF converge
@@ -59,7 +60,7 @@ Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/r
 | Cluster writer | `CreateDBCluster` starts the writer. The first extra instance is a reader |
 | Reader port | Host port is on the reader DB instance (`describe-db-instances`), not a second cluster port field |
 | Host port pin | `--port` / `stackwrangler:host-port` = published host port; engine listen port stays the image default |
-| Aurora MySQL failover | Postgres `pg_ctl` path only — [#225](https://github.com/kgz/awsl/issues/225) |
+| Aurora MySQL failover | `FailoverDBCluster` promotes via `STOP REPLICA` + clears `super_read_only`; cluster `Port` follows the new writer (`./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#225](https://github.com/kgz/awsl/issues/225)) |
 | Managed secret rotation | Create/get only |
 | Security groups / VPC | Enforced on the VPC address when a DB subnet group is set ([docs/sg-enforcement.md](sg-enforcement.md)); published host port is separate |
 | Private DNS from workloads | [#206](https://github.com/kgz/awsl/issues/206) |
@@ -69,6 +70,6 @@ Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/r
 
 ## Aurora scope
 
-Aurora **MySQL** is exercised by `./smokes/data/rds-mysql-smoke.sh` (`create-db-cluster` + reader instance + managed secret). Console **Create database** does not create Aurora clusters — the Aurora engine tile is disabled with `title="To implement"`. Aurora PostgreSQL / failover beyond the MySQL smoke remains [#225](https://github.com/kgz/awsl/issues/225).
+Aurora **MySQL** is exercised by `./smokes/data/rds-mysql-smoke.sh` (`create-db-cluster` + reader instance + managed secret) and `./smokes/data/rds-aurora-mysql-failover-smoke.sh` (`FailoverDBCluster` promote). Console **Create database** does not create Aurora clusters — the Aurora engine tile is disabled with `title="To implement"`. Aurora PostgreSQL remains a follow-up.
 
 Interactions: [rds-create-sql](../docs-site/guide/interactions/rds-create-sql.md) · shot `docs/assets/console/rds-databases.png`.

@@ -113,7 +113,7 @@ Open work that blocks calling the vision “done”. Prefer Debt tickets over si
 | IAM / workload-role **depth** | Authz must match AWS beyond the S3 deny lab | [#144](https://github.com/kgz/stackwrangler/issues/144) · resource-policy smokes exist |
 | Transfer console / AS2 | SFTP bytes + empty-role authz smoked; LOGICAL/IdP N/A (honest); console incomplete | [#321](https://github.com/kgz/stackwrangler/issues/321) · [#314](https://github.com/kgz/stackwrangler/issues/314) |
 | ECS awsvpc / bridge / NLB fidelity | Org networking surprises | [#268](https://github.com/kgz/stackwrangler/issues/268) · [#247](https://github.com/kgz/stackwrangler/issues/247) · [#203](https://github.com/kgz/stackwrangler/issues/203) |
-| RDS Aurora failover | Instance Create (Postgres/MySQL) wired; Aurora console create out of scope — CLI smoke + failover | [#225](https://github.com/kgz/stackwrangler/issues/225) |
+| RDS Aurora failover | Instance Create (Postgres/MySQL) wired; Aurora MySQL `FailoverDBCluster` promote smoked; Aurora console create out of scope | [#225](https://github.com/kgz/stackwrangler/issues/225) |
 | Console depth on Partial services | List-only or disabled Create → Debt | gap-check before `done` |
 
 ### Control plane / chrome (not “shipped”)
