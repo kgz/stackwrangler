@@ -264,6 +264,35 @@ AWS name, logo, and console UI are Amazon trademarks. Local design reference onl
 - `title="To implement"`: Launch instance, EC2 infra radio, task Stop / View in CloudWatch Logs, cluster Actions, instance state/Actions
 - Working links: Create Cluster, cluster/task/instance detail navigation
 
+## Issue #545 — ECS Run task / Create service / CloudWatch logs depth
+
+### Mode
+- Web-clone of AWS ECS **Run task**, **Create service**, and task **Logs** into stackwrangler grey-rose chrome
+- LocalEmu-shaped subset only; no real AWS creates / API writes in these designs
+- Thin forms: task definition required; Fargate selected; EC2 infrastructure disabled
+- Enabled actions navigate to existing sample screens — no toast-only or dead enabled controls
+- Task Logs: when task definition sets `awslogs`, show group/stream and enable View in CloudWatch Logs; otherwise keep the honest stub
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `screens/ecs-run-task.html` | Task definition field (`required`) · Fargate radio · Cancel → cluster detail · Run → task detail |
+| `screens/ecs-create-service.html` | Service name · task definition · desired count · Fargate · Cancel → cluster detail · Create → cluster detail |
+| `screens/ecs-cluster-detail.html` | Enabled Run task + Create service links; Actions remains disabled |
+| `screens/ecs-task-detail.html` | awslogs group/stream + View in CloudWatch Logs enabled; Stop enabled → cluster detail |
+| `index.html` | Issue #545 launcher links for the two new screens |
+| `assets/console.js` | Search index + ECS sidebar entries for Run task / Create service |
+
+### Verification
+- `data-od-id` on key fields/actions; `disabled` + `title="To implement"` only for unimplemented controls
+- No AWS create/run/stop API calls — enabled actions navigate to existing mock screens only
+
+### Dead controls (`title="To implement"`)
+- Run task / Create service: Refresh, EC2 infrastructure radio
+- Cluster detail: Refresh, Actions (unused)
+- Task detail: Refresh (Stop is enabled — StopTask exists)
+- Never-ship controls omitted: LB, capacity provider, advanced settings, tags
+
 ## Issue #177 — KMS Customer managed keys list
 
 ### Mode

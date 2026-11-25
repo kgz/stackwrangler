@@ -36,3 +36,4 @@ Follow-ups: architecture map shot [#483](https://github.com/kgz/stackwrangler/is
 | Transfer connector S3 → remote SFTP | partial | `transfer-connector-smoke.sh` | — | [transfer-connector](./transfer-connector) |
 | RDS Create database → SQL | shipped | `rds-smoke.sh`, `rds-mysql-smoke.sh` | [rds-databases](/assets/console/rds-databases.png) | [rds-create-sql](./rds-create-sql) |
 | CloudWatch Logs create / detail | partial | `logs-smoke.sh`, `logs-authz-smoke.sh` | [logs-create-log-group](/assets/console/logs-create-log-group.png) | [cloudwatch-logs-console](./cloudwatch-logs-console) |
+| ECS Run task / Create service / awslogs | partial | `ecs-run-service-logs.spec.ts` | — | [ecs-run-service-logs](./ecs-run-service-logs) |

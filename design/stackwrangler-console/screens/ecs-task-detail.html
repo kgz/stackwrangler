@@ -15,7 +15,7 @@
       <div class="aws-toolbar" data-od-id="detail-toolbar">
         <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1"><code class="aws-mono">1a2b3c4d5e6f</code></h1>
         <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
-        <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement">Stop</button>
+        <button type="button" class="btn btn-normal" data-od-id="btn-stop">Stop</button>
       </div>
       <div class="aws-subtitle-row">
         <span class="aws-status aws-status-success">RUNNING</span>
@@ -71,12 +71,14 @@
       <section class="aws-card" style="margin-top:16px" data-od-id="logs-card">
         <div class="aws-card-body">
           <h2 class="aws-section-title">Logs</h2>
-          <p class="aws-desc" data-od-id="ecs-logs-stub">
-            Container log streaming is not wired in LocalEmu console yet. Use
-            <code class="aws-mono">aws logs</code> / CloudWatch Log groups when the task definition sets
-            <code class="aws-mono">awslogs</code>, or inspect the Docker container on the host.
+          <p class="aws-desc" data-od-id="ecs-logs-driver">
+            Container <code class="aws-mono">web</code> uses the <code class="aws-mono">awslogs</code> log driver. The sample task definition points to a CloudWatch Logs group and stream; the button opens the matching console sample.
           </p>
-          <button type="button" class="btn btn-normal" disabled aria-disabled="true" title="To implement" data-od-id="btn-view-logs">View in CloudWatch Logs</button>
+          <dl class="aws-kv" data-od-id="ecs-awslogs-config">
+            <div><dt>Log group</dt><dd><code class="aws-mono">/ecs/awsbox-lab-web</code></dd></div>
+            <div><dt>Log stream</dt><dd><code class="aws-mono">ecs/awsbox-lab-web/web/1a2b3c4d5e6f</code></dd></div>
+          </dl>
+          <a class="btn btn-normal" href="logs-log-group-detail.html" style="margin-top:12px" data-od-id="btn-view-logs">View in CloudWatch Logs</a>
         </div>
       </section>
 
@@ -84,5 +86,14 @@
     </main>
   </div>
   <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-od-id="btn-stop"]');
+      if (!btn) return;
+      btn.addEventListener("click", function () {
+        window.location.href = "ecs-cluster-detail.html";
+      });
+    })();
+  </script>
 </body>
 </html>

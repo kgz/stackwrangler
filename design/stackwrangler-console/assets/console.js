@@ -110,6 +110,8 @@
     { type: "Feature", label: "Databases", href: "rds-databases.html" },
     { type: "Feature", label: "Create database", href: "rds-create-database.html" },
     { type: "Feature", label: "Clusters", href: "ecs-clusters.html" },
+    { type: "Feature", label: "Run task", href: "ecs-run-task.html" },
+    { type: "Feature", label: "Create service", href: "ecs-create-service.html" },
     { type: "Feature", label: "Instances", href: "ec2-instances.html" },
     { type: "Feature", label: "VPCs", href: "ec2-vpcs.html" },
     { type: "Feature", label: "Load balancers", href: "ec2-load-balancers.html" },
@@ -416,6 +418,8 @@
           items: [
             { id: "ecs-clusters", label: "Clusters", href: "ecs-clusters.html" },
             { id: "ecs-cluster-detail", label: "Cluster detail", href: "ecs-cluster-detail.html" },
+            { id: "ecs-run-task", label: "Run task", href: "ecs-run-task.html" },
+            { id: "ecs-create-service", label: "Create service", href: "ecs-create-service.html" },
           ],
         },
       ],

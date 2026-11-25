@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/ecs-create-service.html",
+  "entry": "screens/ecs-create-service.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-25T07:59:47.983Z",
+  "updatedAt": "2026-11-25T07:59:47.983Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

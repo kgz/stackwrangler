@@ -39,7 +39,7 @@ Honest map of what moves bytes today vs control-plane / sidecar / still open. St
 | **Transfer SFTP → object** | **Partial** · **Sidecar-shaped native listen** | SSH public keys only → Put under Transfer role into **LocalEmu S3** (`:4566`). Empty-role put denied (`transfer-authz-smoke.sh`). LOGICAL / custom IdP / password **N/A** (honest refuse — [docs/transfer.md](transfer.md)). Console create user / import key shipped ([#321](https://github.com/kgz/stackwrangler/issues/321)) |
 | **Lambda** | **Working** (invoke) | ObjectCreated / path wiring is hop-smoked with Transfer; full path chain → [#781](https://github.com/kgz/stackwrangler/issues/781) |
 | **S3** | **Partial** (dual brain) | Path / IaC / events → LocalEmu `:4566`. Console + `aws --profile local` → SeaweedFS `:8333`. See [Dual S3](#dual-s3--post-162) |
-| **ECS task** | **Partial** | Docker tasks + ECR pull smokes; console Run/service depth still Debt |
+| **ECS task** | **Partial** | Docker tasks + ECR pull smokes; console Run task / Create service / awslogs [#545](https://github.com/kgz/stackwrangler/issues/545) |
 | **RDS SQL** | **Partial** · **Sidecar** | Postgres/MySQL Docker DBs; create + SQL smokes. Aurora failover / some TF edges still open |
 
 Stubs that are **not** on this path’s happy claim: Transfer FTPS/FTP, AS2 retrieve polish, hosting-company multi-tenant product (`v1.0.0`).

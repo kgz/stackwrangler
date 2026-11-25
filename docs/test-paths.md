@@ -451,6 +451,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | CFN drift detection + stack notification SNS chrome | ui | Debt | [#564](https://github.com/kgz/stackwrangler/issues/564) (from [#147](https://github.com/kgz/awsl/issues/147)) |
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
+| ECS Run task / Create service / Stop / awslogs → CloudWatch Logs | ui | covered | `console/e2e/ecs-run-service-logs.spec.ts` · [#545](https://github.com/kgz/stackwrangler/issues/545) |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |
 | Console create SERVICE_MANAGED user + import SSH key | happy | covered | `console/e2e/transfer-create-user.spec.ts` |
 | Org path Terraform example (VPC→Transfer→Lambda→S3→ECS→RDS) | happy | covered | `examples/terraform/org-path/` ([#780](https://github.com/kgz/stackwrangler/issues/780)); E2E smoke [#781](https://github.com/kgz/stackwrangler/issues/781) |
