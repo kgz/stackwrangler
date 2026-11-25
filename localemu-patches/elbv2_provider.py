@@ -8,8 +8,11 @@ Operations intercepted:
   - CreateTargetGroup         : register TG in router
   - RegisterTargets           : add targets to router
   - DeregisterTargets         : remove targets from router
-  - CreateListener            : start an actual HTTP listener (for HTTP ALBs)
-  - ModifyListener            : reload ACM TLS material when default Certificates change
+  - CreateListener            : start an actual HTTP listener (for HTTP ALBs);
+                                binds even when the default action is
+                                fixed-response/redirect (#767)
+  - ModifyListener            : reload ACM TLS material when default Certificates
+                                change; update DefaultActions without rebinding (#767)
   - AddListenerCertificates   : reload only if the default cert actually changes
                                 (first attach on a cert-less listener; never SNI flip)
   - RemoveListenerCertificates: reload when the default changes or is cleared
@@ -365,26 +368,24 @@ def _handle_create_listener(
         protocol = listener.get("Protocol", "HTTP")
         lb_arn = listener.get("LoadBalancerArn", "")
         listener_arn = listener.get("ListenerArn", "")
-        if protocol.upper() not in ("HTTP", "HTTPS", "TCP", "TLS"):
+        proto = (protocol or "").upper()
+        if proto not in ("HTTP", "HTTPS", "TCP", "TLS"):
             LOG.info("ELBv2 listener %s protocol %s is not forwarded", listener_arn, protocol)
             continue
         requested_port = int(listener.get("Port") or 80)
 
-        # Pick the default target group from DefaultActions.
-        target_group_arn = ""
-        for action in listener.get("DefaultActions", []) or []:
-            if action.get("Type") == "forward":
-                target_group_arn = action.get("TargetGroupArn", "")
-                if not target_group_arn:
-                    fw = action.get("ForwardConfig") or {}
-                    tgs = fw.get("TargetGroups") or []
-                    if tgs:
-                        target_group_arn = tgs[0].get("TargetGroupArn", "")
-                if target_group_arn:
-                    break
+        default_actions = [
+            _action_to_dict(a) for a in (listener.get("DefaultActions") or [])
+        ]
+        target_group_arn = _forward_tg_arn(default_actions)
 
-        if not target_group_arn:
-            LOG.debug("Listener %s has no forward action; skipping HTTP proxy", listener_arn)
+        # NLB TCP/TLS always needs a forward target. ALB HTTP/HTTPS must still
+        # bind when the default is fixed-response/redirect (#767).
+        if proto in ("TCP", "TLS") and not target_group_arn:
+            LOG.debug(
+                "Listener %s has no forward action; skipping L4 proxy",
+                listener_arn,
+            )
             continue
 
         meta = router.load_balancers.get(lb_arn) or {}
@@ -397,6 +398,7 @@ def _handle_create_listener(
             scheme=str(meta.get("scheme") or "internet-facing"),
             vpc_networks=list(meta.get("vpc_networks") or []),
             certificate_arn=_listener_certificate_arn(listener, request) or None,
+            default_actions=default_actions,
         )
         # Surface the real bound port via a non-AWS field so clients that care
         # (tests, dashboard) can discover it; advertised Port stays as requested.
@@ -428,6 +430,21 @@ def _handle_modify_listener(
         if after != before:
             # Empty after → LocalEmu default PEM (clear-default, #628).
             get_router().reload_listener_certificate(listener_arn, after or None)
+        # DefaultActions change without rebinding (#767); also covers L4
+        # forward retarget used by ECS/CodeDeploy smokes.
+        if request.get("DefaultActions") is not None:
+            actions = [
+                _action_to_dict(a) for a in (request.get("DefaultActions") or [])
+            ]
+            # Prefer the moto-normalized shape from the response when present.
+            for listener in result.get("Listeners", []) or []:
+                if listener.get("ListenerArn") == listener_arn:
+                    actions = [
+                        _action_to_dict(a)
+                        for a in (listener.get("DefaultActions") or actions)
+                    ]
+                    break
+            get_router().set_listener_default_actions(listener_arn, actions)
     return result
 
 
@@ -773,11 +790,17 @@ def _restore_backend(router, backend, account_id: str, region: str) -> tuple[int
                 continue
             if str(protocol).upper() not in ("HTTP", "HTTPS", "TCP", "TLS"):
                 continue
-            default_actions = getattr(listener, "default_actions", None) or []
+            default_actions = [
+                _action_to_dict(a)
+                for a in (getattr(listener, "default_actions", None) or [])
+            ]
             target_group_arn = _forward_tg_arn(default_actions)
-            if not target_group_arn:
+            proto_u = str(protocol).upper()
+            # NLB still needs a forward TG; ALB binds for fixed-response/
+            # redirect defaults too (#767).
+            if proto_u in ("TCP", "TLS") and not target_group_arn:
                 LOG.debug(
-                    "ELBv2 restore: listener %s has no forward action; skipping",
+                    "ELBv2 restore: L4 listener %s has no forward action; skipping",
                     listener_arn,
                 )
                 continue
@@ -794,6 +817,7 @@ def _restore_backend(router, backend, account_id: str, region: str) -> tuple[int
                 scheme=str(meta.get("scheme") or "internet-facing"),
                 vpc_networks=list(meta.get("vpc_networks") or []),
                 certificate_arn=_listener_certificate_from_moto(listener),
+                default_actions=default_actions,
             )
             listeners_n += 1
 
