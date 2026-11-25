@@ -20,8 +20,10 @@ Operations intercepted:
   - DeleteListener            : stop the HTTP listener
   - DescribeLoadBalancers     : ensure DNS names match what we emit
   - DescribeTargetHealth      : return real TCP-probe-derived health
+  - CreateRule / ModifyRule / DescribeRules : persist + apply Transforms
+                                (url-rewrite / host-header-rewrite; #766)
 
-All other operations (rules, tags, SSL policies, attributes, NLB details,
+All other operations (tags, SSL policies, attributes, NLB details,
 etc.) fall through to Moto via `_proxy_moto`.
 """
 
@@ -515,20 +517,66 @@ def _handle_delete_listener(
     return result
 
 
-def _record_rule(rule: dict) -> None:
+def _moto_rule_transforms(rule_arn: str) -> list:
+    """Read Transforms stored on the moto FakeListenerRule (#766)."""
+    if not rule_arn:
+        return []
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("elbv2")
+    except Exception:
+        return []
+    for accounts in (backend.values() if isinstance(backend, dict) else []):
+        regions = accounts.values() if isinstance(accounts, dict) else []
+        for region_backend in regions:
+            try:
+                rules = region_backend.describe_rules(
+                    listener_arn=None, rule_arns=[rule_arn],
+                )
+            except Exception:
+                continue
+            if not rules:
+                continue
+            return list(getattr(rules[0], "transforms", None) or [])
+    return []
+
+
+def _sync_rule_transforms(rule: dict, *, preferred: list | None = None) -> list:
+    """Ensure ``rule['Transforms']`` matches moto (omit when empty)."""
+    rule_arn = rule.get("RuleArn") or ""
+    if preferred is not None:
+        transforms = list(preferred)
+    elif "Transforms" in rule:
+        transforms = list(rule.get("Transforms") or [])
+    else:
+        transforms = _moto_rule_transforms(rule_arn)
+    if transforms:
+        rule["Transforms"] = transforms
+    else:
+        rule.pop("Transforms", None)
+    return transforms
+
+
+def _record_rule(rule: dict, *, transforms: list | None = None) -> None:
     """Mirror a moto-returned Rule into the proxy router so request
-    routing actually honours its conditions/actions on the next hit."""
+    routing actually honours its conditions/actions/transforms."""
     rule_arn = rule.get("RuleArn") or ""
     if not rule_arn:
         return
     # moto returns ListenerArn on the rule object since elbv2 v3; older
     # versions omit it and the caller had to know it. Fall back to a scan
     # over our own listener map keyed by load-balancer ownership.
+    router_inst = get_router()
     listener_arn = rule.get("ListenerArn", "")
+    if not listener_arn:
+        # ModifyRule responses omit ListenerArn — reuse the prior mapping.
+        prior = router_inst._rules_by_arn.get(rule_arn)
+        if prior is not None:
+            listener_arn = prior.listener_arn
     if not listener_arn:
         # Worst case: pick the listener whose default TG matches one of
         # the rule's forward actions; if that fails too, drop silently.
-        router_inst = get_router()
         for la, listener in router_inst.listeners.items():
             if any(
                 (a.get("TargetGroupArn") or "") == listener.target_group_arn
@@ -539,12 +587,14 @@ def _record_rule(rule: dict) -> None:
     if not listener_arn:
         LOG.debug("CreateRule: no listener arn resolvable for %s; not recording", rule_arn)
         return
+    synced = _sync_rule_transforms(rule, preferred=transforms)
     get_router().register_rule(
         rule_arn=rule_arn,
         listener_arn=listener_arn,
         priority=str(rule.get("Priority") or "default"),
         conditions=rule.get("Conditions") or [],
         actions=rule.get("Actions") or [],
+        transforms=synced,
     )
 
 
@@ -554,10 +604,12 @@ def _handle_create_rule(
     result = call_moto(context)
     # moto returns the rule with its ARN populated.
     listener_arn = request.get("ListenerArn") or ""
+    req_transforms = request.get("Transforms")
     for rule in result.get("Rules", []) or []:
         if listener_arn and not rule.get("ListenerArn"):
             rule["ListenerArn"] = listener_arn
-        _record_rule(rule)
+        preferred = list(req_transforms) if req_transforms is not None else None
+        _record_rule(rule, transforms=preferred)
     return result
 
 
@@ -565,8 +617,20 @@ def _handle_modify_rule(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
     result = call_moto(context)
+    # ResetTransforms / Transforms updates live on the moto rule object;
+    # re-read so the router drops cleared transforms (#766).
     for rule in result.get("Rules", []) or []:
-        _record_rule(rule)
+        transforms = _moto_rule_transforms(rule.get("RuleArn") or "")
+        _record_rule(rule, transforms=transforms)
+    return result
+
+
+def _handle_describe_rules(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    result = call_moto(context)
+    for rule in result.get("Rules", []) or []:
+        _sync_rule_transforms(rule)
     return result
 
 
@@ -637,6 +701,7 @@ _INTERCEPTED_OPS = {
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,
     "ModifyRule": _handle_modify_rule,
+    "DescribeRules": _handle_describe_rules,
     "DeleteRule": _handle_delete_rule,
     "SetRulePriorities": _handle_set_rule_priorities,
 }
@@ -835,6 +900,7 @@ def _restore_backend(router, backend, account_id: str, region: str) -> tuple[int
                     priority=str(getattr(rule, "priority", "") or "1"),
                     conditions=list(getattr(rule, "conditions", None) or []),
                     actions=actions,
+                    transforms=list(getattr(rule, "transforms", None) or []),
                 )
                 rules_n += 1
 
