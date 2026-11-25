@@ -17,6 +17,7 @@ export type AppId =
   | 'kms'
   | 'sns'
   | 'dynamodb'
+  | 'ecr'
   | 'cloudtrail'
 
 export type ServiceDef = {
@@ -95,6 +96,13 @@ export const SERVICES: ServiceDef[] = [
     to: '/dynamodb',
   },
   {
+    id: 'ecr',
+    abbr: 'ECR',
+    name: 'ECR',
+    desc: 'Store and manage container images',
+    to: '/ecr',
+  },
+  {
     id: 'cloudtrail',
     abbr: 'CT',
     name: 'CloudTrail',
@@ -121,6 +129,7 @@ export function currentApp(pathname: string): AppId {
   if (pathname.startsWith('/kms')) return 'kms'
   if (pathname.startsWith('/sns')) return 'sns'
   if (pathname.startsWith('/dynamodb')) return 'dynamodb'
+  if (pathname.startsWith('/ecr')) return 'ecr'
   if (pathname.startsWith('/cloudtrail')) return 'cloudtrail'
   return 's3'
 }
@@ -167,6 +176,8 @@ export const SEARCH_INDEX: SearchItem[] = [
   { type: 'Service', label: 'Simple Notification Service', to: '/sns' },
   { type: 'Feature', label: 'Topics', to: '/sns' },
   { type: 'Feature', label: 'Tables', to: '/dynamodb' },
+  { type: 'Service', label: 'Elastic Container Registry', to: '/ecr' },
+  { type: 'Feature', label: 'Private repositories', to: '/ecr' },
   { type: 'Feature', label: 'Log groups', to: '/logs' },
   { type: 'Feature', label: 'API call log', to: '/cloudtrail' },
   { type: 'Service', label: 'CloudTrail', to: '/cloudtrail' },
@@ -216,6 +227,7 @@ const CRUMBS: Record<string, string> = {
   '/sns': 'Topics',
   '/sns/create': 'Create topic',
   '/dynamodb': 'Tables',
+  '/ecr': 'Private repositories',
   '/apigateway': 'HTTP APIs',
   '/apigateway/rest-apis': 'REST APIs',
   '/cloudformation': 'Stacks',

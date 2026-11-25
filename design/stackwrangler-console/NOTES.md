@@ -198,6 +198,33 @@ Open `index.html` in Open Design preview or a static file server from this direc
 ## License / trademark
 AWS name, logo, and console UI are Amazon trademarks. Local design reference only — do not publish as an AWS product.
 
+## Issue #217 — ECR private repositories
+
+### Mode
+- Web-clone of the AWS ECR **Private repositories** console into stackwrangler grey-rose chrome
+- Designs only — LocalEmu-shaped sample rows; no real AWS resources / API writes
+- Structure mirrors `kms-keys.html` / `dynamodb-tables.html` / `sns-topics.html`: h1 + description + card toolbar + find/pager + table; detail follows SNS topic detail
+- Palette unchanged: brand-spec.md `#B48AA0` / `#E6D0DA` / `#141414` / `#1C1C1C`; no AWS orange, sky-blue links, or smile
+
+### Deliverables
+| File | Covers |
+|---|---|
+| `screens/ecr-repositories.html` | Repository name / URI / Image tag mutability / Scan on push / Created at · 3 rows (`awsbox-api`, `orders-worker`, `local-dev`) · name → detail |
+| `screens/ecr-repositories-empty.html` | Empty twin · Refresh + Create repository + empty panel · link to sample rows |
+| `screens/ecr-repository-detail.html` | Details (name, URI, ARN, created, registry, mutability, scan, encryption) + Images tab + breadcrumb back to list |
+| Shared `assets/console.js` + CSS | `ecr` service definition / sidebar (Private repositories + detail); search index (ECR, Elastic Container Registry, Private repositories, `awsbox-api`); Services panel tile |
+| `index.html` | ECR launcher section (#217) |
+
+### Dead controls
+- `title="To implement"`: Create repository, Refresh, table settings, column filters, Delete/Delete repository on detail, View push commands, disabled detail tabs (Permissions / Lifecycle policy / Scan settings)
+- `title="Select a row"`: Delete on populated list when no row selected
+- Working: find field (`data-find-table`), images/detail tab panels, breadcrumb + back link, name cells → detail, Services/search/favorites → ECR list
+
+### Gaps
+1. No Create repository form / push-commands flow — controls intentionally disabled.
+2. Permissions / Lifecycle / Scan-settings detail tabs stubbed (disabled), matching the design-only scope.
+3. No real AWS writes; all ARNs/URIs are LocalEmu-shaped placeholders.
+
 ## Issue #172 — SNS Topics list
 
 ### Mode
