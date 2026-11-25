@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Run task — Elastic Container Service</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ecs-run-task" data-nav="ecs-cluster-detail" data-service="ecs" data-title="Run task" data-crumb="Run task">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">Run task</h1>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+      </div>
+      <p class="aws-desc">
+        Start a standalone task on cluster <code class="aws-mono">awsbox-lab</code>. In this console mock, Run opens the existing sample task detail — no AWS RunTask call is made.
+      </p>
+
+      <section class="aws-card" data-od-id="run-task-config">
+        <div class="aws-card-body aws-form-stack">
+          <div class="aws-form-section">
+            <h2 class="aws-section-title">Task configuration</h2>
+            <div class="aws-field">
+              <label class="aws-label" for="run-task-definition">Task definition <span class="req" aria-hidden="true">*</span></label>
+              <input class="aws-input" id="run-task-definition" name="taskDefinition" type="text" autocomplete="off" placeholder="awsbox-lab-web:3" value="awsbox-lab-web:3" required data-od-id="field-task-definition" />
+              <p class="aws-hint">Family and revision used for this standalone task.</p>
+            </div>
+            <div class="aws-field">
+              <label class="aws-label">App environment</label>
+              <ul class="aws-radio-list">
+                <li>
+                  <label>
+                    <input type="radio" name="app-environment" value="fargate" checked data-od-id="env-fargate" />
+                    <span>
+                      <strong>AWS Fargate</strong>
+                      <span class="sub">Serverless launch type — default for this mock.</span>
+                    </span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="radio" name="app-environment" value="ec2" disabled title="To implement" data-od-id="env-ec2" />
+                    <span>
+                      <strong>Amazon EC2</strong>
+                      <span class="sub">Register container instances via CLI / smoke.</span>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="aws-form-actions" data-od-id="run-actions">
+        <a class="btn btn-normal" href="ecs-cluster-detail.html" data-od-id="btn-cancel">Cancel</a>
+        <div class="spacer" style="flex:1"></div>
+        <button type="button" class="btn btn-primary" data-od-id="btn-run">Run</button>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-od-id="btn-run"]');
+      var taskDef = document.getElementById("run-task-definition");
+      if (!btn || !taskDef) return;
+      btn.addEventListener("click", function () {
+        if (!taskDef.checkValidity()) {
+          taskDef.reportValidity();
+          return;
+        }
+        window.location.href = "ecs-task-detail.html";
+      });
+    })();
+  </script>
+</body>
+</html>
