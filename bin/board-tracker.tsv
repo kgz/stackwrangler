@@ -180,7 +180,7 @@
 233	in-review	Debt: cross-account resource policy coverage (from #193)
 236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
-241	backlog	Debt: ELBv2 console (from #203)
+241	in-review	Debt: ELBv2 console (from #203)
 242	in-review	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	in-review	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)

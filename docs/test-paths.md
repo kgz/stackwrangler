@@ -260,7 +260,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | ELBv2 `RegisterTargets` preserves `host_override` / bridge dial | happy | covered | `./smokes/networking/elbv2-host-override-register-smoke.sh` · [#603](https://github.com/kgz/awsl/issues/603) |
 | ELBv2 persist restart: internal HTTPS ALB + rule + target survive LocalEmu restart | happy | covered | `./smokes/networking/elbv2-persist-restart-smoke.sh` · [#770](https://github.com/kgz/stackwrangler/issues/770) · [elbv2.md](elbv2.md) · [dev-mode.md](dev-mode.md) |
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./smokes/networking/elbv2-smoke.sh` |
-| ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
+| ELBv2 console list / listeners / target health | ui | covered | `console/e2e/services-detail.spec.ts` · [#241](https://github.com/kgz/stackwrangler/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#242](https://github.com/kgz/awsl/issues/242) |
 | ELBv2 ModifyListener reloads default ACM keypair; Add first-default only | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#594](https://github.com/kgz/awsl/issues/594) |
 | ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |

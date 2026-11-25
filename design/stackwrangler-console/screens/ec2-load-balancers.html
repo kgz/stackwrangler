@@ -7,62 +7,65 @@
   <link rel="stylesheet" href="../assets/fonts.css" />
   <link rel="stylesheet" href="../assets/console.css" />
 </head>
-<body data-page="ec2-load-balancers" data-nav="ec2-load-balancers" data-service="ec2" data-title="Load balancers" data-crumb="Load balancers">
+<body data-page="ec2-load-balancers" data-nav="ec2-load-balancers" data-service="elbv2" data-title="Load balancers" data-crumb="Load balancers">
   <div id="aws-chrome"></div>
   <div class="aws-shell" id="aws-shell" data-od-id="shell">
     <main class="aws-main" id="content" data-od-id="main-content">
 
       <h1 class="aws-h1" data-od-id="page-title">Load balancers</h1>
-      <p class="aws-desc">Distribute incoming traffic across multiple targets in one or more Availability Zones.</p>
+      <p class="aws-desc">A load balancer distributes incoming application traffic across multiple targets, such as EC2 instances.</p>
+
       <section class="aws-card" data-od-id="content-card">
         <div class="aws-card-body">
           <div class="aws-toolbar" data-od-id="action-toolbar">
             <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
-            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="Select a row">Actions ▾</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-actions" title="To implement">Actions ▾</button>
             <div class="spacer"></div>
             <button type="button" class="btn btn-primary" data-od-id="btn-create-lb" title="To implement" disabled aria-disabled="true">Create load balancer</button>
           </div>
+
           <div class="aws-table-tools">
             <label class="aws-find"><span aria-hidden="true">⌕</span>
-              <input type="search" placeholder="Search load balancers" data-find-table="#data-table" aria-label="Search load balancers" data-od-id="find-lbs" />
+              <input type="search" placeholder="Search load balancers" data-find-table="#ec2-lbs-table" aria-label="Search load balancers" data-od-id="find-load-balancers" />
             </label>
             <div class="aws-pager" data-od-id="pagination">
-              <button type="button" disabled aria-label="Previous">‹</button>
+              <button type="button" disabled aria-label="Previous" title="To implement">‹</button>
               <span class="page">1</span>
-              <button type="button" disabled aria-label="Next">›</button>
-              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+              <button type="button" disabled aria-label="Next" title="To implement">›</button>
             </div>
           </div>
+
           <div class="aws-table-wrap">
-            <table class="aws-table" id="data-table" data-od-id="ec2-lbs-table">
+            <table class="aws-table" id="ec2-lbs-table" data-od-id="ec2-lbs-table">
               <thead>
                 <tr>
-                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
-                  <th scope="col"><span class="th-inner">Name <span aria-hidden="true">↑</span></span></th>
-                  <th scope="col"><span class="th-inner">DNS name <button type="button" class="filter" aria-label="Filter DNS name" title="To implement" disabled aria-disabled="true">▾</button></span></th>
-                  <th scope="col"><span class="th-inner">State <button type="button" class="filter" aria-label="Filter State" title="To implement" disabled aria-disabled="true">▾</button></span></th>
-                  <th scope="col"><span class="th-inner">VPC ID <button type="button" class="filter" aria-label="Filter VPC ID" title="To implement" disabled aria-disabled="true">▾</button></span></th>
-                  <th scope="col"><span class="th-inner">Availability Zones <button type="button" class="filter" aria-label="Filter Availability Zones" title="To implement" disabled aria-disabled="true">▾</button></span></th>
-                  <th scope="col"><span class="th-inner">Type <button type="button" class="filter" aria-label="Filter Type" title="To implement" disabled aria-disabled="true">▾</button></span></th>
-                  <th scope="col"><span class="th-inner">Date created <span aria-hidden="true">↑</span></span></th>
+                  <th class="check"><input type="checkbox" aria-label="Select all" disabled title="To implement" /></th>
+                  <th>Name</th>
+                  <th>DNS name</th>
+                  <th>State</th>
+                  <th>VPC</th>
+                  <th>Availability Zones</th>
+                  <th>Type</th>
+                  <th>Date created</th>
                 </tr>
               </thead>
               <tbody>
-                <tr data-name="lab-alb">
-                  <td class="check"><input type="checkbox" aria-label="Select lab-alb" /></td>
-                  <td><button type="button" class="aws-dead-link" disabled aria-disabled="true" title="To implement" data-od-id="lb-lab-alb">lab-alb</button></td>
-                  <td><code class="aws-mono">lab-alb-123456789.ap-southeast-2.elb.amazonaws.com</code></td>
-                  <td><span class="aws-status aws-status-success">Active</span></td>
-                  <td><code class="aws-mono">vpc-0a1b2c3d</code></td>
+                <tr data-od-id="lb-row-elbv2-edge-demo">
+                  <td class="check"><input type="checkbox" aria-label="Select elbv2-edge-demo" /></td>
+                  <td><a href="ec2-load-balancer-detail.html" data-od-id="lb-link-elbv2-edge-demo">elbv2-edge-demo</a></td>
+                  <td><span class="aws-mono">elbv2-edge-demo-1234567890.ap-southeast-2.elb.amazonaws.com</span></td>
+                  <td><span class="aws-status aws-status-success">active</span></td>
+                  <td><span class="aws-mono">vpc-0a4f21c9b7e83d510</span></td>
                   <td>ap-southeast-2a, ap-southeast-2b</td>
-                  <td>application</td>
-                  <td>2026-10-08 10:15:33</td>
+                  <td>Network</td>
+                  <td>2026-11-18 09:42 UTC</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
+
     </main>
   </div>
   <script src="../assets/console.js"></script>

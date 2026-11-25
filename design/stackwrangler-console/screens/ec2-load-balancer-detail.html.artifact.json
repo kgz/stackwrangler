@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/ec2-load-balancer-detail.html",
+  "entry": "screens/ec2-load-balancer-detail.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": ["html", "pdf", "zip"],
+  "metadata": { "inferred": true, "reconciled": true }
+}

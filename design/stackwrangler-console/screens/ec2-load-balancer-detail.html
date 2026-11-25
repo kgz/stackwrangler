@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>elbv2-edge-demo — Load balancers</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ec2-load-balancer-detail" data-nav="ec2-load-balancer-detail" data-service="elbv2" data-title="elbv2-edge-demo" data-crumb="elbv2-edge-demo">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <div class="aws-toolbar" data-od-id="detail-toolbar">
+        <h1 class="aws-h1" data-od-id="page-title" style="margin:0;flex:1">elbv2-edge-demo</h1>
+        <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+        <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-lb-actions" title="To implement">Actions ▾</button>
+      </div>
+
+      <div class="aws-subtitle-row">
+        <span class="aws-status aws-status-success">active</span>
+        <span>Network load balancer</span>
+      </div>
+
+      <p style="margin:0 0 16px"><a href="ec2-load-balancers.html" data-od-id="back-to-list">← Back to load balancers</a></p>
+
+      <section class="aws-card" data-od-id="overview-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Overview</h2>
+          <dl class="aws-kv">
+            <div><dt>ARN</dt><dd><code class="aws-mono">arn:aws:elasticloadbalancing:ap-southeast-2:445772506418:loadbalancer/net/elbv2-edge-demo/7f3c1a9d2e4b6c80</code></dd></div>
+            <div><dt>DNS name</dt><dd><code class="aws-mono">elbv2-edge-demo-1234567890.ap-southeast-2.elb.amazonaws.com</code></dd></div>
+            <div><dt>State</dt><dd><span class="aws-status aws-status-success">active</span></dd></div>
+            <div><dt>Type</dt><dd>Network</dd></div>
+            <div><dt>Scheme</dt><dd>internet-facing</dd></div>
+            <div><dt>VPC ID</dt><dd><code class="aws-mono">vpc-0a4f21c9b7e83d510</code></dd></div>
+            <div><dt>Availability Zones</dt><dd>ap-southeast-2a, ap-southeast-2b</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="listeners-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="listeners-toolbar">
+            <h2 class="aws-section-title" style="margin:0;flex:1">Listeners</h2>
+            <button type="button" class="btn btn-primary" data-od-id="btn-create-listener" title="To implement" disabled aria-disabled="true">Create listener</button>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="ec2-lb-listeners-table" data-od-id="ec2-lb-listeners-table">
+              <thead>
+                <tr>
+                  <th>Protocol</th>
+                  <th>Port</th>
+                  <th>Default action</th>
+                  <th>Listener ARN</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-od-id="listener-tcp-443">
+                  <td>TCP</td>
+                  <td>443</td>
+                  <td>Forward to <span class="aws-mono">elbv2-edge-targets</span></td>
+                  <td><code class="aws-mono">arn:aws:elasticloadbalancing:ap-southeast-2:445772506418:listener/net/elbv2-edge-demo/7f3c1a9d2e4b6c80/9b1e5a7c3d0f2468</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="aws-card" data-od-id="target-health-card">
+        <div class="aws-card-body">
+          <h2 class="aws-section-title">Target health</h2>
+          <p class="aws-desc" style="margin-bottom:12px">Targets in <span class="aws-mono">elbv2-edge-targets</span></p>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="ec2-lb-target-health-table" data-od-id="ec2-lb-target-health-table">
+              <thead>
+                <tr>
+                  <th>Target</th>
+                  <th>Port</th>
+                  <th>Health state</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-od-id="target-i-0a1b2c3d4e5f60718">
+                  <td><span class="aws-mono">i-0a1b2c3d4e5f60718</span></td>
+                  <td>443</td>
+                  <td><span class="aws-status aws-status-success">healthy</span></td>
+                  <td>Health checks passed</td>
+                </tr>
+                <tr data-od-id="target-i-09f8e7d6c5b4a3210">
+                  <td><span class="aws-mono">i-09f8e7d6c5b4a3210</span></td>
+                  <td>443</td>
+                  <td><span class="aws-status aws-status-danger">unhealthy</span></td>
+                  <td>Connection refused</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

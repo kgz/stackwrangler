@@ -37,7 +37,7 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 
 ## Gaps
 
-- No console ([#241](https://github.com/kgz/awsl/issues/241)).
+- Console list + detail (listeners, target health) under `/ec2/load-balancers` ([#241](https://github.com/kgz/stackwrangler/issues/241)). Create load balancer / Create listener remain `disabled` + `title="To implement"`.
 - TLS does not load the ACM certificate attached at create time ([#242](https://github.com/kgz/awsl/issues/242)).
 - Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
 - Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
