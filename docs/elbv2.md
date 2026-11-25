@@ -9,6 +9,7 @@ AWSBOX_ELBV2_E2E=1 ./bin/e2e.sh  # runs elbv2-smoke in e2e (off by default, #299
 ./smokes/networking/elbv2-host-override-register-smoke.sh  # RegisterTargets keeps host_override (#603)
 ./smokes/networking/elbv2-sg-member-smoke.sh  # ALB SG membership → target health (#768)
 ./smokes/networking/elbv2-persist-restart-smoke.sh  # PERSISTENCE restart keeps LB/listener/rule/TG (#770)
+./smokes/networking/elbv2-nonforward-default-smoke.sh  # fixed-response/redirect default still listens (#767)
 ./smokes/apigw/apigw-nlb-ecs-smoke.sh   # VPC_LINK → internal NLB → ECS ip target
 ```
 
@@ -22,7 +23,7 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
 | NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. Create-time presentation is [#242](https://github.com/kgz/awsl/issues/242). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. |
 | NLB TLS | Forwards bytes after TLS terminate. Create-time ACM keypair presentation is [#242](https://github.com/kgz/awsl/issues/242) (PR #592). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. `RemoveListenerCertificates` reloads when the default changes or is cleared ([#628](https://github.com/kgz/awsl/issues/628)); secondary Remove does not flip the handshake. |
-| ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
+| ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. A non-forward default (`fixed-response` / `redirect`) still binds the listener port; unmatched requests get that action, and `ModifyListener` can swap the default without rebinding ([#767](https://github.com/kgz/stackwrangler/issues/767)). |
 | ALB HTTPS | Terminates with the ACM certificate on the listener (LocalEmu default when none). `ModifyListener` / first-default `AddListenerCertificates` reload live handshake material ([#629](https://github.com/kgz/awsl/issues/629); same reload path as NLB TLS [#594](https://github.com/kgz/awsl/issues/594)). |
 
 | Health | TCP connect, or HTTP/HTTPS GET of `HealthCheckPath` honouring `Matcher.HttpCode`. `describe-target-health` and new connections skip `unhealthy` targets. |

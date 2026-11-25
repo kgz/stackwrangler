@@ -184,6 +184,9 @@ class Listener:
     protocol: str
     port: int
     target_group_arn: str
+    # Raw DefaultActions; used when no rule matches (#767). Empty TG +
+    # fixed-response/redirect here is the shared-ALB 404-default shape.
+    default_actions: list[dict] = field(default_factory=list)
     server: Optional[http.server.ThreadingHTTPServer] = None
     thread: Optional[threading.Thread] = None
 
@@ -373,6 +376,21 @@ class _ProxyHandler(http.server.BaseHTTPRequestHandler):
                     return "", action
             # If the matched rule had no actionable action (e.g. authenticate-*
             # is unsupported), fall through to the next rule.
+        # No rule matched — listener default action (#767).
+        for action in listener.default_actions or []:
+            a_type = (action.get("Type") or "").lower()
+            if a_type == "forward":
+                tg_arn = action.get("TargetGroupArn") or ""
+                if not tg_arn:
+                    fw = action.get("ForwardConfig") or {}
+                    tgs = fw.get("TargetGroups") or []
+                    if tgs:
+                        tg_arn = tgs[0].get("TargetGroupArn", "")
+                if tg_arn:
+                    return tg_arn, None
+            elif a_type in {"fixed-response", "redirect"}:
+                return "", action
+        # Back-compat for listeners started before default_actions was stored.
         return listener.target_group_arn, None
 
     def _render_action(self, action: dict, listener: Listener) -> None:
@@ -1064,6 +1082,7 @@ class ListenerRouter:
         scheme: str = "internet-facing",
         vpc_networks: Optional[list[str]] = None,
         certificate_arn: Optional[str] = None,
+        default_actions: Optional[list[dict]] = None,
     ) -> int:
         """Start a listener on the requested port and return that port.
 
@@ -1073,6 +1092,9 @@ class ListenerRouter:
         this wrap, a TLS ClientHello on the listener port is interpreted
         as plain HTTP and the server replies with a 400 that the TLS
         client can't parse.
+
+        ``default_actions`` may be fixed-response/redirect with an empty
+        ``target_group_arn`` — the socket still binds (#767).
         """
         proto = (protocol or "").upper()
         if proto in {"TCP", "TLS"}:
@@ -1098,9 +1120,11 @@ class ListenerRouter:
                     conn = ctx.wrap_socket(conn, server_side=True)
                 return conn, addr
 
+        actions = [dict(a) for a in (default_actions or [])]
         listener = Listener(
             arn=listener_arn, lb_arn=lb_arn, protocol=protocol,
-            port=requested_port, target_group_arn=target_group_arn,
+            port=requested_port, target_group_arn=target_group_arn or "",
+            default_actions=actions,
         )
 
         handler_cls = type(
@@ -1243,6 +1267,38 @@ class ListenerRouter:
                 l4.target_group_arn = target_group_arn
             if listener is not None:
                 listener.target_group_arn = target_group_arn
+                listener.default_actions = [
+                    {"Type": "forward", "TargetGroupArn": target_group_arn},
+                ]
+        self._refresh_dnat()
+
+    def set_listener_default_actions(
+        self, listener_arn: str, actions: list[dict],
+    ) -> None:
+        """Replace default actions without rebinding (#767 ModifyListener)."""
+        if not listener_arn:
+            return
+        normalized = [dict(a) for a in (actions or [])]
+        tg_arn = ""
+        for action in normalized:
+            if (action.get("Type") or "").lower() != "forward":
+                continue
+            tg_arn = action.get("TargetGroupArn") or ""
+            if not tg_arn:
+                fw = action.get("ForwardConfig") or {}
+                tgs = fw.get("TargetGroups") or []
+                if tgs:
+                    tg_arn = tgs[0].get("TargetGroupArn") or ""
+            if tg_arn:
+                break
+        with self._lock:
+            l4 = self.l4_listeners.get(listener_arn)
+            listener = self.listeners.get(listener_arn)
+            if l4 is not None and tg_arn:
+                l4.target_group_arn = tg_arn
+            if listener is not None:
+                listener.default_actions = normalized
+                listener.target_group_arn = tg_arn
         self._refresh_dnat()
 
     def stop_listener(self, listener_arn: str) -> None:
