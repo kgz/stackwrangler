@@ -91,6 +91,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | Trust `StringEquals` `aws:PrincipalOrgID` does not allow | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
 | Cross-account resource policy Allow | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./smokes/parity/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
+| Lambda MemorySize → Docker mem_limit; REPORT Max Memory Used from cgroup peak | happy | covered | `./smokes/lambda/lambda-memory-limit-smoke.sh` · [#688](https://github.com/kgz/stackwrangler/issues/688) |
+| Lambda allocate past MemorySize → Runtime.OutOfMemory | sad/other | covered | `./smokes/lambda/lambda-memory-limit-smoke.sh` · [#688](https://github.com/kgz/stackwrangler/issues/688) |
 | Lambda invoke hello (basic role) | happy | covered | `./smokes/lambda/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./smokes/lambda/lambda-deploy-smoke.sh` |
 | Lambda UpdateFunctionCode after PERSISTENCE recreate (code missing → Failed) | happy | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` · [#713](https://github.com/kgz/stackwrangler/issues/713) |

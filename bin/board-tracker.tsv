@@ -384,3 +384,4 @@
 769	in-review	ecs: awsvpc no Docker host PortBindings (#769)
 765	in-review	rds: MySQL server cert SAN + published RDS CA (#765)
 770	in-review	Dev mode: ELBv2 lost on LocalEmu restart
+688	in-progress	Lambda MemorySize mem_limit + cgroup Max Memory Used
