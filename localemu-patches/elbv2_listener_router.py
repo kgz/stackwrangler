@@ -1381,7 +1381,10 @@ class ListenerRouter:
 
         Bridge traffic is conntracked on the host. DNAT there rewrites only
         the destination, and the reverse path puts the LB address back on
-        the reply, so the target's accept() source is the caller.
+        the reply, so the target's accept() source is the caller — and the
+        target security group (SG_IN) evaluates that same address (#236).
+        When this chain cannot be installed, ``_l4_handle`` proxies and the
+        target sees LocalEmu's VPC address instead (allow that proxy /32).
         """
         with self._dnat_lock:
             with self._lock:

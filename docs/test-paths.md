@@ -237,7 +237,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix-list SG rule Description round-trips on describe | happy | covered | `./smokes/networking/sg-prefixlist-description-smoke.sh` · [#682](https://github.com/kgz/stackwrangler/issues/682) |
 | RDS on a subnet allows 5432 only from SG A | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
-| NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
+| NLB path sees client IP at the target SG (app port allows client or proxy only; peer direct refused) | happy | covered | `./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh` · [#236](https://github.com/kgz/awsl/issues/236) |
+| NLB target SG refuses a direct peer while NLB from the allowed client/proxy succeeds | sad/other | covered | `./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh` · [#236](https://github.com/kgz/awsl/issues/236) |
 | VPC Lambda traffic filtered by its security groups | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) · [#237](https://github.com/kgz/awsl/issues/237) |
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./smokes/account/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./smokes/account/labels-smoke.sh` |
