@@ -8,6 +8,7 @@ AWSBOX_ELBV2_E2E=1 ./bin/e2e.sh  # runs elbv2-smoke in e2e (off by default, #299
 ./smokes/networking/elbv2-smoke.sh           # NLB/ALB forward, client IP, health, DNS, authz
 ./smokes/networking/elbv2-host-override-register-smoke.sh  # RegisterTargets keeps host_override (#603)
 ./smokes/networking/elbv2-sg-member-smoke.sh  # ALB SG membership → target health (#768)
+./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh  # NLB client/proxy IP at target SG (#236)
 ./smokes/networking/elbv2-persist-restart-smoke.sh  # PERSISTENCE restart keeps LB/listener/rule/TG (#770)
 ./smokes/networking/elbv2-nonforward-default-smoke.sh  # fixed-response/redirect default still listens (#767)
 ./smokes/networking/elbv2-rule-transforms-smoke.sh  # url-rewrite / host-header-rewrite Transforms (#766)
@@ -42,7 +43,7 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 - No console ([#241](https://github.com/kgz/awsl/issues/241)).
 - TLS does not load the ACM certificate attached at create time ([#242](https://github.com/kgz/awsl/issues/242)).
 - Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
-- Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
+- Client-IP preservation depends on host iptables. When DNAT is installed, the target `SG_IN` sees the caller; when it is not, the userspace proxy source is LocalEmu’s VPC address and the target SG must allow that proxy `/32` (or subnet) — covered by `elbv2-nlb-client-ip-sg-smoke.sh` ([#236](https://github.com/kgz/awsl/issues/236)).
 - ECS bridge-mode tasks behind an instance target group: the listener dials the EC2 container address, but bridge host ports are published on the Docker host. [#247](https://github.com/kgz/awsl/issues/247) sets `Target.host_override`; [#603](https://github.com/kgz/awsl/issues/603) keeps that override across `RegisterTargets`.
 - Classic ELB is not this path.
 - `elbv2-smoke.sh` needs EC2 containers; the mirror resource-id start.d patch breaks them on beta ([#299](https://github.com/kgz/awsl/issues/299)).

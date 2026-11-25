@@ -29,7 +29,7 @@ Happy smokes prove bytes move. **Fidelity smokes** prove the *awkward* path matc
 | Private subnet route table (no default, peering, NAT, GW endpoints) | Workload cannot reach a public host / S3 until a route says so | Covered · `./smokes/networking/vpc-routing-smoke.sh` · `./smokes/networking/vpc-egress-smoke.sh` |
 | Dual S3 brains | Wrong endpoint “succeeds” | Unified org path → LocalEmu · [s3-backends.md](s3-backends.md) · [#162](https://github.com/kgz/stackwrangler/issues/162) |
 | ECS task-role via 169.254 DNAT under compose | In-container SDK path (awsvpc + bridge; sidecar when image lacks iptables) | Covered · `./smokes/compute/ecs-authz-smoke.sh` · `./smokes/compute/ecs-bridge-no-iptables-authz-smoke.sh` · [#154](https://github.com/kgz/stackwrangler/issues/154) · [#254](https://github.com/kgz/stackwrangler/issues/254) |
-| NLB preserves client IP for the target security group | Target SG must see the caller, not the balancer | [#236](https://github.com/kgz/awsl/issues/236) |
+| NLB preserves client IP for the target security group | Target SG sees the caller (DNAT) or admits the LocalEmu proxy `/32` when DNAT is unavailable; direct peer refused | covered · `elbv2-nlb-client-ip-sg-smoke.sh` [#236](https://github.com/kgz/awsl/issues/236) |
 | VPC Lambda security groups | Function traffic follows its groups via netns sidecar iptables | covered · `./smokes/networking/sg-enforcement-smoke.sh` · [#237](https://github.com/kgz/awsl/issues/237) |
 
 Add rows as Debts land; keep this file short.

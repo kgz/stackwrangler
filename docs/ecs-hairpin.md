@@ -31,10 +31,10 @@ The smoke:
 | Direct ENI task↔task | Works | Works |
 | Same-host peer→NLB VIP with client-IP DNAT | Often **fails** (hairpin) | **Fails** when `AWSBOX-ELBV2` DNATs VIP→target on the Docker bridge — same failure class |
 | LocalEmu process → its own VIP | n/a | Works (local delivery; never hits host `PREROUTING` DNAT) |
-| Peer→VIP when host DNAT unavailable | Often works if retention off (proxy/SNAT) | Works via userspace TCP proxy; target may see proxy address ([#236](https://github.com/kgz/awsl/issues/236)) |
+| Peer→VIP when host DNAT unavailable | Often works if retention off (proxy/SNAT) | Works via userspace TCP proxy; target sees LocalEmu proxy address — allow that `/32` in the target SG ([#236](https://github.com/kgz/awsl/issues/236)) |
 | Cross-host via same VIP | Works | N/A — every task shares one Docker host |
 
-**Match:** with DNAT installed (normal `./bin/stackwrangler up` + working host iptables), peer→VIP fails and direct ENI succeeds — the awkward AWS path shows up locally. No separate Debt for “VIP should succeed”; that would *hide* the fidelity bug. Related retention/SG seeing the caller remains [#236](https://github.com/kgz/awsl/issues/236).
+**Match:** with DNAT installed (normal `./bin/stackwrangler up` + working host iptables), peer→VIP fails and direct ENI succeeds — the awkward AWS path shows up locally. No separate Debt for “VIP should succeed”; that would *hide* the fidelity bug. Retention into the target SG (client CIDR or proxy `/32`) is covered by [#236](https://github.com/kgz/awsl/issues/236).
 
 ## Optional real-AWS parity
 
@@ -44,5 +44,5 @@ Not run by default. Creating NLB / ECS tasks in a real account needs **explicit 
 
 - Parent fidelity epic [#180](https://github.com/kgz/awsl/issues/180)
 - ECS task-role DNAT [#154](https://github.com/kgz/awsl/issues/154)
-- NLB client IP at target SG [#236](https://github.com/kgz/awsl/issues/236)
+- NLB client IP at target SG [#236](https://github.com/kgz/awsl/issues/236) (`elbv2-nlb-client-ip-sg-smoke.sh`)
 - ELBv2 data plane [elbv2.md](elbv2.md)
