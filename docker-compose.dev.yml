@@ -5,7 +5,7 @@
 # RDS engine data lives in Docker volumes localemu-rds-<id>-data (not compose) —
 # survive LocalEmu recreate; wiped by `./bin/stackwrangler reset`.
 services:
-  # Come back after Docker/WSL restart (#748).
+  # Come back after Docker/WSL restart (#748 / #763). Ephemeral --test stays "no".
   s3:
     restart: unless-stopped
   localstack:
@@ -20,3 +20,10 @@ services:
     restart: unless-stopped
     volumes:
       - ./.awsbox/dev/ecr:/var/lib/registry
+  ecr-hostname:
+    restart: unless-stopped
+  # Profile-gated; policy applies when the profile is enabled under --dev.
+  sftp:
+    restart: unless-stopped
+  aws-redirect:
+    restart: unless-stopped
