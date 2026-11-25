@@ -164,6 +164,7 @@
 208	done	v1: EC2 instance fidelity IMDS/SSM
 209	done	v1: IAM OIDC AssumeRoleWithWebIdentity
 210	done	v1: RDS MySQL / Aurora MySQL
+225	in-review	Debt: Aurora MySQL failover (from #210)
 211	done	v1: ECR push/pull + ECS task images
 212	done	v1: CFN rollback + delete cleanup
 213	done	v1: multi-account cross-account AssumeRole
