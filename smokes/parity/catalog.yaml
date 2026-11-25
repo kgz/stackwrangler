@@ -42,11 +42,12 @@ checks:
     targets: [local, real]
 
   - id: ec2-vpc-condition-keys
-    title: EC2 SG ec2:Vpc / ResourceTag / RequestTag
-    issues: [664]
+    title: EC2 SG ec2:Vpc / ResourceTag / RequestTag / CreateAction
+    issues: [664, 669]
     covers:
       - "happy: CreateSecurityGroup + CreateTags/DeleteTags + egress + delete in allowed VPC"
-      - "sad: other VPC; missing RequestTag; CreateTags on untagged SG"
+      - "happy: CreateAction-only CreateTags on tag-on-create"
+      - "sad: other VPC; mismatched RequestTag; CreateTags on untagged SG; standalone CreateTags without CreateAction"
     cost_tier: free
     est_cost: "~$0 (empty VPCs + SGs; no NAT/EIP)"
     residual: none

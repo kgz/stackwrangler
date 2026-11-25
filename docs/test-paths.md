@@ -77,8 +77,9 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | `cloudwatch:DescribeAlarms` with multi `AlarmNames` when one name is out of scope → AccessDenied cites that alarm ARN | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
 | `sns:Unsubscribe` / `GetSubscriptionAttributes` / `SetSubscriptionAttributes` on subscription ARN (`<topicArn>:*`) | happy | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · [#651](https://github.com/kgz/stackwrangler/issues/651) |
 | Alarm / SNS subscription manage actions allowed only on a different alarm or topic → AccessDenied cites concrete ARN (not `:*`) | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
-| `ec2:CreateSecurityGroup` with `ec2:Vpc` + TagSpecifications `aws:RequestTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |
-| `ec2:CreateSecurityGroup` in other VPC / without RequestTag denied | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:CreateSecurityGroup` with TagSpecifications → implicit `ec2:CreateTags` + `ec2:CreateAction` + `aws:RequestTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) · [#669](https://github.com/kgz/stackwrangler/issues/669) |
+| `ec2:CreateSecurityGroup` in other VPC / mismatched RequestTag denied | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| Standalone `ec2:CreateTags` denied when Allow requires `ec2:CreateAction=CreateSecurityGroup` | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:AuthorizeSecurityGroupEgress` / `DeleteSecurityGroup` with `ec2:Vpc` + `ec2:ResourceTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` / `DeleteTags` with `ec2:Vpc` + `ec2:ResourceTag` + `aws:ResourceTag` on SG | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` on untagged SG denied by ResourceTag conditions | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
