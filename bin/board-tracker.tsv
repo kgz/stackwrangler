@@ -178,7 +178,7 @@
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	in-review	Debt: cross-account resource policy coverage (from #193)
-236	in-progress	Debt: NLB client IP vs target SG (from #205; needs #203)
+236	in-review	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
 241	backlog	Debt: ELBv2 console (from #203)
 242	in-review	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
