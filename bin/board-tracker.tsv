@@ -385,3 +385,4 @@
 765	in-review	rds: MySQL server cert SAN + published RDS CA (#765)
 770	in-review	Dev mode: ELBv2 lost on LocalEmu restart
 688	in-review	Lambda MemorySize mem_limit + cgroup Max Memory Used
+689	in-review	Lambda MemorySize → nano_cpus (1769 MB = 1 vCPU)

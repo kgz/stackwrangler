@@ -1,15 +1,21 @@
-"""Enforce Lambda MemorySize as Docker mem_limit; REPORT Max Memory Used from cgroup (#688).
+"""Enforce Lambda MemorySize as Docker mem_limit + nano_cpus; REPORT Max Memory Used (#688/#689).
 
 Upstream only sets AWS_LAMBDA_FUNCTION_MEMORY_SIZE. Without mem_limit the
 container can allocate past MemorySize (no Runtime.OutOfMemory) and the
 RAPID REPORT line repeats Memory Size as Max Memory Used. Cap the container
 at MemorySize and rewrite Max Memory Used from cgroup memory.peak.
+
+On AWS, CPU scales with MemorySize (1769 MB = 1 vCPU). ContainerConfiguration
+has no nano_cpus field and docker-py's update_container lacks nano_cpus, so we
+permanently wrap ContainerCollection.create to pass nano_cpus at create time
+(#689) — same race-safe pattern as the mem_limit wrap.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from concurrent.futures import Future
@@ -25,6 +31,9 @@ _CGROUP_PEAK_PATHS = (
 )
 _INVOKE_TIMEOUT_BUFFER_SECONDS = 5
 _OOM_POLL_SECONDS = 0.15
+# AWS Lambda: 1769 MB memory ≈ 1 vCPU
+_MB_PER_VCPU = 1769
+_NANOS_PER_CPU = 1_000_000_000
 
 
 def _memory_size_mb(executor) -> int | None:
@@ -33,6 +42,34 @@ def _memory_size_mb(executor) -> int | None:
     except (TypeError, ValueError, AttributeError):
         return None
 
+
+def _nano_cpus_from_memory(memory_mb: int) -> int:
+    """memory_mb / 1769 * 1e9, capped at the host CPU count."""
+    nano = memory_mb * _NANOS_PER_CPU // _MB_PER_VCPU
+    host_cpus = os.cpu_count() or 1
+    return max(1, min(nano, host_cpus * _NANOS_PER_CPU))
+
+
+def _memory_mb_from_environment(environment) -> int | None:
+    """Parse AWS_LAMBDA_FUNCTION_MEMORY_SIZE from docker-py environment kwarg."""
+    if isinstance(environment, dict):
+        raw = environment.get("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
+    elif isinstance(environment, (list, tuple)):
+        raw = None
+        for item in environment:
+            if not isinstance(item, str):
+                continue
+            if item.startswith("AWS_LAMBDA_FUNCTION_MEMORY_SIZE="):
+                raw = item.split("=", 1)[1]
+                break
+    else:
+        return None
+    if raw is None or raw == "":
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 def _oom_killed(container_client, container_name: str) -> bool:
     try:
@@ -100,18 +137,13 @@ def _oom_result(request_id: str, memory_size: int, peak_mb: int):
     )
 
 
-def _mem_limit_from_env(container_config) -> str | None:
-    env = getattr(container_config, "env_vars", None) or {}
-    raw = env.get("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
-    if raw is None or raw == "":
-        return None
-    try:
-        return f"{int(raw)}m"
-    except (TypeError, ValueError):
-        return None
+def _memory_mb_from_env(container_config) -> int | None:
+    return _memory_mb_from_environment(getattr(container_config, "env_vars", None) or {})
 
 
 def _patch_lambda() -> None:
+    from docker.models.containers import ContainerCollection
+
     from localemu.services.lambda_.invocation.docker_runtime_executor import (
         DockerRuntimeExecutor,
     )
@@ -124,14 +156,28 @@ def _patch_lambda() -> None:
         orig_create = CONTAINER_CLIENT.create_container_from_config
 
         def create_container_from_config(container_config):
-            if not getattr(container_config, "mem_limit", None):
-                mem_limit = _mem_limit_from_env(container_config)
-                if mem_limit:
-                    container_config.mem_limit = mem_limit
+            memory_mb = _memory_mb_from_env(container_config)
+            if memory_mb and not getattr(container_config, "mem_limit", None):
+                container_config.mem_limit = f"{memory_mb}m"
             return orig_create(container_config)
 
         setattr(create_container_from_config, "_awsbox_lambda_mem", True)
         CONTAINER_CLIENT.create_container_from_config = create_container_from_config
+
+    # ContainerConfiguration has no nano_cpus; inject at SDK create (#689).
+    # Class-level wrap: client.containers is a new collection each access.
+    if not getattr(ContainerCollection.create, "_awsbox_lambda_cpu", False):
+        orig_sdk_create = ContainerCollection.create
+
+        def create(self, image, command=None, **kwargs):
+            if not kwargs.get("nano_cpus"):
+                memory_mb = _memory_mb_from_environment(kwargs.get("environment"))
+                if memory_mb:
+                    kwargs["nano_cpus"] = _nano_cpus_from_memory(memory_mb)
+            return orig_sdk_create(self, image, command=command, **kwargs)
+
+        setattr(create, "_awsbox_lambda_cpu", True)
+        ContainerCollection.create = create
 
     def invoke(self, payload, function_timeout=None):
         request_id = ""
@@ -194,4 +240,6 @@ def _patch_lambda() -> None:
 
 
 _patch_lambda()
-LOG.info("Lambda MemorySize mem_limit + cgroup Max Memory Used installed (#688)")
+LOG.info(
+    "Lambda MemorySize mem_limit + nano_cpus + cgroup Max Memory Used installed (#688/#689)"
+)

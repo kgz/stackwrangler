@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # #688: MemorySize → Docker mem_limit; over-limit → Runtime.OutOfMemory;
 # REPORT Max Memory Used from cgroup peak (not a fixed Memory Size echo).
+# #689: MemorySize → Docker NanoCpus (1769 MB = 1 vCPU, capped at host CPUs).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -20,15 +21,24 @@ TS="$(date +%s)"
 ROLE_NAME="awsbox-lambda-mem-${TS}"
 ROLE_ARN="arn:aws:iam::000000000000:role/${ROLE_NAME}"
 SMALL_FN="awsbox-mem-small-${TS}"
+LARGE_FN="awsbox-mem-large-${TS}"
 OOM_FN="awsbox-mem-oom-${TS}"
 ZIP_DIR="$ROOT/.awsbox/lambda-mem-${TS}"
 TRUST='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+# AWS: 1769 MB ≈ 1 vCPU
+MB_PER_VCPU=1769
+NANOS_PER_CPU=1000000000
 
 aws() { command aws --endpoint-url "$EP" --region "$REGION" "$@"; }
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
+expected_nano_cpus() { # memory_mb
+	python3 -c "mb=int('$1'); host=int('$(nproc)'); print(max(1, min(mb * $NANOS_PER_CPU // $MB_PER_VCPU, host * $NANOS_PER_CPU)))"
+}
+
 cleanup() {
 	aws lambda delete-function --function-name "$SMALL_FN" >/dev/null 2>&1 || true
+	aws lambda delete-function --function-name "$LARGE_FN" >/dev/null 2>&1 || true
 	aws lambda delete-function --function-name "$OOM_FN" >/dev/null 2>&1 || true
 	aws iam delete-role --role-name "$ROLE_NAME" >/dev/null 2>&1 || true
 	rm -rf "$ZIP_DIR" >/dev/null 2>&1 || true
@@ -83,8 +93,10 @@ wait_active() {
 }
 
 create_fn "$SMALL_FN" small.zip 256 10
+create_fn "$LARGE_FN" small.zip 512 10
 create_fn "$OOM_FN" oom.zip 128 30
 wait_active "$SMALL_FN"
+wait_active "$LARGE_FN"
 wait_active "$OOM_FN"
 
 # --- mem_limit applied on HostConfig ---
@@ -125,6 +137,31 @@ MEM_BYTES="$(docker inspect "$SMALL_CTR" --format '{{.HostConfig.Memory}}')"
 [[ "$MEM_BYTES" == "268435456" ]] \
 	|| fail "HostConfig.Memory=${MEM_BYTES} want 268435456 (256m) on ${SMALL_CTR}"
 echo "OK: MemorySize=256 → docker Memory=${MEM_BYTES}"
+
+# --- #689: NanoCpus scales with MemorySize ---
+SMALL_NANO="$(docker inspect "$SMALL_CTR" --format '{{.HostConfig.NanoCpus}}')"
+SMALL_WANT="$(expected_nano_cpus 256)"
+[[ "$SMALL_NANO" == "$SMALL_WANT" ]] \
+	|| fail "HostConfig.NanoCpus=${SMALL_NANO} want ${SMALL_WANT} (256 MB) on ${SMALL_CTR}"
+echo "OK: MemorySize=256 → NanoCpus=${SMALL_NANO}"
+
+# Cold-start larger fn and assert proportional CPU (2× memory → 2× nano when under host cap)
+aws lambda invoke --function-name "$LARGE_FN" \
+	--cli-binary-format raw-in-base64-out \
+	--payload '{}' \
+	"$ZIP_DIR/large-out.json" >/dev/null
+LARGE_CTR="$(find_lambda_container "$LARGE_FN")" \
+	|| fail "no docker container for ${LARGE_FN}"
+LARGE_NANO="$(docker inspect "$LARGE_CTR" --format '{{.HostConfig.NanoCpus}}')"
+LARGE_WANT="$(expected_nano_cpus 512)"
+[[ "$LARGE_NANO" == "$LARGE_WANT" ]] \
+	|| fail "HostConfig.NanoCpus=${LARGE_NANO} want ${LARGE_WANT} (512 MB) on ${LARGE_CTR}"
+# Scaling: 512/256 = 2 when both under host CPU cap
+if [[ "$LARGE_WANT" -eq $((SMALL_WANT * 2)) ]]; then
+	[[ "$LARGE_NANO" -eq $((SMALL_NANO * 2)) ]] \
+		|| fail "NanoCpus did not scale 256→512: ${SMALL_NANO} → ${LARGE_NANO}"
+fi
+echo "OK: MemorySize=512 → NanoCpus=${LARGE_NANO} (scales with MemorySize)"
 
 # --- Max Memory Used from cgroup peak (not fixed = Memory Size) ---
 LOG_B64="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("LogResult") or "")' "$ZIP_DIR/small-invoke.json")"
@@ -175,4 +212,4 @@ if [[ -n "$OOM_LOG_B64" ]]; then
 	echo "OK: OOM REPORT present"
 fi
 
-echo "OK: lambda memory-limit smoke (#688)"
+echo "OK: lambda memory-limit + cpu-from-MemorySize smoke (#688/#689)"
