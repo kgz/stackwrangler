@@ -226,30 +226,68 @@ SG_CA="$(aws ec2 create-security-group \
 	--query GroupId --output text)"
 parity_pass "create-security-group with CreateAction-gated CreateTags"
 
+# Matching RequestTag so the only failing condition is absent ec2:CreateAction.
 set +e
 aws ec2 create-tags \
 	--resources "$SG_CA" \
-	--tags "Key=env,Value=prod" \
+	--tags "Key=stack-name,Value=${STACK_NAME}" \
 	>"$WORK/ca-standalone.out" 2>&1
 echo $? >"$WORK/ca-standalone.out.rc"
 set -e
 expect_deny "standalone create-tags denied without CreateAction" "$WORK/ca-standalone.out"
 
-# Wrong CreateAction: policy requires CreateSecurityGroup; CreateVpc-shaped Allow absent.
-# Standalone already proved CreateAction missing. Also deny mismatched RequestTag on create.
-set +e
-aws ec2 create-security-group \
-	--group-name "sw-parity-ec2vpc-ca-badtag-${TS}" \
-	--description "mismatched request tag" \
-	--vpc-id "$VPC_OK" \
-	--tag-specifications "ResourceType=security-group,Tags=[{Key=stack-name,Value=wrong-${STACK_NAME}}]" \
-	>"$WORK/ca-badtag.out" 2>&1
-echo $? >"$WORK/ca-badtag.out.rc"
-set -e
-expect_deny "create-security-group with mismatched RequestTag denied (CreateTags CreateAction)" "$WORK/ca-badtag.out"
-
 aws ec2 delete-security-group --group-id "$SG_CA" >/dev/null
 SG_CA=""
+
+# Wrong CreateAction: Allow CreateTags only when CreateAction=CreateVpc, then tag-on-create
+# via CreateSecurityGroup (sets CreateAction=CreateSecurityGroup) → deny. RequestTag matches.
+parity_restore_admin "$ADMIN_KEY" "$ADMIN_SECRET" "$ADMIN_TOKEN"
+cat >"$WORK/ca-wrong-action.json" <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ec2:CreateSecurityGroup",
+${CREATE_SG_RESOURCE}
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ec2:CreateTags",
+      "Resource": "arn:aws:ec2:${REGION}:${ACCT}:security-group/*",
+      "Condition": {
+        "StringEquals": {
+          "ec2:CreateAction": "CreateVpc",
+          "aws:RequestTag/stack-name": "${STACK_NAME}"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::${ACCT}:role/${CA_ROLE}"
+    }
+  ]
+}
+EOF
+aws iam put-role-policy \
+	--role-name "$CA_ROLE" \
+	--policy-name allow \
+	--policy-document "file://$WORK/ca-wrong-action.json" >/dev/null
+parity_wait_iam 5
+assume_role "$CA_ROLE" ec2vpc-ca-wrong
+
+set +e
+aws ec2 create-security-group \
+	--group-name "sw-parity-ec2vpc-ca-wrongact-${TS}" \
+	--description "wrong CreateAction policy" \
+	--vpc-id "$VPC_OK" \
+	--tag-specifications "ResourceType=security-group,Tags=[{Key=stack-name,Value=${STACK_NAME}}]" \
+	>"$WORK/ca-wrongact.out" 2>&1
+echo $? >"$WORK/ca-wrongact.out.rc"
+set -e
+expect_deny "create-security-group denied when CreateAction is CreateVpc (wrong parent)" "$WORK/ca-wrongact.out"
+
 parity_restore_admin "$ADMIN_KEY" "$ADMIN_SECRET" "$ADMIN_TOKEN"
 
 # --- Full deploy role: Vpc / ResourceTag / CreateAction (#664 + #669) ---
