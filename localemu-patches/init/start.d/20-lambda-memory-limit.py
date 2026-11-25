@@ -100,6 +100,17 @@ def _oom_result(request_id: str, memory_size: int, peak_mb: int):
     )
 
 
+def _mem_limit_from_env(container_config) -> str | None:
+    env = getattr(container_config, "env_vars", None) or {}
+    raw = env.get("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
+    if raw is None or raw == "":
+        return None
+    try:
+        return f"{int(raw)}m"
+    except (TypeError, ValueError):
+        return None
+
+
 def _patch_lambda() -> None:
     from localemu.services.lambda_.invocation.docker_runtime_executor import (
         DockerRuntimeExecutor,
@@ -107,22 +118,20 @@ def _patch_lambda() -> None:
     from localemu.services.lambda_.invocation.executor_endpoint import InvokeSendError
     from localemu.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 
-    original_start = DockerRuntimeExecutor._do_start
-
-    def _do_start(self, env_vars):
-        memory_size = _memory_size_mb(self)
+    # Permanent wrap (not swap-restore): concurrent cold starts must not
+    # unwind each other's create_container_from_config (#815 review).
+    if not getattr(CONTAINER_CLIENT.create_container_from_config, "_awsbox_lambda_mem", False):
         orig_create = CONTAINER_CLIENT.create_container_from_config
 
         def create_container_from_config(container_config):
-            if memory_size and not getattr(container_config, "mem_limit", None):
-                container_config.mem_limit = f"{memory_size}m"
+            if not getattr(container_config, "mem_limit", None):
+                mem_limit = _mem_limit_from_env(container_config)
+                if mem_limit:
+                    container_config.mem_limit = mem_limit
             return orig_create(container_config)
 
+        setattr(create_container_from_config, "_awsbox_lambda_mem", True)
         CONTAINER_CLIENT.create_container_from_config = create_container_from_config
-        try:
-            return original_start(self, env_vars)
-        finally:
-            CONTAINER_CLIENT.create_container_from_config = orig_create
 
     def invoke(self, payload, function_timeout=None):
         request_id = ""
@@ -181,7 +190,6 @@ def _patch_lambda() -> None:
             result.logs = _rewrite_max_memory(result.logs, peak)
         return result
 
-    DockerRuntimeExecutor._do_start = _do_start
     DockerRuntimeExecutor.invoke = invoke
 
 
