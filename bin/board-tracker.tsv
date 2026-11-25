@@ -320,7 +320,7 @@
 540	backlog	Debt: KMS create/detail (from #177)
 543	in-review	Debt: API Gateway REST create/deploy controls (from #189)
 544	backlog	Debt: EC2 Launch instance wizard (from #146)
-545	in-progress	Debt: ECS Run task / Create service / logs console (from #146)
+545	in-review	Debt: ECS Run task / Create service / logs console (from #146)
 546	backlog	Debt: SNS create topic + topic detail (from #172)
 548	backlog	Debt: SQS create/detail/send (from #167)
 549	backlog	Debt: DynamoDB create/detail (from #174)
