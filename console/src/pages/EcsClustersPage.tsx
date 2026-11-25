@@ -506,45 +506,72 @@ function TaskDetail({
   const refresh = useCallback(async () => {
     setLoading(true)
     setError(null)
+
+    let found: Task | null
     try {
-      const found = await describeTask(cluster, taskId)
-      setTask(found)
-      if (!found) {
-        setLogsTargets([])
-        setLogEvents([])
-        setError(`Task ${taskId} not found in cluster ${cluster}`)
-        return
-      }
-      const tdArn = found.taskDefinitionArn
-      const td = tdArn ? await describeTaskDefinition(tdArn) : null
-      const targets = awslogsTargetsForTask(td, found)
-      setLogsTargets(targets)
-      if (targets.length > 0) {
-        const primary = targets[0]
-        try {
-          setLogEvents(
-            await filterLogEvents({
-              logGroupName: primary.logGroupName,
-              logStreamNames: [primary.logStreamName],
-              limit: 50,
-            }),
-          )
-        } catch {
-          setLogEvents(
-            await filterLogEvents({
-              logGroupName: primary.logGroupName,
-              limit: 50,
-            }),
-          )
-        }
-      } else {
-        setLogEvents([])
-      }
+      found = await describeTask(cluster, taskId)
     } catch (err) {
       setTask(null)
       setLogsTargets([])
       setLogEvents([])
       setError(err instanceof Error ? err.message : String(err))
+      setLoading(false)
+      return
+    }
+
+    setTask(found)
+    if (!found) {
+      setLogsTargets([])
+      setLogEvents([])
+      setError(`Task ${taskId} not found in cluster ${cluster}`)
+      setLoading(false)
+      return
+    }
+
+    try {
+      const tdArn = found.taskDefinitionArn
+      const td = tdArn ? await describeTaskDefinition(tdArn) : null
+      const targets = awslogsTargetsForTask(td, found)
+      setLogsTargets(targets)
+      if (targets.length === 0) {
+        setLogEvents([])
+        return
+      }
+      const primary = targets[0]
+      try {
+        setLogEvents(
+          await filterLogEvents({
+            logGroupName: primary.logGroupName,
+            logStreamNames: [primary.logStreamName],
+            limit: 50,
+          }),
+        )
+      } catch {
+        try {
+          setLogEvents(
+            await filterLogEvents({
+              logGroupName: primary.logGroupName,
+              limit: 50,
+            }),
+          )
+        } catch (err) {
+          setLogEvents([])
+          setError(
+            err instanceof Error
+              ? `Logs: ${err.message}`
+              : `Logs: ${String(err)}`,
+          )
+        }
+      }
+    } catch (err) {
+      // Keep the loaded task; only logs/TD secondary path failed.
+      setLogsTargets([])
+      setLogEvents([])
+      setError(
+        err instanceof Error
+          ? `Logs: ${err.message}`
+          : `Logs: ${String(err)}`,
+      )
     } finally {
       setLoading(false)
     }
