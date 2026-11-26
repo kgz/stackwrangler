@@ -38,6 +38,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | `up --dev` as a user other than uid 1000: boot hook hands `.awsbox/dev/localemu` to `localemu` | happy | covered | `./smokes/platform/dev-state-owner-smoke.sh` · [#754](https://github.com/kgz/stackwrangler/issues/754) |
 | `--dev` down keeps `<project>_default` so bridge-mode ECS tasks resume after `up --dev` | happy | covered | `./smokes/platform/dev-down-keeps-network-smoke.sh` · [#753](https://github.com/kgz/stackwrangler/issues/753) |
 | ECS restore: every container of a multi-container task resumes; restored tasks list as RUNNING; RunTask on a held host port reports `RESOURCE:PORTS` | happy + sad | covered | `./smokes/platform/ecs-restore-multi-container-smoke.sh` · [#747](https://github.com/kgz/stackwrangler/issues/747) |
+| ECS service `desiredCount=1` restores `runningCount=1` after `down` → `up --dev` (replaces STOPPED tasks) | happy | covered | `./smokes/platform/ecs-service-restore-replace-smoke.sh` · [#826](https://github.com/kgz/stackwrangler/issues/826) |
 | Dev keep-data: `up --dev` → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties | happy | covered | `./smokes/platform/mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
@@ -82,6 +83,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | `ec2:AuthorizeSecurityGroupEgress` / `DeleteSecurityGroup` with `ec2:Vpc` + `ec2:ResourceTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` / `DeleteTags` with `ec2:Vpc` + `ec2:ResourceTag` + `aws:ResourceTag` on SG | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` on untagged SG denied by ResourceTag conditions | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:CreateTags` / `DeleteTags` / TagSpecifications reject user `aws:`-prefixed keys | sad/other | covered | `./smokes/security/ec2-reserved-tag-keys-smoke.sh` · [#825](https://github.com/kgz/stackwrangler/issues/825) |
+| `ec2:CreateTags` with a normal key still succeeds | happy | covered | `./smokes/security/ec2-reserved-tag-keys-smoke.sh` |
 | `kms:ViaService` / service-origin `aws:SourceArn` / `aws:SourceAccount` (S3 SSE-KMS); EC2 instance-profile PassRole | happy + sad/authz | covered | `./smokes/security/service-origin-condition-keys-smoke.sh` |
 | `kms:ViaService` + `kms:ResourceAliases` (Secrets Manager / SSM SecureString CMK alias) | happy + sad/authz | covered | `./smokes/security/kms-via-secrets-aliases-smoke.sh` |
 | Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./smokes/security/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |
