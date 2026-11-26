@@ -23,7 +23,7 @@ docker run --rm --network host \
   ghcr.io/kgz/stackwrangler:latest up
 ```
 
-Pin a cut with `:v0.0.2` (or a digest) instead of `:latest` — see [Changelog](./changelog) and [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md).
+Pin a cut with `:v0.1.2` (or a digest) instead of `:latest` — see [Changelog](./changelog) and [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md).
 
 That pulls sibling images (LocalEmu with patches, SeaweedFS, **console web app**, ECR registry), starts them on the **host** Docker engine, and writes AWS profile `local`. Config lives in `~/.stackwrangler`. One `up` = APIs + CLI profile + web console — no extra step for the UI.
 

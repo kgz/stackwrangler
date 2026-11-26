@@ -4,3 +4,6 @@ User-agent: *
 Allow: /
 
 Sitemap: https://stackwrangler.dev/sitemap.xml
+
+# LLM / agent discovery
+# https://stackwrangler.dev/llms.txt
