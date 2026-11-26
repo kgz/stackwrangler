@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/kgz/stackwrangler)](https://github.com/kgz/stackwrangler/releases/latest)
 [![parity-free](https://github.com/kgz/stackwrangler/actions/workflows/parity-free.yml/badge.svg)](https://github.com/kgz/stackwrangler/actions/workflows/parity-free.yml)
-[![Docs](https://img.shields.io/badge/docs-kgz.github.io-0B6E4F)](https://kgz.github.io/stackwrangler/)
+[![Docs](https://img.shields.io/badge/docs-stackwrangler.dev-0B6E4F)](https://stackwrangler.dev/)
 [![GHCR](https://img.shields.io/badge/GHCR-stackwrangler-blue?logo=github)](https://github.com/kgz/stackwrangler/pkgs/container/stackwrangler)
 
 **Not affiliated with Amazon Web Services.** Independent open-source tooling to develop and test AWS-shaped stacks locally, then deploy to real AWS. Not an AWS product and not a hosted substitute for AWS.
@@ -14,7 +14,7 @@ One **local AWS-shaped account** — real APIs, a grey-rose console on localhost
 
 **IaC verification sandbox** for OpenTofu / Terraform (and CDK / SAM / Serverless) — console and clients included — **not** a generic LocalStack clone. [Compare](docs-site/guide/compare/) · [Use case: OpenTofu → Expo + IAM](docs-site/guide/use-cases/opentofu-expo-iam.md)
 
-North star: [docs/vision.md](docs/vision.md) · Docs: [docs-site/](docs-site/) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) · Status: [docs/status.md](docs/status.md) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
+North star: [docs/vision.md](docs/vision.md) · Docs: [docs-site/](docs-site/) → [stackwrangler.dev](https://stackwrangler.dev/) · Status: [docs/status.md](docs/status.md) · [LICENSE](LICENSE) (MIT) · [THIRD_PARTY.md](THIRD_PARTY.md)
 
 ## Console
 
@@ -99,7 +99,7 @@ Org learning path (**Transfer → Lambda → S3 → ECS → RDS**, v0.1.0): hops
 ## Documentation
 
 - [Docker install](docs/docker-install.md) — public path (start here)
-- Public docs site: [docs-site/](docs-site/) (VitePress) → [kgz.github.io/stackwrangler](https://kgz.github.io/stackwrangler/) after Pages is enabled on a public repo
+- Public docs site: [docs-site/](docs-site/) (VitePress) → [stackwrangler.dev](https://stackwrangler.dev/)
 - Run docs locally: `cd docs-site && pnpm install && pnpm dev`
 - [Compare](docs-site/guide/compare/) — vs LocalEmu, Moto, LocalStack, real AWS, SAM Local, other emulators
 - [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM · [Org path](docs-site/guide/use-cases/org-path.md)

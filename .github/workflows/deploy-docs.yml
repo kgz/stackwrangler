@@ -1,10 +1,5 @@
-# Build docs-site/ and deploy to GitHub Pages (https://kgz.github.io/stackwrangler/).
-# Mirror of Runa's deploy-docs.yml: pnpm in docs-site/, upload-pages-artifact, deploy-pages.
-#
-# While the repo is private, Pages Actions often cannot publish (need public repo
-# or org/enterprise Pages). Workflow still builds on push/dispatch so we can
-# dry-run. After #413 flips visibility: Settings → Pages → Source: GitHub Actions,
-# then the next green run on main goes live. No redesign required.
+# Build docs-site/ and deploy to GitHub Pages (https://stackwrangler.dev).
+# Artifact via Actions; custom domain CNAME is docs-site/public/CNAME.
 name: Deploy Documentation
 
 on:
@@ -52,8 +47,6 @@ jobs:
       - name: Build VitePress site
         working-directory: docs-site
         env:
-          # Force base `/stackwrangler/` (also set when CI=true)
-          GITHUB_PAGES: '1'
           CI: 'true'
         run: pnpm build
 

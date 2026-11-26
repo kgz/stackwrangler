@@ -2,9 +2,9 @@
 
 Maintainer notes for the VitePress site under `docs-site/`. Product guide pages live in `guide/` — do not put deploy/meta instructions there.
 
-Public URL (when Pages is wired): https://kgz.github.io/stackwrangler/
+Public URL: https://stackwrangler.dev/
 
-SEO / Search Console: `google-site-verification` + Open Graph / Twitter / JSON-LD live in `.vitepress/config.mts`. `public/robots.txt` and the VitePress `sitemap` ship into the build (`…/robots.txt`, `…/sitemap.xml`). In GSC use a **URL-prefix** property for `https://kgz.github.io/stackwrangler/` and submit that sitemap.
+SEO / Search Console: `google-site-verification` + Open Graph / Twitter / JSON-LD live in `.vitepress/config.mts`. `public/robots.txt` and the VitePress `sitemap` ship into the build. In GSC use a **Domain** property for `stackwrangler.dev` and submit `https://stackwrangler.dev/sitemap.xml`.
 
 ```bash
 pnpm install
@@ -13,11 +13,11 @@ pnpm build    # docs-site/.vitepress/dist
 pnpm preview
 ```
 
-On GitHub Pages, `base` is `/stackwrangler/` (`GITHUB_PAGES=1` or `CI=true`). Locally that env is off so `pnpm dev` serves at `/`.
+Production and local both use `base: '/'` (custom domain serves at site root).
 
 ```bash
 # Match Pages base locally (optional)
-GITHUB_PAGES=1 pnpm build && GITHUB_PAGES=1 pnpm preview
+pnpm build && pnpm preview
 # → http://127.0.0.1:4173/stackwrangler/
 ```
 
