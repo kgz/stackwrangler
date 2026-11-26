@@ -36,7 +36,7 @@ export default withMermaid(
     sitemap: {
       hostname: siteHostname,
       transformItems(items) {
-        return items
+        const mapped = items
           .filter((item) => !/README(?:\.html)?\/?$/i.test(item.url))
           .map((item) => {
             const path = item.url.replace(siteHostname, '')
@@ -48,6 +48,11 @@ export default withMermaid(
               ),
             }
           })
+        const llms = `${siteHostname}/llms.txt`
+        if (!mapped.some((item) => item.url === llms)) {
+          mapped.push({ url: llms })
+        }
+        return mapped
       },
     },
     head: [
@@ -186,6 +191,10 @@ export default withMermaid(
                 link: '/guide/use-cases/opentofu-expo-iam',
               },
               {
+                text: 'Prowler / Steampipe',
+                link: '/guide/use-cases/scanners-diagrammers',
+              },
+              {
                 text: 'Org path (Transfer → RDS)',
                 link: '/guide/use-cases/org-path',
               },
@@ -243,7 +252,7 @@ export default withMermaid(
       ],
       footer: {
         message:
-          'Not affiliated with Amazon Web Services. Independent MIT-licensed OSS.',
+          'Not affiliated with Amazon Web Services. Independent MIT-licensed OSS. · <a href="/llms.txt">llms.txt</a>',
         copyright: 'Copyright © stackwrangler contributors',
       },
       search: { provider: 'local' },
@@ -255,7 +264,8 @@ export default withMermaid(
     },
     markdown: {
       theme: { light: 'github-light', dark: 'github-dark' },
-      lineNumbers: true,
+      // Off: line gutters confuse copy-paste / crawler text extraction of bash fences.
+      lineNumbers: false,
     },
     // mermaid@11 does `import dayjs from "dayjs"` against CJS dayjs.min.js — no default export for Vite.
     // Exact alias only (string find is a prefix and breaks dayjs/plugin/*).

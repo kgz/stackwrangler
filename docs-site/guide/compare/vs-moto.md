@@ -24,7 +24,7 @@ Moto also lives **inside** LocalEmu for many service backends. We do not “win 
 | IAM | Improving; weaker for org-path “fails like AWS” | `IAM_ENFORCEMENT=1` + deny / resource-policy smokes |
 | Lambda | Can Docker-invoke (not “Python-only”) | Docker runtime via LocalEmu; same account as IAM/VPC |
 | EC2 / SG | API state — rules do **not** filter real packets | Docker-backed instances + VPC/SG patches |
-| Console | Tracker-style dashboard | Grey-rose AWS-shaped console |
+| Console | Tracker-style dashboard | Local AWS-shaped console |
 
 ## Myths
 

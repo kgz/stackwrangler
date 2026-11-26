@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@antv/g6": "^5.1.1",
-    "dayjs": "^1.11.23"
+    "dayjs": "^1.11.23",
+    "medium-zoom": "^1.1.2"
   },
   "pnpm": {
     "overrides": {

@@ -1,6 +1,6 @@
 # Console tour
 
-Screenshots from a **local** stackwrangler console (grey rose theme, real data after `./bin/stackwrangler up`). These are not AWS Management Console recon images.
+Screenshots from the **local** stackwrangler console (real data after `./bin/stackwrangler up`). Not the AWS Management Console.
 
 Assets live in shared [`docs/assets/console/`](https://github.com/kgz/stackwrangler/tree/main/docs/assets/console) (also used by the public README work).
 

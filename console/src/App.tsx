@@ -57,6 +57,7 @@ import {
 import { Ec2InstancesPage } from './pages/Ec2InstancesPage'
 import { LoadBalancersPage } from './pages/LoadBalancersPage'
 import { VpcsPage } from './pages/VpcsPage'
+import { ApiCallLogPage } from './pages/ApiCallLogPage'
 
 export default function App() {
   return (
@@ -199,6 +200,7 @@ export default function App() {
           <Route path="batch-operations" element={<StorageInsightsPage />} />
           <Route path="account-settings" element={<AccountSettingsPage />} />
           <Route path="marketplace" element={<MarketplacePage />} />
+          <Route path="cloudtrail" element={<ApiCallLogPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

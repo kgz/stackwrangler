@@ -8,7 +8,7 @@
 
 **Not affiliated with Amazon Web Services.** Independent open-source tooling to develop and test AWS-shaped stacks locally, then deploy to real AWS. Not an AWS product and not a hosted substitute for AWS.
 
-One **local AWS-shaped account** — real APIs, a grey-rose console on localhost, and IaC against profile `local`. Learn and stage without a cloud bill.
+One **local AWS-shaped account** — real APIs, a local console, and IaC against profile `local`. Learn and stage without a cloud bill.
 
 **Most local stacks default-allow IAM** (wrong policies still “work”). stackwrangler does not: **`IAM_ENFORCEMENT=1`** — authz **denies** like AWS when the policy is wrong, then the same tools promote to a real account.
 
@@ -75,7 +75,7 @@ Contributor clone path: `./bin/stackwrangler up` copies `.env.example` → `.env
 | Mode | `test` (default) / `dev` — `status` · [dev-mode.md](docs/dev-mode.md) |
 | Config / data | `~/.stackwrangler` |
 
-Images publish to GHCR on product tags (`vX.Y.Z`). Until a tag has been cut, build locally from a contributor checkout with `./bin/build-release-images.sh` (see docker-install docs) — **running** the stack still does not require keeping the clone.
+Images publish to GHCR on product tags (`vX.Y.Z`) and `:latest` (current latest: **v0.1.1**). Public path is `docker pull` / `docker run` only — no clone. Local image builds (`./bin/build-release-images.sh`) are for contributors; see [docs/docker-install.md](docs/docker-install.md).
 
 ## Contributors (git clone)
 
@@ -99,10 +99,10 @@ Org learning path (**Transfer → Lambda → S3 → ECS → RDS**, v0.1.0): hops
 ## Documentation
 
 - [Docker install](docs/docker-install.md) — public path (start here)
-- Public docs site: [docs-site/](docs-site/) (VitePress) → [stackwrangler.dev](https://stackwrangler.dev/)
+- Public docs: **[stackwrangler.dev](https://stackwrangler.dev/)** ([docs-site/](docs-site/) source)
 - Run docs locally: `cd docs-site && pnpm install && pnpm dev`
-- [Compare](docs-site/guide/compare/) — vs LocalEmu, Moto, LocalStack, real AWS, SAM Local, other emulators
-- [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM · [Org path](docs-site/guide/use-cases/org-path.md)
+- [Compare](docs-site/guide/compare/) — vs LocalEmu, Moto, LocalStack, AWS Emulator, Floci/fakecloud, …
+- [Use cases](docs-site/guide/use-cases/) — OpenTofu → Expo + IAM · [Prowler / Steampipe](docs-site/guide/use-cases/scanners-diagrammers.md) · [Org path](docs-site/guide/use-cases/org-path.md)
 - [Org path](docs/org-path.md) — Transfer→…→RDS real vs stub (v0.1.0)
 - [Vision](docs/vision.md) — north star (mirrored on the site)
 - [Service status](docs/status.md) — Working / Partial matrix

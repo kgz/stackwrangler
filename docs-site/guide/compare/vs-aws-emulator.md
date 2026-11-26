@@ -12,7 +12,7 @@ It is **not** a substitute for runtime IAM evaluation. Missing or wrong workload
 ## Choose stackwrangler if
 
 - Your pain is **false-green IAM** — agents and humans `apply` locally and need **AccessDenied** when the principal hop is wrong
-- You want CLI + grey-rose **console** + IaC on one local account with `IAM_ENFORCEMENT=1`
+- You want CLI + **console** + IaC on one local account with `IAM_ENFORCEMENT=1`
 - You care about deny-path smokes / parity, not only `create-*`
 
 ## IAM Mock Trap (why this page exists)

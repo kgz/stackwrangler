@@ -2,25 +2,28 @@
 
 Stage a hosting-shaped stack locally: **OpenTofu / Terraform** applies into profile `local`, workloads run under **strict IAM** and **Secrets Manager**, messaging hits **SNS**, and an **Expo** client talks to local APIs — before the same shape goes to real AWS.
 
+This is **not** API-mock theatre. On the paths we cover, real containers and processes run: an EC2-shaped app can publish through an ECS microservice into SNS, Expo can receive the notification path, and a phone/BFF loop can talk back to ECS — with **`IAM_ENFORCEMENT=1`** so a missing publish/role fails with **AccessDenied** instead of a silent green.
+
 ```mermaid
 flowchart LR
   TF[OpenTofu / Terraform]
   VPC[VPC + SG]
-  L[Lambda]
-  EC2[EC2-shaped compute]
+  EC2[EC2-shaped app]
+  ECS[ECS microservice / BFF]
   SNS[SNS]
-  Expo[Expo app]
+  Expo[Expo / phone]
   TF --> VPC
-  VPC --> L
   VPC --> EC2
-  L --> SNS
-  EC2 --> SNS
-  Expo --> L
+  VPC --> ECS
+  EC2 --> ECS
+  ECS --> SNS
+  SNS --> Expo
+  Expo --> ECS
 ```
 
 ## Who this is for
 
-Teams building B2B / CRM-style backends with a mobile client who need IAM and networking mistakes to fail **on the laptop**, not in a shared cloud account.
+Teams with a mobile client and a few real services who need IAM and networking mistakes to fail **on the laptop**, not in a shared cloud account. Also useful when an AI agent applies the stack locally and you need runnable products, not only `create-*` success.
 
 ## Why stackwrangler for this path
 
@@ -32,7 +35,7 @@ Same free-emulator job underneath — then harden VPC/SG, console, sidecars, and
 |------|-----------------------------------------------|
 | IAM + secrets | Default-allow vs enforcement + deny smokes on by product default |
 | SG / VPC behaviour | API theatre vs patched packet paths |
-| One account for TF + mobile + console | Profile `local` + grey-rose console |
+| One account for TF + mobile + console | Profile `local` + local console |
 | Honest limits | Working / Partial / Stub — see [Completeness](../completeness) |
 
 Compare: [vs LocalEmu](../compare/vs-localemu) · [vs Moto](../compare/vs-moto).

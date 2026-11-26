@@ -25,7 +25,7 @@ LocalEmu is the emulator engine. **stackwrangler** is the account product (compo
 | [vs LocalStack](./vs-localstack) | Paid emulator / false-green history |
 | [vs real AWS](./vs-real-aws) | “Just use a sandbox account” |
 | [vs SAM Local / serverless-offline](./vs-sam-local) | Lambda-only local runners |
-| [vs other free emulators](./vs-other-emulators) | fakecloud, Floci, and similar forks |
+| [vs other free emulators](./vs-other-emulators) | Floci / fakecloud — Smithy wire vs dataplane; IAM default; MIT vs AGPL |
 
 Hero path: [Use case — OpenTofu → Expo + IAM](../use-cases/opentofu-expo-iam).
 
