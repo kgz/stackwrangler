@@ -18,9 +18,10 @@ run ./smokes/security/iam-access-denied.sh
 run ./smokes/security/iam-simulate-policy-smoke.sh
 
 # Compute / path hops
+# ecs-smoke.sh (terraform + awsvpc nginx) stays local/e2e — GHA runners lose
+# LocalEmu mid-apply. Authz covers the CI-critical ECS credential path.
 run ./smokes/lambda/lambda-smoke.sh
 run ./smokes/lambda/lambda-authz-smoke.sh
-run ./smokes/compute/ecs-smoke.sh
 run ./smokes/compute/ecs-authz-smoke.sh
 run ./smokes/transfer/transfer-authz-smoke.sh
 run ./smokes/data/rds-authz-smoke.sh
