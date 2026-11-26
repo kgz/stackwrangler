@@ -21,10 +21,10 @@ run ./smokes/s3/s3-org-path-brain-smoke.sh
 run ./smokes/security/iam-access-denied.sh
 run ./smokes/security/iam-simulate-policy-smoke.sh
 
-# Compute (no task-image builds)
+# Compute (no task-image builds). Transfer/SFTP authz stays local — GHA
+# runners often lack a reachable :2222 path for the Permission denied assert.
 run ./smokes/lambda/lambda-smoke.sh
 run ./smokes/lambda/lambda-authz-smoke.sh
-run ./smokes/transfer/transfer-authz-smoke.sh
 
 # Core data + messaging (happy + authz)
 run ./smokes/messaging/sqs-smoke.sh
