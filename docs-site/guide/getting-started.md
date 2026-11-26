@@ -92,4 +92,4 @@ pnpm install
 pnpm dev      # http://127.0.0.1:5173/
 ```
 
-Hosted target (after the repo is public + Pages enabled): https://kgz.github.io/stackwrangler/
+Hosted docs: https://stackwrangler.dev/

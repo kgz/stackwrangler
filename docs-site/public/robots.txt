@@ -1,6 +1,6 @@
-# Project Pages site: https://kgz.github.io/stackwrangler/
-# Submit this Sitemap URL in Google Search Console (URL-prefix property).
+# Canonical docs: https://stackwrangler.dev/
+# GSC: Domain property stackwrangler.dev → submit https://stackwrangler.dev/sitemap.xml
 User-agent: *
 Allow: /
 
-Sitemap: https://kgz.github.io/stackwrangler/sitemap.xml
+Sitemap: https://stackwrangler.dev/sitemap.xml

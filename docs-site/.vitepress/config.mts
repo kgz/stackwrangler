@@ -3,17 +3,16 @@ import path from 'node:path'
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
-// Pages (CI / GITHUB_PAGES=1): https://kgz.github.io/stackwrangler/
-// Local `pnpm dev` / `pnpm preview` without the env → base `/` so you open http://127.0.0.1:5173/
-const pages = process.env.GITHUB_PAGES === '1' || process.env.CI === 'true'
+// Production: https://stackwrangler.dev (GitHub Pages custom domain; base `/`).
+// Local `pnpm dev` / `pnpm preview` → same base `/` at http://127.0.0.1:5173/
 const require = createRequire(import.meta.url)
 const dayjsRoot = path.dirname(require.resolve('dayjs/package.json'))
 const dayjsEsm = path.join(dayjsRoot, 'esm/index.js')
 
-/** Production origin for canonical / OG / sitemap (always Pages URL). */
-const siteHostname = 'https://kgz.github.io'
-const siteBasePath = '/stackwrangler/'
-const siteUrl = `${siteHostname}${siteBasePath}`
+/** Production origin for canonical / OG / sitemap. */
+const siteHostname = 'https://stackwrangler.dev'
+const siteBasePath = '/'
+const siteUrl = `${siteHostname}/`
 const siteDescription =
   'Local AWS-shaped account for real APIs, console, and IaC — then deploy to real AWS'
 
@@ -29,12 +28,11 @@ export default withMermaid(
     title: 'stackwrangler',
     description: siteDescription,
     lang: 'en-US',
-    base: pages ? '/stackwrangler/' : '/',
+    base: '/',
     ignoreDeadLinks: true,
     lastUpdated: true,
     cleanUrls: true,
-    // VitePress sitemap hostname is origin-only; rewrite locs to include Pages base
-    // and drop maintainer README from the public map.
+    // Drop maintainer README from the public map; locs are already on siteHostname.
     sitemap: {
       hostname: siteHostname,
       transformItems(items) {
@@ -42,12 +40,9 @@ export default withMermaid(
           .filter((item) => !/README(?:\.html)?\/?$/i.test(item.url))
           .map((item) => {
             const path = item.url.replace(siteHostname, '')
-            const withBase = path.startsWith(siteBasePath)
-              ? path
-              : `${siteBasePath}${path.replace(/^\//, '')}`
             return {
               ...item,
-              url: `${siteHostname}${withBase}`.replace(
+              url: `${siteHostname}${path.startsWith('/') ? path : `/${path}`}`.replace(
                 /([^:]\/)\/+/g,
                 '$1',
               ),
