@@ -125,9 +125,9 @@ Patch cut for high-impact defects that escape v0.1.1 on prove/CI, org-path conso
 
 **Ship bar (met):** free-ci green on batch tip; real AWS `CreateTags` rejects `aws:` keys; curated CI smokes + CreateAction / Lambda mem·CPU / ELBv2 / Aurora failover / ECR·ECS·ELBv2 console / reserved tags / ECS service restore landed. Not catalogue width / not `v1.0.0`.
 
-### v0.1.3 — Escaped core fidelity *(next — opened on cut)*
+### v0.1.3 — Escaped core fidelity *(active — `CURRENT_RELEASE`)*
 
-Patch lane for high-impact defects that escape v0.1.2 on core runtime, prove/CI, or shipped-console honesty. Gate: Impact ≥ 4 path/runtime/proof-critical. Do not dump catalogue width here. Becomes `CURRENT_RELEASE` when `v0.1.2` is tagged.
+Patch lane for high-impact defects that escape v0.1.2 on core runtime, prove/CI, or shipped-console honesty. Gate: Impact ≥ 4 path/runtime/proof-critical. Do not dump catalogue width here.
 
 ### Unlabelled backlog
 
