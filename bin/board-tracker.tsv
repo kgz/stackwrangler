@@ -164,13 +164,14 @@
 208	done	v1: EC2 instance fidelity IMDS/SSM
 209	done	v1: IAM OIDC AssumeRoleWithWebIdentity
 210	done	v1: RDS MySQL / Aurora MySQL
+225	in-review	Debt: Aurora MySQL failover (from #210)
 211	done	v1: ECR push/pull + ECS task images
 212	done	v1: CFN rollback + delete cleanup
 213	done	v1: multi-account cross-account AssumeRole
 214	done	v1: Same IDs as a real account / custom resource IDs
 215	done	v1: Console labels for local display names
 216	done	v1: mirror real account fixture (scaffold)
-217	backlog	Debt: ECR console (from #211)
+217	in-review	Debt: ECR console (from #211) — PR #821
 218	in-review	Debt: docker push via repositoryUri hostname (from #211)
 219	in-review	Debt: Lambda image pull ECR authz (from #211)
 220	backlog	Debt: real-account mirror read path (from #216)
@@ -178,9 +179,9 @@
 228	backlog	Debt: CFN lifecycle gaps (from #212)
 230	done	Debt: VPC gateway endpoints + Lambda egress (from #204)
 233	in-review	Debt: cross-account resource policy coverage (from #193)
-236	backlog	Debt: NLB client IP vs target SG (from #205; needs #203)
+236	in-review	Debt: NLB client IP vs target SG (from #205; needs #203)
 237	done	Debt: VPC Lambda SG enforcement (from #205)
-241	backlog	Debt: ELBv2 console (from #203)
+241	in-review	Debt: ELBv2 console (from #203)
 242	in-review	Debt: ELBv2 listeners ignore the ACM certificate (from #203)
 243	in-review	Debt: ELBv2 HTTP health checks are TCP connects (from #203)
 245	backlog	Debt: Route 53 console + Lambda private DNS smoke (from #206)
@@ -320,7 +321,7 @@
 540	backlog	Debt: KMS create/detail (from #177)
 543	in-review	Debt: API Gateway REST create/deploy controls (from #189)
 544	backlog	Debt: EC2 Launch instance wizard (from #146)
-545	backlog	Debt: ECS Run task / Create service / logs console (from #146)
+545	in-review	Debt: ECS Run task / Create service / logs console (from #146)
 546	backlog	Debt: SNS create topic + topic detail (from #172)
 548	backlog	Debt: SQS create/detail/send (from #167)
 549	backlog	Debt: DynamoDB create/detail (from #174)
@@ -356,7 +357,7 @@
 664	in-review	IAM ec2:Vpc/ResourceTag/RequestTag for SGs
 665	in-review	Scheduler AssumeRole SourceArn/SourceAccount
 666	in-review	IAM: kms:ViaService + ResourceAliases on SM/SSM-mediated KMS
-669	backlog	Debt: ec2:CreateAction on tag-on-create CreateTags (from #664)
+669	in-review	Debt: ec2:CreateAction on tag-on-create CreateTags (from #664)
 675	backlog	v0.0.6 maturity
 676	backlog	v0.0.6 maturity
 677	in-review	v0.0.6 maturity
@@ -384,3 +385,6 @@
 769	in-review	ecs: awsvpc no Docker host PortBindings (#769)
 765	in-review	rds: MySQL server cert SAN + published RDS CA (#765)
 770	in-review	Dev mode: ELBv2 lost on LocalEmu restart
+688	in-review	Lambda MemorySize mem_limit + cgroup Max Memory Used
+689	in-review	Lambda MemorySize → nano_cpus (1769 MB = 1 vCPU)
+807	in-review	CI curated local smokes on PRs (#807)

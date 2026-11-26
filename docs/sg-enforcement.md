@@ -6,7 +6,8 @@ ELBv2 load balancers count LocalEmu’s address on the VPC bridge as a member of
 
 ```bash
 ./smokes/networking/sg-enforcement-smoke.sh
-./smokes/networking/elbv2-sg-member-smoke.sh   # ALB SG → target (#768)
+./smokes/networking/elbv2-sg-member-smoke.sh        # ALB SG → target (#768)
+./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh # NLB client/proxy IP → target SG (#236)
 ```
 
 After pulling, recreate LocalEmu so the patch is mounted:
@@ -19,4 +20,4 @@ Ingress and egress accept CIDRs, managed prefix lists, and security-group refere
 
 ECS task-role credentials stay reachable under a tight egress SG: `169.254.170.2` (and the post-DNAT LocalEmu creds port) are exempt from `SG_OUT`, matching AWS link-local behaviour. Injected `AWS_ENDPOINT_URL` traffic is accepted only when the task’s VPC has a VPC endpoint and the SG would allow HTTPS egress that would reach an interface ENI or gateway prefix list — without a matching endpoint the call is dropped ([#686](https://github.com/kgz/stackwrangler/issues/686); `./smokes/compute/ecs-sg-creds-endpoint-smoke.sh`).
 
-Images without iptables that previously reached package mirrors via the default docker bridge can no longer install it on private awsvpc tasks ([#271](https://github.com/kgz/awsl/issues/271)); that gap is [#282](https://github.com/kgz/awsl/issues/282) (sidecar apply in `sg_enforcement` covers the filter chains when iptables is already missing). NLB client-IP preservation is [#236](https://github.com/kgz/awsl/issues/236) (needs #203). Console editing stays with [#146](https://github.com/kgz/awsl/issues/146).
+Images without iptables that previously reached package mirrors via the default docker bridge can no longer install it on private awsvpc tasks ([#271](https://github.com/kgz/awsl/issues/271)); that gap is [#282](https://github.com/kgz/awsl/issues/282) (sidecar apply in `sg_enforcement` covers the filter chains when iptables is already missing). NLB TCP with host DNAT preserves the client source into the target’s `SG_IN` so a rule that allows only that client (or, when DNAT is unavailable, the LocalEmu proxy `/32`) admits the NLB path while a direct peer is refused ([#236](https://github.com/kgz/awsl/issues/236)). Console editing stays with [#146](https://github.com/kgz/awsl/issues/146).

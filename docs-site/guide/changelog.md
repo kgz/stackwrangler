@@ -2,6 +2,63 @@
 
 Product cuts. GitHub Releases: [kgz/stackwrangler/releases](https://github.com/kgz/stackwrangler/releases). Versioning: [docs/versioning.md](https://github.com/kgz/stackwrangler/blob/main/docs/versioning.md).
 
+## v0.1.2 — Escaped prove/path fidelity (2026-11-26)
+
+Patch cut for high-impact defects that escaped v0.1.1 on prove/CI, org-path console, persist/restore, and core runtime fidelity. Not catalogue width / not `v1.0.0`.
+
+### Prove / CI
+
+- Curated local smokes on PRs to `main` (`./bin/ci-smokes.sh` + `smokes-ci` workflow) ([#807](https://github.com/kgz/stackwrangler/issues/807))
+- `ec2:CreateAction` on tag-on-create `CreateTags` (wrong-parent deny) ([#669](https://github.com/kgz/stackwrangler/issues/669))
+
+### Identity / EC2 tags
+
+- Reject user-supplied `aws:` EC2 tag keys before IAM (`InvalidParameterValue`); CFN system tags still allowed ([#825](https://github.com/kgz/stackwrangler/issues/825))
+
+### Persist / restore
+
+- ECS services restore and replace stopped tasks after persist / host reboot ([#826](https://github.com/kgz/stackwrangler/issues/826))
+- Dev mode: containers `restart: unless-stopped` after host/Docker reboot ([#763](https://github.com/kgz/stackwrangler/issues/763))
+
+### Lambda
+
+- Enforce `MemorySize` as container `mem_limit` ([#688](https://github.com/kgz/stackwrangler/issues/688))
+- Scale container `NanoCpus` with `MemorySize` ([#689](https://github.com/kgz/stackwrangler/issues/689))
+
+### Networking / ELBv2
+
+- ALB listeners with non-forward defaults still bind ([#767](https://github.com/kgz/stackwrangler/issues/767))
+- ALB listener-rule Transforms (`url-rewrite`, `host-header-rewrite`) ([#766](https://github.com/kgz/stackwrangler/issues/766))
+- NLB client IP reaches target security group evaluation ([#236](https://github.com/kgz/stackwrangler/issues/236))
+
+### Data / Aurora
+
+- Aurora MySQL `FailoverDBCluster` promotes a reader without `pg_ctl` ([#225](https://github.com/kgz/stackwrangler/issues/225))
+
+### Console
+
+- ECR list / empty / detail ([#217](https://github.com/kgz/stackwrangler/issues/217))
+- ECS Run task / Create service / awslogs ([#545](https://github.com/kgz/stackwrangler/issues/545))
+- ELBv2 listeners + target health ([#241](https://github.com/kgz/stackwrangler/issues/241))
+
+### Install this cut
+
+One `docker run … up` starts the **full account**: LocalEmu APIs, SeaweedFS (parity), ECR registry, AWS profile `local` (CLI → LocalEmu S3), and the **console web app** at <http://127.0.0.1:3000>. Prefer the version tag for this release; `:latest` tracks the newest cut.
+
+```bash
+mkdir -p ~/.stackwrangler ~/.aws
+docker pull ghcr.io/kgz/stackwrangler:v0.1.2
+docker run --rm --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.stackwrangler:/data" \
+  -v "$HOME/.aws:/root/.aws" \
+  ghcr.io/kgz/stackwrangler:v0.1.2 up
+```
+
+Then: open the console · `aws --profile local s3 ls` · LocalEmu on `:4566` · prove: `./bin/coverage-report.sh` · free-ci: `./bin/parity list --suite free-ci` · curated CI smokes: `./bin/ci-smokes.sh`.
+
+Optional thin host CLI: [release asset `stackwrangler`](https://github.com/kgz/stackwrangler/releases/download/v0.1.2/stackwrangler).
+
 ## v0.1.1 — Prove + path UI (2026-11-22)
 
 Prove shipped behaviour and close org-path / shipped-core console holes. Free local parity on CI, smoke-matrix sad/authz honesty, persist/restore hard blocks, Transfer create-user + SFTP authz. Not catalogue width / not `v1.0.0`.

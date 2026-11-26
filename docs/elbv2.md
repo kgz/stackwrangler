@@ -8,7 +8,10 @@ AWSBOX_ELBV2_E2E=1 ./bin/e2e.sh  # runs elbv2-smoke in e2e (off by default, #299
 ./smokes/networking/elbv2-smoke.sh           # NLB/ALB forward, client IP, health, DNS, authz
 ./smokes/networking/elbv2-host-override-register-smoke.sh  # RegisterTargets keeps host_override (#603)
 ./smokes/networking/elbv2-sg-member-smoke.sh  # ALB SG membership → target health (#768)
+./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh  # NLB client/proxy IP at target SG (#236)
 ./smokes/networking/elbv2-persist-restart-smoke.sh  # PERSISTENCE restart keeps LB/listener/rule/TG (#770)
+./smokes/networking/elbv2-nonforward-default-smoke.sh  # fixed-response/redirect default still listens (#767)
+./smokes/networking/elbv2-rule-transforms-smoke.sh  # url-rewrite / host-header-rewrite Transforms (#766)
 ./smokes/apigw/apigw-nlb-ecs-smoke.sh   # VPC_LINK → internal NLB → ECS ip target
 ```
 
@@ -22,7 +25,7 @@ Profile `local` (from `./bin/stackwrangler up --force`) sends `elbv2` to the Loc
 | NLB client IP | Host chain `AWSBOX-ELBV2` DNATs to healthy targets so `accept()` sees the caller. A userspace proxy is the fallback if that chain cannot be installed. |
 | NLB TLS | Terminates with the ACM certificate attached to the listener (falls back to LocalEmu’s default when none is set) and forwards bytes. Create-time presentation is [#242](https://github.com/kgz/awsl/issues/242). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. |
 | NLB TLS | Forwards bytes after TLS terminate. Create-time ACM keypair presentation is [#242](https://github.com/kgz/awsl/issues/242) (PR #592). Default-cert changes via `ModifyListener` (or first-default `AddListenerCertificates` on a cert-less listener) reload live handshake material ([#594](https://github.com/kgz/awsl/issues/594)); secondary Add is SNI-only and does not flip the default. `RemoveListenerCertificates` reloads when the default changes or is cleared ([#628](https://github.com/kgz/awsl/issues/628)); secondary Remove does not flip the handshake. |
-| ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. |
+| ALB HTTP | Default action plus host-header and path-pattern rules. The client `Host` is forwarded. A non-forward default (`fixed-response` / `redirect`) still binds the listener port; unmatched requests get that action, and `ModifyListener` can swap the default without rebinding ([#767](https://github.com/kgz/stackwrangler/issues/767)). Listener-rule `Transforms` (`url-rewrite`, `host-header-rewrite`) round-trip on Create/Modify/Describe and rewrite path/`Host` after the rule matches, before forward; `ResetTransforms` clears them ([#766](https://github.com/kgz/stackwrangler/issues/766)). |
 | ALB HTTPS | Terminates with the ACM certificate on the listener (LocalEmu default when none). `ModifyListener` / first-default `AddListenerCertificates` reload live handshake material ([#629](https://github.com/kgz/awsl/issues/629); same reload path as NLB TLS [#594](https://github.com/kgz/awsl/issues/594)). |
 
 | Health | TCP connect, or HTTP/HTTPS GET of `HealthCheckPath` honouring `Matcher.HttpCode`. `describe-target-health` and new connections skip `unhealthy` targets. |
@@ -37,10 +40,10 @@ Internet-facing listeners are reached at the LocalEmu container's compose-networ
 
 ## Gaps
 
-- No console ([#241](https://github.com/kgz/awsl/issues/241)).
+- Console list + detail (listeners, target health) under `/ec2/load-balancers` ([#241](https://github.com/kgz/stackwrangler/issues/241)). Create load balancer / Create listener remain `disabled` + `title="To implement"`.
 - TLS does not load the ACM certificate attached at create time ([#242](https://github.com/kgz/awsl/issues/242)).
 - Health checks are TCP connects. An HTTP 5xx still counts as healthy ([#243](https://github.com/kgz/awsl/issues/243)).
-- Client-IP preservation depends on host iptables. If DNAT cannot be installed, targets see the proxy address. Security-group checks against that address are [#236](https://github.com/kgz/awsl/issues/236).
+- Client-IP preservation depends on host iptables. When DNAT is installed, the target `SG_IN` sees the caller; when it is not, the userspace proxy source is LocalEmu’s VPC address and the target SG must allow that proxy `/32` (or subnet) — covered by `elbv2-nlb-client-ip-sg-smoke.sh` ([#236](https://github.com/kgz/awsl/issues/236)).
 - ECS bridge-mode tasks behind an instance target group: the listener dials the EC2 container address, but bridge host ports are published on the Docker host. [#247](https://github.com/kgz/awsl/issues/247) sets `Target.host_override`; [#603](https://github.com/kgz/awsl/issues/603) keeps that override across `RegisterTargets`.
 - Classic ELB is not this path.
 - `elbv2-smoke.sh` needs EC2 containers; the mirror resource-id start.d patch breaks them on beta ([#299](https://github.com/kgz/awsl/issues/299)).

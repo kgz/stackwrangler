@@ -43,6 +43,8 @@ const ids: {
   subnet?: string
   sg?: string
   nlbArn?: string
+  tgArn?: string
+  listenerArn?: string
   server?: string
   cluster?: string
   service?: string
@@ -52,6 +54,7 @@ const ids: {
 const vpcName = `e2e-vpc-${ts}`
 const subnetName = `e2e-subnet-${ts}`
 const nlbName = `e2e-nlb-${ts}`
+const tgName = `e2e-tg-${ts}`.slice(0, 32)
 const clusterName = `e2e-ecs-${ts}`
 const serviceName = `e2e-svc-${ts}`
 const dbId = `e2e-db-${ts}`
@@ -117,6 +120,40 @@ test.describe('Built service detail pages (#349)', () => {
       ids.subnet,
       '--query',
       'LoadBalancers[0].LoadBalancerArn',
+      '--output',
+      'text',
+    ])
+    ids.tgArn = aws([
+      'elbv2',
+      'create-target-group',
+      '--name',
+      tgName,
+      '--protocol',
+      'TCP',
+      '--port',
+      '80',
+      '--vpc-id',
+      ids.vpc,
+      '--target-type',
+      'instance',
+      '--query',
+      'TargetGroups[0].TargetGroupArn',
+      '--output',
+      'text',
+    ])
+    ids.listenerArn = aws([
+      'elbv2',
+      'create-listener',
+      '--load-balancer-arn',
+      ids.nlbArn,
+      '--protocol',
+      'TCP',
+      '--port',
+      '80',
+      '--default-actions',
+      `Type=forward,TargetGroupArn=${ids.tgArn}`,
+      '--query',
+      'Listeners[0].ListenerArn',
       '--output',
       'text',
     ])
@@ -266,8 +303,14 @@ test.describe('Built service detail pages (#349)', () => {
     if (ids.server) {
       tryAws(['transfer', 'delete-server', '--server-id', ids.server])
     }
+    if (ids.listenerArn) {
+      tryAws(['elbv2', 'delete-listener', '--listener-arn', ids.listenerArn])
+    }
     if (ids.nlbArn) {
       tryAws(['elbv2', 'delete-load-balancer', '--load-balancer-arn', ids.nlbArn])
+    }
+    if (ids.tgArn) {
+      tryAws(['elbv2', 'delete-target-group', '--target-group-arn', ids.tgArn])
     }
     if (ids.subnet) {
       for (let i = 0; i < 20; i++) {
@@ -554,8 +597,12 @@ test.describe('Built service detail pages (#349)', () => {
     await expectDisabledControlsExplained(page)
   })
 
-  test('Load balancer detail: overview chrome', async ({ page }) => {
+  test('Load balancer detail: overview, listeners, target health', async ({
+    page,
+  }) => {
     const arn = ids.nlbArn ?? ''
+    const listenerArn = ids.listenerArn ?? ''
+    const tgArn = ids.tgArn ?? ''
     await page.goto(`/ec2/load-balancers?arn=${encodeURIComponent(arn)}`)
     await expect(
       page.getByRole('heading', { level: 1, name: nlbName }),
@@ -577,6 +624,28 @@ test.describe('Built service detail pages (#349)', () => {
     }
     await expect(overview).toContainText(arn)
     await expect(overview).toContainText(ids.vpc ?? '')
+
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Listeners' }),
+    ).toBeVisible()
+    const listeners = page.getByTestId('ec2-lb-listeners-table')
+    await expect(listeners).toContainText('TCP')
+    await expect(listeners).toContainText('80')
+    await expect(listeners).toContainText(tgName)
+    await expect(listeners).toContainText(listenerArn)
+
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Target health' }),
+    ).toBeVisible()
+    const health = page.getByTestId('ec2-lb-target-health-table')
+    await expect(health).toContainText(tgName)
+    // Fixture registers no targets — matches empty describe-target-health.
+    expect(tgArn).toBeTruthy()
+    await expect(health).toContainText('No registered targets')
+
+    const createListener = page.getByRole('button', { name: 'Create listener' })
+    await expect(createListener).toBeDisabled()
+    await expect(createListener).toHaveAttribute('title', 'To implement')
     const actions = page.getByRole('button', { name: 'Actions ▾' })
     await expect(actions).toBeDisabled()
     await expect(actions).toHaveAttribute('title', 'To implement')

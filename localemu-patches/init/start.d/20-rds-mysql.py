@@ -7,6 +7,8 @@ uses. This startup patch:
 
 * boots a cluster writer with binary logging and a replication user
 * boots readers that clone the app database and stay ``super_read_only``
+* ``FailoverDBCluster`` promotes via ``STOP REPLICA`` (not ``pg_ctl``)
+  and moves the cluster writer endpoint to the new source
 * writes the real username and password into the ``rds!`` secret
 * overwrites cluster endpoint host/port (moto pre-fills the AWS hostname)
 """
@@ -167,6 +169,8 @@ done
 echo '[awsbox] mysql reader starting local server'
 docker-entrypoint.sh mysqld \
   --server-id={int(server_id)} \
+  --log-bin=binlog \
+  --binlog-format=ROW \
   --relay-log=relay-bin \
   --bind-address=0.0.0.0 \
   --default-authentication-plugin=mysql_native_password &
@@ -218,6 +222,124 @@ wait "$pid"
 """
 
 
+def _find_topology_for_instance(instance_id: str):
+    """Resolve cluster topology for a member container (labels first)."""
+    try:
+        from localemu.services.rds.cluster_orchestrator import get_orchestrator
+        from localemu.services.rds.docker.cluster_init import make_docker_cluster_ops
+        from localemu.services.rds.docker.db_manager import CLUSTER_ID_LABEL
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+
+        orch = get_orchestrator(make_docker_cluster_ops())
+        inspect = DOCKER_CLIENT.inspect_container(f"localemu-rds-{instance_id}")
+        labels = (inspect.get("Config") or {}).get("Labels") or {}
+        cid = labels.get(CLUSTER_ID_LABEL)
+        if isinstance(cid, str) and cid:
+            return orch.topology(cid)
+    except Exception:
+        LOG.debug("topology lookup failed for %s", instance_id, exc_info=True)
+    return None
+
+
+def _container_is_mysql(instance_id: str) -> bool:
+    topo = _find_topology_for_instance(instance_id)
+    if topo is not None and _is_mysql(topo.engine):
+        return True
+    try:
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+
+        inspect = DOCKER_CLIENT.inspect_container(f"localemu-rds-{instance_id}")
+        env = (inspect.get("Config") or {}).get("Env") or []
+        return any(isinstance(e, str) and e.startswith("MYSQL_") for e in env)
+    except Exception:
+        return False
+
+
+def _mysql_promote_to_writer(instance_id: str) -> None:
+    """STOP REPLICA + clear super_read_only; install replication user."""
+    from localemu.services.rds.docker.cluster_init import (
+        REPLICATION_USER,
+        replication_password_for_cluster,
+    )
+
+    container = f"localemu-rds-{instance_id}"
+    deadline = time.time() + 60
+    last = ""
+    while time.time() < deadline:
+        try:
+            _mysql_exec(container, "STOP REPLICA")
+            _mysql_exec(container, "RESET REPLICA ALL")
+            _mysql_exec(
+                container,
+                "SET GLOBAL read_only=OFF; SET GLOBAL super_read_only=OFF;",
+            )
+            break
+        except Exception as exc:
+            last = str(exc)
+            time.sleep(2)
+    else:
+        raise RuntimeError(f"mysql promote failed on {instance_id}: {last}")
+
+    topo = _find_topology_for_instance(instance_id)
+    if topo is not None:
+        repl_pw = replication_password_for_cluster(
+            topo.cluster_id, topo.master_password,
+        )
+        _mysql_writer_init(container, REPLICATION_USER, repl_pw)
+    LOG.info("mysql promoted %s to writable source", instance_id)
+
+
+def _sync_moto_mysql_writer(context, cluster_id: str, new_writer_id: str) -> None:
+    """Flip IsClusterWriter on moto clustered instances after Docker failover."""
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("rds")[context.account_id][context.region]
+        cluster = backend.clusters.get(cluster_id)
+        if cluster is None:
+            return
+        for member in list(cluster._members):
+            member.is_cluster_writer = (
+                member.db_instance_identifier == new_writer_id
+            )
+    except Exception:
+        LOG.debug(
+            "moto mysql cluster %s: failed to sync writer %s",
+            cluster_id, new_writer_id, exc_info=True,
+        )
+
+
+def _describe_cluster_dict(context, cluster_id: str) -> dict:
+    """Build a DBCluster dict for FailoverDBCluster without re-entering moto
+    via a forged Describe context (account/protocol mismatch → 404)."""
+    import moto.backends as moto_backends
+
+    out: dict = {"DBClusterIdentifier": cluster_id, "Status": "available"}
+    try:
+        backend = moto_backends.get_backend("rds")[context.account_id][context.region]
+        cluster_obj = backend.clusters.get(cluster_id)
+    except Exception:
+        cluster_obj = None
+    if cluster_obj is not None:
+        out["Engine"] = getattr(cluster_obj, "engine", None) or "aurora-mysql"
+        out["EngineVersion"] = getattr(cluster_obj, "engine_version", None)
+        out["MasterUsername"] = getattr(cluster_obj, "master_username", None)
+        secret = getattr(cluster_obj, "master_user_secret", None)
+        if isinstance(secret, dict):
+            out["MasterUserSecret"] = secret
+        members = []
+        for member in list(cluster_obj._members):
+            members.append({
+                "DBInstanceIdentifier": member.db_instance_identifier,
+                "IsClusterWriter": bool(member.is_cluster_writer),
+                "DBClusterParameterGroupStatus": "in-sync",
+                "PromotionTier": getattr(member, "promotion_tier", 1),
+            })
+        out["DBClusterMembers"] = members
+    _stamp_cluster(context, out)
+    return out
+
+
 def _writer_host_port_from_docker(cid: str) -> int | None:
     """Host publish port for a cluster writer after PERSISTENCE reload.
 
@@ -265,18 +387,29 @@ def _stamp_cluster(context, cluster: dict) -> None:
     from localemu.services.rds.provider import _init_db_manager, _rds_endpoint_address
 
     cid = cluster.get("DBClusterIdentifier")
-    mgr = _init_db_manager()
-    if not mgr or not cid:
+    if not cid:
         return
-    info = mgr.get_instance_info(cid)
-    host_port = getattr(info, "host_port", None) if info is not None else None
+    host_port = 0
+    # Orchestrator endpoint map tracks the live writer after FailoverDBCluster.
+    try:
+        from localemu.services.rds.cluster_orchestrator import get_orchestrator
+        from localemu.services.rds.docker.cluster_init import make_docker_cluster_ops
+
+        orch = get_orchestrator(make_docker_cluster_ops())
+        host_port = int(orch.writer_port(cid) or 0)
+    except Exception:
+        host_port = 0
+    if not host_port:
+        mgr = _init_db_manager()
+        info = mgr.get_instance_info(cid) if mgr else None
+        host_port = getattr(info, "host_port", None) if info is not None else None
     if not host_port:
         host_port = _writer_host_port_from_docker(cid) or _writer_host_port_from_meta(cid)
     if not host_port:
         return
     region = context.region or "us-east-1"
     cluster["Endpoint"] = _rds_endpoint_address(cid, region)
-    cluster["Port"] = host_port
+    cluster["Port"] = int(host_port)
     cluster["ReaderEndpoint"] = _rds_endpoint_address(f"{cid}-ro", region)
     cluster["Status"] = "available"
 
@@ -349,6 +482,7 @@ def _require_mapped_engine(request) -> None:
 
 def _install() -> None:
     from localemu.services.rds.docker import cluster_init
+    from localemu.services.rds.docker.cluster_init import DockerClusterOps
     from localemu.services.rds.docker.db_manager import DockerDbManager
     from localemu.services.rds import provider
 
@@ -364,6 +498,8 @@ def _install() -> None:
     orig_wait_port = DockerDbManager._wait_for_port
     orig_create_cluster = provider._handle_create_db_cluster
     orig_create_instance = provider._handle_create_db_instance
+    orig_failover = provider._handle_failover_db_cluster
+    orig_promote = DockerClusterOps.promote_to_writer
     orig_dispatcher = provider.RdsDispatcher
 
     def is_postgres_engine(engine: str) -> bool:
@@ -498,11 +634,57 @@ def _install() -> None:
                 _stamp_cluster(context, cluster)
         return result
 
+    def promote_to_writer(self, instance_id: str) -> None:
+        if _container_is_mysql(instance_id):
+            _mysql_promote_to_writer(instance_id)
+            return
+        return orig_promote(self, instance_id)
+
+    def _handle_failover_db_cluster(context, request):
+        """MySQL path: promote via STOP REPLICA (not pg_ctl); skip moto's
+        two-instance check when the LocalEmu writer is only a Docker member.
+        """
+        from localemu.aws.api import CommonServiceException
+        from localemu.services.rds.cluster_orchestrator import (
+            NoFailoverTargetError,
+            get_orchestrator,
+        )
+        from localemu.services.rds.docker.cluster_init import make_docker_cluster_ops
+
+        cluster_id = request.get("DBClusterIdentifier")
+        target = request.get("TargetDBInstanceIdentifier") or None
+        orch = get_orchestrator(make_docker_cluster_ops())
+        topo = orch.topology(cluster_id) if cluster_id else None
+        if topo is None or not _is_mysql(topo.engine):
+            return orig_failover(context, request)
+
+        try:
+            new_writer = orch.failover(cluster_id, target_instance_id=target)
+        except NoFailoverTargetError as exc:
+            raise CommonServiceException(
+                "InvalidDBClusterStateFault", str(exc), status_code=400,
+            ) from exc
+        except KeyError as exc:
+            raise CommonServiceException(
+                "DBClusterNotFoundFault",
+                f"Cluster not found: {cluster_id}",
+                status_code=404,
+            ) from exc
+
+        _sync_moto_mysql_writer(context, cluster_id, new_writer.instance_id)
+        cluster = _describe_cluster_dict(context, cluster_id)
+        LOG.info(
+            "FailoverDBCluster mysql %s: new writer is %s (port=%s)",
+            cluster_id, new_writer.instance_id, new_writer.host_port,
+        )
+        return {"DBCluster": cluster}
+
     def RdsDispatcher(service_model):
         table = orig_dispatcher(service_model)
         table["CreateDBCluster"] = _handle_create_db_cluster
         table["CreateDBInstance"] = _handle_create_db_instance
         table["DescribeDBClusters"] = _handle_describe_db_clusters
+        table["FailoverDBCluster"] = _handle_failover_db_cluster
         return table
 
     def _rebind_live_dispatch() -> None:
@@ -520,10 +702,11 @@ def _install() -> None:
                 ("CreateDBCluster", _handle_create_db_cluster),
                 ("CreateDBInstance", _handle_create_db_instance),
                 ("DescribeDBClusters", _handle_describe_db_clusters),
+                ("FailoverDBCluster", _handle_failover_db_cluster),
             ):
                 if op in table:
                     table[op] = handler
-            LOG.info("rds mysql rebound live Create*/DescribeDBClusters dispatch")
+            LOG.info("rds mysql rebound live Create*/Describe/Failover dispatch")
         except Exception:
             LOG.debug("rds mysql dispatch rebind skipped", exc_info=True)
 
@@ -536,13 +719,16 @@ def _install() -> None:
     cluster_init.reader_container_command = reader_container_command
     cluster_init.apply_writer_init = apply_writer_init
     cluster_init._wait_for_postgres_in_container = _wait_for_postgres_in_container
+    DockerClusterOps.promote_to_writer = promote_to_writer
     DockerDbManager._do_create_db_instance = _do_create
     DockerDbManager._wait_for_port = _wait_for_port
     provider._handle_create_db_cluster = _handle_create_db_cluster
     provider._handle_create_db_instance = _handle_create_db_instance
+    provider._handle_failover_db_cluster = _handle_failover_db_cluster
     provider._INTERCEPTED_OPS["CreateDBCluster"] = _handle_create_db_cluster
     provider._INTERCEPTED_OPS["CreateDBInstance"] = _handle_create_db_instance
     provider._INTERCEPTED_OPS["DescribeDBClusters"] = _handle_describe_db_clusters
+    provider._INTERCEPTED_OPS["FailoverDBCluster"] = _handle_failover_db_cluster
     provider.RdsDispatcher = RdsDispatcher
     _rebind_live_dispatch()
     LOG.info("awsbox rds mysql patch applied")

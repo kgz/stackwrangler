@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/ecs-run-task.html",
+  "entry": "screens/ecs-run-task.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-25T07:59:37.970Z",
+  "updatedAt": "2026-11-25T07:59:37.970Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

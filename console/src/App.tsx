@@ -31,6 +31,8 @@ import { SnsCreateTopicPage } from './pages/SnsCreateTopicPage'
 import { SnsTopicDetailPage } from './pages/SnsTopicDetailPage'
 import { SnsTopicsPage } from './pages/SnsTopicsPage'
 import { DynamoDBTablesPage } from './pages/DynamoDBTablesPage'
+import { EcrRepositoriesPage } from './pages/EcrRepositoriesPage'
+import { EcrRepositoryDetailPage } from './pages/EcrRepositoryDetailPage'
 import { AccessAnalyzerPage } from './pages/AccessAnalyzerPage'
 import { AccountSettingsPage } from './pages/AccountSettingsPage'
 import { FileSystemsPage } from './pages/FileSystemsPage'
@@ -53,6 +55,8 @@ import { RdsInstancesPage } from './pages/RdsInstancesPage'
 import {
   EcsClustersPage,
   EcsCreateClusterPage,
+  EcsCreateServicePage,
+  EcsRunTaskPage,
 } from './pages/EcsClustersPage'
 import { Ec2InstancesPage } from './pages/Ec2InstancesPage'
 import { LoadBalancersPage } from './pages/LoadBalancersPage'
@@ -115,6 +119,11 @@ export default function App() {
             element={<SnsTopicDetailPage />}
           />
           <Route path="dynamodb" element={<DynamoDBTablesPage />} />
+          <Route path="ecr" element={<EcrRepositoriesPage />} />
+          <Route
+            path="ecr/repositories/:name"
+            element={<EcrRepositoryDetailPage />}
+          />
           <Route path="apigateway" element={<ApiGatewayPage />} />
           <Route
             path="apigateway/rest-apis"
@@ -175,11 +184,19 @@ export default function App() {
           <Route path="rds/databases/:id" element={<RdsInstancesPage />} />
           <Route path="ecs" element={<EcsClustersPage />} />
           <Route path="ecs/create" element={<EcsCreateClusterPage />} />
-          <Route path="ecs/clusters/:name" element={<EcsClustersPage />} />
+          <Route
+            path="ecs/clusters/:name/run-task"
+            element={<EcsRunTaskPage />}
+          />
+          <Route
+            path="ecs/clusters/:name/create-service"
+            element={<EcsCreateServicePage />}
+          />
           <Route
             path="ecs/clusters/:name/tasks/:taskId"
             element={<EcsClustersPage />}
           />
+          <Route path="ecs/clusters/:name" element={<EcsClustersPage />} />
           <Route path="ec2" element={<Ec2InstancesPage />} />
           <Route
             path="ec2/instances/:instanceId"

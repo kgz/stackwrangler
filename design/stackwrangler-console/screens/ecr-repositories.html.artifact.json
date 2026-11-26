@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "screens/ecr-repositories.html",
+  "entry": "screens/ecr-repositories.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-11-25T07:58:45.442Z",
+  "updatedAt": "2026-11-25T07:58:45.442Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

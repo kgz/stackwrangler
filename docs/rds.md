@@ -6,6 +6,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./bin/stackwrangler up --force
 ./smokes/data/rds-smoke.sh          # Postgres
 ./smokes/data/rds-mysql-smoke.sh    # MySQL instance + Aurora MySQL cluster
+./smokes/data/rds-aurora-mysql-failover-smoke.sh # FailoverDBCluster promote (#225)
 ./smokes/data/rds-mysql-persist-recreate-smoke.sh       # MySQL SQL after PERSISTENCE recreate (#743)
 ./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh # Aurora writer+reader after recreate (#743)
 ./smokes/data/rds-parameter-group-smoke.sh  # param group Source + TF converge
@@ -22,6 +23,7 @@ Needs host `psql` (Postgres smoke) or `mysql` (MySQL / Aurora smokes).
 
 - `create-db-instance` / `describe-db-instances` / `delete-db-instance` for `postgres` and `mysql`
 - **Stable host ports** ([#705](https://github.com/kgz/stackwrangler/issues/705)): `Endpoint.Port` is the published host port. Pass `--port 3306` (or tag `stackwrangler:host-port=3306`) to pin it when free; otherwise the first assigned port is kept for the life of the instance (reboot, LocalEmu restart, persistence recreate). A taken port returns `InvalidParameterValue` with a clear message. Console detail shows the same port from `describe-db-instances`. With `PERSISTENCE=1`, host port + master creds are also saved under the LocalEmu state dir so a volume recreate after `docker rm` keeps the same publish port. Prove Postgres restart + recreate with `./smokes/data/rds-host-port-restart-persist-smoke.sh`. MySQL / Aurora MySQL SQL + endpoints after recreate: `./smokes/data/rds-mysql-persist-recreate-smoke.sh` and `./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh` ([#743](https://github.com/kgz/stackwrangler/issues/743)).
+- **Dev restart policy** ([#763](https://github.com/kgz/stackwrangler/issues/763)): under `PERSISTENCE=1` (`up --dev`), `localemu-rds-*` containers get Docker `restart: unless-stopped` so they return after a host/Docker reboot with the core stack. Ephemeral / `--test` keeps `no`.
 - `create-db-cluster` for `aurora-mysql`: writer container, cluster endpoint on `localhost:<host-port>` (cluster `--port` / tag pins the **writer** publish port)
 - Further `create-db-instance --db-cluster-identifier` adds a **reader**. Readers get their **own** stable host port (pin with `--port` / tag on that instance). The cluster `ReaderEndpoint` hostname matches the writer style (`localhost`); clients that need the reader must use the **reader instance** `Endpoint.Address` + `Endpoint.Port` from `describe-db-instances` — there is no second port field on the cluster.
 - `ManageMasterUserPassword` stores `{"username","password"}` in Secrets Manager (`rds!…`). The container uses that password
@@ -59,7 +61,7 @@ Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/r
 | Cluster writer | `CreateDBCluster` starts the writer. The first extra instance is a reader |
 | Reader port | Host port is on the reader DB instance (`describe-db-instances`), not a second cluster port field |
 | Host port pin | `--port` / `stackwrangler:host-port` = published host port; engine listen port stays the image default |
-| Aurora MySQL failover | Postgres `pg_ctl` path only — [#225](https://github.com/kgz/awsl/issues/225) |
+| Aurora MySQL failover | `FailoverDBCluster` promotes via `STOP REPLICA` + clears `super_read_only`; cluster `Port` follows the new writer (`./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#225](https://github.com/kgz/awsl/issues/225)) |
 | Managed secret rotation | Create/get only |
 | Security groups / VPC | Enforced on the VPC address when a DB subnet group is set ([docs/sg-enforcement.md](sg-enforcement.md)); published host port is separate |
 | Private DNS from workloads | [#206](https://github.com/kgz/awsl/issues/206) |
@@ -69,6 +71,6 @@ Keep the map current: `./bin/check-rds-engine-map.sh` compares it to `testdata/r
 
 ## Aurora scope
 
-Aurora **MySQL** is exercised by `./smokes/data/rds-mysql-smoke.sh` (`create-db-cluster` + reader instance + managed secret). Console **Create database** does not create Aurora clusters — the Aurora engine tile is disabled with `title="To implement"`. Aurora PostgreSQL / failover beyond the MySQL smoke remains [#225](https://github.com/kgz/awsl/issues/225).
+Aurora **MySQL** is exercised by `./smokes/data/rds-mysql-smoke.sh` (`create-db-cluster` + reader instance + managed secret) and `./smokes/data/rds-aurora-mysql-failover-smoke.sh` (`FailoverDBCluster` promote). Console **Create database** does not create Aurora clusters — the Aurora engine tile is disabled with `title="To implement"`. Aurora PostgreSQL remains a follow-up.
 
 Interactions: [rds-create-sql](../docs-site/guide/interactions/rds-create-sql.md) · shot `docs/assets/console/rds-databases.png`.

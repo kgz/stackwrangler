@@ -63,6 +63,16 @@ echo "$cfg" | grep -qE 'PERSISTENCE:[[:space:]]*"?1"?' || fail "dev compose miss
 echo "$cfg" | grep -q '.awsbox/dev/localemu' || fail "dev compose missing localemu bind"
 echo "$cfg" | grep -q '.awsbox/dev/ecr' || fail "dev compose missing ecr bind"
 echo "$cfg" | grep -q 'seaweed-data-dev' || fail "dev compose missing seaweed-data-dev"
+# #763: --dev restart policy on core compose services (full list in
+# smokes/platform/dev-restart-policy-smoke.sh).
+printf '%s\n' "$cfg" | python3 -c "
+import sys, yaml
+d = yaml.safe_load(sys.stdin)
+for svc in ('s3', 'localstack', 'ecr-registry', 'ecr-hostname'):
+    r = ((d.get('services') or {}).get(svc) or {}).get('restart')
+    if r != 'unless-stopped':
+        raise SystemExit(f'dev {svc} restart={r!r}')
+" || fail "dev compose missing restart: unless-stopped (#763)"
 
 rm -rf "$ROOT/.awsbox/dev"
 echo test >"$ROOT/.awsbox/mode"

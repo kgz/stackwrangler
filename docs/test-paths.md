@@ -33,11 +33,13 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | Prove coverage report: matrix cell classifier (prose ≠ gap) + freeish/uncatalogued detection | happy + sad | covered | `./smokes/platform/coverage-report-smoke.sh` (`./bin/coverage-report.sh --self-test`) · [#676](https://github.com/kgz/stackwrangler/issues/676) |
 | Mode CLI: `up --test|--dev`, `status` mode line, wipe-path markers, compose test/dev (no LocalEmu) | happy | covered | `./smokes/platform/mode-cli-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | `up` keeps compose overrides (`COMPOSE_EXTRA` / `override.yml` / `.awsbox/compose.local.yml`; dev `restart: unless-stopped`) | happy | covered | `./smokes/platform/up-compose-extra-smoke.sh` · [dev-mode.md](dev-mode.md) · [#748](https://github.com/kgz/stackwrangler/issues/748) |
+| Dev mode: core compose + RDS containers get `restart: unless-stopped`; ephemeral `--test` stays `no` | happy + sad/other | covered | `./smokes/platform/dev-restart-policy-smoke.sh` · [dev-mode.md](dev-mode.md) · [#763](https://github.com/kgz/stackwrangler/issues/763) |
 | `up` with custom keys in `.env`: S3 write probe uses them; a mismatch reports the key, not disk full (offline, stub `aws`) | happy + sad | covered | `./smokes/platform/up-env-keys-smoke.sh` · [#749](https://github.com/kgz/stackwrangler/issues/749) |
 | ECR edge network: default `10.254.218.0/24`, IP derived from subnet, overlap with another Docker network fails `up` early (offline, stub `docker`) | happy + sad | covered | `./smokes/platform/ecr-edge-subnet-smoke.sh` · [#750](https://github.com/kgz/stackwrangler/issues/750) |
 | `up --dev` as a user other than uid 1000: boot hook hands `.awsbox/dev/localemu` to `localemu` | happy | covered | `./smokes/platform/dev-state-owner-smoke.sh` · [#754](https://github.com/kgz/stackwrangler/issues/754) |
 | `--dev` down keeps `<project>_default` so bridge-mode ECS tasks resume after `up --dev` | happy | covered | `./smokes/platform/dev-down-keeps-network-smoke.sh` · [#753](https://github.com/kgz/stackwrangler/issues/753) |
 | ECS restore: every container of a multi-container task resumes; restored tasks list as RUNNING; RunTask on a held host port reports `RESOURCE:PORTS` | happy + sad | covered | `./smokes/platform/ecs-restore-multi-container-smoke.sh` · [#747](https://github.com/kgz/stackwrangler/issues/747) |
+| ECS service `desiredCount=1` restores `runningCount=1` after `down` → `up --dev` (replaces STOPPED tasks) | happy | covered | `./smokes/platform/ecs-service-restore-replace-smoke.sh` · [#826](https://github.com/kgz/stackwrangler/issues/826) |
 | Dev keep-data: `up --dev` → `down` → `up --dev` keeps Seaweed + IAM; `reset` empties | happy | covered | `./smokes/platform/mode-dev-keep-data-smoke.sh` · [dev-mode.md](dev-mode.md) · [#288](https://github.com/kgz/stackwrangler/issues/288) |
 | Persist recreate: S3+IAM+Secrets+SSM+DDB+Lambda survive LocalEmu recreate | happy | covered | `./smokes/platform/persist-recreate-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
 | Reset wipes `localemu-rds-*` containers + `localemu-rds-*-data` volumes | happy | covered | `./smokes/platform/mode-reset-rds-wipe-smoke.sh` · [dev-mode.md](dev-mode.md) · [#200](https://github.com/kgz/stackwrangler/issues/200) |
@@ -77,11 +79,15 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | `cloudwatch:DescribeAlarms` with multi `AlarmNames` when one name is out of scope → AccessDenied cites that alarm ARN | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
 | `sns:Unsubscribe` / `GetSubscriptionAttributes` / `SetSubscriptionAttributes` on subscription ARN (`<topicArn>:*`) | happy | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` · [#651](https://github.com/kgz/stackwrangler/issues/651) |
 | Alarm / SNS subscription manage actions allowed only on a different alarm or topic → AccessDenied cites concrete ARN (not `:*`) | sad/authz | covered | `./smokes/security/iam-alarm-sns-sub-arn-smoke.sh` |
-| `ec2:CreateSecurityGroup` with `ec2:Vpc` + TagSpecifications `aws:RequestTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) |
-| `ec2:CreateSecurityGroup` in other VPC / without RequestTag denied | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:CreateSecurityGroup` with TagSpecifications → implicit `ec2:CreateTags` + `ec2:CreateAction` + `aws:RequestTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` · [iam-request-condition-keys.md](iam-request-condition-keys.md) · [#669](https://github.com/kgz/stackwrangler/issues/669) |
+| `ec2:CreateSecurityGroup` in other VPC / mismatched RequestTag denied | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| Standalone `ec2:CreateTags` with matching RequestTag denied (no `ec2:CreateAction`) | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| Tag-on-create denied when Allow requires wrong `ec2:CreateAction` (e.g. CreateVpc vs CreateSecurityGroup) | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:AuthorizeSecurityGroupEgress` / `DeleteSecurityGroup` with `ec2:Vpc` + `ec2:ResourceTag` | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` / `DeleteTags` with `ec2:Vpc` + `ec2:ResourceTag` + `aws:ResourceTag` on SG | happy | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
 | `ec2:CreateTags` on untagged SG denied by ResourceTag conditions | sad/authz | covered | `./smokes/security/ec2-vpc-condition-keys-smoke.sh` |
+| `ec2:CreateTags` / `DeleteTags` / TagSpecifications reject user `aws:`-prefixed keys | sad/other | covered | `./smokes/security/ec2-reserved-tag-keys-smoke.sh` · [#825](https://github.com/kgz/stackwrangler/issues/825) |
+| `ec2:CreateTags` with a normal key still succeeds | happy | covered | `./smokes/security/ec2-reserved-tag-keys-smoke.sh` |
 | `kms:ViaService` / service-origin `aws:SourceArn` / `aws:SourceAccount` (S3 SSE-KMS); EC2 instance-profile PassRole | happy + sad/authz | covered | `./smokes/security/service-origin-condition-keys-smoke.sh` |
 | `kms:ViaService` + `kms:ResourceAliases` (Secrets Manager / SSM SecureString CMK alias) | happy + sad/authz | covered | `./smokes/security/kms-via-secrets-aliases-smoke.sh` |
 | Access key → account (`AWSBOX_ACCOUNT_IDS`) | happy | covered | `./smokes/security/multi-account-smoke.sh` · [multi-account.md](multi-account.md) |
@@ -91,6 +97,9 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | Trust `StringEquals` `aws:PrincipalOrgID` does not allow | sad/authz | covered | `./smokes/security/multi-account-smoke.sh` |
 | Cross-account resource policy Allow | sad/authz | covered | `./smokes/security/resource-policy-cross-account-smoke.sh` |
 | Real AWS: deny-user + empty role simulate PutObject | sad/authz | covered | `./smokes/parity/aws-parity-iam-denied.sh` (~$0; default creds) · [docs/aws-parity-agent-iam.md](aws-parity-agent-iam.md) |
+| Lambda MemorySize → Docker mem_limit; REPORT Max Memory Used from cgroup peak | happy | covered | `./smokes/lambda/lambda-memory-limit-smoke.sh` · [#688](https://github.com/kgz/stackwrangler/issues/688) |
+| Lambda MemorySize → Docker NanoCpus (1769 MB = 1 vCPU, host-capped) | happy | covered | `./smokes/lambda/lambda-memory-limit-smoke.sh` · [#689](https://github.com/kgz/stackwrangler/issues/689) |
+| Lambda allocate past MemorySize → Runtime.OutOfMemory | sad/other | covered | `./smokes/lambda/lambda-memory-limit-smoke.sh` · [#688](https://github.com/kgz/stackwrangler/issues/688) |
 | Lambda invoke hello (basic role) | happy | covered | `./smokes/lambda/lambda-smoke.sh` |
 | Lambda deploy zip | happy | covered | `./smokes/lambda/lambda-deploy-smoke.sh` |
 | Lambda UpdateFunctionCode after PERSISTENCE recreate (code missing → Failed) | happy | covered | `./smokes/lambda/lambda-persist-update-smoke.sh` · [#713](https://github.com/kgz/stackwrangler/issues/713) |
@@ -165,6 +174,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | ECS task-def `user` (`1000:1000`) → docker Config.User / process uid | happy | covered | `./smokes/compute/ecs-taskdef-smoke.sh` (#711) |
 | ECS persist reconcile: missing container → STOPPED + resources freed; stopped container resumed | happy | covered | `./smokes/compute/ecs-persist-reconcile-smoke.sh` · [#716](https://github.com/kgz/stackwrangler/issues/716) |
 | ECS ghost stop-task finishes STOPPED (not stuck DEACTIVATING) and new host-mode task places | sad/other | covered | `./smokes/compute/ecs-persist-reconcile-smoke.sh` · [#716](https://github.com/kgz/stackwrangler/issues/716) |
+| ECR console Private repositories list + empty + detail | ui | covered | `console/e2e/ecr-repositories.spec.ts` · [#217](https://github.com/kgz/stackwrangler/issues/217) |
 | ECR create-repository + `get-login-password` + docker login/push/pull `repositoryUri` hostname + `127.0.0.1:5000/<repo>` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#218](https://github.com/kgz/awsl/issues/218) |
 | ECR `docker push` of BuildKit OCI image index (provenance) → `describe-images` / `batch-get-image` | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#683](https://github.com/kgz/stackwrangler/issues/683) |
 | ECR LocalEmu restart (`PERSISTENCE=0`) keeps registry blobs; catalog resync restores tags without re-push | happy | covered | `./smokes/compute/ecr-smoke.sh` · [#684](https://github.com/kgz/stackwrangler/issues/684) |
@@ -237,7 +247,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | Prefix list and CIDR allow one address and refuse another | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
 | Prefix-list SG rule Description round-trips on describe | happy | covered | `./smokes/networking/sg-prefixlist-description-smoke.sh` · [#682](https://github.com/kgz/stackwrangler/issues/682) |
 | RDS on a subnet allows 5432 only from SG A | happy | covered | `./smokes/networking/sg-enforcement-smoke.sh` |
-| NLB path sees client IP at the target SG | happy | missing | [#236](https://github.com/kgz/awsl/issues/236) |
+| NLB path sees client IP at the target SG (app port allows client or proxy only; peer direct refused) | happy | covered | `./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh` · [#236](https://github.com/kgz/awsl/issues/236) |
+| NLB target SG refuses a direct peer while NLB from the allowed client/proxy succeeds | sad/other | covered | `./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh` · [#236](https://github.com/kgz/awsl/issues/236) |
 | VPC Lambda traffic filtered by its security groups | sad/other | covered | `./smokes/networking/sg-enforcement-smoke.sh` · [sg-enforcement.md](sg-enforcement.md) · [#237](https://github.com/kgz/awsl/issues/237) |
 | Console label for a VPC ID and an NLB ARN glob | happy | covered | `./smokes/account/labels-smoke.sh` · [labels.md](labels.md) |
 | `GET /_awsl/labels` | happy | covered | `./smokes/account/labels-smoke.sh` |
@@ -255,12 +266,14 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | NLB target sees the client source IP | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | NLB TLS listener forwards after termination | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ALB host + path → TG-A, other requests → default TG | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
+| ALB fixed-response 404 default + `/svc/*` forward; ModifyListener redirect then forward | happy | covered | `./smokes/networking/elbv2-nonforward-default-smoke.sh` · [#767](https://github.com/kgz/stackwrangler/issues/767) |
+| ALB rule url-rewrite + host-header-rewrite; DescribeRules / ResetTransforms | happy | covered | `./smokes/networking/elbv2-rule-transforms-smoke.sh` · [#766](https://github.com/kgz/stackwrangler/issues/766) |
 | LB DNS from a VPC instance and from the host | happy | covered | `./smokes/networking/elbv2-smoke.sh` |
 | Unhealthy NLB target receives no new connections | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 `RegisterTargets` preserves `host_override` / bridge dial | happy | covered | `./smokes/networking/elbv2-host-override-register-smoke.sh` · [#603](https://github.com/kgz/awsl/issues/603) |
 | ELBv2 persist restart: internal HTTPS ALB + rule + target survive LocalEmu restart | happy | covered | `./smokes/networking/elbv2-persist-restart-smoke.sh` · [#770](https://github.com/kgz/stackwrangler/issues/770) · [elbv2.md](elbv2.md) · [dev-mode.md](dev-mode.md) |
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./smokes/networking/elbv2-smoke.sh` |
-| ELBv2 console list / target health | ui | missing | [#241](https://github.com/kgz/awsl/issues/241) |
+| ELBv2 console list / listeners / target health | ui | covered | `console/e2e/services-detail.spec.ts` · [#241](https://github.com/kgz/stackwrangler/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#242](https://github.com/kgz/awsl/issues/242) |
 | ELBv2 ModifyListener reloads default ACM keypair; Add first-default only | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#594](https://github.com/kgz/awsl/issues/594) |
 | ELBv2 TLS listener presents its ACM certificate | happy | missing | [#242](https://github.com/kgz/awsl/issues/242) |
@@ -441,6 +454,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | CFN drift detection + stack notification SNS chrome | ui | Debt | [#564](https://github.com/kgz/stackwrangler/issues/564) (from [#147](https://github.com/kgz/awsl/issues/147)) |
 | Built-service list chrome matches OD mocks, disabled controls explained | ui | covered | `console/e2e/services-chrome.spec.ts` |
 | Transfer / RDS / ECS / VPC / load balancer detail pages (tabs, sections, disabled controls) | ui | covered | `console/e2e/services-detail.spec.ts` |
+| ECS Run task / Create service / Stop / awslogs → CloudWatch Logs | ui | covered | `console/e2e/ecs-run-service-logs.spec.ts` · [#545](https://github.com/kgz/stackwrangler/issues/545) |
 | Transfer create-server / create-user API | happy | covered | `./smokes/transfer/transfer-smoke.sh` |
 | Console create SERVICE_MANAGED user + import SSH key | happy | covered | `console/e2e/transfer-create-user.spec.ts` |
 | Org path Terraform example (VPC→Transfer→Lambda→S3→ECS→RDS) | happy | covered | `examples/terraform/org-path/` ([#780](https://github.com/kgz/stackwrangler/issues/780)); E2E smoke [#781](https://github.com/kgz/stackwrangler/issues/781) |
@@ -483,7 +497,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | RDS parameter group Terraform converge (`Source=user`) | happy | covered | `./smokes/data/rds-parameter-group-smoke.sh` · [#710](https://github.com/kgz/stackwrangler/issues/710) |
 | RDS DB / cluster parameter groups → container | happy | covered | `./smokes/data/rds-param-groups-smoke.sh` · [#703](https://github.com/kgz/stackwrangler/issues/703) |
 | RDS Create→Describe no multi-minute hang | happy | covered | `./smokes/data/rds-tf-create-describe-smoke.sh` · [#718](https://github.com/kgz/stackwrangler/issues/718) |
-| Aurora MySQL failover | sad/other | missing | [#225](https://github.com/kgz/awsl/issues/225) |
+| Aurora MySQL failover (former reader writable; describe follows) | happy | covered | `./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#225](https://github.com/kgz/awsl/issues/225) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
 | **Org-path S3 = LocalEmu; profile local sees put; Seaweed does not** | happy + sad | covered | `./smokes/s3/s3-org-path-brain-smoke.sh` · [s3-backends.md](s3-backends.md) |
@@ -524,6 +538,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 ./smokes/data/rds-stable-host-port-smoke.sh  # needs psql · #705
 ./smokes/data/rds-host-port-restart-persist-smoke.sh  # PERSISTENCE=1 restart+recreate · #705
 ./smokes/data/rds-mysql-smoke.sh        # needs mysql
+./smokes/data/rds-aurora-mysql-failover-smoke.sh  # FailoverDBCluster · #225
 ./smokes/data/rds-mysql-persist-recreate-smoke.sh  # MySQL SQL after recreate · #743
 ./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh  # Aurora writer+reader · #743
 ./smokes/data/rds-engine-version-smoke.sh  # pinned images + unknown reject
@@ -537,3 +552,4 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 Wire new paths here **in the same PR** as the smoke. If deferred → Debt ticket + link in the Status column.
 | Real AWS batch10 messaging/data/crypto | happy+sad | covered | `./smokes/parity/aws-parity-batch10.sh` |
 | Dual-target parity suites (catalog) | happy+sad | covered | `./bin/parity list` / `./bin/parity run --tier free --target local` · CI: `.github/workflows/parity-free.yml` (`--suite free-ci --target local`) · [parity-suites.md](parity-suites.md) (#662–#666 checks + legacy) |
+| Curated local smokes on PR / main | happy+sad | covered | `./bin/ci-smokes.sh` · CI: `.github/workflows/smokes-ci.yml` · [e2e.md](e2e.md) · [#807](https://github.com/kgz/stackwrangler/issues/807) |

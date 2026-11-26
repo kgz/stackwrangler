@@ -99,6 +99,88 @@ def reset_state() -> None:
         _services.clear()
 
 
+def restore_after_load() -> None:
+    """Re-bind ACTIVE services into the reconcile loop after persistence load (#826).
+
+    ``on_before_state_reset`` clears ``_services``. Task reconcile marks missing
+    containers STOPPED, but without re-hydrating the scheduler, services stay
+    at ``runningCount=0`` until UpdateService. Rebuild from moto and replace
+    until ``desiredCount`` is met.
+    """
+    install()
+    rebuilt = 0
+    for account_id, region, backend in _iter_ecs_backends():
+        # moto: services keyed ``{cluster}:{serviceName}`` → Service
+        services = getattr(backend, "services", {}) or {}
+        if not isinstance(services, dict):
+            continue
+        for _key, obj in list(services.items()):
+            status = str(getattr(obj, "status", "") or "").upper()
+            if status and status not in ("ACTIVE", "DRAINING"):
+                continue
+            service_name = str(
+                getattr(obj, "name", "") or getattr(obj, "service_name", "") or ""
+            )
+            cluster_arn = str(getattr(obj, "cluster_arn", "") or "")
+            cluster_short = cluster_arn.split("/")[-1] if cluster_arn else ""
+            if not cluster_short and isinstance(_key, str) and ":" in _key:
+                cluster_short = _key.split(":", 1)[0]
+            if not service_name and isinstance(_key, str) and ":" in _key:
+                service_name = _key.split(":", 1)[1]
+            if not service_name or not cluster_short:
+                continue
+            svc = _runtime_for(account_id, region, cluster_short, service_name)
+            if svc is None:
+                continue
+            svc.busy.acquire()
+            try:
+                _seed_running_tasks(svc, backend, cluster_short)
+                _ensure_capacity(svc, None)
+                _reconcile_body(svc)
+                _sync_counts(svc, None)
+                _remember(svc)
+                rebuilt += 1
+            finally:
+                svc.busy.release()
+    LOG.info("ECS service scheduler restored %d service(s) after state load", rebuilt)
+
+
+def _iter_ecs_backends():
+    try:
+        from localemu.services.ecs.provider import _iter_ecs_backends as _iter
+    except Exception:
+        backends = moto_backends.get_backend("ecs")
+        for account_id, regions in (backends or {}).items():
+            for region, backend in (regions or {}).items():
+                yield str(account_id), str(region), backend
+        return
+    yield from _iter()
+
+
+def _seed_running_tasks(svc: "_Svc", backend: object, cluster_key: str) -> None:
+    """Adopt still-RUNNING service tasks into ``svc.tasks`` before reconcile."""
+    tasks_map = getattr(backend, "tasks", {}) or {}
+    cluster_tasks = tasks_map.get(cluster_key) or tasks_map.get(svc.cluster_short) or {}
+    if not isinstance(cluster_tasks, dict):
+        return
+    group_tag = f"service:{svc.service_name}"
+    for tid, task in cluster_tasks.items():
+        status = (getattr(task, "last_status", None) or getattr(task, "_status", None) or "").upper()
+        if status != "RUNNING":
+            continue
+        if getattr(task, "started_by", "") != "ecs-service-scheduler":
+            continue
+        group = getattr(task, "group", "") or ""
+        if group and group != group_tag:
+            continue
+        arn = getattr(task, "task_arn", None) or tid
+        if not arn or arn in svc.tasks:
+            continue
+        if not _is_running(arn):
+            continue
+        svc.tasks[arn] = _register_task(svc, arn, svc.load_balancers)
+
+
 def on_create_service(context: object, request: dict, service_data: dict) -> None:
     svc = _build(context, request, service_data)
     with _services_lock:
@@ -210,10 +292,49 @@ def _loop() -> None:
         _stop.wait(2.0)
 
 
+def _record_event(svc: _Svc, message: str) -> None:
+    """Append an ECS service event (DescribeServices ``events``) (#826)."""
+    try:
+        import uuid
+        from datetime import datetime, timezone
+
+        try:
+            from moto.core.utils import utcnow as _utcnow
+        except Exception:
+            def _utcnow() -> datetime:
+                return datetime.now(timezone.utc)
+
+        obj = _ecs(svc.account_id, svc.region).services.get(
+            f"{svc.cluster_short}:{svc.service_name}"
+        )
+        if obj is None:
+            return
+        events = getattr(obj, "events", None)
+        if not isinstance(events, list):
+            return
+        events.insert(
+            0,
+            {
+                "id": str(uuid.uuid4()),
+                "createdAt": _utcnow(),
+                "message": message,
+            },
+        )
+        del events[100:]
+    except Exception:
+        LOG.debug("ECS service event record failed for %s", svc.service_name, exc_info=True)
+
+
 def _reconcile_body(svc: _Svc) -> None:
     for arn in list(svc.tasks):
         if not _is_running(arn):
             LOG.info("ECS service %s replacing stopped task %s", svc.service_name, arn)
+            short = arn.split("/")[-1] if isinstance(arn, str) else str(arn)
+            _record_event(
+                svc,
+                f"(service {svc.service_name}) has stopped 1 running tasks: "
+                f"(task {short}).",
+            )
             _forget(svc, arn)
     while len(svc.tasks) > svc.desired:
         arn = next(reversed(list(svc.tasks)))
@@ -223,9 +344,18 @@ def _reconcile_body(svc: _Svc) -> None:
     guard = 0
     while len(svc.tasks) < svc.desired and guard < svc.desired + 1:
         guard += 1
+        before = set(svc.tasks)
         if _launch(svc, 1, None) <= 0:
             _backoff(svc, "replacement task did not start")
             return
+        for arn in svc.tasks:
+            if arn in before:
+                continue
+            short = arn.split("/")[-1] if isinstance(arn, str) else str(arn)
+            _record_event(
+                svc,
+                f"(service {svc.service_name}) has started 1 tasks: (task {short}).",
+            )
     svc.fails = 0
 
 

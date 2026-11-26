@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-asset-base="../assets">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Private repositories — Amazon ECR</title>
+  <link rel="stylesheet" href="../assets/fonts.css" />
+  <link rel="stylesheet" href="../assets/console.css" />
+</head>
+<body data-page="ecr-repositories" data-nav="ecr-repositories" data-service="ecr" data-title="Private repositories" data-crumb="Private repositories">
+  <div id="aws-chrome"></div>
+  <div class="aws-shell" id="aws-shell" data-od-id="shell">
+    <main class="aws-main" id="content" data-od-id="main-content">
+
+      <h1 class="aws-h1" data-od-id="page-title">Private repositories</h1>
+      <p class="aws-desc">Amazon Elastic Container Registry (ECR) stores, manages, and deploys container images. A repository holds the images for a single application or service.</p>
+      <section class="aws-card" data-od-id="content-card">
+        <div class="aws-card-body">
+          <div class="aws-toolbar" data-od-id="action-toolbar">
+            <button type="button" class="btn-icon" aria-label="Refresh" title="To implement" disabled aria-disabled="true">↻</button>
+            <button type="button" class="btn btn-normal" disabled aria-disabled="true" data-od-id="btn-delete-repository" title="Select a row">Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-primary" disabled aria-disabled="true" data-od-id="btn-create-repository" title="To implement">Create repository</button>
+          </div>
+          <div class="aws-table-tools">
+            <label class="aws-find" style="max-width: 520px"><span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Filter repositories by name or URI" data-find-table="#data-table" aria-label="Filter repositories by name or URI" data-od-id="find-repositories" />
+            </label>
+            <div class="aws-pager" data-od-id="pagination">
+              <button type="button" disabled aria-label="Previous">‹</button>
+              <span class="page">1</span>
+              <button type="button" disabled aria-label="Next">›</button>
+              <button type="button" class="btn-icon" aria-label="Table settings" title="To implement" disabled aria-disabled="true">⚙</button>
+            </div>
+          </div>
+          <div class="aws-table-wrap">
+            <table class="aws-table" id="data-table" data-od-id="ecr-repositories-table">
+              <thead>
+                <tr>
+                  <th class="check" scope="col"><input type="checkbox" aria-label="Select all" /></th>
+                  <th scope="col"><span class="th-inner">Repository name <span aria-hidden="true">↑</span></span></th>
+                  <th scope="col"><span class="th-inner">URI</span></th>
+                  <th scope="col"><span class="th-inner">Image tag mutability <button type="button" class="filter" aria-label="Filter Image tag mutability" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Scan on push <button type="button" class="filter" aria-label="Filter Scan on push" title="To implement" disabled aria-disabled="true">▾</button></span></th>
+                  <th scope="col"><span class="th-inner">Created at <span aria-hidden="true">↑</span></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-name="awsbox-api">
+                  <td class="check"><input type="checkbox" aria-label="Select awsbox-api" /></td>
+                  <td><a href="ecr-repository-detail.html" data-od-id="repo-awsbox-api">awsbox-api</a></td>
+                  <td><span class="aws-mono">000000000000.dkr.ecr.ap-southeast-2.amazonaws.com/awsbox-api</span></td>
+                  <td>Mutable</td>
+                  <td>Enabled</td>
+                  <td>2026-11-02 10:24:31</td>
+                </tr>
+                <tr data-name="orders-worker">
+                  <td class="check"><input type="checkbox" aria-label="Select orders-worker" /></td>
+                  <td><a href="ecr-repository-detail.html" data-od-id="repo-orders-worker">orders-worker</a></td>
+                  <td><span class="aws-mono">000000000000.dkr.ecr.ap-southeast-2.amazonaws.com/orders-worker</span></td>
+                  <td>Immutable</td>
+                  <td>Enabled</td>
+                  <td>2026-10-18 08:12:05</td>
+                </tr>
+                <tr data-name="local-dev">
+                  <td class="check"><input type="checkbox" aria-label="Select local-dev" /></td>
+                  <td><a href="ecr-repository-detail.html" data-od-id="repo-local-dev">local-dev</a></td>
+                  <td><span class="aws-mono">000000000000.dkr.ecr.ap-southeast-2.amazonaws.com/local-dev</span></td>
+                  <td>Mutable</td>
+                  <td>Disabled</td>
+                  <td>2026-09-30 16:47:52</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../assets/console.js"></script>
+</body>
+</html>

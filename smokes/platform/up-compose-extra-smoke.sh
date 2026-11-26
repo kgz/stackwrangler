@@ -87,12 +87,31 @@ echo "$cfg" | grep -q 'SW748_EXTRA:.*from-extra' || fail "compose-config missing
 unset STACKWRANGLER_COMPOSE_OVERRIDE
 echo "ok  COMPOSE_OVERRIDE"
 
-echo "==> dry: --dev includes restart: unless-stopped (#748)"
+echo "==> dry: --dev includes restart: unless-stopped (#748/#763)"
 cfg_dev="$("$ROOT/bin/stackwrangler" compose-config dev)"
-echo "$cfg_dev" | grep -A2 'localstack:' | grep -q 'unless-stopped' \
-	|| echo "$cfg_dev" | grep -q 'restart: unless-stopped' \
-	|| fail "dev compose missing restart: unless-stopped"
-echo "ok  dev restart policy"
+for svc in s3 localstack ecr-registry ecr-hostname; do
+	printf '%s\n' "$cfg_dev" | python3 -c "
+import sys, yaml
+d = yaml.safe_load(sys.stdin) or {}
+s = (d.get('services') or {}).get('$svc') or {}
+r = s.get('restart') or ''
+raise SystemExit(0 if r == 'unless-stopped' else 1)
+" || fail "dev $svc missing restart: unless-stopped"
+done
+cfg_dev_prof="$(
+	COMPOSE_PROFILES=legacy-sftp,aws-redirect \
+		"$ROOT/bin/stackwrangler" compose-config dev
+)"
+for svc in sftp aws-redirect; do
+	printf '%s\n' "$cfg_dev_prof" | python3 -c "
+import sys, yaml
+d = yaml.safe_load(sys.stdin) or {}
+s = (d.get('services') or {}).get('$svc') or {}
+r = s.get('restart') or ''
+raise SystemExit(0 if r == 'unless-stopped' else 1)
+" || fail "dev $svc missing restart: unless-stopped (with profiles)"
+done
+echo "ok  dev restart policy (core + ecr-hostname + profiles)"
 
 # Live up recreates the stack — opt in (destructive to the current project stack).
 if [[ "${STACKWRANGLER_748_LIVE:-}" != "1" ]]; then

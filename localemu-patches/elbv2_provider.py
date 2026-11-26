@@ -8,8 +8,11 @@ Operations intercepted:
   - CreateTargetGroup         : register TG in router
   - RegisterTargets           : add targets to router
   - DeregisterTargets         : remove targets from router
-  - CreateListener            : start an actual HTTP listener (for HTTP ALBs)
-  - ModifyListener            : reload ACM TLS material when default Certificates change
+  - CreateListener            : start an actual HTTP listener (for HTTP ALBs);
+                                binds even when the default action is
+                                fixed-response/redirect (#767)
+  - ModifyListener            : reload ACM TLS material when default Certificates
+                                change; update DefaultActions without rebinding (#767)
   - AddListenerCertificates   : reload only if the default cert actually changes
                                 (first attach on a cert-less listener; never SNI flip)
   - RemoveListenerCertificates: reload when the default changes or is cleared
@@ -17,8 +20,10 @@ Operations intercepted:
   - DeleteListener            : stop the HTTP listener
   - DescribeLoadBalancers     : ensure DNS names match what we emit
   - DescribeTargetHealth      : return real TCP-probe-derived health
+  - CreateRule / ModifyRule / DescribeRules : persist + apply Transforms
+                                (url-rewrite / host-header-rewrite; #766)
 
-All other operations (rules, tags, SSL policies, attributes, NLB details,
+All other operations (tags, SSL policies, attributes, NLB details,
 etc.) fall through to Moto via `_proxy_moto`.
 """
 
@@ -365,26 +370,24 @@ def _handle_create_listener(
         protocol = listener.get("Protocol", "HTTP")
         lb_arn = listener.get("LoadBalancerArn", "")
         listener_arn = listener.get("ListenerArn", "")
-        if protocol.upper() not in ("HTTP", "HTTPS", "TCP", "TLS"):
+        proto = (protocol or "").upper()
+        if proto not in ("HTTP", "HTTPS", "TCP", "TLS"):
             LOG.info("ELBv2 listener %s protocol %s is not forwarded", listener_arn, protocol)
             continue
         requested_port = int(listener.get("Port") or 80)
 
-        # Pick the default target group from DefaultActions.
-        target_group_arn = ""
-        for action in listener.get("DefaultActions", []) or []:
-            if action.get("Type") == "forward":
-                target_group_arn = action.get("TargetGroupArn", "")
-                if not target_group_arn:
-                    fw = action.get("ForwardConfig") or {}
-                    tgs = fw.get("TargetGroups") or []
-                    if tgs:
-                        target_group_arn = tgs[0].get("TargetGroupArn", "")
-                if target_group_arn:
-                    break
+        default_actions = [
+            _action_to_dict(a) for a in (listener.get("DefaultActions") or [])
+        ]
+        target_group_arn = _forward_tg_arn(default_actions)
 
-        if not target_group_arn:
-            LOG.debug("Listener %s has no forward action; skipping HTTP proxy", listener_arn)
+        # NLB TCP/TLS always needs a forward target. ALB HTTP/HTTPS must still
+        # bind when the default is fixed-response/redirect (#767).
+        if proto in ("TCP", "TLS") and not target_group_arn:
+            LOG.debug(
+                "Listener %s has no forward action; skipping L4 proxy",
+                listener_arn,
+            )
             continue
 
         meta = router.load_balancers.get(lb_arn) or {}
@@ -397,6 +400,7 @@ def _handle_create_listener(
             scheme=str(meta.get("scheme") or "internet-facing"),
             vpc_networks=list(meta.get("vpc_networks") or []),
             certificate_arn=_listener_certificate_arn(listener, request) or None,
+            default_actions=default_actions,
         )
         # Surface the real bound port via a non-AWS field so clients that care
         # (tests, dashboard) can discover it; advertised Port stays as requested.
@@ -428,6 +432,21 @@ def _handle_modify_listener(
         if after != before:
             # Empty after → LocalEmu default PEM (clear-default, #628).
             get_router().reload_listener_certificate(listener_arn, after or None)
+        # DefaultActions change without rebinding (#767); also covers L4
+        # forward retarget used by ECS/CodeDeploy smokes.
+        if request.get("DefaultActions") is not None:
+            actions = [
+                _action_to_dict(a) for a in (request.get("DefaultActions") or [])
+            ]
+            # Prefer the moto-normalized shape from the response when present.
+            for listener in result.get("Listeners", []) or []:
+                if listener.get("ListenerArn") == listener_arn:
+                    actions = [
+                        _action_to_dict(a)
+                        for a in (listener.get("DefaultActions") or actions)
+                    ]
+                    break
+            get_router().set_listener_default_actions(listener_arn, actions)
     return result
 
 
@@ -498,20 +517,66 @@ def _handle_delete_listener(
     return result
 
 
-def _record_rule(rule: dict) -> None:
+def _moto_rule_transforms(rule_arn: str) -> list:
+    """Read Transforms stored on the moto FakeListenerRule (#766)."""
+    if not rule_arn:
+        return []
+    try:
+        import moto.backends as moto_backends
+
+        backend = moto_backends.get_backend("elbv2")
+    except Exception:
+        return []
+    for accounts in (backend.values() if isinstance(backend, dict) else []):
+        regions = accounts.values() if isinstance(accounts, dict) else []
+        for region_backend in regions:
+            try:
+                rules = region_backend.describe_rules(
+                    listener_arn=None, rule_arns=[rule_arn],
+                )
+            except Exception:
+                continue
+            if not rules:
+                continue
+            return list(getattr(rules[0], "transforms", None) or [])
+    return []
+
+
+def _sync_rule_transforms(rule: dict, *, preferred: list | None = None) -> list:
+    """Ensure ``rule['Transforms']`` matches moto (omit when empty)."""
+    rule_arn = rule.get("RuleArn") or ""
+    if preferred is not None:
+        transforms = list(preferred)
+    elif "Transforms" in rule:
+        transforms = list(rule.get("Transforms") or [])
+    else:
+        transforms = _moto_rule_transforms(rule_arn)
+    if transforms:
+        rule["Transforms"] = transforms
+    else:
+        rule.pop("Transforms", None)
+    return transforms
+
+
+def _record_rule(rule: dict, *, transforms: list | None = None) -> None:
     """Mirror a moto-returned Rule into the proxy router so request
-    routing actually honours its conditions/actions on the next hit."""
+    routing actually honours its conditions/actions/transforms."""
     rule_arn = rule.get("RuleArn") or ""
     if not rule_arn:
         return
     # moto returns ListenerArn on the rule object since elbv2 v3; older
     # versions omit it and the caller had to know it. Fall back to a scan
     # over our own listener map keyed by load-balancer ownership.
+    router_inst = get_router()
     listener_arn = rule.get("ListenerArn", "")
+    if not listener_arn:
+        # ModifyRule responses omit ListenerArn — reuse the prior mapping.
+        prior = router_inst._rules_by_arn.get(rule_arn)
+        if prior is not None:
+            listener_arn = prior.listener_arn
     if not listener_arn:
         # Worst case: pick the listener whose default TG matches one of
         # the rule's forward actions; if that fails too, drop silently.
-        router_inst = get_router()
         for la, listener in router_inst.listeners.items():
             if any(
                 (a.get("TargetGroupArn") or "") == listener.target_group_arn
@@ -522,12 +587,14 @@ def _record_rule(rule: dict) -> None:
     if not listener_arn:
         LOG.debug("CreateRule: no listener arn resolvable for %s; not recording", rule_arn)
         return
+    synced = _sync_rule_transforms(rule, preferred=transforms)
     get_router().register_rule(
         rule_arn=rule_arn,
         listener_arn=listener_arn,
         priority=str(rule.get("Priority") or "default"),
         conditions=rule.get("Conditions") or [],
         actions=rule.get("Actions") or [],
+        transforms=synced,
     )
 
 
@@ -537,10 +604,12 @@ def _handle_create_rule(
     result = call_moto(context)
     # moto returns the rule with its ARN populated.
     listener_arn = request.get("ListenerArn") or ""
+    req_transforms = request.get("Transforms")
     for rule in result.get("Rules", []) or []:
         if listener_arn and not rule.get("ListenerArn"):
             rule["ListenerArn"] = listener_arn
-        _record_rule(rule)
+        preferred = list(req_transforms) if req_transforms is not None else None
+        _record_rule(rule, transforms=preferred)
     return result
 
 
@@ -548,8 +617,20 @@ def _handle_modify_rule(
     context: RequestContext, request: ServiceRequest
 ) -> ServiceResponse:
     result = call_moto(context)
+    # ResetTransforms / Transforms updates live on the moto rule object;
+    # re-read so the router drops cleared transforms (#766).
     for rule in result.get("Rules", []) or []:
-        _record_rule(rule)
+        transforms = _moto_rule_transforms(rule.get("RuleArn") or "")
+        _record_rule(rule, transforms=transforms)
+    return result
+
+
+def _handle_describe_rules(
+    context: RequestContext, request: ServiceRequest
+) -> ServiceResponse:
+    result = call_moto(context)
+    for rule in result.get("Rules", []) or []:
+        _sync_rule_transforms(rule)
     return result
 
 
@@ -620,6 +701,7 @@ _INTERCEPTED_OPS = {
     "DescribeTargetHealth": _handle_describe_target_health,
     "CreateRule": _handle_create_rule,
     "ModifyRule": _handle_modify_rule,
+    "DescribeRules": _handle_describe_rules,
     "DeleteRule": _handle_delete_rule,
     "SetRulePriorities": _handle_set_rule_priorities,
 }
@@ -773,11 +855,17 @@ def _restore_backend(router, backend, account_id: str, region: str) -> tuple[int
                 continue
             if str(protocol).upper() not in ("HTTP", "HTTPS", "TCP", "TLS"):
                 continue
-            default_actions = getattr(listener, "default_actions", None) or []
+            default_actions = [
+                _action_to_dict(a)
+                for a in (getattr(listener, "default_actions", None) or [])
+            ]
             target_group_arn = _forward_tg_arn(default_actions)
-            if not target_group_arn:
+            proto_u = str(protocol).upper()
+            # NLB still needs a forward TG; ALB binds for fixed-response/
+            # redirect defaults too (#767).
+            if proto_u in ("TCP", "TLS") and not target_group_arn:
                 LOG.debug(
-                    "ELBv2 restore: listener %s has no forward action; skipping",
+                    "ELBv2 restore: L4 listener %s has no forward action; skipping",
                     listener_arn,
                 )
                 continue
@@ -794,6 +882,7 @@ def _restore_backend(router, backend, account_id: str, region: str) -> tuple[int
                 scheme=str(meta.get("scheme") or "internet-facing"),
                 vpc_networks=list(meta.get("vpc_networks") or []),
                 certificate_arn=_listener_certificate_from_moto(listener),
+                default_actions=default_actions,
             )
             listeners_n += 1
 
@@ -811,6 +900,7 @@ def _restore_backend(router, backend, account_id: str, region: str) -> tuple[int
                     priority=str(getattr(rule, "priority", "") or "1"),
                     conditions=list(getattr(rule, "conditions", None) or []),
                     actions=actions,
+                    transforms=list(getattr(rule, "transforms", None) or []),
                 )
                 rules_n += 1
 
