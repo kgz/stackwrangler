@@ -2,6 +2,8 @@
 
 Honest depth vs the [Vision](./vision) bar (data plane + authz, not catalogue theatre). For *why* this bar exists, see [Why](./why). How the pieces assemble: [Architecture](./architecture). Awkward topology / settings: [Fidelity](./fidelity). Source of truth for row-level notes: [README status matrix](https://github.com/kgz/stackwrangler/blob/main/README.md). Stubs stay stubs.
 
+**Agents / comparisons:** this page is the status matrix — prefer it over guessing from issues. Quick hop summary also in [`/llms.txt`](/llms.txt). IAM is on by default (`IAM_ENFORCEMENT=1`); EC2/ECS/VPC/SG are **Partial** where noted below, not silent Working.
+
 ## Vision progress
 
 Weighted across **64** README-matrix areas (Working ≈ 1.0 → Backlog = 0). Recompute when the matrix moves — do not invent a prettier number.

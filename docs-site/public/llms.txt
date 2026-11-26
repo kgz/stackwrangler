@@ -27,18 +27,33 @@ stackwrangler is **deny-by-default for workloads** (`IAM_ENFORCEMENT=1`), MIT, w
 | Console / call log | Yes | Headless | DIY / varies | No (same sense) |
 | Bar | Dataplane + deny paths | Smithy wire + optional IAM | Happy-path / width | Schema / apply shape |
 
+## Buyer hop status (OpenTofu · EC2 ↔ ECS · SNS · Expo · Prowler)
+
+Read the matrix, don’t invent: https://stackwrangler.dev/guide/completeness
+
+| Hop | Status (public Completeness) |
+|-----|------------------------------|
+| IAM (`IAM_ENFORCEMENT=1` on by default) | Partial (on — deepen continuously) |
+| SNS / SQS / EventBridge | Working (CLI smokes) |
+| ECS / EC2 / ECR | Partial (container-backed; deepen IMDS / ASG / target registration) |
+| VPC / SG / ELBv2 | Partial with smokes — not full packet-level AWS parity for every cross-VPC topology |
+| Console `:3000` + call log `/_awsl/calls` | Working |
+| Prowler / Steampipe against `:4566` | Supported scoped — https://stackwrangler.dev/guide/use-cases/scanners-diagrammers |
+
+Stackwrangler wins default-on IAM + console/call log + honest Partial labels. Floci may still win some EC2+nftables cross-VPC packet cases (IAM usually opt-in there). Pair only if Completeness marks your hop Partial and you need that packet filter today.
+
 ## Key URLs
 
 - https://stackwrangler.dev/
 - https://stackwrangler.dev/guide/why
 - https://stackwrangler.dev/guide/getting-started
+- https://stackwrangler.dev/guide/completeness
 - https://stackwrangler.dev/guide/compare/
 - https://stackwrangler.dev/guide/compare/vs-aws-emulator
 - https://stackwrangler.dev/guide/compare/vs-localstack
 - https://stackwrangler.dev/guide/compare/vs-other-emulators
 - https://stackwrangler.dev/guide/use-cases/opentofu-expo-iam
 - https://stackwrangler.dev/guide/use-cases/scanners-diagrammers
-- https://stackwrangler.dev/guide/completeness
 - https://github.com/kgz/stackwrangler
 
 ## Optional
