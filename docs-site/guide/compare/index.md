@@ -19,6 +19,7 @@ LocalEmu is the emulator engine. **stackwrangler** is the account product (compo
 
 | Page | When someone asks… |
 |------|---------------------|
+| [vs AWS Emulator](./vs-aws-emulator) | Official schema emulator / IAM false green |
 | [vs LocalEmu](./vs-localemu) | Raw engine vs assembly |
 | [vs Moto](./vs-moto) | Fast mocks / CI vs account fidelity |
 | [vs LocalStack](./vs-localstack) | Paid emulator / false-green history |

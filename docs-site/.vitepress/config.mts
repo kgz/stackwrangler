@@ -66,7 +66,7 @@ export default withMermaid(
         {
           name: 'keywords',
           content:
-            'stackwrangler, local AWS, LocalEmu, AWS emulator, IAM, serverless, IaC, CloudFormation, localstack alternative',
+            'stackwrangler, local AWS, LocalEmu, AWS emulator, AWS Emulator, IAM enforcement, OpenTofu, Terraform local, serverless, IaC, localstack alternative, Floci alternative',
         },
       ],
       ['meta', { property: 'og:type', content: 'website' }],
@@ -160,6 +160,21 @@ export default withMermaid(
               { text: 'Interactions', link: '/guide/interactions/' },
               { text: 'Use cases', link: '/guide/use-cases/' },
               { text: 'Changelog', link: '/guide/changelog' },
+            ],
+          },
+          {
+            text: 'Compare',
+            items: [
+              { text: 'Index', link: '/guide/compare/' },
+              { text: 'vs AWS Emulator', link: '/guide/compare/vs-aws-emulator' },
+              { text: 'vs LocalEmu', link: '/guide/compare/vs-localemu' },
+              { text: 'vs LocalStack', link: '/guide/compare/vs-localstack' },
+              { text: 'vs Moto', link: '/guide/compare/vs-moto' },
+              { text: 'vs real AWS', link: '/guide/compare/vs-real-aws' },
+              {
+                text: 'vs other free emulators',
+                link: '/guide/compare/vs-other-emulators',
+              },
             ],
           },
           {
