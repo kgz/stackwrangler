@@ -99,6 +99,88 @@ def reset_state() -> None:
         _services.clear()
 
 
+def restore_after_load() -> None:
+    """Re-bind ACTIVE services into the reconcile loop after persistence load (#826).
+
+    ``on_before_state_reset`` clears ``_services``. Task reconcile marks missing
+    containers STOPPED, but without re-hydrating the scheduler, services stay
+    at ``runningCount=0`` until UpdateService. Rebuild from moto and replace
+    until ``desiredCount`` is met.
+    """
+    install()
+    rebuilt = 0
+    for account_id, region, backend in _iter_ecs_backends():
+        # moto: services keyed ``{cluster}:{serviceName}`` → Service
+        services = getattr(backend, "services", {}) or {}
+        if not isinstance(services, dict):
+            continue
+        for _key, obj in list(services.items()):
+            status = str(getattr(obj, "status", "") or "").upper()
+            if status and status not in ("ACTIVE", "DRAINING"):
+                continue
+            service_name = str(
+                getattr(obj, "name", "") or getattr(obj, "service_name", "") or ""
+            )
+            cluster_arn = str(getattr(obj, "cluster_arn", "") or "")
+            cluster_short = cluster_arn.split("/")[-1] if cluster_arn else ""
+            if not cluster_short and isinstance(_key, str) and ":" in _key:
+                cluster_short = _key.split(":", 1)[0]
+            if not service_name and isinstance(_key, str) and ":" in _key:
+                service_name = _key.split(":", 1)[1]
+            if not service_name or not cluster_short:
+                continue
+            svc = _runtime_for(account_id, region, cluster_short, service_name)
+            if svc is None:
+                continue
+            svc.busy.acquire()
+            try:
+                _seed_running_tasks(svc, backend, cluster_short)
+                _ensure_capacity(svc, None)
+                _reconcile_body(svc)
+                _sync_counts(svc, None)
+                _remember(svc)
+                rebuilt += 1
+            finally:
+                svc.busy.release()
+    LOG.info("ECS service scheduler restored %d service(s) after state load", rebuilt)
+
+
+def _iter_ecs_backends():
+    try:
+        from localemu.services.ecs.provider import _iter_ecs_backends as _iter
+    except Exception:
+        backends = moto_backends.get_backend("ecs")
+        for account_id, regions in (backends or {}).items():
+            for region, backend in (regions or {}).items():
+                yield str(account_id), str(region), backend
+        return
+    yield from _iter()
+
+
+def _seed_running_tasks(svc: "_Svc", backend: object, cluster_key: str) -> None:
+    """Adopt still-RUNNING service tasks into ``svc.tasks`` before reconcile."""
+    tasks_map = getattr(backend, "tasks", {}) or {}
+    cluster_tasks = tasks_map.get(cluster_key) or tasks_map.get(svc.cluster_short) or {}
+    if not isinstance(cluster_tasks, dict):
+        return
+    group_tag = f"service:{svc.service_name}"
+    for tid, task in cluster_tasks.items():
+        status = (getattr(task, "last_status", None) or getattr(task, "_status", None) or "").upper()
+        if status != "RUNNING":
+            continue
+        if getattr(task, "started_by", "") != "ecs-service-scheduler":
+            continue
+        group = getattr(task, "group", "") or ""
+        if group and group != group_tag:
+            continue
+        arn = getattr(task, "task_arn", None) or tid
+        if not arn or arn in svc.tasks:
+            continue
+        if not _is_running(arn):
+            continue
+        svc.tasks[arn] = _register_task(svc, arn, svc.load_balancers)
+
+
 def on_create_service(context: object, request: dict, service_data: dict) -> None:
     svc = _build(context, request, service_data)
     with _services_lock:

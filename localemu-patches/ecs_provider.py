@@ -1602,20 +1602,49 @@ def _ecs_on_after_state_load() -> None:
 
     # Step 3: rebuild _service_tasks from moto. Required so the scheduler
     # (and DescribeServices) return accurate counts.
+    # moto stores services flat as ``{cluster}:{name}`` → Service (not nested).
     for _acct, _region, backend in _iter_ecs_backends():
         services = getattr(backend, "services", {}) or {}
         tasks = getattr(backend, "tasks", {}) or {}
-        for cluster_arn, cluster_services in services.items():
-            cluster_tasks = tasks.get(cluster_arn, {}) or {}
-            for service_arn, service in cluster_services.items():
-                service_name = getattr(service, "name", "") or ""
+        if not isinstance(services, dict):
+            continue
+        for service_key, service in list(services.items()):
+            entries: list[tuple[str, object]] = []
+            cluster_tasks: dict[str, object] = {}
+            if isinstance(service, dict):
+                cluster_arn = str(service_key)
+                raw_tasks = tasks.get(cluster_arn, {}) or {}
+                if isinstance(raw_tasks, dict):
+                    cluster_tasks = raw_tasks
+                entries = [(str(arn), svc) for arn, svc in service.items()]
+            else:
+                service_name = str(getattr(service, "name", "") or "")
+                cluster_arn = str(getattr(service, "cluster_arn", "") or "")
+                cluster_short = cluster_arn.split("/")[-1] if cluster_arn else ""
+                if not cluster_short and isinstance(service_key, str) and ":" in service_key:
+                    cluster_short = service_key.split(":", 1)[0]
+                    if not service_name:
+                        service_name = service_key.split(":", 1)[1]
+                raw_tasks = tasks.get(cluster_arn, {}) or tasks.get(cluster_short, {}) or {}
+                if isinstance(raw_tasks, dict):
+                    cluster_tasks = raw_tasks
+                service_arn = str(
+                    getattr(service, "arn", None)
+                    or getattr(service, "service_arn", None)
+                    or service_key
+                )
+                entries = [(service_arn, service)]
+            for service_arn, svc_obj in entries:
+                service_name = str(getattr(svc_obj, "name", "") or "")
                 group_tag = f"service:{service_name}" if service_name else ""
                 live = [
                     getattr(t, "task_arn", None) or tid
                     for tid, t in cluster_tasks.items()
-                    if (getattr(t, "started_by", "") == "ecs-service-scheduler"
+                    if (
+                        getattr(t, "started_by", "") == "ecs-service-scheduler"
                         and (not group_tag or getattr(t, "group", "") == group_tag)
-                        and (getattr(t, "last_status", "") or "").upper() != "STOPPED")
+                        and (getattr(t, "last_status", "") or "").upper() != "STOPPED"
+                    )
                 ]
                 if live:
                     _service_tasks[service_arn] = live
@@ -1624,6 +1653,15 @@ def _ecs_on_after_state_load() -> None:
         "ECS reconcile: resumed=%d, missing=%d, skipped=%d",
         resumed, missing, skipped,
     )
+
+    # Step 4: re-bind ACTIVE services into the EC2/Fargate scheduler so
+    # desiredCount replacements run after host/LocalEmu restart (#826).
+    try:
+        from localemu.services.ecs.ec2_services import restore_after_load
+
+        restore_after_load()
+    except Exception:
+        LOG.warning("ECS service scheduler restore after state load failed", exc_info=True)
 
 
 def _resume_task_containers(task_info) -> bool:
