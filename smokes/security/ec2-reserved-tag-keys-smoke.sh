@@ -88,6 +88,15 @@ echo $? >"$WORK/spec.out.rc"
 set -e
 expect_invalid "create-security-group TagSpecifications reject aws:" "$WORK/spec.out"
 
+# RunInstances TagSpecifications with aws: must also fail (non-Create* path).
+set +e
+aws ec2 run-instances --image-id ami-00000000 --instance-type t2.micro --count 1 \
+	--tag-specifications "ResourceType=instance,Tags=[{Key=aws:ec2:legacy,Value=x}]" \
+	>"$WORK/run.out" 2>&1
+echo $? >"$WORK/run.out.rc"
+set -e
+expect_invalid "run-instances TagSpecifications reject aws:" "$WORK/run.out"
+
 # Normal tag still works.
 aws ec2 create-tags --resources "$SG" --tags Key=stack-name,Value=ok >/dev/null
 got="$(aws ec2 describe-tags --filters "Name=resource-id,Values=$SG" "Name=key,Values=stack-name" \

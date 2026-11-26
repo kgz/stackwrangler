@@ -134,10 +134,8 @@ def _check_reserved_tag_keys(context) -> None:
     check = False
     if op in ("CreateTags", "DeleteTags"):
         check = True
-    elif op.startswith("Create") and op not in (
-        "CreateDefaultVpc",
-        "CreateDefaultSubnet",
-    ):
+    else:
+        # Any op that accepts TagSpecifications (Create*, RunInstances, …).
         specs = params.get("TagSpecifications") or params.get("TagSpecification")
         check = bool(specs)
     if not check:
