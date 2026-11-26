@@ -77,6 +77,22 @@ Orgs often tried **LocalStack** for full local repro and got a false green:
 
 **stackwrangler refusal:** never market a service as ready because `create-*` works. Prefer LocalEmu (`IAM_ENFORCEMENT=1`) and **real sidecars** when the emulator cannot deliver a data plane (e.g. Postgres for RDS-shaped work, real SFTP listener if Transfer stays API-only). Swap emulators if needed — the product contract is the account behaviour, not the vendor logo.
 
+## Smithy / AI-generated stubs (do not cheat)
+
+AWS publishes **Smithy** (and botocore JSON) models for the wire: routes, shapes, error codes. An agent can generate handlers until protocol tests go green. That is how some emulators rack up thousands of “operations” and tiny idle RAM (compiled CRUD maps, no real engines).
+
+**What that buys:** Terraform/OpenTofu and read-only tools sometimes need empty-but-valid `Describe*` / `List*` so they do not abort on `501`. That is plumbing, not product depth.
+
+**What Smithy does not contain:**
+
+- Cross-service **data movement** (SNS → SQS → Lambda/ECS, SFTP → S3, …)
+- **IAM evaluation** at call time (principal + action + resource + conditions + trust / resource policy)
+- **Real compute** (containers, ECR pull, ALB targets, …)
+
+**Refusal:** do not auto-generate fake `200` / wrong `403` handlers just to pad service counts or silence Prowler. A scanner or agent that gets a local allow/deny which does not match real AWS is worse than an honest gap. Prefer `501` / Backlog / scoped scanner services until the path has **allow and deny** parity we can defend. Scope Prowler (and friends) to Working surfaces we actually smoke — see [prowler.md](prowler.md) and [Completeness](status.md).
+
+Compare / landscape: [docs-site compare — other free emulators](../docs-site/guide/compare/vs-other-emulators.md) (Smithy wire vs dataplane; fakecloud / Floci).
+
 ### Honest limits of the vision
 
 | Risk | Mitigation |

@@ -5,12 +5,13 @@ PNG paths are under `docs/assets/console/` (docs-site serves them via `public/as
 
 | File | Console URL | Seed / note |
 |------|-------------|-------------|
-| `home-s3-buckets.png` | `/` | Optional: `aws --profile local s3 mb s3://docs-demo-bucket` |
+| `home-s3-buckets.png` | `/` | **Seed:** `aws --profile local s3 mb s3://docs-demo-bucket` (capture asserts name) |
 | `empty-specialty-buckets.png` | `/directory-buckets` | Empty chrome is honest |
-| `lambda-functions.png` | `/lambda` | Optional: seed a tiny function for non-empty list |
+| `lambda-functions.png` | `/lambda` | **Seed:** tiny `docs-demo-fn` zip (capture asserts name) |
+| `api-call-log.png` | `/cloudtrail` | **Seed:** workload user with Deny + `s3 ls` → AccessDenied row |
 | `cloudformation-stacks.png` | `/cloudformation` | List page; empty OK if honest |
 | `cloudformation-stacksets.png` | `/cloudformation/stacksets` | StackSets list; empty OK + honesty [#95](https://github.com/kgz/awsl/issues/95) |
-| `ecs-clusters.png` | `/ecs` | List page · create at `/ecs/create`; cluster/task detail under `/ecs/clusters/…` |
+| `ecs-clusters.png` | `/ecs` | **Seed:** `aws --profile local ecs create-cluster --cluster-name docs-demo-cluster` |
 | `ec2-instances.png` | `/ec2` | List page · instance detail at `/ec2/instances/:id` |
 | `sfn-state-machines.png` | `/stepfunctions` | Optional: seed via `sfn-smoke.sh` / e2e create; empty OK |
 | `secrets-list.png` | `/secretsmanager` | Optional: seed via `secrets-smoke.sh` / e2e create; empty OK |

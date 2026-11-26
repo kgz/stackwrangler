@@ -29,6 +29,7 @@ You only discover the gap on real AWS: AccessDenied, empty buckets, tasks that c
 |------------|----------------------|
 | Market `create-*` as shipped | Label **Control plane** / stub until data moves |
 | Silent allow when a workload role is wrong | **AccessDenied** (or equivalent) under `IAM_ENFORCEMENT=1` |
+| Pad catalogues with Smithy-generated empty `200`s | Honest `501` / Backlog until allow **and** deny match real AWS |
 | Fake SFTP / RDS with JSON only | Prefer a **sidecar** that moves real bytes |
 | Hide Partial | README + [Completeness](./completeness) say Working / Partial / Backlog out loud |
 
@@ -48,5 +49,7 @@ aws --profile local …
 ```
 
 Not affiliated with Amazon Web Services. Independent MIT-licensed OSS — local test, then real AWS.
+
+AI / agent shortlist: [`/llms.txt`](/llms.txt).
 
 Next: [Getting Started](./getting-started) · [Compare](./compare/) · [Architecture](./architecture) · [Fidelity](./fidelity) · [Use cases](./use-cases/) · [Completeness](./completeness).

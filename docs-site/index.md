@@ -4,7 +4,7 @@ layout: home
 hero:
   name: stackwrangler
   text: One local AWS-shaped account
-  tagline: Real APIs, a grey-rose console on localhost, and IaC against profile local — then deploy the same shape to real AWS. Not affiliated with Amazon Web Services.
+  tagline: Real APIs, a local console, and IaC against profile local — then deploy the same shape to real AWS. Not affiliated with Amazon Web Services.
   actions:
     - theme: brand
       text: Get started
@@ -22,8 +22,8 @@ hero:
       text: GitHub
       link: https://github.com/kgz/stackwrangler
   badge:
-    text: v0.1.2
-    link: /guide/completeness
+    text: v0.1.1
+    link: /guide/changelog
     type: tip
 
 features:
@@ -78,28 +78,32 @@ Most free emulators **default-allow** IAM. stackwrangler enforces (`IAM_ENFORCEM
 | Hook | Why it matters |
 |------|----------------|
 | **AI coding agents** (Cursor, Claude Code, …) | Zero-credential local sandbox — agents can `tofu apply` / CLI against profile `local` and catch **AccessDenied** hops before staging. |
-| **Security & diagramming** | Point Prowler, Steampipe, and AWS diagrammers at `127.0.0.1:4566` without requesting read-all production IAM keys. |
+| **Security & diagramming** | Point Prowler, Steampipe, and AWS diagrammers at `127.0.0.1:4566` without requesting read-all production IAM keys — [use case](/guide/use-cases/scanners-diagrammers). |
 
-### Console strip
+### Local console
 
-Screenshots from a **local** stack after `docker … stackwrangler:latest up` (or repo checkout: `./bin/stackwrangler up`) — not the AWS Management Console:
+Same account as profile `local`. Click a shot to enlarge.
 
 <div class="sw-shot-strip">
   <figure>
-    <img src="/assets/console/home-s3-buckets.png" alt="S3 buckets in the local console" />
-    <figcaption>S3 — LocalEmu org-path buckets UI</figcaption>
+    <img src="/assets/console/home-s3-buckets.png" alt="S3" />
+    <figcaption>S3</figcaption>
   </figure>
   <figure>
-    <img src="/assets/console/lambda-functions.png" alt="Lambda functions list" />
-    <figcaption>Lambda — LocalEmu functions</figcaption>
+    <img src="/assets/console/lambda-functions.png" alt="Lambda" />
+    <figcaption>Lambda</figcaption>
   </figure>
   <figure>
-    <img src="/assets/console/ecs-clusters.png" alt="ECS clusters list" />
-    <figcaption>ECS — clusters / services</figcaption>
+    <img src="/assets/console/ecs-clusters.png" alt="ECS" />
+    <figcaption>ECS</figcaption>
+  </figure>
+  <figure>
+    <img src="/assets/console/api-call-log.png" alt="Call log" />
+    <figcaption>Call log</figcaption>
   </figure>
 </div>
 
-More shots: [Console tour](/guide/console-tour).
+[Console tour](/guide/console-tour) · [IAM deny](/guide/interactions/iam-deny)
 
 ## Why stackwrangler?
 
@@ -129,7 +133,7 @@ Compact slice — full write-ups under [Compare](/guide/compare/):
 | | **stackwrangler** | **AWS Emulator** | **LocalStack** |
 |--|-------------------|------------------|----------------|
 | **IAM at apply time** | `IAM_ENFORCEMENT=1` — wrong workload / resource policies **AccessDenied** | Schema / apply shape; **does not evaluate IAM** → false green on staging IAM bugs | Community/history of weak IAM; Pro tiers for depth |
-| **Local console UI** | Grey-rose console on `127.0.0.1:3000`, same account as CLI | No product console in the same sense | Console varies by product tier |
+| **Local console UI** | Console on `127.0.0.1:3000`, same account as CLI | No product console in the same sense | Console varies by product tier |
 | **Depth strategy** | Org-path depth + honest Working / Partial / Stub | Broad API surface for shape checks | Catalogue width; Pro-gated depth |
 
 Named pages: [vs AWS Emulator](/guide/compare/vs-aws-emulator) · [vs LocalStack](/guide/compare/vs-localstack) · [vs LocalEmu](/guide/compare/vs-localemu).

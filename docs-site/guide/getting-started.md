@@ -23,7 +23,7 @@ docker run --rm --network host \
   ghcr.io/kgz/stackwrangler:latest up
 ```
 
-Pin a cut with `:v0.1.2` (or a digest) instead of `:latest` — see [Changelog](./changelog) and [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md).
+Pin a cut with `:v0.1.1` (or a digest) instead of `:latest` — see [Changelog](./changelog) and [docker-install.md](https://github.com/kgz/stackwrangler/blob/main/docs/docker-install.md). GHCR already publishes `:latest` and `:vX.Y.Z` on each product tag — no clone required to run.
 
 That pulls sibling images (LocalEmu with patches, SeaweedFS, **console web app**, ECR registry), starts them on the **host** Docker engine, and writes AWS profile `local`. Config lives in `~/.stackwrangler`. One `up` = APIs + CLI profile + web console — no extra step for the UI.
 
@@ -75,6 +75,7 @@ Clone the repo when changing the product (smokes, patches, console source). See 
 ## 5. Next
 
 - [Compare](./compare/) — same as LocalEmu / Moto / LocalStack / real AWS, hardened how
+- [Prowler / Steampipe](./use-cases/scanners-diagrammers) — existing scanners on `:4566` without prod read-all keys
 - [Architecture](./architecture) — LocalEmu + patches + sidecars
 - [Fidelity](./fidelity) — awkward topology / settings bar
 - [Use case: OpenTofu → Expo + IAM](./use-cases/opentofu-expo-iam) — hero path

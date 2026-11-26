@@ -5,7 +5,7 @@
 ## Choose stackwrangler if
 
 - You refuse **default-allow** IAM — want `IAM_ENFORCEMENT=1` on, with deny smokes / parity
-- You want CLI + grey-rose **console** + IaC on the **same** local account
+- You want CLI + **console** + IaC on the **same** local account
 - You need dataplane depth LocalEmu alone may not ship for your path (VPC/SG behaviour, Transfer SFTP, connectors, Docker RDS, ECR registry — see `localemu-patches/` + sidecars)
 - You prefer honest Working / Partial / Stub over catalogue theatre
 - You want `up` → profile `local` with less glue
@@ -25,7 +25,7 @@
 | IAM | You must enable enforcement | **`IAM_ENFORCEMENT=1` on** — not default-allow |
 | Other defaults | You configure | Docker RDS, SQS retention, … |
 | Depth gaps | Upstream behaviour | `localemu-patches/` + sidecars (SeaweedFS, ECR registry, …) |
-| Console | None | Grey-rose console on `:3000` |
+| Console | None | Local console on `:3000` |
 | Proof | Your tests | Smokes + documented status matrix |
 
 ## Myths

@@ -28,6 +28,13 @@ test.describe('docs-capture', () => {
       await expect(
         page.getByRole('heading', { name: 'Buckets', exact: true }),
       ).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByText('Loading')).toHaveCount(0, {
+        timeout: 30_000,
+      })
+      // Prefer seeded docs buckets when present (see docs/console-shots.md).
+      await expect(page.getByText('docs-demo-bucket')).toBeVisible({
+        timeout: 30_000,
+      })
     })
   })
 
@@ -36,6 +43,12 @@ test.describe('docs-capture', () => {
       await expect(
         page.getByRole('heading', { name: /function/i }).first(),
       ).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByText('Loading functions…')).toHaveCount(0, {
+        timeout: 30_000,
+      })
+      await expect(page.getByText('docs-demo-fn')).toBeVisible({
+        timeout: 30_000,
+      })
     })
   })
 
@@ -65,6 +78,28 @@ test.describe('docs-capture', () => {
       await expect(
         page.getByRole('heading', { name: /cluster/i }).first(),
       ).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByText('No clusters')).toHaveCount(0, {
+        timeout: 30_000,
+      })
+      await expect(page.getByText('docs-demo-cluster')).toBeVisible({
+        timeout: 30_000,
+      })
+    })
+  })
+
+  test('api call log (cloudtrail)', async ({ page }) => {
+    await page.goto('/cloudtrail')
+    await expect(
+      page.getByRole('heading', { name: 'API call log' }),
+    ).toBeVisible({ timeout: 30_000 })
+    await page.locator('select').filter({ hasText: 'denied' }).selectOption('denied')
+    await page.getByRole('button', { name: /Apply filters/i }).click()
+    await expect(page.getByText('docs-deny-user').first()).toBeVisible({
+      timeout: 30_000,
+    })
+    await page.screenshot({
+      path: path.join(outDir, 'api-call-log.png'),
+      fullPage: false,
     })
   })
 

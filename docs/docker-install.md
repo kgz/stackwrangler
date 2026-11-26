@@ -144,9 +144,9 @@ Published by [`.github/workflows/publish-images.yml`](../.github/workflows/publi
 
 **Release ordering:** `bin/release-tag.sh` creates the GitHub Release **before** pushing the git tag, so the workflow can upload `install/stackwrangler`. The workflow also polls / creates the release if missing (needs `contents: write`) and retries the asset upload — a bare `git push --tags` still gets the CLI asset.
 
-## Local build (before a tag / private GHCR)
+## Local build (contributors / custom tags)
 
-From a **contributor** checkout only (building the artifact — not the public run path):
+Public users should `docker pull ghcr.io/kgz/stackwrangler:latest` (or `:v0.1.1`). From a **contributor** checkout only when building a custom artifact:
 
 ```bash
 ./bin/build-release-images.sh --tag local
