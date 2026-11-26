@@ -57,9 +57,15 @@ for c in t.get("containers") or []:
     for b in c.get("networkBindings") or []:
         if b.get("hostPort"):
             port = str(b["hostPort"]); break
-ip = ""
-# Prefer the container Docker IP (#271): Describe attachments can show the
-# AWS-side ENI address when the VPC bridge used a fallback CIDR (#268).
+# Candidates: Docker network IPs (one per network — do not concat #807 CI),
+# then Describe attachments / networkInterfaces (#268/#271).
+ips = []
+seen = set()
+def add(ip):
+    ip = (ip or "").strip()
+    if ip and ip not in seen:
+        seen.add(ip)
+        ips.append(ip)
 arn = t.get("taskArn") or ""
 if arn:
     try:
@@ -69,25 +75,23 @@ if arn:
             text=True,
         ).strip().splitlines()
         if names:
-            dip = subprocess.check_output(
+            dips = subprocess.check_output(
                 ["docker", "inspect", "-f",
-                 "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+                 "{{range .NetworkSettings.Networks}}{{println .IPAddress}}{{end}}",
                  names[0]],
                 text=True,
-            ).strip()
-            if dip:
-                ip = dip
+            ).splitlines()
+            for dip in dips:
+                add(dip)
     except Exception:
         pass
-if not ip:
-    for a in t.get("attachments") or []:
-        for d in a.get("details") or []:
-            if d.get("name") == "privateIPv4Address" and d.get("value"):
-                ip = d["value"]
-    for c in t.get("containers") or []:
-        for ni in c.get("networkInterfaces") or []:
-            if ni.get("privateIpv4Address"):
-                ip = ni["privateIpv4Address"]
+for a in t.get("attachments") or []:
+    for d in a.get("details") or []:
+        if d.get("name") == "privateIPv4Address":
+            add(d.get("value"))
+for c in t.get("containers") or []:
+    for ni in c.get("networkInterfaces") or []:
+        add(ni.get("privateIpv4Address"))
 if not port:
     try:
         out = subprocess.check_output(
@@ -102,7 +106,7 @@ if not port:
         pass
 print(status)
 print(port)
-print(ip)
+print(" ".join(ips))
 '
 }
 
@@ -111,15 +115,17 @@ for _ in $(seq 1 90); do
 	mapfile -t info < <(parse_task)
 	STATUS="${info[0]:-}"
 	PORT="${info[1]:-}"
-	TIP="${info[2]:-}"
-	echo "status=${STATUS} port=${PORT} ip=${TIP}"
+	TIPS="${info[2]:-}"
+	echo "status=${STATUS} port=${PORT} ip=${TIPS}"
 
 	if [[ "$STATUS" == "RUNNING" ]]; then
-		# awsvpc (#271): no docker host publish — reach the task ENI IP first.
-		if [[ -n "$TIP" ]] && curl -sf -m 5 "http://${TIP}/" >/tmp/awsbox-ecs-body 2>/dev/null; then
-			URL="http://${TIP}/"
-			break
-		fi
+		# awsvpc (#271): no docker host publish — try each candidate IP.
+		for TIP in $TIPS; do
+			if curl -sf -m 5 "http://${TIP}/" >/tmp/awsbox-ecs-body 2>/dev/null; then
+				URL="http://${TIP}/"
+				break 2
+			fi
+		done
 		if [[ -n "$PORT" ]] && curl -sf -m 5 "http://127.0.0.1:${PORT}/" >/tmp/awsbox-ecs-body 2>/dev/null; then
 			URL="http://127.0.0.1:${PORT}/"
 			break
