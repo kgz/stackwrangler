@@ -292,10 +292,49 @@ def _loop() -> None:
         _stop.wait(2.0)
 
 
+def _record_event(svc: _Svc, message: str) -> None:
+    """Append an ECS service event (DescribeServices ``events``) (#826)."""
+    try:
+        import uuid
+        from datetime import datetime, timezone
+
+        try:
+            from moto.core.utils import utcnow as _utcnow
+        except Exception:
+            def _utcnow() -> datetime:
+                return datetime.now(timezone.utc)
+
+        obj = _ecs(svc.account_id, svc.region).services.get(
+            f"{svc.cluster_short}:{svc.service_name}"
+        )
+        if obj is None:
+            return
+        events = getattr(obj, "events", None)
+        if not isinstance(events, list):
+            return
+        events.insert(
+            0,
+            {
+                "id": str(uuid.uuid4()),
+                "createdAt": _utcnow(),
+                "message": message,
+            },
+        )
+        del events[100:]
+    except Exception:
+        LOG.debug("ECS service event record failed for %s", svc.service_name, exc_info=True)
+
+
 def _reconcile_body(svc: _Svc) -> None:
     for arn in list(svc.tasks):
         if not _is_running(arn):
             LOG.info("ECS service %s replacing stopped task %s", svc.service_name, arn)
+            short = arn.split("/")[-1] if isinstance(arn, str) else str(arn)
+            _record_event(
+                svc,
+                f"(service {svc.service_name}) has stopped 1 running tasks: "
+                f"(task {short}).",
+            )
             _forget(svc, arn)
     while len(svc.tasks) > svc.desired:
         arn = next(reversed(list(svc.tasks)))
@@ -305,9 +344,18 @@ def _reconcile_body(svc: _Svc) -> None:
     guard = 0
     while len(svc.tasks) < svc.desired and guard < svc.desired + 1:
         guard += 1
+        before = set(svc.tasks)
         if _launch(svc, 1, None) <= 0:
             _backoff(svc, "replacement task did not start")
             return
+        for arn in svc.tasks:
+            if arn in before:
+                continue
+            short = arn.split("/")[-1] if isinstance(arn, str) else str(arn)
+            _record_event(
+                svc,
+                f"(service {svc.service_name}) has started 1 tasks: (task {short}).",
+            )
     svc.fails = 0
 
 

@@ -85,4 +85,12 @@ NEW_TASK="$(aws ecs list-tasks --cluster "$CLUSTER" --desired-status RUNNING --q
 [[ "$NEW_TASK" != "$OLD_TASK" ]] || fail "expected a new task ARN after ghost restore (got same ${OLD_TASK})"
 rc="$(aws ecs describe-services --cluster "$CLUSTER" --services "$SVC" --query 'services[0].runningCount' --output text)"
 [[ "$rc" == "1" ]] || fail "runningCount want=1 got=${rc}"
+
+# Service events must record the replacement (#826 AC).
+msgs="$(aws ecs describe-services --cluster "$CLUSTER" --services "$SVC" \
+	--query 'services[0].events[*].message' --output text)"
+echo "$msgs" | grep -qi 'has started 1 tasks' \
+	|| fail "missing started service event; events=${msgs}"
+echo "$msgs" | grep -qi "${NEW_TASK##*/}" \
+	|| fail "started event missing new task id; events=${msgs}"
 echo "OK: ecs service restore replaces stopped tasks (#826) old=${OLD_TASK##*/} new=${NEW_TASK##*/}"
