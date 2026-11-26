@@ -26,6 +26,12 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq zip python3-yaml jq curl openssh-client
 
+      # ecs-smoke.sh applies examples/terraform/ecs-nginx (required_version >= 1.5)
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+          terraform_wrapper: false
+
       - name: Start LocalEmu stack
         run: |
           chmod +x bin/stackwrangler bin/awsbox bin/ci-smokes.sh
