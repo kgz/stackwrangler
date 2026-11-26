@@ -119,9 +119,15 @@ Prove shipped behaviour (free local parity on CI, smoke-matrix sad/authz on core
 
 **Ship bar (met):** free-ci parity runs on PRs; core sad/authz gaps closed or ticketed honestly; Transfer create-user/SSH-key UI + SFTP-byte authz honest for the org path; prove-coverage via `./bin/coverage-report.sh` held or rising (matrix + test-paths + free-ci). Not catalogue width / not `v1.0.0`.
 
-### v0.1.2 — Escaped prove/path fidelity *(active — `CURRENT_RELEASE`)*
+### v0.1.2 — Escaped prove/path fidelity *(shipped 2026-11-26)*
 
 Patch cut for high-impact defects that escape v0.1.1 on prove/CI, org-path console, or persist/restore. Gate: Impact ≥ 4 path/runtime/proof-critical. Do not dump catalogue width here.
+
+**Ship bar (met):** free-ci green on batch tip; real AWS `CreateTags` rejects `aws:` keys; curated CI smokes + CreateAction / Lambda mem·CPU / ELBv2 / Aurora failover / ECR·ECS·ELBv2 console / reserved tags / ECS service restore landed. Not catalogue width / not `v1.0.0`.
+
+### v0.1.3 — Escaped core fidelity *(next — opened on cut)*
+
+Patch lane for high-impact defects that escape v0.1.2 on core runtime, prove/CI, or shipped-console honesty. Gate: Impact ≥ 4 path/runtime/proof-critical. Do not dump catalogue width here. Becomes `CURRENT_RELEASE` when `v0.1.2` is tagged.
 
 ### Unlabelled backlog
 
@@ -155,6 +161,7 @@ Catalogue width (ElastiCache, Cognito, SES, Code*, FinOps, TGW, AI stubs, niche 
 | **v0.1.0** | `label:v0.1.0` | Impact ↓, Effort ↑ |
 | **v0.1.1** | `label:v0.1.1` | Impact ↓, Effort ↑ |
 | **v0.1.2** | `label:v0.1.2` | Impact ↓, Effort ↑ |
+| **v0.1.3** | `label:v0.1.3` | Impact ↓, Effort ↑ |
 | **High Impact** | Impact ≥ 4 (or `label:high-focus` until scored) | Impact ↓, Effort ↑ |
 | **Unscored** | Impact empty | Updated ↓ |
 | **No version** | open + no `v0.*` / `v1.*` release label | Impact ↓ |
