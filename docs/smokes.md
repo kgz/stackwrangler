@@ -1,6 +1,6 @@
 # Where local smokes live
 
-New smokes go under `smokes/<area>/`. `bin/` stays product and tooling (`awsbox`, `e2e.sh`, board scripts).
+New smokes go under `smokes/<area>/`. `bin/` stays product and tooling (`awsbox`, `e2e.sh`, `ci-smokes.sh`, board scripts).
 
 Run a smoke by path:
 
@@ -8,7 +8,7 @@ Run a smoke by path:
 ./smokes/<area>/<name>.sh
 ```
 
-`./bin/e2e.sh` invokes the same set via `./smokes/<area>/…` directly.
+`./bin/e2e.sh` invokes the broad local set via `./smokes/<area>/…` directly. CI runs the curated subset via `./bin/ci-smokes.sh` (`.github/workflows/smokes-ci.yml`, #807).
 
 Inside a smoke, the repo root is two levels up:
 

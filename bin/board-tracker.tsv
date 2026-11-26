@@ -387,3 +387,4 @@
 770	in-review	Dev mode: ELBv2 lost on LocalEmu restart
 688	in-review	Lambda MemorySize mem_limit + cgroup Max Memory Used
 689	in-review	Lambda MemorySize → nano_cpus (1769 MB = 1 vCPU)
+807	in-review	CI curated local smokes on PRs (#807)

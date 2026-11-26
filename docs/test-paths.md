@@ -552,3 +552,4 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 Wire new paths here **in the same PR** as the smoke. If deferred → Debt ticket + link in the Status column.
 | Real AWS batch10 messaging/data/crypto | happy+sad | covered | `./smokes/parity/aws-parity-batch10.sh` |
 | Dual-target parity suites (catalog) | happy+sad | covered | `./bin/parity list` / `./bin/parity run --tier free --target local` · CI: `.github/workflows/parity-free.yml` (`--suite free-ci --target local`) · [parity-suites.md](parity-suites.md) (#662–#666 checks + legacy) |
+| Curated local smokes on PR / main | happy+sad | covered | `./bin/ci-smokes.sh` · CI: `.github/workflows/smokes-ci.yml` · [e2e.md](e2e.md) · [#807](https://github.com/kgz/stackwrangler/issues/807) |
