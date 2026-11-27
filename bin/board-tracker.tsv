@@ -389,4 +389,7 @@
 689	in-review	Lambda MemorySize → nano_cpus (1769 MB = 1 vCPU)
 807	in-review	CI curated local smokes on PRs (#807)
 809	in-review	Persistence: ACM certs lost on restart (moto ACM backend not picklable) (#809)
+827	in-review	rds: Aurora MySQL cluster endpoint stable across failover (#827)
 836	in-review	Lambda: persist restore keeps SQS ESMs of failed functions
+839	backlog	Debt: Aurora MySQL failover state across LocalEmu restart (from #827)
+845	backlog	Debt: Aurora MySQL reader endpoint reaches readers (from #827)

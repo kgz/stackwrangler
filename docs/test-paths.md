@@ -500,7 +500,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | RDS parameter group Terraform converge (`Source=user`) | happy | covered | `./smokes/data/rds-parameter-group-smoke.sh` · [#710](https://github.com/kgz/stackwrangler/issues/710) |
 | RDS DB / cluster parameter groups → container | happy | covered | `./smokes/data/rds-param-groups-smoke.sh` · [#703](https://github.com/kgz/stackwrangler/issues/703) |
 | RDS Create→Describe no multi-minute hang | happy | covered | `./smokes/data/rds-tf-create-describe-smoke.sh` · [#718](https://github.com/kgz/stackwrangler/issues/718) |
-| Aurora MySQL failover (former reader writable; describe follows) | happy | covered | `./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#225](https://github.com/kgz/awsl/issues/225) |
+| Aurora MySQL failover (former reader writable; IsClusterWriter follows) | happy | covered | `./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#225](https://github.com/kgz/awsl/issues/225) |
+| Aurora MySQL cluster endpoint host:port unchanged by failover; pre-failover endpoint reaches new writer (write) + reader endpoint answers; delete-db-cluster removes the endpoint forwarder + stopped old writer | happy | covered | `./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#827](https://github.com/kgz/stackwrangler/issues/827) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
 | **Org-path S3 = LocalEmu; profile local sees put; Seaweed does not** | happy + sad | covered | `./smokes/s3/s3-org-path-brain-smoke.sh` · [s3-backends.md](s3-backends.md) |
@@ -541,7 +542,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 ./smokes/data/rds-stable-host-port-smoke.sh  # needs psql · #705
 ./smokes/data/rds-host-port-restart-persist-smoke.sh  # PERSISTENCE=1 restart+recreate · #705
 ./smokes/data/rds-mysql-smoke.sh        # needs mysql
-./smokes/data/rds-aurora-mysql-failover-smoke.sh  # FailoverDBCluster · #225
+./smokes/data/rds-aurora-mysql-failover-smoke.sh  # FailoverDBCluster + stable cluster endpoint · #225 #827
 ./smokes/data/rds-mysql-persist-recreate-smoke.sh  # MySQL SQL after recreate · #743
 ./smokes/data/rds-aurora-mysql-persist-recreate-smoke.sh  # Aurora writer+reader · #743
 ./smokes/data/rds-engine-version-smoke.sh  # pinned images + unknown reject
