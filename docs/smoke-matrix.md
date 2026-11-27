@@ -144,6 +144,7 @@ Scripts live in `smokes/<area>/` ([smokes.md](smokes.md)). Call them as `./smoke
 | SQS → Lambda ReportBatchItemFailures | yes (batch of 3, 1 failure → 2 deleted + 1 redelivered → DLQ; empty `batchItemFailures` deletes all) | — | **yes** (unknown `itemIdentifier` fails whole batch → DLQ; without `FunctionResponseTypes` response ignored) | — | `sqs-lambda-batch-failures-smoke.sh` (needs `boto3`) |
 | SQS → Lambda ESM enable/disable | yes (Disabled holds messages; re-enable drains; retention drops expired) | — | Disabling/Enabling may be fleeting | — | `sqs-lambda-esm-enable-smoke.sh` |
 | LocalEmu SQS ESM persistence recreate (#717) | yes (`PERSISTENCE=1` + volume: delete orphan / re-create mapping) | — | — | no | `sqs-esm-persist-recreate-smoke.sh` |
+| SQS ESM kept when its function fails to restore (#836) | yes (`UpdateFunctionCode` → kept ESM consumes a message; clean restart keeps ESM) | — | **yes** (`PERSISTENCE=1` + emptied code body → function `Failed`, ESM still listed) | no | `sqs-esm-persist-failed-fn-smoke.sh` |
 | SQS → Lambda ESM credential refresh | yes (short STS duration; deliver past expiry) | — | role deleted → `LastProcessingResult` PROBLEM | — | `sqs-lambda-esm-cred-refresh-smoke.sh` (needs `boto3` + `AWSBOX_STS_ASSUME_ROLE_DURATION`) · [#475](https://github.com/kgz/awsl/issues/475) |
 | Prowler | yes (scoped unused-services) | ratchet (failing API count) | S3 Control host | — | `prowler-smoke.sh` |
 | Account mirror | yes (synthetic apply) | n/a (local apply) | in-repo write + non-local endpoint | — | `mirror-smoke.sh` |
