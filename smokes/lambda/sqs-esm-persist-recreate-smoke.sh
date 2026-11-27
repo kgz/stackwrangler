@@ -40,7 +40,7 @@ cleanup() {
 		aws_emu iam delete-role --role-name "$ROLE" >/dev/null 2>&1 || true
 	fi
 	rm -rf "$TMP"
-	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	"${COMPOSE[@]}" up -d --force-recreate -V --no-deps localstack >/dev/null 2>&1 || true
 	rm -f "$OVERRIDE"
 	docker volume rm -f "$VOL" >/dev/null 2>&1 || true
 }

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # #770: PERSISTENCE=1 LocalEmu restart keeps ELBv2 API state + rebuilds listeners.
+# #809: the imported ACM cert on the HTTPS listener and a requested cert survive too.
 #
-# Creates an internal ALB with an HTTPS listener, a path rule, and a registered
-# IP target; restarts LocalEmu; assert describe-* still returns everything and a
-# request through the listener reaches the target without re-applying.
+# Creates an internal ALB with an HTTPS listener (imported self-signed ACM cert),
+# a path rule, and a registered IP target; restarts LocalEmu; assert describe-*
+# and acm list-certificates still return everything and a request through the
+# listener reaches the target, verifying the handshake against the imported cert.
 #
 # Requires an already-up stackwrangler compose project for this worktree.
 set -euo pipefail
@@ -28,6 +30,8 @@ BASE_COMPOSE=(docker compose -p "$PROJECT" -f "$ROOT/docker-compose.yml")
 TARGET_NAME="elbv2-persist-tgt-${TS}"
 HTTPS_PORT=$((18443 + (TS % 100)))
 MARKER="persist-${TS}"
+TLS_HOST="elbv2-persist-${TS}.test"
+WORK="$(mktemp -d)"
 
 export AWS_ACCESS_KEY_ID="$KEY"
 export AWS_SECRET_ACCESS_KEY="$SECRET"
@@ -54,9 +58,11 @@ wait_localemu() {
 
 restore_default_localstack() {
 	rm -f "$OVERRIDE"
-	"${BASE_COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	# -V: else compose carries the persist volume into the base container (image VOLUME).
+	"${BASE_COMPOSE[@]}" up -d --force-recreate -V --no-deps localstack >/dev/null 2>&1 || true
 	wait_localemu >/dev/null 2>&1 || true
 	docker volume rm -f "$STATE_VOL" >/dev/null 2>&1 || true
+	rm -rf "$WORK"
 }
 
 cleanup() {
@@ -64,6 +70,8 @@ cleanup() {
 	docker rm -f "$TARGET_NAME" >/dev/null 2>&1 || true
 	[[ -n "${LIS:-}" ]] && aws elbv2 delete-listener --listener-arn "$LIS" >/dev/null 2>&1 || true
 	[[ -n "${LB:-}" ]] && aws elbv2 delete-load-balancer --load-balancer-arn "$LB" >/dev/null 2>&1 || true
+	[[ -n "${CERT:-}" ]] && aws acm delete-certificate --certificate-arn "$CERT" >/dev/null 2>&1 || true
+	[[ -n "${REQ_CERT:-}" ]] && aws acm delete-certificate --certificate-arn "$REQ_CERT" >/dev/null 2>&1 || true
 	[[ -n "${TG:-}" ]] && aws elbv2 delete-target-group --target-group-arn "$TG" >/dev/null 2>&1 || true
 	[[ -n "${SG:-}" ]] && aws ec2 delete-security-group --group-id "$SG" >/dev/null 2>&1 || true
 	[[ -n "${SUB_A:-}" ]] && aws ec2 delete-subnet --subnet-id "$SUB_A" >/dev/null 2>&1 || true
@@ -160,7 +168,15 @@ LB="$(aws elbv2 create-load-balancer --name "alb${TS}" --type application \
 	--query 'LoadBalancers[0].LoadBalancerArn' --output text)"
 LB_DNS="$(aws elbv2 describe-load-balancers --load-balancer-arns "$LB" \
 	--query 'LoadBalancers[0].DNSName' --output text)"
-CERT="$(aws acm request-certificate --domain-name "elbv2-persist-${TS}.local" \
+# Self-signed leaf doubles as the CA clients verify against (#809).
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+	-keyout "$WORK/key.pem" -out "$WORK/cert.pem" \
+	-subj "/CN=${TLS_HOST}" -addext "subjectAltName=DNS:${TLS_HOST}" >/dev/null 2>&1 \
+	|| fail "openssl could not make the test cert"
+CERT="$(aws acm import-certificate --certificate "fileb://${WORK}/cert.pem" \
+	--private-key "fileb://${WORK}/key.pem" --query 'CertificateArn' --output text)"
+# Requested (moto-generated key) certs must persist too (#809).
+REQ_CERT="$(aws acm request-certificate --domain-name "req-${TLS_HOST}" \
 	--validation-method DNS --query 'CertificateArn' --output text)"
 LIS="$(aws elbv2 create-listener --load-balancer-arn "$LB" --protocol HTTPS \
 	--port "$HTTPS_PORT" --certificates "CertificateArn=${CERT}" \
@@ -198,10 +214,12 @@ hit_listener() {
 	local ip out=""
 	ip="$(lb_vpc_ip)" || return 1
 	# Dial the LB VPC address directly — ephemeral curl containers do not get
-	# LocalEmu's /etc/hosts DNS injection for the ALB name.
-	out="$(docker run --rm --network "$NET" curlimages/curl:8.5.0 \
-		-sk --max-time 10 -H "Host: ${LB_DNS}" \
-		"https://${ip}:${HTTPS_PORT}/v1/ping" || true)"
+	# LocalEmu's /etc/hosts DNS injection for the ALB name. No -k: the handshake
+	# must present the imported cert (default CN=localhost fails verify).
+	out="$(docker run --rm -i --network "$NET" --entrypoint sh curlimages/curl:8.5.0 -c \
+		'cat >/tmp/ca.pem; exec curl -sS --max-time 10 --cacert /tmp/ca.pem "$@"' _ \
+		--resolve "${TLS_HOST}:${HTTPS_PORT}:${ip}" -H "Host: ${LB_DNS}" \
+		"https://${TLS_HOST}:${HTTPS_PORT}/v1/ping" <"$WORK/cert.pem" 2>&1 || true)"
 	echo "$out"
 }
 
@@ -232,12 +250,17 @@ REG="$(aws elbv2 describe-target-health --target-group-arn "$TG" \
 [[ "$REG" -ge 1 ]] || fail "registered targets lost after restart"
 echo "OK: describe-* kept LB/listener/rule/TG/targets"
 
+ACM_ARNS="$(aws acm list-certificates --query 'CertificateSummaryList[].CertificateArn' --output text | tr '\t' '\n')"
+grep -qx "$CERT" <<<"$ACM_ARNS" || fail "imported ACM cert ${CERT} missing after restart (acm.moto not saved?)"
+grep -qx "$REQ_CERT" <<<"$ACM_ARNS" || fail "requested ACM cert ${REQ_CERT} missing after restart"
+echo "OK: acm list-certificates kept the imported and requested certs"
+
 # DNS may need a moment for hosts republish after restore.
 for _ in $(seq 1 20); do
 	AFTER="$(hit_listener)"
 	if echo "$AFTER" | grep -q "$MARKER"; then
-		echo "OK: post-restart HTTPS request reached target without re-apply"
-		echo "OK: elbv2-persist-restart (#770)"
+		echo "OK: post-restart HTTPS request reached target without re-apply (cert verified)"
+		echo "OK: elbv2-persist-restart (#770, #809)"
 		exit 0
 	fi
 	sleep 2

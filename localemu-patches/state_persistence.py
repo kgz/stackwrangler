@@ -50,6 +50,76 @@ from localemu.version import __version__ as _LOCALEMU_VERSION
 
 LOG = logging.getLogger(__name__)
 
+
+def _pem_private_key(pem: bytes):
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
+    return load_pem_private_key(pem, None)
+
+
+def _pem_public_key(pem: bytes):
+    from cryptography.hazmat.primitives.serialization import load_pem_public_key
+    return load_pem_public_key(pem)
+
+
+def _pem_certificate(pem: bytes):
+    from cryptography.x509 import load_pem_x509_certificate
+    return load_pem_x509_certificate(pem)
+
+
+def _crypto_reducers() -> dict:
+    """Reducers that pickle ``cryptography`` keys/certs as PEM (#809).
+
+    The Rust-backed types refuse pickling, which dropped the whole moto ACM
+    backend (CertBundle._key / ._cert). Their loaders are Rust builtins that
+    pickle can't reference, so the reconstructors above wrap them. Only the
+    persistence pickler uses them; process-wide copyreg is untouched.
+    """
+    table: dict = {}
+    try:
+        from cryptography.hazmat.bindings._rust import openssl as rs
+        from cryptography.hazmat.bindings._rust import x509 as rx
+        from cryptography.hazmat.primitives import serialization as ser
+    except ImportError:
+        return table
+
+    def _priv(k):
+        pem = k.private_bytes(ser.Encoding.PEM, ser.PrivateFormat.PKCS8, ser.NoEncryption())
+        return _pem_private_key, (pem,)
+
+    def _pub(k):
+        pem = k.public_bytes(ser.Encoding.PEM, ser.PublicFormat.SubjectPublicKeyInfo)
+        return _pem_public_key, (pem,)
+
+    def _cert(c):
+        return _pem_certificate, (c.public_bytes(ser.Encoding.PEM),)
+
+    for mod_name, prefix in (("rsa", "RSA"), ("ec", "EC"), ("dsa", "DSA"),
+                             ("ed25519", "Ed25519"), ("ed448", "Ed448")):
+        mod = getattr(rs, mod_name, None)
+        for suffix, reducer in (("PrivateKey", _priv), ("PublicKey", _pub)):
+            cls = getattr(mod, prefix + suffix, None)
+            if cls is not None:
+                table[cls] = reducer
+    cert_cls = getattr(rx, "Certificate", None)
+    if cert_cls is not None:
+        table[cert_cls] = _cert
+    return table
+
+
+_CRYPTO_REDUCERS = _crypto_reducers()
+
+
+def _dill_dump(obj, f) -> None:
+    """``dill.dump`` with the crypto reducers scoped to this pickler."""
+    import collections
+    import copyreg
+
+    pickler = dill.Pickler(f)
+    # Live chain: copyreg entries registered after import still apply.
+    pickler.dispatch_table = collections.ChainMap(_CRYPTO_REDUCERS, copyreg.dispatch_table)
+    pickler.dump(obj)
+
+
 def _safe_dirname(name: str) -> str:
     """Hash any S3 bucket name into a path-safe directory name.
 
@@ -194,7 +264,7 @@ class SaveOrchestrator:
                 self._atomic_dump(api_dir, name, store, lock=getattr(store, "lock", None))
                 saved.append(name)
             except Exception as e:
-                LOG.warning("Failed to save native store %s: %s", name, e)
+                LOG.error("Failed to save native store %s: %s", name, e, exc_info=True)
                 errors.append((name, str(e)))
 
         # 4. Moto backends — only those that have been instantiated.
@@ -212,7 +282,7 @@ class SaveOrchestrator:
                     self._atomic_dump(api_dir, f"{svc}.moto", backends)
                     saved.append(f"{svc}.moto")
             except Exception as e:
-                LOG.warning("Failed to save moto backend %s: %s", svc, e)
+                LOG.error("Failed to save moto backend %s: %s", svc, e, exc_info=True)
                 errors.append((f"{svc}.moto", str(e)))
 
         # 5. Non-bundle stores.
@@ -243,6 +313,12 @@ class SaveOrchestrator:
             "Persistence save complete: %d services saved, %d errors (dir=%s)",
             len(saved), len(errors), state_dir,
         )
+        if errors:
+            # One line naming every store that will NOT come back on restart.
+            LOG.error(
+                "Persistence save: %d store(s) not saved and will be lost on restart: %s",
+                len(errors), ", ".join(name for name, _ in errors),
+            )
         return manifest
 
     # ------------------------------------------------------------------
@@ -259,9 +335,9 @@ class SaveOrchestrator:
             with open(tmp, "wb") as f:
                 if lock is not None:
                     with lock:
-                        dill.dump(obj, f)
+                        _dill_dump(obj, f)
                 else:
-                    dill.dump(obj, f)
+                    _dill_dump(obj, f)
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp, path)

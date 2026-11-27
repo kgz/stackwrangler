@@ -40,7 +40,7 @@ cleanup() {
 	rm -f "$ZIP1" "$ZIP2" "$OUT"
 	# Drop override first so recreate does not keep the named persist volume.
 	rm -f "$OVERRIDE"
-	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	"${COMPOSE[@]}" up -d --force-recreate -V --no-deps localstack >/dev/null 2>&1 || true
 	docker volume rm -f "$VOL" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
