@@ -498,7 +498,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | RDS DB / cluster parameter groups → container | happy | covered | `./smokes/data/rds-param-groups-smoke.sh` · [#703](https://github.com/kgz/stackwrangler/issues/703) |
 | RDS Create→Describe no multi-minute hang | happy | covered | `./smokes/data/rds-tf-create-describe-smoke.sh` · [#718](https://github.com/kgz/stackwrangler/issues/718) |
 | Aurora MySQL failover (former reader writable; IsClusterWriter follows) | happy | covered | `./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#225](https://github.com/kgz/awsl/issues/225) |
-| Aurora MySQL cluster endpoint host:port unchanged by failover; pre-failover endpoint reaches new writer (write) + reader endpoint answers | happy | covered | `./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#827](https://github.com/kgz/stackwrangler/issues/827) |
+| Aurora MySQL cluster endpoint host:port unchanged by failover; pre-failover endpoint reaches new writer (write) + reader endpoint answers; delete-db-cluster removes the endpoint forwarder + stopped old writer | happy | covered | `./smokes/data/rds-aurora-mysql-failover-smoke.sh` · [#827](https://github.com/kgz/stackwrangler/issues/827) |
 | Logs create/put/get | happy | covered | `./smokes/logs/logs-smoke.sh` |
 | API GW HTTP create/invoke | happy | covered | `./smokes/apigw/apigw-smoke.sh` |
 | **Org-path S3 = LocalEmu; profile local sees put; Seaweed does not** | happy + sad | covered | `./smokes/s3/s3-org-path-brain-smoke.sh` · [s3-backends.md](s3-backends.md) |

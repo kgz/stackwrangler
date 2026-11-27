@@ -769,20 +769,27 @@ def _install() -> None:
         cluster_id = request.get("DBClusterIdentifier")
         if not cluster_id:
             return result
-        name = _endpoint_container(cluster_id)
+        # Moto already dropped the cluster: log cleanup errors, never fail the call.
         try:
-            DOCKER_CLIENT.inspect_container(name)
+            DOCKER_CLIENT.remove_container(
+                _endpoint_container(cluster_id), force=True, check_existence=True,
+            )
+        except Exception:
+            LOG.warning("cluster %s endpoint forwarder cleanup failed", cluster_id, exc_info=True)
+        # After failover the stopped original writer is no longer a member,
+        # so upstream delete skips its container.
+        writer = f"localemu-rds-{cluster_id}"
+        try:
+            DOCKER_CLIENT.inspect_container(writer)
         except Exception:
             return result
-        DOCKER_CLIENT.remove_container(name, force=True, check_existence=True)
-        # After failover the stopped original writer is no longer a member,
-        # so upstream delete skips its container + volume.
-        mgr = provider._init_db_manager()
-        if mgr is not None:
-            try:
+        try:
+            mgr = provider._init_db_manager()
+            if mgr is not None:
                 mgr.delete_db_instance(cluster_id)
-            except Exception:
-                LOG.debug("old writer %s cleanup failed", cluster_id, exc_info=True)
+            DOCKER_CLIENT.remove_container(writer, force=True, check_existence=True)
+        except Exception:
+            LOG.warning("old writer %s cleanup failed", cluster_id, exc_info=True)
         return result
 
     def RdsDispatcher(service_model):

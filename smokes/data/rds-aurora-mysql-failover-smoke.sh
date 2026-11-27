@@ -213,4 +213,21 @@ RO_NOTE="$(mysql_q "$RO_HOST" "$W_PORT" "$W_USER" "$W_PASS" \
 	exit 1
 }
 
+# Teardown: DeleteDBCluster also removes the forwarder + stopped old writer.
+if [[ "$KEEP" != "1" ]]; then
+	aws rds delete-db-instance --db-instance-identifier "$READER" --skip-final-snapshot >/dev/null
+	aws rds delete-db-cluster --db-cluster-identifier "$CLUSTER" --skip-final-snapshot >/dev/null
+	for c in "localemu-rds-${CLUSTER}-endpoint" "localemu-rds-${CLUSTER}"; do
+		gone=0
+		for _ in $(seq 1 15); do
+			docker inspect "$c" >/dev/null 2>&1 || { gone=1; break; }
+			sleep 2
+		done
+		[[ "$gone" == 1 ]] || {
+			echo "FAIL: ${c} still exists after delete-db-cluster" >&2
+			exit 1
+		}
+	done
+fi
+
 echo "OK: aurora-mysql failover ${CLUSTER} writer now ${READER}; cluster endpoint 127.0.0.1:${W_PORT} unchanged"
