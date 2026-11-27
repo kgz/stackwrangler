@@ -1,4 +1,4 @@
-"""Drop unrestorable ESMs after PERSISTENCE load; delete listed orphans (#717).
+"""Keep ESMs of failed functions after PERSISTENCE load; drop true orphans (#717, #836).
 
 ListEventSourceMappings reads the Lambda store. Delete requires a live
 ``esm_workers`` entry bound into the Skeleton dispatch table at provider
@@ -77,7 +77,25 @@ def _restore_complete(provider) -> bool:
     return bool(getattr(provider, _RESTORE_COMPLETE_ATTR, False))
 
 
+def _function_version(function_arn):
+    """The mapped FunctionVersion, or None when the function is gone."""
+    from localemu.aws.api.lambda_ import ResourceNotFoundException
+    from localemu.services.lambda_.provider_utils import get_function_version_from_arn
+
+    if not function_arn:
+        return None
+    try:
+        return get_function_version_from_arn(function_arn)
+    except ResourceNotFoundException:
+        return None
+
+
 def _sweep_orphan_esms(provider) -> int:
+    """Drop mappings whose function no longer exists (#717).
+
+    A mapping whose function exists but failed to start keeps its record, as on
+    AWS; the reconcile loop starts its poller once the function is Active (#836).
+    """
     if provider is None:
         return 0
     from localemu.services.lambda_.invocation.models import lambda_stores
@@ -89,16 +107,92 @@ def _sweep_orphan_esms(provider) -> int:
             mappings = getattr(state, "event_source_mappings", None)
             if not mappings:
                 continue
-            for uuid in list(mappings.keys()):
+            for uuid, esm in list(mappings.items()):
                 if uuid in workers:
+                    continue
+                function_arn = esm.get("FunctionArn")
+                if _function_version(function_arn) is not None:
+                    LOG.warning(
+                        "ESM %s kept without a poller (function %s not running yet)",
+                        uuid,
+                        function_arn,
+                    )
                     continue
                 mappings.pop(uuid, None)
                 dropped += 1
                 LOG.warning(
-                    "Dropped unrestored ESM %s (function/poller not restored)",
+                    "Dropped orphan ESM %s (function %s no longer exists)",
                     uuid,
+                    function_arn,
                 )
     return dropped
+
+
+def _start_waiting_pollers(provider) -> int:
+    """Start pollers for kept mappings whose function is Active again (#836)."""
+    from localemu.aws.api.lambda_ import State
+    from localemu.services.lambda_.event_source_mapping.esm_worker import EsmState
+    from localemu.services.lambda_.event_source_mapping.esm_worker_factory import (
+        EsmWorkerFactory,
+    )
+    from localemu.services.lambda_.invocation.models import lambda_stores
+
+    workers = getattr(provider, "esm_workers", None)
+    if workers is None:
+        return 0
+    started = 0
+    for account_bundle in lambda_stores.values():
+        for state in account_bundle.values():
+            mappings = getattr(state, "event_source_mappings", None) or {}
+            for uuid, esm in list(mappings.items()):
+                if uuid in workers or esm.get("State") in (EsmState.DELETING,):
+                    continue
+                version = _function_version(esm.get("FunctionArn"))
+                if version is None or version.config.state.state != State.Active:
+                    continue
+                enabled = esm.get("State", EsmState.DISABLED) not in (
+                    EsmState.DISABLED,
+                    EsmState.DISABLING,
+                )
+                try:
+                    worker = EsmWorkerFactory(
+                        esm, version.config.role, enabled
+                    ).get_esm_worker()
+                    worker.create()
+                except Exception:
+                    LOG.debug("ESM %s poller start failed; retrying", uuid, exc_info=True)
+                    continue
+                # setdefault: a concurrent Update may have built its own worker.
+                if workers.setdefault(uuid, worker) is worker:
+                    started += 1
+                    LOG.info("Started poller for kept ESM %s (#836)", uuid)
+    return started
+
+
+_RECONCILE_INTERVAL_S = 5
+
+
+def _install_reconcile_loop(provider) -> None:
+    # ponytail: fixed-interval scan of workerless mappings; hook function
+    # state changes instead if many mappings make the scan costly.
+    import threading
+    import time
+
+    if getattr(provider, "_awsbox_esm_reconcile_started", False):
+        return
+    provider._awsbox_esm_reconcile_started = True
+
+    def _loop():
+        while True:
+            time.sleep(_RECONCILE_INTERVAL_S)
+            if not _restore_complete(provider):
+                continue
+            try:
+                _start_waiting_pollers(provider)
+            except Exception:
+                LOG.debug("ESM reconcile pass failed", exc_info=True)
+
+    threading.Thread(target=_loop, name="esm-reconcile", daemon=True).start()
 
 
 def _sweep_after_restore(provider, reason: str) -> None:
@@ -218,8 +312,9 @@ def _install() -> None:
     deleted = _patch_delete_dispatcher(provider)
     restored = _patch_deferred_restore(provider)
     _install_ready_sweep()
+    _install_reconcile_loop(provider)
     LOG.info(
-        "awsbox ESM persist orphan cleanup applied (#717) delete=%s restore=%s",
+        "awsbox ESM persist orphan cleanup applied (#717/#836) delete=%s restore=%s",
         deleted,
         restored,
     )

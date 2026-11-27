@@ -362,6 +362,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | SQS → Lambda without ReportBatchItemFailures ignores response body | sad/other | covered | `./smokes/lambda/sqs-lambda-batch-failures-smoke.sh` |
 | SQS → Lambda ESM disable stops polling; re-enable drains backlog; retention expiry drops | happy | covered | `./smokes/lambda/sqs-lambda-esm-enable-smoke.sh` |
 | LocalEmu SQS ESM `PERSISTENCE=1` recreate: orphan mapping deletable / re-creatable | happy | covered | `./smokes/lambda/sqs-esm-persist-recreate-smoke.sh` · [#717](https://github.com/kgz/stackwrangler/issues/717) |
+| SQS ESM survives a restore where its function is `Failed` (code body empty) | sad/other | covered | `./smokes/lambda/sqs-esm-persist-failed-fn-smoke.sh` · [#836](https://github.com/kgz/stackwrangler/issues/836) |
+| Kept ESM starts polling after `UpdateFunctionCode` makes the function `Active`; mapping survives a clean restart | happy | covered | `./smokes/lambda/sqs-esm-persist-failed-fn-smoke.sh` |
 | SQS → Lambda ESM keeps delivering past STS session expiry (short `AWSBOX_STS_ASSUME_ROLE_DURATION`) | happy | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | SQS → Lambda ESM role deleted after create → `LastProcessingResult` PROBLEM (not stuck `None`) | sad/other | covered | `./smokes/lambda/sqs-lambda-esm-cred-refresh-smoke.sh` |
 | Kinesis / DynamoDB stream → Lambda ESM keeps delivering past STS session expiry | happy | covered | `./smokes/lambda/stream-lambda-esm-cred-refresh-smoke.sh` · [#477](https://github.com/kgz/awsl/issues/477) |
