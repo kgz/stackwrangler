@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # #770: PERSISTENCE=1 LocalEmu restart keeps ELBv2 API state + rebuilds listeners.
-# #809: the imported ACM cert on the HTTPS listener survives too (acm.moto saved).
+# #809: the imported ACM cert on the HTTPS listener and a requested cert survive too.
 #
 # Creates an internal ALB with an HTTPS listener (imported self-signed ACM cert),
 # a path rule, and a registered IP target; restarts LocalEmu; assert describe-*
@@ -71,6 +71,7 @@ cleanup() {
 	[[ -n "${LIS:-}" ]] && aws elbv2 delete-listener --listener-arn "$LIS" >/dev/null 2>&1 || true
 	[[ -n "${LB:-}" ]] && aws elbv2 delete-load-balancer --load-balancer-arn "$LB" >/dev/null 2>&1 || true
 	[[ -n "${CERT:-}" ]] && aws acm delete-certificate --certificate-arn "$CERT" >/dev/null 2>&1 || true
+	[[ -n "${REQ_CERT:-}" ]] && aws acm delete-certificate --certificate-arn "$REQ_CERT" >/dev/null 2>&1 || true
 	[[ -n "${TG:-}" ]] && aws elbv2 delete-target-group --target-group-arn "$TG" >/dev/null 2>&1 || true
 	[[ -n "${SG:-}" ]] && aws ec2 delete-security-group --group-id "$SG" >/dev/null 2>&1 || true
 	[[ -n "${SUB_A:-}" ]] && aws ec2 delete-subnet --subnet-id "$SUB_A" >/dev/null 2>&1 || true
@@ -174,6 +175,9 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
 	|| fail "openssl could not make the test cert"
 CERT="$(aws acm import-certificate --certificate "fileb://${WORK}/cert.pem" \
 	--private-key "fileb://${WORK}/key.pem" --query 'CertificateArn' --output text)"
+# Requested (moto-generated key) certs must persist too (#809).
+REQ_CERT="$(aws acm request-certificate --domain-name "req-${TLS_HOST}" \
+	--validation-method DNS --query 'CertificateArn' --output text)"
 LIS="$(aws elbv2 create-listener --load-balancer-arn "$LB" --protocol HTTPS \
 	--port "$HTTPS_PORT" --certificates "CertificateArn=${CERT}" \
 	--default-actions "Type=forward,TargetGroupArn=${TG}" \
@@ -246,9 +250,10 @@ REG="$(aws elbv2 describe-target-health --target-group-arn "$TG" \
 [[ "$REG" -ge 1 ]] || fail "registered targets lost after restart"
 echo "OK: describe-* kept LB/listener/rule/TG/targets"
 
-aws acm list-certificates --query 'CertificateSummaryList[].CertificateArn' --output text \
-	| tr '\t' '\n' | grep -qx "$CERT" || fail "ACM cert ${CERT} missing after restart (acm.moto not saved?)"
-echo "OK: acm list-certificates kept the imported cert"
+ACM_ARNS="$(aws acm list-certificates --query 'CertificateSummaryList[].CertificateArn' --output text | tr '\t' '\n')"
+grep -qx "$CERT" <<<"$ACM_ARNS" || fail "imported ACM cert ${CERT} missing after restart (acm.moto not saved?)"
+grep -qx "$REQ_CERT" <<<"$ACM_ARNS" || fail "requested ACM cert ${REQ_CERT} missing after restart"
+echo "OK: acm list-certificates kept the imported and requested certs"
 
 # DNS may need a moment for hosts republish after restore.
 for _ in $(seq 1 20); do

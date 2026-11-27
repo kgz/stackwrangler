@@ -66,21 +66,21 @@ def _pem_certificate(pem: bytes):
     return load_pem_x509_certificate(pem)
 
 
-def _register_crypto_reducers() -> None:
-    """Let dill pickle ``cryptography`` keys and certs as PEM (#809).
+def _crypto_reducers() -> dict:
+    """Reducers that pickle ``cryptography`` keys/certs as PEM (#809).
 
     The Rust-backed types refuse pickling, which dropped the whole moto ACM
     backend (CertBundle._key / ._cert). Their loaders are Rust builtins that
-    pickle can't reference, so the reconstructors above wrap them.
+    pickle can't reference, so the reconstructors above wrap them. Only the
+    persistence pickler uses them; process-wide copyreg is untouched.
     """
-    import copyreg
-
+    table: dict = {}
     try:
         from cryptography.hazmat.bindings._rust import openssl as rs
         from cryptography.hazmat.bindings._rust import x509 as rx
         from cryptography.hazmat.primitives import serialization as ser
     except ImportError:
-        return
+        return table
 
     def _priv(k):
         pem = k.private_bytes(ser.Encoding.PEM, ser.PrivateFormat.PKCS8, ser.NoEncryption())
@@ -99,11 +99,25 @@ def _register_crypto_reducers() -> None:
         for suffix, reducer in (("PrivateKey", _priv), ("PublicKey", _pub)):
             cls = getattr(mod, prefix + suffix, None)
             if cls is not None:
-                copyreg.pickle(cls, reducer)
-    copyreg.pickle(rx.Certificate, _cert)
+                table[cls] = reducer
+    cert_cls = getattr(rx, "Certificate", None)
+    if cert_cls is not None:
+        table[cert_cls] = _cert
+    return table
 
 
-_register_crypto_reducers()
+_CRYPTO_REDUCERS = _crypto_reducers()
+
+
+def _dill_dump(obj, f) -> None:
+    """``dill.dump`` with the crypto reducers scoped to this pickler."""
+    import collections
+    import copyreg
+
+    pickler = dill.Pickler(f)
+    # Live chain: copyreg entries registered after import still apply.
+    pickler.dispatch_table = collections.ChainMap(_CRYPTO_REDUCERS, copyreg.dispatch_table)
+    pickler.dump(obj)
 
 
 def _safe_dirname(name: str) -> str:
@@ -321,9 +335,9 @@ class SaveOrchestrator:
             with open(tmp, "wb") as f:
                 if lock is not None:
                     with lock:
-                        dill.dump(obj, f)
+                        _dill_dump(obj, f)
                 else:
-                    dill.dump(obj, f)
+                    _dill_dump(obj, f)
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp, path)
