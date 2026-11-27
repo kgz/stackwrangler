@@ -389,3 +389,4 @@
 689	in-review	Lambda MemorySize → nano_cpus (1769 MB = 1 vCPU)
 807	in-review	CI curated local smokes on PRs (#807)
 827	in-review	rds: Aurora MySQL cluster endpoint stable across failover (#827)
+839	backlog	Debt: Aurora MySQL failover state across LocalEmu restart (from #827)
