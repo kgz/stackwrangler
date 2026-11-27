@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Aurora MySQL FailoverDBCluster: former reader becomes writable; describe
-# Port / IsClusterWriter follow that instance (#225).
+# Aurora MySQL FailoverDBCluster: former reader becomes writable and
+# IsClusterWriter follows it (#225). The cluster endpoint host:port from
+# before the failover keeps answering and reaches the new writer (#827).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -93,6 +94,8 @@ done
 	echo "FAIL: writer endpoint ${W_HOST}:${W_PORT} arn=${W_ARN}" >&2
 	exit 1
 }
+RO_HOST="$(aws rds describe-db-clusters --db-cluster-identifier "$CLUSTER" \
+	--query 'DBClusters[0].ReaderEndpoint' --output text)"
 W_JSON="$(aws secretsmanager get-secret-value --secret-id "$W_ARN" --query SecretString --output text)"
 W_USER="$(secret_field "$W_JSON" username)"
 W_PASS="$(secret_field "$W_JSON" password)"
@@ -166,32 +169,48 @@ for _ in $(seq 1 30); do
 	WRITER_ID="$(aws rds describe-db-clusters --db-cluster-identifier "$CLUSTER" \
 		--query "DBClusters[0].DBClusterMembers[?IsClusterWriter==\`true\`].DBInstanceIdentifier | [0]" \
 		--output text)"
-	if [[ "$NEW_PORT" == "$R_PORT" && "$WRITER_ID" == "$READER" ]]; then
+	if [[ "$WRITER_ID" == "$READER" ]]; then
 		break
 	fi
 	sleep 2
 done
 
-[[ "$NEW_PORT" == "$R_PORT" ]] || {
-	echo "FAIL: describe Port=${NEW_PORT} expected former reader ${R_PORT}" >&2
-	aws rds describe-db-clusters --db-cluster-identifier "$CLUSTER" >&2 || true
-	exit 1
-}
 [[ "$WRITER_ID" == "$READER" ]] || {
 	echo "FAIL: IsClusterWriter=${WRITER_ID} expected ${READER}" >&2
 	aws rds describe-db-clusters --db-cluster-identifier "$CLUSTER" >&2 || true
 	exit 1
 }
-
-wait_sql 127.0.0.1 "$NEW_PORT" "$W_USER" "$W_PASS"
-mysql_q 127.0.0.1 "$NEW_PORT" "$W_USER" "$W_PASS" \
-	"INSERT INTO awsbox_fo (id, note) VALUES (3, 'post-failover')
-	 ON DUPLICATE KEY UPDATE note = VALUES(note);" >/dev/null
-POST="$(mysql_q 127.0.0.1 "$NEW_PORT" "$W_USER" "$W_PASS" \
-	"SELECT note FROM awsbox_fo WHERE id = 3")"
-[[ "$POST" == "post-failover" ]] || {
-	echo "FAIL: former reader did not accept writes (got '${POST}')" >&2
+# Real AWS keeps the cluster endpoint name and port across a failover.
+[[ "$NEW_PORT" == "$W_PORT" ]] || {
+	echo "FAIL: cluster Port moved ${W_PORT} -> ${NEW_PORT} on failover" >&2
 	exit 1
 }
 
-echo "OK: aurora-mysql failover ${CLUSTER} writer now ${READER} @ 127.0.0.1:${NEW_PORT}"
+# A client holding the pre-failover endpoint reconnects and writes.
+wait_sql 127.0.0.1 "$W_PORT" "$W_USER" "$W_PASS"
+mysql_q 127.0.0.1 "$W_PORT" "$W_USER" "$W_PASS" \
+	"INSERT INTO awsbox_fo (id, note) VALUES (3, 'post-failover')
+	 ON DUPLICATE KEY UPDATE note = VALUES(note);" >/dev/null
+EP_HOST="$(mysql_q 127.0.0.1 "$W_PORT" "$W_USER" "$W_PASS" 'SELECT @@hostname')"
+NEW_HOST="$(docker inspect -f '{{.Config.Hostname}}' "localemu-rds-${READER}")"
+[[ "$EP_HOST" == "$NEW_HOST" ]] || {
+	echo "FAIL: cluster endpoint reached ${EP_HOST}, new writer is ${NEW_HOST}" >&2
+	exit 1
+}
+POST="$(mysql_q 127.0.0.1 "$R_PORT" "$W_USER" "$W_PASS" \
+	"SELECT note FROM awsbox_fo WHERE id = 3")"
+[[ "$POST" == "post-failover" ]] || {
+	echo "FAIL: write via cluster endpoint not on new writer (got '${POST}')" >&2
+	exit 1
+}
+
+# Reader endpoint (same port; no readers left, so it reaches the writer like AWS).
+[[ "$RO_HOST" == "localhost" ]] && RO_HOST=127.0.0.1
+RO_NOTE="$(mysql_q "$RO_HOST" "$W_PORT" "$W_USER" "$W_PASS" \
+	"SELECT note FROM awsbox_fo WHERE id = 1")"
+[[ "$RO_NOTE" == "pre-failover" ]] || {
+	echo "FAIL: reader endpoint ${RO_HOST}:${W_PORT} after failover (got '${RO_NOTE}')" >&2
+	exit 1
+}
+
+echo "OK: aurora-mysql failover ${CLUSTER} writer now ${READER}; cluster endpoint 127.0.0.1:${W_PORT} unchanged"
