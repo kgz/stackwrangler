@@ -66,7 +66,7 @@ cleanup() {
 		)
 	fi
 	# Drop persist override so hermetic PERSISTENCE=0 returns.
-	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	"${COMPOSE[@]}" up -d --force-recreate -V --no-deps localstack >/dev/null 2>&1 || true
 	rm -f "$OVERRIDE"
 	rm -rf "$WORKDIR"
 	docker volume rm -f "$VOL" >/dev/null 2>&1 || true

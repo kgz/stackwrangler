@@ -41,7 +41,7 @@ cleanup() {
 	aws --endpoint-url "$EMU" --region "$REGION" secretsmanager delete-secret --secret-id "$SECRET_NAME" --force-delete-without-recovery >/dev/null 2>&1 || true
 	aws --endpoint-url "$EMU" --region "$REGION" ssm delete-parameter --name "$SSM_NAME" >/dev/null 2>&1 || true
 	aws --endpoint-url "$EMU" --region "$REGION" iam delete-role --role-name "$ROLE_NAME" >/dev/null 2>&1 || true
-	"${COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	"${COMPOSE[@]}" up -d --force-recreate -V --no-deps localstack >/dev/null 2>&1 || true
 	rm -f "$OVERRIDE" "$ZIP" "$OUT"
 	docker volume rm -f "$VOL" >/dev/null 2>&1 || true
 }
