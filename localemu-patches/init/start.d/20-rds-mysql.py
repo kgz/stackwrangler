@@ -7,8 +7,9 @@ uses. This startup patch:
 
 * boots a cluster writer with binary logging and a replication user
 * boots readers that clone the app database and stay ``super_read_only``
-* ``FailoverDBCluster`` promotes via ``STOP REPLICA`` (not ``pg_ctl``)
-  and moves the cluster writer endpoint to the new source
+* ``FailoverDBCluster`` promotes via ``STOP REPLICA`` (not ``pg_ctl``);
+  the cluster endpoint host port stays put and a small forwarder container
+  takes it over, sending connections to the new writer (#827)
 * writes the real username and password into the ``rds!`` secret
 * overwrites cluster endpoint host/port (moto pre-fills the AWS hostname)
 """
@@ -414,6 +415,82 @@ def _stamp_cluster(context, cluster: dict) -> None:
     cluster["Status"] = "available"
 
 
+# Tiny TCP forwarder: resolves the target per connection, so it follows the
+# ``<cluster>-writer`` network alias across later failovers too.
+_ENDPOINT_PROXY_PY = """
+import asyncio, sys
+T = sys.argv[1]
+async def pipe(r, w):
+    try:
+        while True:
+            d = await r.read(65536)
+            if not d:
+                break
+            w.write(d)
+            await w.drain()
+    except Exception:
+        pass
+    finally:
+        w.close()
+async def handle(cr, cw):
+    try:
+        ur, uw = await asyncio.open_connection(T, 3306)
+    except OSError:
+        cw.close()
+        return
+    await asyncio.gather(pipe(cr, uw), pipe(ur, cw))
+async def main():
+    srv = await asyncio.start_server(handle, "0.0.0.0", 3306)
+    await srv.serve_forever()
+asyncio.run(main())
+"""
+# ponytail: reuse the warm EC2 base image (has python3, built by ``up``) instead
+# of pulling a proxy image; swap for a slim image if it ever matters.
+_ENDPOINT_IMAGE = "localemu/ec2-base:v4"
+
+
+def _endpoint_container(cluster_id: str) -> str:
+    return f"localemu-rds-{cluster_id}-endpoint"
+
+
+def _start_cluster_endpoint(cluster_id: str, host_port: int) -> bool:
+    """Hold the cluster endpoint port and forward it to the current writer."""
+    from localemu.services.rds.docker.db_manager import cluster_network_name
+    from localemu.utils.container_utils.container_client import PortMappings
+    from localemu.utils.docker_utils import DOCKER_CLIENT
+
+    name = _endpoint_container(cluster_id)
+    try:
+        if DOCKER_CLIENT.is_container_running(name):
+            return True
+    except Exception:
+        pass
+    ports = PortMappings()
+    ports.add(int(host_port), 3306)
+    last = ""
+    # The old writer was just stopped; give Docker a moment to free the port.
+    for _ in range(10):
+        try:
+            DOCKER_CLIENT.remove_container(name, force=True, check_existence=True)
+            DOCKER_CLIENT.run_container(
+                _ENDPOINT_IMAGE,
+                name=name,
+                entrypoint="python3",
+                command=["-c", _ENDPOINT_PROXY_PY, f"{cluster_id}-writer"],
+                ports=ports,
+                network=cluster_network_name(cluster_id),
+                detach=True,
+                labels={"localemu.rds-cluster-endpoint": cluster_id},
+            )
+            LOG.info("cluster %s endpoint port %s now forwards to the writer", cluster_id, host_port)
+            return True
+        except Exception as exc:
+            last = str(exc)
+            time.sleep(1)
+    LOG.warning("cluster %s endpoint forwarder on %s failed: %s", cluster_id, host_port, last)
+    return False
+
+
 def _publish_managed_secret(context, resource: dict, username: str, password: str) -> None:
     from moto.secretsmanager import secretsmanager_backends
 
@@ -499,6 +576,7 @@ def _install() -> None:
     orig_create_cluster = provider._handle_create_db_cluster
     orig_create_instance = provider._handle_create_db_instance
     orig_failover = provider._handle_failover_db_cluster
+    orig_delete_cluster = provider._handle_delete_db_cluster
     orig_promote = DockerClusterOps.promote_to_writer
     orig_dispatcher = provider.RdsDispatcher
 
@@ -657,6 +735,7 @@ def _install() -> None:
         topo = orch.topology(cluster_id) if cluster_id else None
         if topo is None or not _is_mysql(topo.engine):
             return orig_failover(context, request)
+        endpoint_port = orch.writer_port(cluster_id)
 
         try:
             new_writer = orch.failover(cluster_id, target_instance_id=target)
@@ -671,6 +750,10 @@ def _install() -> None:
                 status_code=404,
             ) from exc
 
+        if endpoint_port and endpoint_port != new_writer.host_port:
+            # AWS keeps the cluster endpoint across failover: keep its port.
+            if _start_cluster_endpoint(cluster_id, endpoint_port):
+                orch._endpoints.set_writer_port(cluster_id, endpoint_port)
         _sync_moto_mysql_writer(context, cluster_id, new_writer.instance_id)
         cluster = _describe_cluster_dict(context, cluster_id)
         LOG.info(
@@ -679,12 +762,43 @@ def _install() -> None:
         )
         return {"DBCluster": cluster}
 
+    def _handle_delete_db_cluster(context, request):
+        from localemu.utils.docker_utils import DOCKER_CLIENT
+
+        result = orig_delete_cluster(context, request)
+        cluster_id = request.get("DBClusterIdentifier")
+        if not cluster_id:
+            return result
+        # Moto already dropped the cluster: log cleanup errors, never fail the call.
+        try:
+            DOCKER_CLIENT.remove_container(
+                _endpoint_container(cluster_id), force=True, check_existence=True,
+            )
+        except Exception:
+            LOG.warning("cluster %s endpoint forwarder cleanup failed", cluster_id, exc_info=True)
+        # After failover the stopped original writer is no longer a member,
+        # so upstream delete skips its container.
+        writer = f"localemu-rds-{cluster_id}"
+        try:
+            DOCKER_CLIENT.inspect_container(writer)
+        except Exception:
+            return result
+        try:
+            mgr = provider._init_db_manager()
+            if mgr is not None:
+                mgr.delete_db_instance(cluster_id)
+            DOCKER_CLIENT.remove_container(writer, force=True, check_existence=True)
+        except Exception:
+            LOG.warning("old writer %s cleanup failed", cluster_id, exc_info=True)
+        return result
+
     def RdsDispatcher(service_model):
         table = orig_dispatcher(service_model)
         table["CreateDBCluster"] = _handle_create_db_cluster
         table["CreateDBInstance"] = _handle_create_db_instance
         table["DescribeDBClusters"] = _handle_describe_db_clusters
         table["FailoverDBCluster"] = _handle_failover_db_cluster
+        table["DeleteDBCluster"] = _handle_delete_db_cluster
         return table
 
     def _rebind_live_dispatch() -> None:
@@ -703,10 +817,11 @@ def _install() -> None:
                 ("CreateDBInstance", _handle_create_db_instance),
                 ("DescribeDBClusters", _handle_describe_db_clusters),
                 ("FailoverDBCluster", _handle_failover_db_cluster),
+                ("DeleteDBCluster", _handle_delete_db_cluster),
             ):
                 if op in table:
                     table[op] = handler
-            LOG.info("rds mysql rebound live Create*/Describe/Failover dispatch")
+            LOG.info("rds mysql rebound live Create*/Describe/Failover/DeleteCluster dispatch")
         except Exception:
             LOG.debug("rds mysql dispatch rebind skipped", exc_info=True)
 
@@ -729,6 +844,8 @@ def _install() -> None:
     provider._INTERCEPTED_OPS["CreateDBInstance"] = _handle_create_db_instance
     provider._INTERCEPTED_OPS["DescribeDBClusters"] = _handle_describe_db_clusters
     provider._INTERCEPTED_OPS["FailoverDBCluster"] = _handle_failover_db_cluster
+    provider._handle_delete_db_cluster = _handle_delete_db_cluster
+    provider._INTERCEPTED_OPS["DeleteDBCluster"] = _handle_delete_db_cluster
     provider.RdsDispatcher = RdsDispatcher
     _rebind_live_dispatch()
     LOG.info("awsbox rds mysql patch applied")
