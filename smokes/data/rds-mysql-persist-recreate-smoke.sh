@@ -56,7 +56,7 @@ wait_localemu() {
 
 restore_default_localstack() {
 	rm -f "$OVERRIDE"
-	"${BASE_COMPOSE[@]}" up -d --force-recreate --no-deps localstack >/dev/null 2>&1 || true
+	"${BASE_COMPOSE[@]}" up -d --force-recreate -V --no-deps localstack >/dev/null 2>&1 || true
 	wait_localemu >/dev/null 2>&1 || true
 	docker volume rm "$STATE_VOL" >/dev/null 2>&1 || true
 }

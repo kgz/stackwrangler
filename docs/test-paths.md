@@ -272,6 +272,7 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | Unhealthy NLB target receives no new connections | sad/other | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 `RegisterTargets` preserves `host_override` / bridge dial | happy | covered | `./smokes/networking/elbv2-host-override-register-smoke.sh` · [#603](https://github.com/kgz/awsl/issues/603) |
 | ELBv2 persist restart: internal HTTPS ALB + rule + target survive LocalEmu restart | happy | covered | `./smokes/networking/elbv2-persist-restart-smoke.sh` · [#770](https://github.com/kgz/stackwrangler/issues/770) · [elbv2.md](elbv2.md) · [dev-mode.md](dev-mode.md) |
+| ACM persist restart: imported cert still listed and the restored HTTPS listener presents it (handshake verified against the cert, no `-k`) | happy | covered | `./smokes/networking/elbv2-persist-restart-smoke.sh` · [#809](https://github.com/kgz/stackwrangler/issues/809) · [acm.md](acm.md) · [dev-mode.md](dev-mode.md) |
 | **ELBv2 deny-user CreateLoadBalancer → AccessDenied** | sad/authz | covered | `./smokes/networking/elbv2-smoke.sh` |
 | ELBv2 console list / listeners / target health | ui | covered | `console/e2e/services-detail.spec.ts` · [#241](https://github.com/kgz/stackwrangler/issues/241) |
 | ELBv2 TLS listener presents its ACM certificate | happy | covered | `./smokes/networking/elbv2-smoke.sh` · [#242](https://github.com/kgz/awsl/issues/242) |

@@ -9,7 +9,7 @@ AWSBOX_ELBV2_E2E=1 ./bin/e2e.sh  # runs elbv2-smoke in e2e (off by default, #299
 ./smokes/networking/elbv2-host-override-register-smoke.sh  # RegisterTargets keeps host_override (#603)
 ./smokes/networking/elbv2-sg-member-smoke.sh  # ALB SG membership → target health (#768)
 ./smokes/networking/elbv2-nlb-client-ip-sg-smoke.sh  # NLB client/proxy IP at target SG (#236)
-./smokes/networking/elbv2-persist-restart-smoke.sh  # PERSISTENCE restart keeps LB/listener/rule/TG (#770)
+./smokes/networking/elbv2-persist-restart-smoke.sh  # PERSISTENCE restart keeps LB/listener/rule/TG + ACM cert (#770, #809)
 ./smokes/networking/elbv2-nonforward-default-smoke.sh  # fixed-response/redirect default still listens (#767)
 ./smokes/networking/elbv2-rule-transforms-smoke.sh  # url-rewrite / host-header-rewrite Transforms (#766)
 ./smokes/apigw/apigw-nlb-ecs-smoke.sh   # VPC_LINK → internal NLB → ECS ip target

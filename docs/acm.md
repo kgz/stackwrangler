@@ -30,5 +30,6 @@ Sad: deny-user `acm:RequestCertificate` → AccessDenied.
 | ELBv2 listener `Certificates[].CertificateArn` | Stored / described |
 | TLS handshake with ACM keypair | Create-time → [#242](https://github.com/kgz/awsl/issues/242); `ModifyListener` / first-default `AddListenerCertificates` reload → [#594](https://github.com/kgz/awsl/issues/594); `RemoveListenerCertificates` / clear-default reload → [#628](https://github.com/kgz/awsl/issues/628) |
 | TLS handshake with ACM keypair | Working (`elbv2-smoke.sh`); create-time [#242](https://github.com/kgz/awsl/issues/242); ModifyListener / first-default Add reload for TLS NLB [#594](https://github.com/kgz/awsl/issues/594) and HTTPS ALB [#629](https://github.com/kgz/awsl/issues/629) |
+| Dev persistence | `--dev` / `PERSISTENCE=1`: certs survive a restart and restored ELBv2 listeners present them (`elbv2-persist-restart-smoke.sh`) ([#809](https://github.com/kgz/stackwrangler/issues/809)) |
 | Console | None → [#333](https://github.com/kgz/awsl/issues/333) |
 | DNS validation automation | Emulator accepts request; no real DNS challenge |
