@@ -154,18 +154,22 @@ def _start_waiting_pollers(provider) -> int:
                     EsmState.DISABLED,
                     EsmState.DISABLING,
                 )
+                worker = EsmWorkerFactory(esm, version.config.role, enabled).get_esm_worker()
+                # Claim the slot before starting, so a lost race never leaves a
+                # second poller running; re-check the record in case of a delete.
+                if workers.setdefault(uuid, worker) is not worker:
+                    continue
+                if mappings.get(uuid) is not esm:
+                    workers.pop(uuid, None)
+                    continue
                 try:
-                    worker = EsmWorkerFactory(
-                        esm, version.config.role, enabled
-                    ).get_esm_worker()
                     worker.create()
                 except Exception:
+                    workers.pop(uuid, None)
                     LOG.debug("ESM %s poller start failed; retrying", uuid, exc_info=True)
                     continue
-                # setdefault: a concurrent Update may have built its own worker.
-                if workers.setdefault(uuid, worker) is worker:
-                    started += 1
-                    LOG.info("Started poller for kept ESM %s (#836)", uuid)
+                started += 1
+                LOG.info("Started poller for kept ESM %s (#836)", uuid)
     return started
 
 
