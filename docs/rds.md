@@ -13,6 +13,7 @@ LocalEmu `rds` with **`RDS_DOCKER_BACKEND=1`** starts a real Postgres or MySQL c
 ./smokes/data/rds-param-groups-smoke.sh # DB / cluster parameter groups → container
 ./smokes/data/rds-tf-create-describe-smoke.sh  # Create→Describe bound (#718)
 ./smokes/data/rds-mysql-tls-smoke.sh # MySQL TLS VERIFY_IDENTITY + rds-ca.pem (#765)
+./smokes/data/rds-mysql-tls-container-smoke.sh # same, from a container by host.docker.internal / container name / alias (#835)
 ```
 
 Keep resources: `STACKWRANGLER_RDS_KEEP=1 ./smokes/data/rds-mysql-smoke.sh`
@@ -29,6 +30,16 @@ Needs host `psql` (Postgres smoke) or `mysql` (MySQL / Aurora smokes).
 - `ManageMasterUserPassword` stores `{"username","password"}` in Secrets Manager (`rds!…`). The container uses that password
 - SQL via `psql` or `mysql`
 - **MySQL TLS with name verify** ([#765](https://github.com/kgz/stackwrangler/issues/765)): instances present a leaf with SANs for the endpoint hostname plus `localhost` / `127.0.0.1`, signed by `.awsbox/tls/rds-ca.pem` (alongside the gateway CA under `.awsbox/tls/`). Point the app RDS-bundle path at that file (PHP `ATTR_SSL_CA`, mysql `--ssl-ca`, etc.)
+- **TLS names from containers** ([#835](https://github.com/kgz/stackwrangler/issues/835)): `Endpoint.Address` stays `localhost`, which inside a container is the container itself. The leaf (MySQL, MariaDB, Aurora MySQL) also covers the names a container can dial, so name verification passes with `rds-ca.pem`:
+
+  | From | Host | Port |
+  |------|------|------|
+  | host | `localhost` / `127.0.0.1` | `Endpoint.Port` |
+  | awsvpc ECS task, Lambda, any container with `--add-host host.docker.internal:host-gateway` | `host.docker.internal` | `Endpoint.Port` |
+  | container on the instance's VPC network (DB subnet group) or another shared network | `<db-instance-id>` or `localemu-rds-<db-instance-id>` | engine port (3306) |
+  | container on the Aurora cluster network `localemu-aurora-<cluster>` | `<cluster>-writer` (every member's cert, so it holds after failover) | 3306 |
+
+  Bare container IPs are not on the cert. Instances created before this change get the new names when their container is next created (delete/create or persistence recreate). A resolvable AWS-shaped endpoint name is [#846](https://github.com/kgz/stackwrangler/issues/846). Postgres has no awsl-minted server cert yet.
 - DB / cluster parameter groups: user-set parameters go into the Docker CMD (`--loose-name=value` MySQL, `-c name=value` Postgres). Skips `rds.*` names and `{…}` formula values. MySQL `reboot-db-instance` re-applies via `SET GLOBAL`; Postgres recreates the container so `-c` flags refresh ([#703](https://github.com/kgz/stackwrangler/issues/703))
 
 Aurora MySQL binlog setup lives in `localemu-patches/init/start.d/20-rds-mysql.py` (mounted with the other init scripts). `SERVICES` already includes `rds` and `secretsmanager`.
