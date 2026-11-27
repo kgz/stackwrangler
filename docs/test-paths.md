@@ -486,6 +486,8 @@ Score with the matrix via `./bin/coverage-report.sh` (`thin` = half credit).
 | RDS IAM DB auth | sad/authz | missing | out of scope (password connect covered by `rds-authz-smoke.sh`) |
 | RDS MySQL instance + managed secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | RDS MySQL TLS VERIFY_IDENTITY with `.awsbox/tls/rds-ca.pem` | happy | covered | `./smokes/data/rds-mysql-tls-smoke.sh` · [#765](https://github.com/kgz/stackwrangler/issues/765) |
+| RDS MySQL / Aurora MySQL TLS VERIFY_IDENTITY from a container (`host.docker.internal`, container name, `<id>` alias, `<cluster>-writer`) | happy | covered | `./smokes/data/rds-mysql-tls-container-smoke.sh` · [#835](https://github.com/kgz/stackwrangler/issues/835) |
+| RDS MySQL TLS VERIFY_IDENTITY by bare container IP rejected (not on cert) | sad | covered | `./smokes/data/rds-mysql-tls-container-smoke.sh` · [#835](https://github.com/kgz/stackwrangler/issues/835) |
 | RDS MySQL host port + SQL row after hard PERSISTENCE recreate (`docker rm`) | happy | covered | `./smokes/data/rds-mysql-persist-recreate-smoke.sh` · [#743](https://github.com/kgz/stackwrangler/issues/743) |
 | **RDS MySQL wrong password → access denied** | sad/authz | covered | `./smokes/data/rds-mysql-smoke.sh` |
 | Aurora MySQL writer SQL via `rds!` secret | happy | covered | `./smokes/data/rds-mysql-smoke.sh` |

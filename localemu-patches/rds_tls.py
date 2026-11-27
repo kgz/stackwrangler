@@ -8,7 +8,9 @@ This module:
   * mints a stable local RDS CA under ``/var/lib/awsbox/tls`` (compose
     ``./.awsbox``), published as ``rds-ca.pem`` alongside the gateway CA
   * mints a per-instance leaf covering the Describe endpoint hostname plus
-    ``localhost`` / ``127.0.0.1`` for the published host port
+    ``localhost`` / ``127.0.0.1`` for the published host port, and the names
+    containers use: ``host.docker.internal``, the container name and its
+    network aliases (``<id>``, ``<cluster>-writer``) (#835)
   * bind-mounts ca/cert/key into the DB container and injects
     ``--ssl-ca`` / ``--ssl-cert`` / ``--ssl-key`` onto mysqld
 
@@ -64,10 +66,13 @@ def ensure_instance_leaf(
     db_instance_id: str,
     *,
     region: str | None = None,
+    extra_dns: list[str] | None = None,
 ) -> tuple[Path, Path, Path]:
     """Ensure CA + leaf for ``db_instance_id``; return (ca, cert, key) paths."""
     ensure_rds_ca()
-    sans_dns, sans_ip = _san_lists(db_instance_id, region or "us-east-1")
+    sans_dns, sans_ip = _san_lists(
+        db_instance_id, region or "us-east-1", extra_dns or []
+    )
     inst_dir = TLS_DIR / INSTANCES_DIRNAME / _safe_id(db_instance_id)
     inst_dir.mkdir(parents=True, exist_ok=True)
     leaf_crt = inst_dir / LEAF_CERT_NAME
@@ -102,9 +107,16 @@ def apply_mysql_tls(container_config, db_instance_id: str) -> bool:
     from localemu.utils.container_utils.container_client import BindMount
 
     region = os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
+    labels = getattr(container_config, "labels", None) or {}
     try:
         ca_path, cert_path, key_path = ensure_instance_leaf(
-            db_instance_id, region=region
+            db_instance_id,
+            region=region,
+            extra_dns=container_names(
+                db_instance_id,
+                getattr(container_config, "name", None),
+                labels.get("localemu.cluster-id"),
+            ),
         )
     except Exception:
         LOG.exception("rds TLS mint failed for %s", db_instance_id)
@@ -167,10 +179,27 @@ def _endpoint_hostname(db_instance_id: str, region: str) -> str:
     return "localhost"
 
 
-def _san_lists(db_instance_id: str, region: str) -> tuple[list[str], list[str]]:
+def container_names(
+    db_instance_id: str, container_name: str | None, cluster_id: str | None
+) -> list[str]:
+    """Names a container can dial the instance by (#835).
+
+    ``host.docker.internal`` → published host port (awsvpc tasks, Lambda);
+    container name + ``<id>`` alias on VPC / cluster networks; every cluster
+    member gets ``<cluster>-writer`` since failover moves that alias.
+    """
+    names = ["host.docker.internal", container_name or f"localemu-rds-{db_instance_id}", db_instance_id]
+    if cluster_id:
+        names.append(f"{cluster_id}-writer")
+    return names
+
+
+def _san_lists(
+    db_instance_id: str, region: str, extra_dns: list[str] | None = None
+) -> tuple[list[str], list[str]]:
     endpoint = _endpoint_hostname(db_instance_id, region)
     dns: list[str] = []
-    for name in (endpoint, "localhost"):
+    for name in (endpoint, "localhost", *(extra_dns or [])):
         if name and name not in dns and not _looks_like_ip(name):
             dns.append(name)
     ips: list[str] = ["127.0.0.1"]
